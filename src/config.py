@@ -20,11 +20,9 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     cors_origins: str = "http://localhost:3000"
 
-    # LLM
-    openai_api_key: str = ""
-    openai_base_url: str = "https://litellm.vlearn.dev/v1"
+    # LLM Configuration (Google Gemini)
     google_api_key: str = ""
-    model_name: str = "gemini-3.5-flash"
+    model_name: str = "gemini-2.5-flash"
     llm_temperature: float = Field(default=0.7, ge=0.0, le=2.0)
 
     # Database
