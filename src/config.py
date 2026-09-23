@@ -22,6 +22,7 @@ class Settings(BaseSettings):
 
     # LLM
     openai_api_key: str = ""
+    openai_base_url: str = "https://litellm.vlearn.dev/v1"
     google_api_key: str = ""
     model_name: str = "gemini-3.5-flash"
     llm_temperature: float = Field(default=0.7, ge=0.0, le=2.0)
