@@ -33,6 +33,20 @@
 
 ---
 
+## 2026-09-24 (Gate G2: Rà soát Docs & Scope MVP theo Khảo sát Thăm dò)
+
+| Member | Task | Status | Output | Time |
+|---|---|---|---|---|
+| Thế Việt | Cập nhật `problem-and-mvp-scope.md` và `user-flows.md` theo khảo sát thăm dò (n=4), bỏ các con số chưa có bằng chứng, chuẩn hóa mục tiêu evaluation | ✅ Done | Tài liệu Scope & User Flows được cập nhật | 3h |
+| Long | Cập nhật `triage-and-hitl-rules.md` và `agent-workflow.md`: tổ hợp Critical rule ("rùa vàng" + cao tốc/nguy hiểm), khóa rule làm rõ $\le 2$ lượt | ✅ Done | Hard rules & State flow chuẩn hóa | 3h |
+| Khôi | Kiểm chứng URL tài liệu công khai chính thức ([Hướng dẫn app VinFast](https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast)), tạo bộ dataset benchmark `eval/datasets/triage_cases_v1.jsonl` không PII | ✅ Done | `rag-and-data-sources.md` & `eval/datasets/triage_cases_v1.jsonl` | 3h |
+| Triển | Chuẩn hóa `api-contract.md` và `data-model.md` loại bỏ hoàn toàn PII, thống nhất State Machine của Ticket | ✅ Done | API & Data Model chuẩn hóa | 3h |
+| Cả nhóm | Thống nhất kế hoạch triển khai: ưu tiên build Vertical Slice Flow 1 (`Charging/Battery`) trước 29/09/2026 | ✅ Done | Kế hoạch tuần 2 & Phân công nhiệm vụ chi tiết | 2h |
+
+**Tổng kết ngày:** Đã đồng bộ toàn diện hệ thống tài liệu docs (Product, Architecture, Evaluation) theo tín hiệu khảo sát thăm dò ban đầu. Đã tạo dataset benchmark mô phỏng và chốt lộ trình ưu tiên Flow 1.
+
+---
+
 ## [YYYY-MM-DD]
 
 | Member | Task | Status | Output | Time |
