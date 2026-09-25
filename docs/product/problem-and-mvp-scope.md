@@ -29,7 +29,7 @@
 | **3/3** người từng cần hỗ trợ cho biết phải liên hệ $\ge 2$ lần/kênh và phải mô tả lại thông tin "có một phần". | **P0 MVP:** Bắt buộc có cơ chế **Contextual Clarification** (làm rõ có cấu trúc) + **Case Brief** chuẩn hóa + hiển thị **Tiến độ/Lịch sử case**. |
 | **3/4** chọn mong muốn *"Giải thích cảnh báo/lỗi dễ hiểu"*; **3/4** chọn *"Tóm tắt để không phải mô tả lại"*. | Xác định đây là **2 Value Proposition chính** trên giao diện Customer Chat. |
 | **2/4** chọn tự động thu thập thông tin; **2/4** chọn routing; **2/4** chọn theo dõi trạng thái. | Giữ trong MVP, nhưng đứng sau tính năng giải thích lỗi và sinh Case Brief. |
-| **Trong 4 phản hồi thăm dò, cả 4 người đều chọn ít nhất một tình huống rủi ro hoặc nhạy cảm cần kết nối nhân viên ngay**, như an toàn, cứu hộ, xe không thể di chuyển, lỗi nghiêm trọng, khiếu nại hoặc chi phí. | **Human-in-the-Loop (HITL)** là yêu cầu cốt lõi (Core Requirement), không phải tính năng phụ. |
+| **Đa số** muốn AI đề xuất nhưng có nhân viên xác nhận; **100%** muốn gặp người thật khi có nguy cơ an toàn / cứu hộ / lỗi nghiêm trọng / khiếu nại. | **Human-in-the-Loop (HITL)** là yêu cầu cốt lõi (Core Requirement), không phải tính năng phụ. |
 
 ### 2.3. Vấn đề của các Bên liên quan (Problem Statement)
 1. **Khách hàng sở hữu xe điện (EV):** Khi gặp vấn đề phát sinh (trụ sạc, cảnh báo taplo, thắc mắc dịch vụ), khách hàng thường hoang mang, cung cấp thông tin rời rạc hoặc thiếu các dữ kiện kỹ thuật then chốt (dòng xe, mã lỗi, vị trí trụ sạc).
@@ -55,8 +55,8 @@
   * **Xử lý khi thiếu thông tin sau 2 lượt:**
     * Nếu sau 2 lượt vẫn thiếu dữ kiện $\rightarrow$ Tạo Case $\rightarrow$ Trạng thái `Status = Needs Information`.
     * Case này vẫn xuất hiện trong Staff Queue với nhãn **"Thiếu thông tin"** để Staff có thể tự tiếp quản hoặc gửi tin nhắn yêu cầu bổ sung.
-  * **Khi đã đủ dữ kiện và Agent sinh Brief hoàn chỉnh:** Vòng đời trạng thái diễn ra theo thứ tự: `New` $\rightarrow$ `Staff Reviewing` $\rightarrow$ `In Progress`.
-* **Thông báo Phản hồi An toàn:** *"Hệ thống đã ghi nhận sự cố và tạo hồ sơ hỗ trợ. Thông tin sẽ được hiển thị cho nhân viên xử lý trên môi trường demo; vui lòng theo dõi cập nhật trên giao diện này."*
+    * **Khi đã đủ dữ kiện và Agent sinh Brief hoàn chỉnh:** Vòng đời trạng thái diễn ra theo thứ tự: `New` $\rightarrow$ `Staff Reviewing` $\rightarrow$ `In Progress`.
+  * **Thông báo Phản hồi An toàn:** *"Hệ thống đã ghi nhận sự cố và tạo hồ sơ hỗ trợ. Thông tin sẽ được hiển thị cho nhân viên xử lý trên môi trường demo; vui lòng theo dõi cập nhật trên giao diện này."*
 * **Case Brief Generation:** Tự động tóm tắt: *Vấn đề chính, Thông số xe (Model, Pin %), Mã lỗi/Hiện tượng, Mức độ ưu tiên, Hành động đề xuất cho Staff*.
 * **Cơ chế HITL (Human-in-the-Loop):** Staff Dashboard để Review, Chỉnh sửa (Edit), Duyệt (Approve), Điều phối (Reroute), Đóng phiếu.
 * **Trích dẫn nguồn RAG công khai:** Trích dẫn nguồn tài liệu VinFast chính thức đã được kiểm chứng (kèm URL, ngày kiểm chứng, model áp dụng). Chỉ trả lời nội dung chính sách khi đã có tài liệu nguồn xác thực.
@@ -88,5 +88,5 @@ Các chỉ số dưới đây là **mục tiêu thử nghiệm và benchmark (Ta
 1. **Độ chính xác phân loại Intent (Intent Triage Accuracy Target):** Mục tiêu $\ge 90\%$ trên bộ test benchmark `eval/datasets/triage_cases_v1.jsonl`.
 2. **Tính đầy đủ của Case Brief (Brief Completeness Target):** Mục tiêu $\ge 95\%$ các trường bắt buộc theo từng intent.
 3. **Độ bao phủ phát hiện sự cố khẩn cấp (Critical Case Recall Target):** Mục tiêu $100\%$ case có nguy cơ an toàn kích hoạt cảnh báo khẩn cấp và chuyển Staff Queue.
-4. **Độ trung thực RAG (RAG Grounded Rate Target):** $100\%$ câu trả lời FAQ có trích dẫn link nguồn công khai hợp lệ đã kiểm chứng, không bịa đặt thông tin.
+4. **Độ trung thực RAG (RAG Grounded Rate Target):** $100\%$ câu trả lời FAQ có trích dẫn link nguồn công khai hợp lệ, không bịa đặt thông tin.
 5. **Tiến độ Vertical Slice (Flow 1 E2E):** Chạy thông suốt trước mốc **29/09/2026**.

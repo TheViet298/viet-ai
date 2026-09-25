@@ -22,7 +22,7 @@ class Settings(BaseSettings):
 
     # LLM Configuration (Google Gemini)
     google_api_key: str = ""
-    model_name: str = "gemini-2.5-flash"
+    model_name: str = "gemini-3.5-flash"
     llm_temperature: float = Field(default=0.7, ge=0.0, le=2.0)
 
     # Database
