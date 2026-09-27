@@ -1,7 +1,8 @@
 # Demo Scenarios & Test Scripts (MVP)
 
 > **Người phụ trách:** Cả nhóm (Chủ trì: Việt & Long)  
-> **Cập nhật lần cuối:** 2026-09-24  
+> **Cập nhật lần cuối:** 2026-09-27
+>
 > **Trạng thái:** In Review (Đã chuẩn hóa Safe Guidance, Rule Critical kết hợp và App Handoff)
 
 ---
@@ -79,9 +80,9 @@
 1. **Bước 1 (Customer Intake):**
    * *User nhập:* `"Làm thế nào để tôi có thể theo dõi tình trạng pin và đặt lịch bảo dưỡng xe VinFast trên điện thoại?"`
 2. **Bước 2 (RAG Retrieval):**
-   * Truy xuất tài liệu: `Hướng dẫn sử dụng Ứng dụng VinFast` (`SRC-APP-001`).
+   * Truy xuất tài liệu: `Hướng dẫn sử dụng Ứng dụng VinFast cho ô tô điện (Phần 2)` (`SRC-APP-001`).
    * Tìm thấy đoạn: *Khách hàng có thể theo dõi tình trạng xe, kiểm tra dung lượng pin, đặt lịch dịch vụ và theo dõi tiến độ sửa chữa trực tiếp trên ứng dụng VinFast.*
 3. **Bước 3 (AI Output):**
    * *AI phản hồi:* *"Theo Hướng dẫn sử dụng Ứng dụng VinFast, anh/chị có thể dễ dàng quản lý tình trạng xe, kiểm tra mức pin/sạc và chủ động đặt lịch dịch vụ bảo dưỡng/sửa chữa trực tiếp trên Ứng dụng VinFast."*
-   * *Trích dẫn nguồn:* [Hướng dẫn sử dụng Ứng dụng VinFast](https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast) (Ngày kiểm chứng: 2026-09-24, Mã nguồn: `SRC-APP-001`).
+   * *Trích dẫn nguồn:* [Hướng dẫn sử dụng Ứng dụng VinFast cho ô tô điện (Phần 2)](https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast) (Ngày kiểm tra nội dung: 2026-09-27, Mã nguồn: `SRC-APP-001`).
    * *Hướng dẫn dịch vụ:* *"Để thực hiện, anh/chị mở Ứng dụng VinFast $\rightarrow$ chọn mục **Dịch vụ** $\rightarrow$ **Đặt lịch dịch vụ** hoặc chọn xưởng dịch vụ gần nhất."*

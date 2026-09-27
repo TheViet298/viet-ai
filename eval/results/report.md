@@ -1,8 +1,9 @@
 # Evaluation Target Metrics & Benchmark Report
 
 > **Người phụ trách:** Khôi (Data/Eval Lead)  
-> **Cập nhật lần cuối:** 2026-09-24  
-> **Trạng thái:** Benchmark Ready / Baseline Testing
+> **Cập nhật lần cuối:** 2026-09-27
+>
+> **Trạng thái:** Đã định nghĩa mục tiêu và dataset mẫu; chưa chạy baseline
 
 ---
 
@@ -23,7 +24,7 @@
 
 ## 2. Danh mục Bộ dữ liệu Đánh giá (Evaluation Datasets)
 
-* **Tập dữ liệu Benchmark v1:** [`eval/datasets/triage_cases_v1.jsonl`](file:///d:/Vin_AI/P-142/eval/datasets/triage_cases_v1.jsonl)
+* **Tập dữ liệu Benchmark v1:** [`eval/datasets/triage_cases_v1.jsonl`](../datasets/triage_cases_v1.jsonl)
 * **Quy chuẩn dữ liệu:**
   * 100% dữ liệu tình huống được mô phỏng dựa trên tín hiệu từ khảo sát thăm dò ban đầu (Charging, Battery, Taplo warning, Khiếu nại dịch vụ, Hướng dẫn tính năng ứng dụng).
   * **Tuyệt đối không chứa PII:** Toàn bộ thông tin cá nhân (email, họ tên, số điện thoại, biển số xe) đã được loại bỏ và thay bằng ID mô phỏng.
@@ -31,6 +32,8 @@
 ---
 
 ## 3. Kế hoạch Chạy Đánh giá Tự động (Execution Plan)
+
+Flow 1 (`Charging/Battery`) được triển khai và đánh giá trước. Các chỉ số FAQ/RAG trong bảng trên là mục tiêu cho giai đoạn sau Flow 1, chưa phải kết quả đạt được. Script `scripts/run_triage_eval.py` trong ví dụ dưới đây hiện chưa có trong repo; cần tạo script và ghi kết quả chạy thực tế trước khi công bố baseline.
 
 ```bash
 # 1. Chạy kiểm thử Unit test cho Rule Engine và Parser

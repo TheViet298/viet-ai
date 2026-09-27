@@ -1,7 +1,8 @@
 # API Contract Specification (Customer & Staff)
 
 > **Người phụ trách chính:** Triển (Backend Lead)  
-> **Cập nhật lần cuối:** 2026-09-24  
+> **Cập nhật lần cuối:** 2026-09-27
+>
 > **Trạng thái:** In Review (Đã chuẩn hóa No-PII Schema, Distinct State Rules và Safe Guidance)
 
 ---
@@ -78,11 +79,11 @@
     "citations": [
       {
         "source_id": "SRC-APP-001",
-        "title": "Hướng dẫn sử dụng Ứng dụng VinFast",
+        "title": "Hướng dẫn sử dụng Ứng dụng VinFast cho ô tô điện (Phần 2)",
         "url": "https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast",
-        "verified_at": "2026-09-24",
-        "status_code": 200,
-        "applicable_models": ["VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"],
+        "verified_at": "2026-09-27",
+        "status_code": null,
+        "applicable_models": [],
         "source_type": "OFFICIAL_APP_GUIDE"
       }
     ],
