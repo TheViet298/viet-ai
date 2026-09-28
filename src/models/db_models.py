@@ -4,7 +4,7 @@ from enum import Enum
 from sqlalchemy import JSON, DateTime, Float, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db import Base
+from src.db import Base
 
 
 def utcnow() -> datetime:

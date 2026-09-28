@@ -1,14 +1,14 @@
 """Seed dữ liệu mẫu cho SQLite.
 
-Chạy (trong thư mục backend/):
-    python -m app.seed            # chỉ seed nếu DB còn trống
-    python -m app.seed --reset    # xóa hết dữ liệu cũ rồi seed lại
+Chạy (từ thư mục gốc):
+    python -m src.seed            # chỉ seed nếu DB còn trống
+    python -m src.seed --reset    # xóa hết dữ liệu cũ rồi seed lại
 """
 import sys
 from datetime import datetime, timedelta, timezone
 
-from app.db import SessionLocal
-from app.models import (
+from src.db import Base, SessionLocal, engine
+from src.models.db_models import (
     Case,
     Intent,
     Message,
@@ -168,6 +168,7 @@ def build_cases(now: datetime) -> list[Case]:
 
 
 def main() -> None:
+    Base.metadata.create_all(bind=engine)
     reset = "--reset" in sys.argv
     with SessionLocal() as db:
         if reset:
@@ -182,7 +183,7 @@ def main() -> None:
         cases = build_cases(datetime.now(timezone.utc))
         db.add_all(cases)
         db.commit()
-        print(f"Đã seed {len(cases)} case.")
+        print(f"Đã seed {len(cases)} case vào SQLite DB.")
 
 
 if __name__ == "__main__":

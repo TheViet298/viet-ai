@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.db import get_db
-from app.models import (
+from src.db import get_db
+from src.models.db_models import (
     Case,
     Intent,
     Message,
@@ -13,7 +13,7 @@ from app.models import (
     TicketStatus,
     utcnow,
 )
-from app.schemas import (
+from src.models.schemas import (
     CaseCreate,
     CaseDetail,
     CaseSummary,

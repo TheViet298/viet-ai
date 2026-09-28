@@ -1,12 +1,13 @@
 import os
-
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-from app.config import settings
+from src.config import get_settings
 
 # Tạo thư mục data/ nếu chưa có để SQLite tạo được file .db
 os.makedirs("data", exist_ok=True)
+
+settings = get_settings()
 
 engine = create_engine(
     settings.database_url,
