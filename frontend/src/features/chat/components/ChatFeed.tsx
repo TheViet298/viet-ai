@@ -1,7 +1,8 @@
+'use client'
 import { useEffect, useRef } from "react";
-import { RefreshCw } from "lucide-react";
 import { ChatMessage } from "../types";
 import { ChatMessageItem } from "./ChatMessageItem";
+import { RefreshCw } from "lucide-react";
 
 interface ChatFeedProps {
   messages: ChatMessage[];
