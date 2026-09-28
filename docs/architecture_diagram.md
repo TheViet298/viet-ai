@@ -124,5 +124,5 @@ graph TD
 | **Vector DB** | ChromaDB / FAISS | Lưu trữ tài liệu chính hãng, FAQ xe điện, chính sách bảo hành, cẩm nang hướng dẫn sử dụng xe VinFast |
 | **LLM Inference** | LLM API hỗ trợ Structured Output | Cấu hình linh hoạt theo môi trường (`gpt-4o-mini`, `gpt-4o`, `gemini-1.5-flash`, v.v.) phục vụ phân loại intent, trích xuất slot, tóm tắt brief |
 | **Guardrails & Safety** | Rule Engine + Sentiment + Guard Prompts | Bổ sung **confidence threshold**, bắt **complaint sensitive case**, **safety emergency trigger** và chính sách từ chối yêu cầu ngoài phạm vi |
-| **Database** | SQLite (MVP) / PostgreSQL | Lưu trữ đầy đủ: `source_channel`, `intent`, `priority`, `confidence`, `suggested_routing`, `brief_data`, `reviewer_feedback`, `ticket_status` |
+| **Database** | SQLite (MVP) / PostgreSQL | Lưu trữ đầy đủ: `source_channel`, `intent`, `priority`, `confidence_score`, `suggested_action`, `captured_fields`, `reviewer_feedback`, `status` |
 | **Console (HITL)** | React / Next.js / Tailwind UI | Service Agent Console — **Reviewer là người quyết định cuối cùng** với escalation, chỉnh sửa brief và routing trước khi dispatch |
