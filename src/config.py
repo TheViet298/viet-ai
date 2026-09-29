@@ -26,7 +26,10 @@ class Settings(BaseSettings):
     llm_temperature: float = Field(default=0.7, ge=0.0, le=2.0)
 
     # Database
-    database_url: str = "sqlite:///./data/app.db"
+    # Use an in-memory database unless an operator explicitly configures persistence.
+    database_url: str = "sqlite:///:memory:"
+    staff_api_token: str = ""
+    staff_id: str = "demo-reviewer"
 
     # Vector Store
     chroma_persist_dir: str = "./data/chroma"
