@@ -1,143 +1,77 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from src.db import get_db
-from src.models.db_models import (
-    Case,
-    Intent,
-    Message,
-    Priority,
-    ReviewAction,
-    ReviewerFeedback,
-    Ticket,
-    TicketStatus,
-    utcnow,
-)
-from src.models.schemas import (
-    CaseCreate,
-    CaseDetail,
-    CaseSummary,
-    CaseUpdate,
-    MessageCreate,
-    MessageOut,
-    ReviewCreate,
-)
+from src.models.db_models import Case
 
-router = APIRouter(prefix="/cases", tags=["cases"])
+router = APIRouter(prefix="/cases", tags=["cases-legacy"])
 
 
-def get_case_or_404(db: Session, case_id: int) -> Case:
-    case = db.get(Case, case_id)
-    if case is None:
-        raise HTTPException(status_code=404, detail="Case không tồn tại")
-    return case
-
-
-@router.post("", response_model=CaseDetail, status_code=201)
-def create_case(payload: CaseCreate, db: Session = Depends(get_db)):
-    """Tạo case mới từ tin nhắn đầu tiên của khách."""
-    case = Case(
-        source_channel=payload.source_channel.value,
-        customer_ref=payload.customer_ref,
-        ticket_status=TicketStatus.OPEN.value,
-    )
-    case.messages.append(
-        Message(sender="customer", channel=payload.source_channel.value, content=payload.content)
-    )
-    db.add(case)
-    db.commit()
-    db.refresh(case)
-    return case
-
-
-@router.get("", response_model=list[CaseSummary])
+@router.get("")
 def list_cases(
-    ticket_status: TicketStatus | None = None,
-    intent: Intent | None = None,
-    priority: Priority | None = None,
+    status: str | None = None,
+    priority: str | None = None,
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
 ):
-    """Danh sách case (cho Service Agent Console), lọc theo trạng thái/intent/priority."""
-    q = db.query(Case)
-    if ticket_status:
-        q = q.filter(Case.ticket_status == ticket_status.value)
-    if intent:
-        q = q.filter(Case.intent == intent.value)
+    """API lấy danh sách case (Tương thích ngược)."""
+    q = db.query(Case).options(joinedload(Case.brief))
+    if status:
+        q = q.filter(Case.status == status)
     if priority:
-        q = q.filter(Case.priority == priority.value)
-    return q.order_by(Case.created_at.desc()).offset(offset).limit(limit).all()
+        q = q.filter(Case.priority == priority.upper())
+    cases = q.order_by(Case.created_at.desc()).offset(offset).limit(limit).all()
+
+    return [
+        {
+            "id": c.id,
+            "session_id": c.session_id,
+            "mock_customer_id": c.mock_customer_id,
+            "vehicle_model": c.vehicle_model,
+            "vehicle_code_mock": c.vehicle_code_mock,
+            "intent": c.intent,
+            "priority": c.priority,
+            "status": c.status,
+            "summary": c.brief.summary if c.brief else None,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+        }
+        for c in cases
+    ]
 
 
-@router.get("/{case_id}", response_model=CaseDetail)
-def get_case(case_id: int, db: Session = Depends(get_db)):
-    return get_case_or_404(db, case_id)
+@router.get("/{case_id}")
+def get_case(case_id: str, db: Session = Depends(get_db)):
+    """API lấy chi tiết một case theo ID chuỗi (CASE-YYYYMMDD-XXX)."""
+    case = db.query(Case).options(joinedload(Case.brief), joinedload(Case.messages)).filter(Case.id == case_id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case không tồn tại")
 
-
-@router.patch("/{case_id}", response_model=CaseDetail)
-def update_case(case_id: int, payload: CaseUpdate, db: Session = Depends(get_db)):
-    """Agent ghi kết quả triage/brief. Chỉ cập nhật các field được gửi lên."""
-    case = get_case_or_404(db, case_id)
-    for field, value in payload.model_dump(exclude_unset=True, mode="json").items():
-        setattr(case, field, value)
-    db.commit()
-    db.refresh(case)
-    return case
-
-
-@router.post("/{case_id}/messages", response_model=MessageOut, status_code=201)
-def add_message(case_id: int, payload: MessageCreate, db: Session = Depends(get_db)):
-    """Thêm tin nhắn (khách/agent/reviewer). Khách trả lời khi case đang WAITING_USER thì case về OPEN."""
-    case = get_case_or_404(db, case_id)
-    message = Message(
-        case_id=case.id,
-        sender=payload.sender,
-        channel=payload.channel.value if payload.channel else case.source_channel,
-        content=payload.content,
-    )
-    db.add(message)
-    if payload.sender == "customer" and case.ticket_status == TicketStatus.WAITING_USER.value:
-        case.ticket_status = TicketStatus.OPEN.value
-    db.commit()
-    db.refresh(message)
-    return message
-
-
-@router.post("/{case_id}/review", response_model=CaseDetail)
-def review_case(case_id: int, payload: ReviewCreate, db: Session = Depends(get_db)):
-    """Reviewer approve / edit / escalate, sau đó dispatch (tạo ticket, case -> ROUTED)."""
-    case = get_case_or_404(db, case_id)
-
-    if case.ticket_status != TicketStatus.PENDING_REVIEW.value:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Chỉ review được case đang PENDING_REVIEW (hiện tại: {case.ticket_status})",
-        )
-    if payload.action == ReviewAction.edit and payload.edited_brief is None:
-        raise HTTPException(status_code=422, detail="action=edit cần có edited_brief")
-
-    routing = payload.final_routing or case.suggested_routing
-    if not routing:
-        raise HTTPException(
-            status_code=422, detail="Thiếu final_routing (case chưa có suggested_routing)"
-        )
-
-    if payload.action == ReviewAction.edit:
-        case.brief_data = payload.edited_brief
-
-    case.feedbacks.append(
-        ReviewerFeedback(
-            reviewer_name=payload.reviewer_name,
-            action=payload.action.value,
-            edited_brief=payload.edited_brief,
-            final_routing=routing,
-            comment=payload.comment,
-        )
-    )
-    case.tickets.append(Ticket(assigned_department=routing, dispatched_at=utcnow()))
-    case.ticket_status = TicketStatus.ROUTED.value
-
-    db.commit()
-    db.refresh(case)
-    return case
+    return {
+        "id": case.id,
+        "session_id": case.session_id,
+        "mock_customer_id": case.mock_customer_id,
+        "vehicle_model": case.vehicle_model,
+        "vehicle_code_mock": case.vehicle_code_mock,
+        "intent": case.intent,
+        "priority": case.priority,
+        "status": case.status,
+        "brief": {
+            "summary": case.brief.summary,
+            "captured_fields": case.brief.captured_fields,
+            "suggested_action": case.brief.suggested_action,
+            "confidence_score": case.brief.confidence_score,
+            "is_edited_by_staff": case.brief.is_edited_by_staff,
+        }
+        if case.brief
+        else None,
+        "messages": [
+            {
+                "id": m.id,
+                "sender_type": m.sender_type,
+                "content": m.content,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m in case.messages
+        ],
+    }

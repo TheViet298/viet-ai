@@ -1,9 +1,32 @@
-from datetime import datetime
-from typing import Literal
+from datetime import UTC, datetime
+from typing import Any, Generic, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
-from src.models.db_models import Intent, Priority, ReviewAction, SourceChannel, TicketStatus
+T = TypeVar("T")
+
+
+# ==============================================================================
+# RESPONSE ENVELOPE — Nguồn: docs/architecture/api-contract.md Mục 1
+# ==============================================================================
+
+
+class ApiMeta(BaseModel):
+    timestamp: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+
+class ApiResponse(BaseModel, Generic[T]):
+    """Chuẩn envelope bắt buộc cho toàn bộ response API."""
+
+    success: bool = True
+    data: T
+    error: str | None = None
+    meta: ApiMeta = Field(default_factory=ApiMeta)
+
+
+# ==============================================================================
+# LEGACY / TEMPLATE SCHEMAS (Giữ nguyên để tương thích bài test gốc của template)
+# ==============================================================================
 
 
 class ChatRequest(BaseModel):
@@ -15,93 +38,123 @@ class ChatResponse(BaseModel):
     analysis: str = Field(default="", description="Phân tích nội bộ")
 
 
-class ORMModel(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+# ==============================================================================
+# CUSTOMER API SCHEMAS — Nguồn: docs/architecture/api-contract.md Mục 2
+# ==============================================================================
 
 
-# ---------- Message ----------
-class MessageCreate(BaseModel):
-    sender: Literal["customer", "agent", "reviewer"]
-    content: str = Field(min_length=1)
-    channel: SourceChannel | None = None
+class ClientContext(BaseModel):
+    mock_customer_id: str | None = "CUST_MOCK_01"
+    vehicle_model: str | None = "VF8"
+    vehicle_code_mock: str | None = "VF-SF-00231"
 
 
-class MessageOut(ORMModel):
-    id: int
-    case_id: int
-    sender: str
-    channel: str | None
+class CustomerChatRequest(BaseModel):
+    session_id: str
+    case_id: str | None = None  # e.g. CASE-20260924-001, null nếu là tin nhắn đầu tiên
+    message: str = Field(..., min_length=1)
+    client_context: ClientContext | None = None
+
+
+class Citation(BaseModel):
+    source_id: str
+    title: str
+    url: str
+    verified_at: str | None = "2026-09-24"
+    status_code: int | None = 200
+    applicable_models: list[str] | None = None
+    source_type: str | None = "OFFICIAL_APP_GUIDE"
+    relevant_snippet: str | None = None
+
+
+class ServiceHandoff(BaseModel):
+    has_app_feature: bool = True
+    app_feature_name: str
+    guide_url: str
+
+
+class ChatResponseData(BaseModel):
+    response_type: Literal["CLARIFICATION", "FAQ_ANSWER", "CASE_CREATED"]
+    message: str
+    case_id: str | None = None
+    status: str | None = None  # New, Staff Reviewing, Needs Information...
+    priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"] | None = None
+    clarification_turn: int | None = None
+    max_clarification_turns: int | None = None
+    suggested_replies: list[str] | None = None
+    citations: list[Citation] | None = None
+    service_handoff: ServiceHandoff | None = None
+    safe_guidance: str | None = None
+
+
+class CustomerCaseStatusData(BaseModel):
+    case_id: str
+    status: str
+    status_description: str | None = None
+    created_at: str
+    updated_at: str | None = None
+
+
+# ==============================================================================
+# STAFF API SCHEMAS — Nguồn: docs/architecture/api-contract.md Mục 3
+# ==============================================================================
+
+
+class TicketItem(BaseModel):
+    id: str
+    mock_customer_id: str
+    vehicle_model: str
+    intent: str
+    priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    status: str
+    missing_info_flag: bool = False
+    created_at: str
+    confidence_score: float
+
+
+class TicketQueueData(BaseModel):
+    items: list[TicketItem]
+    total: int
+
+
+class CaseBriefOut(BaseModel):
+    summary: str
+    captured_fields: dict[str, Any] = Field(default_factory=dict)
+    suggested_action: str | None = None
+    confidence_score: float = 0.90
+    is_edited_by_staff: bool = False
+
+
+class ConversationItem(BaseModel):
+    sender: Literal["CUSTOMER", "AGENT", "STAFF", "SYSTEM"]
     content: str
-    created_at: datetime
+    created_at: str
 
 
-# ---------- Ticket / Reviewer feedback ----------
-class TicketOut(ORMModel):
-    id: int
-    case_id: int
-    assigned_department: str | None
-    dispatched_at: datetime | None
-    closed_at: datetime | None
-    created_at: datetime
+class TicketDetailCase(BaseModel):
+    id: str
+    mock_customer_id: str
+    vehicle_code_mock: str | None = None
+    vehicle_model: str
+    intent: str
+    priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    status: str
 
 
-class FeedbackOut(ORMModel):
-    id: int
-    case_id: int
-    reviewer_name: str | None
-    action: str
-    edited_brief: dict | None
-    final_routing: str | None
-    comment: str | None
-    created_at: datetime
+class TicketDetailData(BaseModel):
+    case: TicketDetailCase
+    case_brief: CaseBriefOut
+    conversation_history: list[ConversationItem]
 
 
-# ---------- Case ----------
-class CaseCreate(BaseModel):
-    source_channel: SourceChannel
-    customer_ref: str | None = None
-    content: str = Field(min_length=1, description="Tin nhắn đầu tiên của khách")
+class StaffActionPayload(BaseModel):
+    action: Literal["APPROVE", "EDIT_BRIEF", "REROUTE", "CLOSE", "REOPEN", "REQUEST_INFO"]
+    staff_id: str
+    updated_status: str | None = None
+    edited_brief: dict[str, Any] | None = None
+    notes: str | None = None
 
 
-class CaseUpdate(BaseModel):
-    """Agent gọi PATCH để ghi kết quả phân loại/brief. Chỉ field nào gửi lên mới được cập nhật."""
-
-    intent: Intent | None = None
-    priority: Priority | None = None
-    confidence: float | None = Field(default=None, ge=0, le=1)
-    suggested_routing: str | None = None
-    brief_data: dict | None = None
-    ticket_status: TicketStatus | None = None
-
-
-class CaseSummary(ORMModel):
-    id: int
-    source_channel: str
-    customer_ref: str | None
-    intent: str | None
-    priority: str | None
-    confidence: float | None
-    suggested_routing: str | None
-    ticket_status: str
-    created_at: datetime
-    updated_at: datetime
-
-
-class CaseDetail(CaseSummary):
-    brief_data: dict | None
-    messages: list[MessageOut]
-    tickets: list[TicketOut]
-    feedbacks: list[FeedbackOut]
-
-
-# ---------- Review ----------
-class ReviewCreate(BaseModel):
-    action: ReviewAction
-    reviewer_name: str | None = None
-    final_routing: str | None = Field(
-        default=None, description="Bộ phận nhận. Bỏ trống thì dùng suggested_routing của case"
-    )
-    edited_brief: dict | None = Field(
-        default=None, description="Bắt buộc khi action = edit"
-    )
-    comment: str | None = None
+class StaffActionResponseData(BaseModel):
+    success: bool = True
+    case_id: str

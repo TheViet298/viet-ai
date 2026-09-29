@@ -1,190 +1,330 @@
-"""Seed dữ liệu mẫu cho SQLite.
+"""Seed dữ liệu mẫu chuẩn hóa cho SQLite theo đúng đặc tả demo-scenarios.md và data-model.md.
 
 Chạy (từ thư mục gốc):
-    python -m src.seed            # chỉ seed nếu DB còn trống
-    python -m src.seed --reset    # xóa hết dữ liệu cũ rồi seed lại
+    python -m src.seed            # Chỉ seed nếu DB còn trống
+    python -m src.seed --reset    # Xóa sạch dữ liệu cũ và seed lại từ đầu
 """
+
 import sys
-from datetime import datetime, timedelta, timezone
+import uuid
+from datetime import UTC, datetime, timedelta
+
+# Ensure UTF-8 output on Windows console
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 from src.db import Base, SessionLocal, engine
 from src.models.db_models import (
     Case,
+    CaseBrief,
     Intent,
     Message,
     Priority,
-    ReviewAction,
-    ReviewerFeedback,
-    SourceChannel,
-    Ticket,
+    SenderType,
+    StaffAction,
+    StaffAuditLog,
     TicketStatus,
 )
 
 
-def build_cases(now: datetime) -> list[Case]:
-    # 1. Sales - đã duyệt và chuyển bộ phận
-    sales = Case(
-        source_channel=SourceChannel.web_chat.value,
-        customer_ref="khach_web_001",
-        intent=Intent.sales.value,
-        priority=Priority.low.value,
-        confidence=0.93,
-        suggested_routing="Sales",
-        brief_data={
-            "type": "sales_inquiry",
-            "summary": "Khách hỏi giá và gói pin của VF 5 Plus.",
-            "vehicle_model": "VF 5 Plus",
-            "questions": ["Giá lăn bánh", "Thuê pin hay mua pin"],
-        },
-        ticket_status=TicketStatus.ROUTED.value,
-        created_at=now - timedelta(hours=5),
-    )
-    sales.messages = [
-        Message(sender="customer", channel="web_chat",
-                content="Cho mình hỏi giá VF 5 Plus và có thuê pin được không?"),
-        Message(sender="agent", channel="web_chat",
-                content="Chào anh/chị, em ghi nhận nhu cầu và chuyển bộ phận Sales tư vấn chi tiết ạ."),
-    ]
-    sales.tickets = [Ticket(assigned_department="Sales", dispatched_at=now - timedelta(hours=4))]
-    sales.feedbacks = [
-        ReviewerFeedback(reviewer_name="Reviewer Demo", action=ReviewAction.approve.value,
-                         final_routing="Sales", comment="Brief đủ thông tin.")
-    ]
-
-    # 2. Charging - chờ reviewer duyệt
-    charging = Case(
-        source_channel=SourceChannel.zalo.value,
-        customer_ref="zalo_0901234567",
-        intent=Intent.charging.value,
-        priority=Priority.medium.value,
-        confidence=0.88,
-        suggested_routing="Charging",
-        brief_data={
-            "type": "charging_support",
-            "summary": "Trụ sạc công cộng báo lỗi, xe không nhận sạc.",
-            "issue": "Trụ sạc không khởi động phiên sạc",
-        },
-        ticket_status=TicketStatus.PENDING_REVIEW.value,
-        created_at=now - timedelta(hours=3),
-    )
-    charging.messages = [
-        Message(sender="customer", channel="zalo",
-                content="Trụ sạc ở trung tâm thương mại không nhận xe của mình."),
-        Message(sender="agent", channel="zalo",
-                content="Em đã ghi nhận sự cố trụ sạc, đang chuyển bộ phận Sạc & Pin xem xét."),
-    ]
-
-    # 3. Complaint - nhạy cảm, độ tin cậy thấp, cần người xử lý
-    complaint = Case(
-        source_channel=SourceChannel.email.value,
-        customer_ref="khach@example.com",
-        intent=Intent.complaint.value,
-        priority=Priority.high.value,
-        confidence=0.71,
-        suggested_routing="CSKH",
-        brief_data={
-            "type": "complaint",
-            "summary": "Khách bức xúc về thời gian chờ sửa chữa và tranh chấp bảo hành.",
-            "sentiment": "negative",
-            "sensitive": True,
-        },
-        ticket_status=TicketStatus.PENDING_REVIEW.value,
-        created_at=now - timedelta(hours=2),
-    )
-    complaint.messages = [
-        Message(sender="customer", channel="email",
-                content="Xe đã vào xưởng 3 tuần chưa xong, tôi rất không hài lòng về bảo hành."),
-    ]
-
-    # 4. Service incident - thiếu dữ kiện, đang hỏi lại khách
-    service_waiting = Case(
-        source_channel=SourceChannel.web_chat.value,
-        customer_ref="khach_web_002",
-        intent=Intent.service_incident.value,
-        priority=Priority.medium.value,
-        confidence=0.82,
-        suggested_routing=None,
-        brief_data={"type": "service_incident", "missing_fields": ["vehicle_model", "error_code"]},
-        ticket_status=TicketStatus.WAITING_USER.value,
-        created_at=now - timedelta(hours=1),
-    )
-    service_waiting.messages = [
-        Message(sender="customer", channel="web_chat", content="Xe của mình báo đèn lỗi trên màn hình."),
-        Message(sender="agent", channel="web_chat",
-                content="Anh/chị cho em biết dòng xe và mã lỗi hiển thị để em hỗ trợ nhé?"),
-    ]
-
-    # 5. Service incident khẩn cấp - critical, reviewer đã escalate
-    service_critical = Case(
-        source_channel=SourceChannel.hotline_transcript.value,
-        customer_ref="hotline_0987654321",
-        intent=Intent.service_incident.value,
-        priority=Priority.critical.value,
-        confidence=0.96,
-        suggested_routing="Service",
-        brief_data={
-            "type": "service_incident",
-            "summary": "Xe bốc khói khi đang chạy trên cao tốc.",
-            "vehicle_model": "VF 8",
-            "location": "Cao tốc Hà Nội - Hải Phòng",
-            "safety_flag": True,
-        },
-        ticket_status=TicketStatus.ROUTED.value,
-        created_at=now - timedelta(minutes=30),
-    )
-    service_critical.messages = [
-        Message(sender="customer", channel="hotline_transcript",
-                content="Xe VF 8 của tôi đang bốc khói, tôi đang ở trên cao tốc."),
-        Message(sender="agent", channel="hotline_transcript",
-                content="Anh/chị hãy dừng xe an toàn, rời khỏi xe và gọi hotline cứu hộ chính thức."),
-    ]
-    service_critical.tickets = [
-        Ticket(assigned_department="Service", dispatched_at=now - timedelta(minutes=20))
-    ]
-    service_critical.feedbacks = [
-        ReviewerFeedback(reviewer_name="Reviewer Demo", action=ReviewAction.escalate.value,
-                         final_routing="Service", comment="Ca an toàn, ưu tiên xử lý ngay.")
-    ]
-
-    # 6. Ngoài phạm vi
-    out_of_scope = Case(
-        source_channel=SourceChannel.web_chat.value,
-        customer_ref="khach_web_003",
-        intent=Intent.out_of_scope.value,
-        priority=Priority.low.value,
-        confidence=0.9,
-        suggested_routing=None,
-        brief_data={"type": "out_of_scope", "summary": "Khách hỏi về thời tiết."},
-        ticket_status=TicketStatus.CLOSED.value,
-        created_at=now - timedelta(days=1),
-    )
-    out_of_scope.messages = [
-        Message(sender="customer", channel="web_chat", content="Hôm nay Hà Nội có mưa không?"),
-        Message(sender="agent", channel="web_chat",
-                content="Xin lỗi, em chỉ hỗ trợ các vấn đề về xe điện và dịch vụ VinFast ạ."),
-    ]
-
-    return [sales, charging, complaint, service_waiting, service_critical, out_of_scope]
-
-
-def main() -> None:
+def seed_database() -> None:
+    # Đảm bảo các bảng SQLite đã được khởi tạo
     Base.metadata.create_all(bind=engine)
+
     reset = "--reset" in sys.argv
     with SessionLocal() as db:
         if reset:
-            for model in (ReviewerFeedback, Message, Ticket, Case):
+            for model in (StaffAuditLog, CaseBrief, Message, Case):
                 db.query(model).delete()
             db.commit()
-            print("Đã xóa dữ liệu cũ.")
+            print("[seed] Đã xóa toàn bộ dữ liệu cũ.")
         elif db.query(Case).count() > 0:
-            print("DB đã có dữ liệu, bỏ qua. Dùng --reset để seed lại.")
+            print("[seed] DB đã có dữ liệu. Sử dụng flag --reset nếu muốn seed lại.")
             return
 
-        cases = build_cases(datetime.now(timezone.utc))
-        db.add_all(cases)
+        now = datetime.now(UTC)
+
+        # ======================================================================
+        # KỊCH BẢN DEMO 1: Sự cố không sạc được tại Trụ sạc (P0 - Charging/Battery)
+        # ======================================================================
+        case_1 = Case(
+            id="CASE-20260924-001",
+            session_id="sess_vf_98234",
+            mock_customer_id="CUST_MOCK_01",
+            mock_customer_name="Khách hàng Demo 01",
+            mock_customer_phone="0900-000-231",
+            vehicle_code_mock="VF-SF-00231",
+            vehicle_model="VF8",
+            intent=Intent.CHARGING_BATTERY.value,
+            priority=Priority.HIGH.value,
+            status=TicketStatus.STAFF_REVIEWING.value,
+            created_at=now - timedelta(hours=3),
+            updated_at=now - timedelta(hours=2, minutes=50),
+        )
+
+        brief_1 = CaseBrief(
+            id=str(uuid.uuid4()),
+            case_id=case_1.id,
+            summary="Xe VF8 không nhận sạc DC tại trạm Metropolis, màn hình xe báo mã lỗi CC01 và đèn trụ báo đỏ.",
+            captured_fields={
+                "vehicle_model": "VF8",
+                "station_location": "Vincom Metropolis Liễu Giai",
+                "charger_id": "VN-CS-HN042-P02",
+                "error_code": "CC01",
+                "current_soc": "18%",
+            },
+            suggested_action="Kiểm tra tín hiệu handshake giao tiếp trụ sạc P02 từ xa hoặc cử nhân viên kỹ thuật trạm hỗ trợ cắm lại cáp sạc.",
+            confidence_score=0.92,
+            is_edited_by_staff=False,
+            generated_at=now - timedelta(hours=2, minutes=55),
+        )
+
+        msgs_1 = [
+            Message(
+                id=str(uuid.uuid4()),
+                case_id=case_1.id,
+                session_id=case_1.session_id,
+                sender_type=SenderType.CUSTOMER.value,
+                content="Xe VF8 của tôi không nhận sạc ở trạm Metropolis, trụ báo đèn đỏ.",
+                created_at=now - timedelta(hours=3),
+            ),
+            Message(
+                id=str(uuid.uuid4()),
+                case_id=case_1.id,
+                session_id=case_1.session_id,
+                sender_type=SenderType.AGENT.value,
+                content="Dạ em ghi nhận xe VF8 đang không nhận sạc tại trạm Metropolis. Màn hình xe có hiển thị mã lỗi (ví dụ: CC01, BMS_012) hoặc anh/chị có mã trụ sạc không ạ?",
+                msg_metadata={"turn": 1, "suggested_replies": ["Mã lỗi CC01, trụ P02", "Đèn đỏ, không hiện mã"]},
+                created_at=now - timedelta(hours=2, minutes=58),
+            ),
+            Message(
+                id=str(uuid.uuid4()),
+                case_id=case_1.id,
+                session_id=case_1.session_id,
+                sender_type=SenderType.CUSTOMER.value,
+                content="Mã lỗi trên màn hình là CC01, tôi cắm trụ VN-CS-HN042-P02, pin còn 18%.",
+                created_at=now - timedelta(hours=2, minutes=56),
+            ),
+            Message(
+                id=str(uuid.uuid4()),
+                case_id=case_1.id,
+                session_id=case_1.session_id,
+                sender_type=SenderType.AGENT.value,
+                content="Hệ thống đã ghi nhận đầy đủ dữ kiện kỹ thuật và tạo hồ sơ hỗ trợ CASE-20260924-001. Hồ sơ đã chuyển đến chuyên viên dịch vụ để xử lý.",
+                msg_metadata={"priority": Priority.HIGH.value},
+                created_at=now - timedelta(hours=2, minutes=55),
+            ),
+        ]
+
+        # ======================================================================
+        # KỊCH BẢN DEMO 2: Rùa vàng & Giảm công suất nguy hiểm (Critical Safety)
+        # ======================================================================
+        case_2 = Case(
+            id="CASE-20260924-002",
+            session_id="sess_vf_critical_881",
+            mock_customer_id="CUST_MOCK_99",
+            mock_customer_name="Khách hàng Demo 99",
+            mock_customer_phone="0900-000-991",
+            vehicle_code_mock="VF-SF-99120",
+            vehicle_model="VF9",
+            intent=Intent.SERVICE_INCIDENT.value,
+            priority=Priority.CRITICAL.value,
+            status=TicketStatus.STAFF_REVIEWING.value,
+            created_at=now - timedelta(hours=1, minutes=30),
+            updated_at=now - timedelta(hours=1, minutes=20),
+        )
+
+        brief_2 = CaseBrief(
+            id=str(uuid.uuid4()),
+            case_id=case_2.id,
+            summary="Xe VF9 đang chạy trên cao tốc hiện biểu tượng rùa vàng và xe bị giật, đạp ga không lên quá 30km/h.",
+            captured_fields={
+                "vehicle_model": "VF9",
+                "location": "Cao tốc Hà Nội - Hải Phòng",
+                "warning_icon": "Rùa vàng",
+                "speed_issue": "Không vượt quá 30km/h",
+                "safety_flag": True,
+            },
+            suggested_action="Điều phối Đội cứu hộ cao tốc khẩn cấp và gọi trực tiếp hỗ trợ khách hàng an toàn.",
+            confidence_score=0.98,
+            is_edited_by_staff=False,
+            generated_at=now - timedelta(hours=1, minutes=25),
+        )
+
+        msgs_2 = [
+            Message(
+                id=str(uuid.uuid4()),
+                case_id=case_2.id,
+                session_id=case_2.session_id,
+                sender_type=SenderType.CUSTOMER.value,
+                content="Xe VF9 của tôi đang chạy trên cao tốc thì hiện biểu tượng rùa vàng và xe bị giật, đạp ga không lên quá 30km/h.",
+                created_at=now - timedelta(hours=1, minutes=30),
+            ),
+            Message(
+                id=str(uuid.uuid4()),
+                case_id=case_2.id,
+                session_id=case_2.session_id,
+                sender_type=SenderType.AGENT.value,
+                content="Anh/chị vui lòng bật đèn khẩn cấp (Hazard), từ từ tấp xe vào làn dừng khẩn cấp an toàn và gọi hotline cứu hộ 1900-232389. Hệ thống đã kích hoạt hồ sơ cứu hộ khẩn cấp CASE-20260924-002.",
+                msg_metadata={"priority": Priority.CRITICAL.value, "safety_alert": True},
+                created_at=now - timedelta(hours=1, minutes=29),
+            ),
+        ]
+
+        audit_2 = StaffAuditLog(
+            id=str(uuid.uuid4()),
+            case_id=case_2.id,
+            staff_id="STAFF_RESCUE_01",
+            action=StaffAction.REROUTE.value,
+            previous_state={"status": TicketStatus.STAFF_REVIEWING.value},
+            new_state={"status": TicketStatus.IN_PROGRESS.value, "assigned": "Đội Cứu Hộ Cao Tốc"},
+            notes="Ca khẩn cấp cao tốc, đã liên hệ cứu hộ trạm gần nhất tiếp cận hiện trường.",
+            created_at=now - timedelta(hours=1, minutes=20),
+        )
+
+        # ======================================================================
+        # KỊCH BẢN DEMO 3: Thiếu dữ kiện sau 2 lượt (Needs Information)
+        # ======================================================================
+        case_3 = Case(
+            id="CASE-20260924-003",
+            session_id="sess_vf_clarify_332",
+            mock_customer_id="CUST_MOCK_02",
+            mock_customer_name="Khách hàng Demo 02",
+            mock_customer_phone="0900-000-445",
+            vehicle_code_mock="VF-SF-00445",
+            vehicle_model="VF5",
+            intent=Intent.SERVICE_INCIDENT.value,
+            priority=Priority.MEDIUM.value,
+            status=TicketStatus.NEEDS_INFORMATION.value,
+            created_at=now - timedelta(minutes=45),
+            updated_at=now - timedelta(minutes=40),
+        )
+
+        brief_3 = CaseBrief(
+            id=str(uuid.uuid4()),
+            case_id=case_3.id,
+            summary="Xe VF5 báo đèn lỗi trên bảng đồng hồ trung tâm (sau 2 lượt clarify vẫn chưa cung cấp mã lỗi cụ thể).",
+            captured_fields={
+                "vehicle_model": "VF5",
+                "missing_fields": ["error_code", "symptom_detail"],
+            },
+            suggested_action="Nhân viên CSKH liên hệ khách hàng để hướng dẫn chụp lại màn hình cảnh báo.",
+            confidence_score=0.65,
+            is_edited_by_staff=False,
+            generated_at=now - timedelta(minutes=40),
+        )
+
+        msgs_3 = [
+            Message(
+                id=str(uuid.uuid4()),
+                case_id=case_3.id,
+                session_id=case_3.session_id,
+                sender_type=SenderType.CUSTOMER.value,
+                content="Xe VF5 của mình báo đèn lỗi trên màn hình.",
+                created_at=now - timedelta(minutes=45),
+            ),
+            Message(
+                id=str(uuid.uuid4()),
+                case_id=case_3.id,
+                session_id=case_3.session_id,
+                sender_type=SenderType.AGENT.value,
+                content="Dạ anh/chị cho em biết biểu tượng đèn cảnh báo có màu gì và hiển thị ký hiệu gì không ạ?",
+                msg_metadata={"turn": 1},
+                created_at=now - timedelta(minutes=44),
+            ),
+            Message(
+                id=str(uuid.uuid4()),
+                case_id=case_3.id,
+                session_id=case_3.session_id,
+                sender_type=SenderType.CUSTOMER.value,
+                content="Nó hiện đèn màu vàng nhưng tôi không nhớ rõ hình gì.",
+                created_at=now - timedelta(minutes=42),
+            ),
+            Message(
+                id=str(uuid.uuid4()),
+                case_id=case_3.id,
+                session_id=case_3.session_id,
+                sender_type=SenderType.AGENT.value,
+                content="Hệ thống đã tạo hồ sơ ghi nhận CASE-20260924-003. Do chưa đủ một số dữ kiện kỹ thuật, hồ sơ được chuyển sang hàng đợi nhân viên hỗ trợ; nhân viên sẽ kiểm tra hoặc yêu cầu bổ sung thông tin.",
+                msg_metadata={"turn": 2, "status": TicketStatus.NEEDS_INFORMATION.value},
+                created_at=now - timedelta(minutes=40),
+            ),
+        ]
+
+        # ======================================================================
+        # KỊCH BẢN DEMO 4: Sales & Tư vấn xe (Resolved / Closed)
+        # ======================================================================
+        case_4 = Case(
+            id="CASE-20260924-004",
+            session_id="sess_vf_sales_102",
+            mock_customer_id="CUST_MOCK_03",
+            mock_customer_name="Khách hàng Demo 03",
+            mock_customer_phone="0900-000-312",
+            vehicle_code_mock="VF-SF-00312",
+            vehicle_model="VF3",
+            intent=Intent.SALES_GENERAL_INFO.value,
+            priority=Priority.LOW.value,
+            status=TicketStatus.RESOLVED.value,
+            created_at=now - timedelta(days=1),
+            updated_at=now - timedelta(hours=18),
+        )
+
+        brief_4 = CaseBrief(
+            id=str(uuid.uuid4()),
+            case_id=case_4.id,
+            summary="Khách hỏi giá lăn bánh và chính sách thuê pin của dòng xe VF3.",
+            captured_fields={
+                "vehicle_model": "VF3",
+                "inquiry_topics": ["Bảng giá lăn bánh", "Chính sách thuê pin"],
+            },
+            suggested_action="Showroom VinFast liên hệ tư vấn báo giá chi tiết.",
+            confidence_score=0.95,
+            is_edited_by_staff=True,
+            generated_at=now - timedelta(days=1),
+        )
+
+        msgs_4 = [
+            Message(
+                id=str(uuid.uuid4()),
+                case_id=case_4.id,
+                session_id=case_4.session_id,
+                sender_type=SenderType.CUSTOMER.value,
+                content="Cho mình hỏi giá lăn bánh xe VF3 và có gói thuê pin không?",
+                created_at=now - timedelta(days=1),
+            ),
+            Message(
+                id=str(uuid.uuid4()),
+                case_id=case_4.id,
+                session_id=case_4.session_id,
+                sender_type=SenderType.AGENT.value,
+                content="Dạ em đã ghi nhận nhu cầu tư vấn xe VF3 và chuyển tới chuyên viên bán hàng gần nhất.",
+                created_at=now - timedelta(days=1, minutes=-2),
+            ),
+        ]
+
+        audit_4 = StaffAuditLog(
+            id=str(uuid.uuid4()),
+            case_id=case_4.id,
+            staff_id="STAFF_SALES_01",
+            action=StaffAction.APPROVE.value,
+            previous_state={"status": TicketStatus.STAFF_REVIEWING.value},
+            new_state={"status": TicketStatus.RESOLVED.value},
+            notes="Đã gửi bảng báo giá và liên hệ khách tư vấn gói thuê pin.",
+            created_at=now - timedelta(hours=18),
+        )
+
+        # Lưu toàn bộ vào SQLite
+        db.add_all([case_1, case_2, case_3, case_4])
+        db.add_all([brief_1, brief_2, brief_3, brief_4])
+        db.add_all(msgs_1 + msgs_2 + msgs_3 + msgs_4)
+        db.add_all([audit_2, audit_4])
         db.commit()
-        print(f"Đã seed {len(cases)} case vào SQLite DB.")
+
+        print("[seed] Đã seed thành công 4 kịch bản chuẩn hóa (CASE-20260924-001 -> 004) vào SQLite!")
 
 
 if __name__ == "__main__":
-    main()
+    seed_database()
