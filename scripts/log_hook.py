@@ -121,11 +121,17 @@ def normalize(data: dict, tool: str) -> dict | None:
             base.update({"prompt": prompt, "response_summary": answer})
 
     elif tool == "codex":
-        base.update({
-            "prompt": data.get("prompt", "")[:1000],
-            "turn_id": data.get("turn_id", ""),
-            "transcript_path": data.get("transcript_path", ""),
-        })
+        base.update({"turn_id": data.get("turn_id", ""),
+                     "transcript_path": data.get("transcript_path", "")})
+        if event == "UserPromptSubmit":
+            # Keep the complete prompt in the local, ignored log.
+            base["prompt"] = data.get("prompt") or ""
+        elif event == "Stop":
+            response = data.get("last_assistant_message") or ""
+            if not response:
+                return None
+            base["response"] = response
+            base["response_summary"] = response[:500]
 
     elif tool == "cursor":
         base.update({
@@ -145,7 +151,7 @@ def normalize(data: dict, tool: str) -> dict | None:
     # this only checked `prompt`, which dropped Claude Bash/Edit events (their
     # tool_input has `command` / `file_path`, not `prompt` or `content`) and
     # any Gemini/Cursor/Copilot turn that carried context but no plain prompt.
-    _PAYLOAD_KEYS = ("prompt", "tool_input", "response_summary",
+    _PAYLOAD_KEYS = ("prompt", "response", "tool_input", "response_summary",
                      "tool_response", "tool_args", "files_context")
     _LIFECYCLE_EVENTS = ("Stop", "stop", "SessionEnd", "sessionEnd", "AfterModel")
     has_payload = any(base.get(k) for k in _PAYLOAD_KEYS)
@@ -171,17 +177,20 @@ def main():
     tool = detect_tool(data)
     entry = normalize(data, tool)
     if not entry:
+        if tool == "codex":
+            print("{}")
         sys.exit(0)
 
     log_dir = Path(os.environ.get("AI_LOG_DIR", ".ai-log"))
     log_dir.mkdir(exist_ok=True)
     log_file = log_dir / "session.jsonl"
 
-    with open(log_file, "a", encoding="utf-8") as f:
+    descriptor = os.open(log_file, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    with os.fdopen(descriptor, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
-    # Output valid JSON (required by some tools like Gemini)
-    print(json.dumps({"status": "logged"}))
+    # Codex expects a hook-output object; do not inject log text into context.
+    print("{}" if tool == "codex" else json.dumps({"status": "logged"}))
 
 
 if __name__ == "__main__":
