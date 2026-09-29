@@ -1,176 +1,171 @@
 # VFO2O-18 VinFast ServiceFlow AI
 
-> AI Agent tiếp nhận yêu cầu hội thoại tự do từ nhiều kênh, hỏi đủ dữ kiện, tạo Service Brief và điều phối đúng bộ phận cho khách hàng Xe Vinfast.
+> **AI Agent tổng đài đa kênh** tiếp nhận yêu cầu hội thoại tự do từ nhiều kênh, phân loại chính xác 4 nhóm Intent, hỏi làm rõ dữ kiện có ngữ cảnh, tra cứu cẩm nang kỹ thuật & chính sách VinFast, tạo **Case Brief** chuẩn hóa và hỗ trợ Reviewer điều phối (Routing) đúng bộ phận cho khách hàng Xe VinFast.
 
-## Vấn đề (Problem)
+---
+
+## 1. Vấn đề (Problem Statement)
 
 ### Ai đang gặp vấn đề?
-
-- Khách hàng Xe Vinfast gửi yêu cầu qua Web Chat, Zalo, hotline hoặc email khi cần tư vấn xe, hỗ trợ sạc/pin, dịch vụ/sự cố hoặc khiếu nại.
-- Nhân viên CSKH và cố vấn dịch vụ phải đọc, phân loại, hỏi thêm thông tin và chuyển case đến đúng bộ phận.
-- Reviewer/manager cần kiểm soát các case nhạy cảm, khẩn cấp hoặc bị phân loại sai.
-
-### Pain point
-
-- Yêu cầu từ khách thường ở dạng hội thoại tự do và thiếu dữ kiện cần thiết, ví dụ: loại xe, thời điểm xảy ra vấn đề, mã cảnh báo, tình trạng xe hiện tại hoặc nhu cầu cụ thể.
-
-- Điều này khiến nhân viên phải hỏi lại nhiều lần, khó giữ ngữ cảnh khi khách liên hệ từ nhiều kênh và có nguy cơ chuyển case sai bộ phận. Với case dịch vụ/sự cố, việc thiếu dữ kiện làm quá trình bàn giao đến xưởng hoặc cứu hộ kém hiệu quả.
+- **Khách hàng xe điện VinFast (VF3, VF5, VF6, VF7, VF8, VF9, VF e34, tài xế Xanh SM/GSM):** Gửi yêu cầu qua nhiều kênh phi cấu trúc (Web Chat, Zalo, Email, Hotline) khi cần tư vấn xe, hỗ trợ sạc/pin, bảo dưỡng/sự cố kỹ thuật hoặc khiếu nại dịch vụ.
+- **Nhân viên CSKH và Cố vấn dịch vụ:** Mất nhiều lượt nhắn tin/gọi điện hỏi lại do hội thoại tự do thường thiếu dữ kiện cần thiết (dòng xe, pin còn bao nhiêu %, mã lỗi trên taplo, vị trí xe, hoàn cảnh xảy ra vấn đề).
+- **Reviewer / Service Manager:** Thiếu công cụ kiểm soát tập trung các case nhạy cảm, khẩn cấp (nguy cơ an toàn, tranh chấp bảo hành) hoặc case có độ tự tin phân loại thấp từ AI.
 
 ### Tại sao giải pháp hiện tại chưa đủ?
+- **Ứng dụng VinFast:** Đã hỗ trợ các tác vụ theo dõi xe, cảnh báo lỗi, đặt lịch xưởng và gọi cứu hộ. Tuy nhiên, ứng dụng chỉ dành cho khách đã cài app/đăng nhập xe và không phải là điểm tiếp nhận duy nhất.
+- **Kênh tiếp nhận đa kênh:** Hàng ngàn yêu cầu hàng ngày vẫn đổ về qua Web Chat, Zalo OA, Hotline hoặc Email.
+- **Định vị sản phẩm:** Nhóm tập trung vào **lớp tiếp nhận, chuẩn hóa và điều phối thông minh (Intake & Triage Layer)** trước khi bàn giao cho bộ phận xử lý phù hợp, thay vì xây lại các tính năng có sẵn trên ứng dụng VinFast.
 
-- Ứng dụng VinFast đã hỗ trợ các tác vụ như: theo dõi xe, cảnh báo lỗi, đặt lịch, cứu hộ và theo dõi dịch vụ. Tuy nhiên, ứng dụng không phải là điểm tiếp nhận duy nhất của khách hàng.
+---
 
-- Các yêu cầu vẫn có thể đến từ hội thoại tự do qua Web Chat, Zalo, hotline hoặc email. Nhóm tập trung vào lớp tiếp nhận và điều phối trước khi khách được đưa vào luồng dịch vụ phù hợp, thay vì xây lại các tính năng có sẵn trên ứng dụng VinFast.
+## 2. Giải pháp (Solution)
 
-### Giả thuyết cần kiểm chứng
+VinFast ServiceFlow AI là web application hỗ trợ tiếp nhận và điều phối yêu cầu khách hàng đa kênh với quy trình khép kín:
 
-- Nhóm giả thuyết rằng AI Agent có thể giảm mức độ thiếu thông tin trong case, tăng độ chính xác routing và giảm số lượt nhân viên cần hỏi lại khách so với quy trình tiếp nhận thủ công hoặc chatbot FAQ thông thường.
+### Feature 1: Omnichannel Intake & 4-Intent Triage
+- Khách gửi yêu cầu qua **Web Chat** (kênh tương tác thật) hoặc qua **Channel Simulator** (mô phỏng input từ Zalo, Email, Hotline call transcript).
+- AI Agent phân loại yêu cầu thành 4 nhóm Intent rõ ràng:
+  1. `Tư vấn / Bán hàng` (Sales & Product Advisory)
+  2. `Sạc & Pin` (Charging & Battery Support)
+  3. `Khiếu nại & Góp ý dịch vụ` (Complaints & Feedback)
+  4. `Dịch vụ & Sự cố kỹ thuật` (Service & Technical Incidents)
+- Đánh giá mức độ ưu tiên (`Low`, `Medium`, `High`, `Critical`) kèm điểm tự tin (`Confidence Score`).
 
-- Các chỉ số sẽ được đánh giá ở MVP gồm: intent/routing accuracy, recall cho case High/Critical, Service Brief completeness và tỷ lệ reviewer cần chỉnh sửa case.
+### Feature 2: Intent-Specific Routing & Contextual Clarification
+- **Nhánh Bán hàng (Sales):** Tra cứu thông số, giá bán, gói pin $\to$ Tạo **Sales Inquiry Brief**.
+- **Nhánh Sạc & Pin (Charging):** Hướng dẫn trụ sạc, quy định pin $\to$ Tạo **Charging Support Brief**.
+- **Nhánh Khiếu nại (Complaint):** Nhận diện mức độ bức xúc (Sentiment), ghi nhận phản ánh $\to$ Tạo **Complaint Case Brief**.
+- **Nhánh Dịch vụ/Sự cố (Service):**
+  - Tự động kiểm tra slot dữ kiện (dòng xe, mã lỗi, vị trí, tình trạng pin).
+  - Nếu thiếu dữ kiện: Gửi câu hỏi làm rõ (**Contextual Clarification**) về Channel Session của khách, chờ phản hồi rồi tiếp tục chu trình.
+  - Tra cứu cẩm nang kỹ thuật & chính sách VinFast (RAG) $\to$ Tạo **Service Brief** kỹ thuật.
 
-## Giải pháp (Solution)
+### Feature 3: Case Brief & Human-in-the-Loop (HITL) Dispatching
+- Agent tổng hợp toàn bộ thông tin thành **Case Brief** chuẩn hóa.
+- **Không tự ý dispatch:** Agent chỉ đề xuất routing và hiển thị lên **Service Agent Console**.
+- **Reviewer là người quyết định cuối cùng:** Cố vấn dịch vụ / Manager xem xét, duyệt (*Approve*), chỉnh sửa (*Edit*) hoặc chuyển tiếp (*Escalate*) trước khi dispatch đến xưởng dịch vụ, đội cứu hộ, sales hoặc CSKH.
+- **An toàn là trên hết:** Với case khẩn cấp/nguy hiểm, Agent lập tức cung cấp hướng dẫn an toàn tiêu chuẩn và số Hotline cứu hộ chính thức; không tự nhận là đã gọi cứu hộ đến nơi.
 
-VinFast ServiceFlow AI là web application hỗ trợ tiếp nhận và điều phối yêu cầu khách hàng đa kênh. Hệ thống không thay thế ứng dụng VinFast, booking, cứu hộ hoặc quy trình sửa chữa hiện có. Hệ thống giúp chuẩn hóa yêu cầu trước khi bàn giao đến đúng nhóm nhân sự.
+---
 
-### Feature 1: Omnichannel Intake and AI Triage
+## 3. Kiến trúc hệ thống (System Architecture)
 
-- Khách gửi yêu cầu qua Web Chat. Hệ thống mô phỏng input từ Zalo, email và hotline transcript để kiểm thử luồng đa kênh.
+```mermaid
+graph TD
+    START([Input từ Web Chat hoặc kênh mô phỏng]) --> intake[intake_node: Chuẩn hóa nội dung và context]
+    intake --> triage[triage_node: Intent + Priority + Confidence]
 
-- AI Agent phân loại yêu cầu thành các nhóm: Bán hàng/Tư vấn xe, Dịch vụ và sự cố, Sạc/Pin, Khiếu nại hoặc Ngoài phạm vi. Agent đồng thời đề xuất mức ưu tiên Low, Medium, High hoặc Critical.
+    triage --> safety{Safety trigger, sensitive case hoặc confidence thấp?}
+    safety -- Yes --> hitl[HITL: Escalate reviewer hoặc nhân viên phù hợp]
 
-### Feature 2: Contextual Clarification and Grounded Response
+    safety -- No --> route{Intent router}
 
-- Khi thông tin chưa đủ, Agent đặt follow-up questions theo loại yêu cầu để thu thập dữ kiện cần thiết.
+    route -- Sales --> sales_rag[Sales FAQ hoặc Sales Brief]
+    route -- Charging --> charging_rag[Charging FAQ hoặc Charging Brief]
+    route -- Complaint --> complaint_brief[Complaint Case Brief]
+    route -- Service Incident --> slot{Đủ dữ kiện cần thiết?}
 
-- Với câu hỏi đơn giản, Agent truy xuất tài liệu, FAQ hoặc chính sách VinFast đã được phê duyệt để trả lời có nguồn. Với case rủi ro, thiếu căn cứ hoặc mức ưu tiên cao, Agent không tự kết luận mà chuyển sang reviewer.
+    slot -- No --> clarify[Contextual Clarifier]
+    clarify --> wait([Chờ phản hồi khách trên Channel Session])
+    wait --> intake
 
-### Feature 3: Service Brief and Human in the Loop Handoff
+    slot -- Yes --> service_rag[VinFast Knowledge Retrieval]
+    service_rag --> service_brief[Service Brief Generator]
 
-- Agent tổng hợp hội thoại thành Service Brief gồm: loại yêu cầu, tóm tắt vấn đề, dữ kiện đã thu thập, mức ưu tiên, bộ phận đề xuất và bước tiếp theo.
+    sales_rag --> case_brief[Case Brief]
+    charging_rag --> case_brief
+    complaint_brief --> case_brief
+    service_brief --> case_brief
 
-- Nhân viên trên Service Agent Console có thể xem inbox, approve, edit, escalate hoặc close ticket. Feedback của reviewer được lưu để đánh giá và cải thiện Agent.
+    case_brief --> console[Service Agent Console]
+    console --> reviewer{Approve, Edit hoặc Escalate}
+    reviewer --> dispatch[Routing tới Sales, Service, Charging hoặc CSKH]
+```
 
+---
 
-## Target User
+## 4. AI Components & Technology Stack
 
-- Primary: Khách hàng Xe Vinfast cần hỗ trợ về dịch vụ, sự cố, sạc/pin, khiếu nại hoặc tư vấn xe.
-- Secondary: hân viên CSKH, cố vấn dịch vụ và reviewer tiếp nhận/phân luồng case.
+| Thành phần | Công nghệ | Vai trò & Trách nhiệm |
+|---|---|---|
+| **Intake & Triage** | LangGraph Node + Structured LLM | Tiếp nhận đa kênh, chuẩn hóa tin nhắn, phân loại 4 Intent kèm điểm Confidence |
+| **Contextual Clarifier** | LangGraph State Loop | Phát hiện thiếu dữ kiện cốt lõi (nhánh Service), hỏi làm rõ có ngữ cảnh và duy trì session |
+| **Vector DB (RAG)** | ChromaDB | Lưu trữ tài liệu chính hãng, FAQ xe điện, chính sách bảo hành, cẩm nang hướng dẫn sử dụng VinFast |
+| **LLM Inference** | LLM API (Structured Output) | Cấu hình linh hoạt theo môi trường (`gpt-4o-mini`, `gpt-4o`, `gemini-1.5-flash`...) |
+| **Guardrails & Safety** | Rule Engine + Sentiment Guard | Kích hoạt khi có **Safety trigger**, **Khiếu nại nhạy cảm** hoặc **Confidence thấp (< 0.75)** |
+| **Case Brief Generator** | Pydantic Schema + Prompting | Tạo Case Brief chuẩn hóa: *Sales Inquiry Brief, Charging Brief, Complaint Brief, Service Brief* |
+| **Database** | SQLite (MVP) / PostgreSQL | Lưu `source_channel`, `intent`, `priority`, `confidence`, `suggested_routing`, `brief_data`, `reviewer_feedback`, `ticket_status` |
+| **Service Agent Console** | React / Next.js / Tailwind | Bảng điều khiển cho Reviewer — **người quyết định cuối cùng** phê duyệt, sửa đổi và dispatch |
 
-## MVP Scope
+---
 
-- Web Chat/Form là kênh tiếp nhận chính.
-- Mô phỏng nguồn input từ email, Zalo và hotline transcript.
-- Phân loại intent: Bán hàng, Dịch vụ/Sự cố, Sạc/Pin, Khiếu nại.
-- Đề xuất priority: Low, Medium, High, Critical.
-- Clarification questions.
-- Service Brief.
-- Reviewer handoff và ticket status mô phỏng.
-
-## Out of Scope
-
-- Tích hợp API hoặc CRM VinFast thật.
-- Booking, cứu hộ hoặc thanh toán thật.
-- Tích hợp production với Zalo, email và hotline.
-- Telemetry, CAN, OBD hoặc chẩn đoán lỗi xe.
-- Thay thế ứng dụng VinFast hiện có.
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| AI Agent | LangGraph + LLM API |
-| Backend | FastAPI + Python 3.11+ |
-| Frontend | React/Next.js + TypeScript |
-| Database | PostgreSQL hoặc SQLite cho MVP |
-| Vector Store | ChromaDB hoặc PostgreSQL pgvector |
-| DevOps | Docker + GitHub Actions |
-| Deployment | Vercel + Render/Railway |
-
-## AI Components
-
-| Component | Vai trò |
-|---|---|
-| LLM | Hiểu phản ánh, tóm tắt và sinh câu hỏi làm rõ |
-| RAG | Tra cứu tài liệu, FAQ và chính sách chính hãng |
-| Rule Engine | Xác định priority và ngưỡng escalation |
-| Case Tool | Tạo Service Brief, lưu trạng thái và routing |
-| HITL | Reviewer duyệt, sửa hoặc escalation case nhạy cảm |
-
-## Quick Start
+## 5. Quick Start
 
 ```bash
-# 1. Clone repo
+# 1. Clone repository
 git clone https://github.com/AI20K-Build-Phase-Cohort-4/P-142.git
 cd P-142
 
-# 2. Setup environment
-cp .env.example .env
-# Edit .env with your API keys
-
-# 3. Install dependencies
+# 2. Cài đặt môi trường ảo
+python3.11 -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-# 4. Run development server
-uvicorn src.main:app --reload
+# 3. Cấu hình biến môi trường
+cp .env.example .env
+# Điền OPENAI_API_KEY và AI_LOG_API_KEY vào .env
+
+# 4. Cài đặt hook ghi log AI
+bash scripts/setup_hooks.sh                                      # Linux / macOS
+powershell -ExecutionPolicy Bypass -File scripts\setup_hooks.ps1 # Windows
+
+# 5. Chạy Backend API
+uvicorn src.main:app --reload --port 8000
 ```
 
-## Project Structure
+Swagger UI có tại: `http://localhost:8000/docs`
 
-```
-├── src/
-│   ├── agents/          # LangGraph agent definitions
-│   │   ├── graph.py     # Main graph (nodes + edges)
-│   │   ├── state.py     # State schema
-│   │   ├── nodes/       # Individual nodes
-│   │   └── tools/       # Agent tools
-│   ├── api/             # FastAPI routes
-│   ├── models/          # Pydantic schemas
-│   ├── services/        # Business logic
-│   ├── config.py        # Settings
-│   └── main.py          # App entry point
-├── tests/               # Test suite
-├── docs/                # Documentation
-├── eval/                # Evaluation results
-├── presentation/        # Demo materials
-├── Dockerfile           # Multi-stage build
-├── docker-compose.yml   # Full stack
-└── .github/workflows/   # CI/CD pipelines
-```
+---
 
-## API Endpoints
+## 6. API Endpoints
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/health` | Health check |
-| POST | `/api/v1/cases` | Tạo case từ yêu cầu khách hàng |
-| POST | `/api/v1/cases/{id}/messages` | Gửi phản hồi cho Agent |
-| GET | `/api/v1/cases/{id}` | Xem Service Brief và trạng thái case |
-| PATCH | `/api/v1/cases/{id}` | Reviewer approve, edit, escalate hoặc close case |
+| GET | `/health` | Health check hệ thống |
+| POST | `/api/v1/cases` | Tạo case từ yêu cầu khách hàng (Web Chat / Simulator) |
+| POST | `/api/v1/cases/{id}/messages` | Gửi tin nhắn mới / phản hồi câu hỏi làm rõ |
+| GET | `/api/v1/cases/{id}` | Lấy chi tiết case, lịch sử chat và Case Brief |
+| PATCH | `/api/v1/cases/{id}` | Reviewer duyệt (Approve), chỉnh sửa routing, escalate hoặc đóng case |
 
-## Deliverables Checklist
+---
+
+## 7. Deliverables Checklist
 
 - [x] GitHub Repo Setup
-- [x] README.md
-- [x] PRD
-- [x] Brief
-- [ ] Architecture Diagram (`docs/architecture_diagram.md`)
-- [x] AI Logs (auto-collected)
+- [x] README_boilerplate.md (Project Description)
+- [x] PRD & Brief Draft
+- [x] Architecture Diagram (`docs/architecture_diagram.md`)
+- [x] AI Logs (Auto-collected via hooks)
 - [ ] Live URL / Deploy
 - [ ] Video Demo
 - [ ] Pitch Deck (`presentation/`)
-- [ ] Weekly Journal (`JOURNAL.md`)
+- [x] Weekly Journal (`JOURNAL.md`)
 - [x] Worklog (`WORKLOG.md`)
 - [ ] Evaluation Evidence (`eval/results/`)
 
-## Team
+---
 
-| Member | Role | Student ID |
-|--------|------|-----------|
-| Thế Việt | Project Manager, BA, Frontend/UI UX | 2A202602594 |
-| Khôi | AI Engineer, Data and Evaluation | 2A202602434 |
-| Long | AI Engineer, RAG and Agent Workflow | 2A202602633 |
-| Triển | Backend Engineer, API and Database | 2A202602837 |
+## 8. Team VFO2O-18
 
-## License
+| Thành viên | Vai trò chính | Mã học viên |
+|---|---|---|
+| **Thế Việt** | Project Manager, BA, Frontend / UI UX | 2A202602594 |
+| **Khôi** | AI Engineer, Data & Evaluation Benchmark | 2A202602434 |
+| **Long** | AI Engineer, LangGraph Workflow, RAG & Guardrails | 2A202602633 |
+| **Triển** | Backend Engineer, API Routes & Database | 2A202602837 |
+
+---
+
+## 9. License
 
 MIT

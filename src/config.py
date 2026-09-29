@@ -20,8 +20,7 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     cors_origins: str = "http://localhost:3000"
 
-    # LLM
-    openai_api_key: str = ""
+    # LLM Configuration (Google Gemini)
     google_api_key: str = ""
     model_name: str = "gemini-3.5-flash"
     llm_temperature: float = Field(default=0.7, ge=0.0, le=2.0)
