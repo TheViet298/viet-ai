@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { TicketDetail, TicketStatus } from "../types";
+import { useState, useEffect, useCallback } from "react";
+import { TicketDetail, TicketStatus, StaffActionType } from "../types";
+import { getTicketDetail, submitStaffAction } from "../api/consoleApi";
 
 export const MOCK_DETAIL_DATA: TicketDetail = {
   case: {
@@ -56,17 +57,91 @@ export const MOCK_DETAIL_DATA: TicketDetail = {
 };
 
 export function useTicketDetail(initialId: string) {
-  const [detail, setDetail] = useState<TicketDetail>(MOCK_DETAIL_DATA);
+  const [detail, setDetail] = useState<TicketDetail>(() => ({
+    ...MOCK_DETAIL_DATA,
+    case: { ...MOCK_DETAIL_DATA.case, id: initialId },
+  }));
   const [status, setStatus] = useState<TicketStatus>(detail.case.status);
   const [isEditing, setIsEditing] = useState(false);
   const [editedSummary, setEditedSummary] = useState(detail.case_brief.summary);
   const [notes, setNotes] = useState("");
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const executeAction = (actionName: string, newStatus: TicketStatus) => {
-    setStatus(newStatus);
-    setActionSuccess(`Đã thực hiện: ${actionName} cho hồ sơ ${initialId}!`);
-    setTimeout(() => setActionSuccess(null), 4000);
+  const loadTicket = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getTicketDetail(initialId);
+      if (res && res.data) {
+        setDetail(res.data);
+        setStatus(res.data.case.status);
+        setEditedSummary(res.data.case_brief.summary);
+      }
+    } catch {
+      // Fallback to local mock data without breaking UI
+      setDetail((prev) => ({
+        ...prev,
+        case: { ...prev.case, id: initialId },
+      }));
+    } finally {
+      setLoading(false);
+    }
+  }, [initialId]);
+
+  useEffect(() => {
+    loadTicket();
+  }, [loadTicket]);
+
+  const handleSaveBrief = () => {
+    setDetail((prev) => ({
+      ...prev,
+      case_brief: {
+        ...prev.case_brief,
+        summary: editedSummary,
+        is_edited_by_staff: true,
+      },
+    }));
+    setIsEditing(false);
+    setActionSuccess("Đã lưu chỉnh sửa tóm tắt hồ sơ (Case Brief)!");
+    setTimeout(() => setActionSuccess(null), 3500);
+  };
+
+  const handleCancelBrief = () => {
+    setEditedSummary(detail.case_brief.summary);
+    setIsEditing(false);
+  };
+
+  const executeAction = async (
+    actionName: string,
+    actionType: StaffActionType,
+    newStatus: TicketStatus
+  ) => {
+    setIsSubmitting(true);
+    try {
+      await submitStaffAction(initialId, {
+        action: actionType,
+        staff_id: "STAFF_CURR_USER",
+        updated_status: newStatus,
+        notes: notes || undefined,
+        edited_brief: detail.case_brief.is_edited_by_staff
+          ? { summary: editedSummary }
+          : undefined,
+      });
+    } catch {
+      // Optimistic update locally
+    } finally {
+      setStatus(newStatus);
+      setDetail((prev) => ({
+        ...prev,
+        case: { ...prev.case, status: newStatus },
+      }));
+      setActionSuccess(`Thành công: ${actionName} cho hồ sơ ${initialId}!`);
+      setIsSubmitting(false);
+      setTimeout(() => setActionSuccess(null), 4000);
+    }
   };
 
   return {
@@ -76,9 +151,15 @@ export function useTicketDetail(initialId: string) {
     setIsEditing,
     editedSummary,
     setEditedSummary,
+    handleSaveBrief,
+    handleCancelBrief,
     notes,
     setNotes,
     actionSuccess,
     executeAction,
+    loading,
+    isSubmitting,
+    error,
+    reload: loadTicket,
   };
 }

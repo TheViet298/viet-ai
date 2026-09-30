@@ -18,7 +18,7 @@ export function ChatFeed({ messages, loading, onSelectReply }: ChatFeedProps) {
   }, [messages, loading]);
 
   return (
-    <div className="flex-1 p-4 overflow-y-auto space-y-4">
+    <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-4">
       {messages.map((msg) => (
         <ChatMessageItem
           key={msg.id}
@@ -28,9 +28,9 @@ export function ChatFeed({ messages, loading, onSelectReply }: ChatFeedProps) {
       ))}
 
       {loading && (
-        <div className="flex items-center gap-2 text-slate-400 text-xs py-2">
-          <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
-          <span>AI đang phân tích ngữ cảnh và kiểm tra cẩm nang...</span>
+        <div className="flex items-center gap-2.5 text-[#64748B] text-[13px] py-2 px-3 bg-[#F0FDFA] border border-[#0D9488]/20 rounded-2xl w-fit animate-pulse">
+          <RefreshCw className="w-4 h-4 animate-spin text-[#0D9488]" />
+          <span className="font-medium text-[#0D9488]">AI đang phân tích mã lỗi và tra cứu cẩm nang kỹ thuật...</span>
         </div>
       )}
 
