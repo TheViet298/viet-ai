@@ -25,6 +25,19 @@
   * Tuyệt đối không yêu cầu khách hàng nhập thông tin định danh cá nhân (PII) thật (Họ tên, SĐT thật, CCCD, Biển số thật).
   * Sử dụng định danh phiên: `session_id`, `mock_customer_id` (nếu có profile giả lập), `vehicle_model`, `vehicle_code_mock`.
 * **Quy tắc An toàn:** Tuyệt đối không trả về Chain-of-Thought (suy luận nội bộ của LLM) trong response của Customer API.
+* **RBAC:** Guest chỉ gọi public APIs; Customer chỉ gọi chat/case của mình; Staff mới gọi `/staff/*`. Backend trả `401` khi chưa đăng nhập và `403` khi sai role/ownership.
+
+## 1.1. Auth, Public Content & Attachment APIs
+
+| Endpoint | Mô tả |
+| :--- | :--- |
+| `POST /api/v1/auth/login` | Đăng nhập account demo Customer hoặc Staff |
+| `POST /api/v1/auth/register` | Chỉ tạo Customer; không public register Staff |
+| `GET /api/v1/auth/me` | Trả role và profile mock tối thiểu |
+| `GET /api/v1/public/articles` | Landing/FAQ/Policy từ nguồn đã kiểm chứng |
+| `POST /api/v1/customer/attachments` | Upload ảnh riêng tư, trả `attachment_id` |
+
+`POST /customer/attachments` trả `attachment_id`, `analysis_status`, và (nếu Vision được bật) `ocr_text`, `detected_signals`, `vision_confidence`. Đây là quan sát sơ bộ, không phải chẩn đoán.
 
 ---
 
@@ -40,6 +53,7 @@
   "session_id": "sess_vf_98234",
   "case_id": "CASE-20260924-001", // null nếu là tin nhắn đầu tiên
   "message": "Xe VF8 của tôi không nhận sạc ở trạm Metropolis, trụ báo đèn đỏ.",
+  "attachment_ids": ["ATT-20260930-001"],
   "client_context": {
     "mock_customer_id": "CUST_MOCK_01",
     "vehicle_model": "VF8",
@@ -148,6 +162,13 @@
 }
 ```
 
+### 2.3. Case của Customer
+| Endpoint | Mô tả |
+| :--- | :--- |
+| `GET /api/v1/customer/cases` | Danh sách case của chính Customer |
+| `POST /api/v1/customer/cases/{case_id}/reopen` | Mở lại case đã Resolved/Closed |
+| `POST /api/v1/customer/cases/{case_id}/feedback` | Gửi rating/feedback sau xử lý |
+
 ---
 
 ## 3. Staff APIs (Service Agent Console)
@@ -235,7 +256,7 @@
 #### Request Body:
 ```json
 {
-  "action": "APPROVE", // "APPROVE" | "EDIT_BRIEF" | "REROUTE" | "CLOSE" | "REOPEN" | "REQUEST_INFO"
+  "action": "APPROVE", // "APPROVE" | "EDIT_BRIEF" | "REROUTE" | "REQUEST_INFO" | "RESOLVE" | "CLOSE" | "REOPEN"
   "staff_id": "STAFF_007",
   "updated_status": "In Progress",
   "edited_brief": null, // Nếu action = EDIT_BRIEF thì gửi object brief đã sửa

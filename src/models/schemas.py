@@ -25,6 +25,70 @@ class ApiResponse(BaseModel, Generic[T]):
 
 
 # ==============================================================================
+# AUTH & RBAC SCHEMAS — Nguồn: docs/architecture/api-contract.md Mục 1.1 & auth-and-rbac.md
+# ==============================================================================
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=1)
+
+
+class RegisterRequest(BaseModel):
+    username: str = Field(..., min_length=3)
+    password: str = Field(..., min_length=6)
+    mock_customer_id: str | None = "CUST_MOCK_01"
+
+
+class UserOut(BaseModel):
+    id: str
+    username: str
+    role: Literal["CUSTOMER", "STAFF", "GUEST"]
+    mock_customer_id: str | None = None
+
+
+class AuthResponseData(BaseModel):
+    token: str
+    user: UserOut
+
+
+# ==============================================================================
+# PUBLIC KNOWLEDGE / ARTICLES SCHEMAS — Nguồn: rag-and-data-sources.md Mục 5
+# ==============================================================================
+
+
+class ArticleItem(BaseModel):
+    id: str
+    title: str
+    category: str
+    summary: str
+    content: str
+    source_url: str
+    verified_at: str
+
+
+class PublicArticlesData(BaseModel):
+    articles: list[ArticleItem]
+    total: int
+
+
+# ==============================================================================
+# ATTACHMENT SCHEMAS — Nguồn: ADR-004 & api-contract.md Mục 1.1
+# ==============================================================================
+
+
+class AttachmentOut(BaseModel):
+    attachment_id: str
+    storage_key: str
+    mime_type: str
+    analysis_status: Literal["UPLOADED", "ANALYZED", "FAILED"]
+    ocr_text: str | None = None
+    detected_signals: dict[str, Any] | None = None
+    vision_confidence: float | None = None
+    created_at: str
+
+
+# ==============================================================================
 # LEGACY / TEMPLATE SCHEMAS (Giữ nguyên để tương thích bài test gốc của template)
 # ==============================================================================
 
@@ -53,6 +117,7 @@ class CustomerChatRequest(BaseModel):
     session_id: str
     case_id: str | None = None  # e.g. CASE-20260924-001, null nếu là tin nhắn đầu tiên
     message: str = Field(..., min_length=1)
+    attachment_ids: list[str] | None = None  # Danh sách ID ảnh đã upload trước đó
     client_context: ClientContext | None = None
 
 
@@ -93,6 +158,40 @@ class CustomerCaseStatusData(BaseModel):
     status_description: str | None = None
     created_at: str
     updated_at: str | None = None
+
+
+class CustomerCaseItem(BaseModel):
+    id: str
+    vehicle_model: str | None = None
+    vehicle_code_mock: str | None = None
+    intent: str
+    priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    status: str
+    summary: str | None = None
+    created_at: str
+    updated_at: str | None = None
+
+
+class CustomerCaseListData(BaseModel):
+    cases: list[CustomerCaseItem]
+    total: int
+
+
+class CustomerFeedbackPayload(BaseModel):
+    rating: int = Field(..., ge=1, le=5, description="Đánh giá từ 1 đến 5 sao")
+    comment: str | None = None
+
+
+class CustomerFeedbackResponseData(BaseModel):
+    success: bool = True
+    feedback_id: str
+    case_id: str
+
+
+class ReopenCaseResponseData(BaseModel):
+    success: bool = True
+    case_id: str
+    status: str
 
 
 # ==============================================================================
@@ -145,10 +244,11 @@ class TicketDetailData(BaseModel):
     case: TicketDetailCase
     case_brief: CaseBriefOut
     conversation_history: list[ConversationItem]
+    attachments: list[AttachmentOut] = Field(default_factory=list)
 
 
 class StaffActionPayload(BaseModel):
-    action: Literal["APPROVE", "EDIT_BRIEF", "REROUTE", "CLOSE", "REOPEN", "REQUEST_INFO"]
+    action: Literal["APPROVE", "EDIT_BRIEF", "REROUTE", "REQUEST_INFO", "RESOLVE", "CLOSE", "REOPEN"]
     staff_id: str
     updated_status: str | None = None
     edited_brief: dict[str, Any] | None = None

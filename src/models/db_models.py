@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime
 from enum import StrEnum
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.sqlite import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,6 +17,22 @@ def utcnow() -> datetime:
 # ==============================================================================
 # ENUMS — Nguồn chân lý: docs/architecture/data-model.md & triage-and-hitl-rules.md
 # ==============================================================================
+
+
+class UserRole(StrEnum):
+    """Vai trò người dùng trong hệ thống (RBAC theo auth-and-rbac.md)."""
+
+    GUEST = "GUEST"
+    CUSTOMER = "CUSTOMER"
+    STAFF = "STAFF"
+
+
+class AttachmentStatus(StrEnum):
+    """Trạng thái xử lý file đính kèm/ảnh táp-lô theo ADR-004."""
+
+    UPLOADED = "UPLOADED"
+    ANALYZED = "ANALYZED"
+    FAILED = "FAILED"
 
 
 class TicketStatus(StrEnum):
@@ -66,14 +82,15 @@ class SenderType(StrEnum):
 
 
 class StaffAction(StrEnum):
-    """Hành động của nhân viên HITL trên Console."""
+    """Hành động của nhân viên HITL trên Console (Cập nhật api-contract.md 3.3)."""
 
     APPROVE = "APPROVE"
     EDIT_BRIEF = "EDIT_BRIEF"
     REROUTE = "REROUTE"
+    REQUEST_INFO = "REQUEST_INFO"
+    RESOLVE = "RESOLVE"
     CLOSE = "CLOSE"
     REOPEN = "REOPEN"
-    REQUEST_INFO = "REQUEST_INFO"
 
 
 class VehicleModel(StrEnum):
@@ -89,8 +106,26 @@ class VehicleModel(StrEnum):
 
 
 # ==============================================================================
-# DATABASE MODELS — 4 bảng chuẩn theo data-model.md
+# DATABASE MODELS — Chuẩn theo data-model.md mới nhất
 # ==============================================================================
+
+
+class User(Base):
+    """
+    Bảng users: Quản lý người dùng cho Web Support Hub (RBAC).
+    Chỉ cho phép đăng ký Customer; Staff dùng tài khoản seed/invite.
+    """
+
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
+    password_hash: Mapped[str] = mapped_column(String(256), nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default=UserRole.CUSTOMER.value)
+    mock_customer_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    cases: Mapped[list["Case"]] = relationship(back_populates="user")
 
 
 class Case(Base):
@@ -103,6 +138,7 @@ class Case(Base):
     __tablename__ = "cases"
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True)  # e.g. CASE-20260924-001
+    user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id"), nullable=True, index=True)
     session_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     mock_customer_id: Mapped[str | None] = mapped_column(String(50), nullable=True)  # e.g. CUST_MOCK_01
     mock_customer_name: Mapped[str | None] = mapped_column(String(100), nullable=True)  # Demo seed only
@@ -111,11 +147,13 @@ class Case(Base):
     vehicle_model: Mapped[str | None] = mapped_column(String(50), nullable=True)  # VF3 | VF5 | VF6...
     intent: Mapped[str] = mapped_column(String(50), nullable=False)
     priority: Mapped[str] = mapped_column(String(20), nullable=False, default=Priority.MEDIUM.value)
-    status: Mapped[str] = mapped_column(String(30), nullable=False, default=TicketStatus.STAFF_REVIEWING.value)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default=TicketStatus.NEW.value)
     assigned_staff_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
+    # Quan hệ với User
+    user: Mapped["User | None"] = relationship(back_populates="cases")
     # Quan hệ 1-N với messages
     messages: Mapped[list["Message"]] = relationship(
         back_populates="case", cascade="all, delete-orphan", order_by="Message.created_at.asc()"
@@ -125,6 +163,14 @@ class Case(Base):
     # Quan hệ 1-N với staff_audit_logs
     audit_logs: Mapped[list["StaffAuditLog"]] = relationship(
         back_populates="case", cascade="all, delete-orphan", order_by="StaffAuditLog.created_at.desc()"
+    )
+    # Quan hệ 1-N với attachments
+    attachments: Mapped[list["Attachment"]] = relationship(
+        back_populates="case", cascade="all, delete-orphan", order_by="Attachment.created_at.asc()"
+    )
+    # Quan hệ 1-N với customer_feedback
+    feedback: Mapped[list["CustomerFeedback"]] = relationship(
+        back_populates="case", cascade="all, delete-orphan", order_by="CustomerFeedback.created_at.desc()"
     )
 
 
@@ -178,10 +224,51 @@ class StaffAuditLog(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     case_id: Mapped[str] = mapped_column(String(32), ForeignKey("cases.id"), nullable=False, index=True)
     staff_id: Mapped[str] = mapped_column(String(50), nullable=False)
-    action: Mapped[str] = mapped_column(String(30), nullable=False)  # APPROVE | EDIT_BRIEF | REROUTE | CLOSE...
+    action: Mapped[str] = mapped_column(
+        String(30), nullable=False
+    )  # APPROVE | EDIT_BRIEF | REROUTE | RESOLVE | CLOSE...
     previous_state: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     new_state: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     case: Mapped["Case"] = relationship(back_populates="audit_logs")
+
+
+class Attachment(Base):
+    """
+    Bảng attachments: Lưu trữ thông tin ảnh đính kèm (ảnh táp-lô, đèn báo, trụ sạc).
+    Lưu trữ riêng tư (private path), chỉ trích xuất tín hiệu sơ bộ qua OCR/Vision.
+    """
+
+    __tablename__ = "attachments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)  # e.g. ATT-20260930-001 or UUID
+    case_id: Mapped[str | None] = mapped_column(String(32), ForeignKey("cases.id"), nullable=True, index=True)
+    message_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("messages.id"), nullable=True, index=True)
+    storage_key: Mapped[str] = mapped_column(String(255), nullable=False)  # Đường dẫn file riêng tư
+    mime_type: Mapped[str] = mapped_column(String(50), nullable=False, default="image/jpeg")
+    analysis_status: Mapped[str] = mapped_column(String(20), nullable=False, default=AttachmentStatus.UPLOADED.value)
+    ocr_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    detected_signals: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    vision_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    case: Mapped["Case | None"] = relationship(back_populates="attachments")
+    message: Mapped["Message | None"] = relationship()
+
+
+class CustomerFeedback(Base):
+    """
+    Bảng customer_feedback: Lưu trữ đánh giá của khách hàng sau khi case được giải quyết.
+    """
+
+    __tablename__ = "customer_feedback"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    case_id: Mapped[str] = mapped_column(String(32), ForeignKey("cases.id"), nullable=False, index=True)
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-5 sao
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    case: Mapped["Case"] = relationship(back_populates="feedback")

@@ -10,10 +10,12 @@ from src.models.db_models import (
     StaffAction,
     StaffAuditLog,
     TicketStatus,
+    User,
     utcnow,
 )
 from src.models.schemas import (
     ApiResponse,
+    AttachmentOut,
     CaseBriefOut,
     ConversationItem,
     StaffActionPayload,
@@ -23,6 +25,7 @@ from src.models.schemas import (
     TicketItem,
     TicketQueueData,
 )
+from src.services.auth import require_staff
 
 router = APIRouter(prefix="/staff", tags=["staff"])
 
@@ -31,10 +34,12 @@ router = APIRouter(prefix="/staff", tags=["staff"])
 def get_ticket_queue(
     status: str | None = Query(None, description="Lọc theo trạng thái Ticket"),
     priority: str | None = Query(None, description="Lọc theo mức ưu tiên: LOW/MEDIUM/HIGH/CRITICAL"),
+    current_user: User = Depends(require_staff),
     db: Session = Depends(get_db),
 ):
     """
     Lấy danh sách Ticket trong hàng đợi Service Agent Console theo api-contract.md Mục 3.1.
+    RBAC: Chỉ nhân viên (Staff) mới có quyền truy cập.
     """
     query = db.query(Case).options(joinedload(Case.brief))
 
@@ -71,11 +76,25 @@ def get_ticket_queue(
 
 
 @router.get("/tickets/{case_id}", response_model=ApiResponse[TicketDetailData])
-def get_ticket_detail(case_id: str, db: Session = Depends(get_db)):
+def get_ticket_detail(
+    case_id: str,
+    current_user: User = Depends(require_staff),
+    db: Session = Depends(get_db),
+):
     """
-    Lấy chi tiết Ticket, Case Brief và Lịch sử hội thoại theo api-contract.md Mục 3.2.
+    Lấy chi tiết Ticket, Case Brief, Lịch sử hội thoại và Ảnh đính kèm theo api-contract.md Mục 3.2.
+    RBAC: Chỉ nhân viên (Staff) mới có quyền truy cập.
     """
-    case = db.query(Case).options(joinedload(Case.brief), joinedload(Case.messages)).filter(Case.id == case_id).first()
+    case = (
+        db.query(Case)
+        .options(
+            joinedload(Case.brief),
+            joinedload(Case.messages),
+            joinedload(Case.attachments),
+        )
+        .filter(Case.id == case_id)
+        .first()
+    )
 
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
@@ -98,66 +117,100 @@ def get_ticket_detail(case_id: str, db: Session = Depends(get_db)):
             is_edited_by_staff=False,
         )
 
-    # Conversation History
-    conversation: list[ConversationItem] = []
-    for msg in case.messages:
-        conversation.append(
-            ConversationItem(
-                sender=msg.sender_type,
-                content=msg.content,
-                created_at=msg.created_at.isoformat() if msg.created_at else utcnow().isoformat(),
+    # Lịch sử hội thoại
+    conv_items: list[ConversationItem] = []
+    if case.messages:
+        for msg in case.messages:
+            sender_role = msg.sender_type if msg.sender_type in ("CUSTOMER", "AGENT", "STAFF", "SYSTEM") else "SYSTEM"
+            conv_items.append(
+                ConversationItem(
+                    sender=sender_role,
+                    content=msg.content,
+                    created_at=msg.created_at.isoformat() if msg.created_at else utcnow().isoformat(),
+                )
             )
-        )
 
-    detail_data = TicketDetailData(
-        case=TicketDetailCase(
-            id=case.id,
-            mock_customer_id=case.mock_customer_id or f"CUST_{case.id}",
-            vehicle_code_mock=case.vehicle_code_mock or "VF-SF-00231",
-            vehicle_model=case.vehicle_model or "VF8",
-            intent=case.intent,
-            priority=case.priority,
-            status=case.status,
-        ),
-        case_brief=brief_out,
-        conversation_history=conversation,
-    )
+    # Danh sách ảnh đính kèm (private storage + OCR signals)
+    attachment_items: list[AttachmentOut] = []
+    if case.attachments:
+        for att in case.attachments:
+            attachment_items.append(
+                AttachmentOut(
+                    attachment_id=att.id,
+                    storage_key=att.storage_key,
+                    mime_type=att.mime_type,
+                    analysis_status=att.analysis_status,
+                    ocr_text=att.ocr_text,
+                    detected_signals=att.detected_signals,
+                    vision_confidence=att.vision_confidence,
+                    created_at=att.created_at.isoformat() if att.created_at else utcnow().isoformat(),
+                )
+            )
 
     return ApiResponse(
         success=True,
-        data=detail_data,
+        data=TicketDetailData(
+            case=TicketDetailCase(
+                id=case.id,
+                mock_customer_id=case.mock_customer_id or f"CUST_{case.id}",
+                vehicle_code_mock=case.vehicle_code_mock,
+                vehicle_model=case.vehicle_model or "VF8",
+                intent=case.intent,
+                priority=case.priority,
+                status=case.status,
+            ),
+            case_brief=brief_out,
+            conversation_history=conv_items,
+            attachments=attachment_items,
+        ),
         error=None,
     )
 
 
 @router.post("/tickets/{case_id}/actions", response_model=ApiResponse[StaffActionResponseData])
-def submit_staff_action(
+def handle_staff_action(
     case_id: str,
     payload: StaffActionPayload,
+    current_user: User = Depends(require_staff),
     db: Session = Depends(get_db),
 ):
     """
-    Thực hiện hành động xử lý Ticket (HITL Action) và lưu audit log theo api-contract.md Mục 3.3.
+    Thực hiện hành động HITL của nhân viên theo api-contract.md Mục 3.3:
+    - APPROVE: Duyệt tóm tắt và chuyển sang 'In Progress'
+    - EDIT_BRIEF: Hiệu chỉnh nội dung tóm tắt sự cố
+    - REROUTE: Điều chuyển tuyến xử lý
+    - REQUEST_INFO: Yêu cầu khách hàng bổ sung dữ kiện (chuyển 'Needs Information')
+    - RESOLVE: Hoàn tất xử lý sự cố (chuyển 'Resolved')
+    - CLOSE: Đóng hồ sơ ('Closed')
+    - REOPEN: Mở lại hồ sơ ('Reopened')
+    Tự động ghi nhận vết thay đổi vào bảng staff_audit_logs.
     """
     case = db.query(Case).options(joinedload(Case.brief)).filter(Case.id == case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
 
-    action = payload.action
     previous_state = {
         "status": case.status,
+        "priority": case.priority,
+        "intent": case.intent,
         "brief_summary": case.brief.summary if case.brief else None,
-        "assigned_staff_id": case.assigned_staff_id,
     }
 
-    # Gán nhân viên thao tác
-    case.assigned_staff_id = payload.staff_id
+    new_status = case.status
 
-    # Áp dụng logic hành động
-    if action == StaffAction.APPROVE.value:
-        case.status = payload.updated_status or TicketStatus.IN_PROGRESS.value
-
-    elif action == StaffAction.EDIT_BRIEF.value:
+    if payload.action == StaffAction.APPROVE.value:
+        new_status = TicketStatus.IN_PROGRESS.value
+    elif payload.action == StaffAction.RESOLVE.value:
+        new_status = TicketStatus.RESOLVED.value
+    elif payload.action == StaffAction.CLOSE.value:
+        new_status = TicketStatus.CLOSED.value
+    elif payload.action == StaffAction.REOPEN.value:
+        new_status = TicketStatus.REOPENED.value
+    elif payload.action == StaffAction.REQUEST_INFO.value:
+        new_status = TicketStatus.NEEDS_INFORMATION.value
+    elif payload.action == StaffAction.REROUTE.value:
+        new_status = TicketStatus.STAFF_REVIEWING.value
+    elif payload.action == StaffAction.EDIT_BRIEF.value:
         if payload.edited_brief:
             if not case.brief:
                 case.brief = CaseBrief(
@@ -166,12 +219,12 @@ def submit_staff_action(
                     summary=payload.edited_brief.get("summary", ""),
                     captured_fields=payload.edited_brief.get("captured_fields", {}),
                     suggested_action=payload.edited_brief.get("suggested_action"),
-                    confidence_score=0.95,
+                    confidence_score=1.0,
                     is_edited_by_staff=True,
                 )
                 db.add(case.brief)
             else:
-                if "summary" in payload.edited_brief and payload.edited_brief["summary"]:
+                if "summary" in payload.edited_brief:
                     case.brief.summary = payload.edited_brief["summary"]
                 if "captured_fields" in payload.edited_brief and isinstance(
                     payload.edited_brief["captured_fields"], dict
@@ -183,42 +236,38 @@ def submit_staff_action(
                     case.brief.suggested_action = payload.edited_brief["suggested_action"]
                 case.brief.is_edited_by_staff = True
 
-    elif action == StaffAction.REROUTE.value:
-        case.status = payload.updated_status or TicketStatus.IN_PROGRESS.value
+    if payload.updated_status:
+        new_status = payload.updated_status
 
-    elif action == StaffAction.CLOSE.value:
-        case.status = TicketStatus.CLOSED.value
-
-    elif action == StaffAction.REOPEN.value:
-        case.status = TicketStatus.REOPENED.value
-
-    elif action == StaffAction.REQUEST_INFO.value:
-        case.status = TicketStatus.NEEDS_INFORMATION.value
+    case.status = new_status
+    case.updated_at = utcnow()
 
     new_state = {
         "status": case.status,
+        "priority": case.priority,
+        "intent": case.intent,
         "brief_summary": case.brief.summary if case.brief else None,
-        "assigned_staff_id": case.assigned_staff_id,
     }
 
-    # Ghi nhận vào bảng staff_audit_logs theo chuẩn data-model.md
-    audit_log = StaffAuditLog(
+    # Ghi nhận Audit Log
+    audit_entry = StaffAuditLog(
         id=str(uuid.uuid4()),
         case_id=case.id,
-        staff_id=payload.staff_id,
-        action=action,
+        staff_id=payload.staff_id or current_user.username,
+        action=payload.action,
         previous_state=previous_state,
         new_state=new_state,
         notes=payload.notes,
         created_at=utcnow(),
     )
-    db.add(audit_log)
-
+    db.add(audit_entry)
     db.commit()
-    db.refresh(case)
 
     return ApiResponse(
         success=True,
-        data=StaffActionResponseData(success=True, case_id=case.id),
+        data=StaffActionResponseData(
+            success=True,
+            case_id=case.id,
+        ),
         error=None,
     )
