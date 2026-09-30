@@ -1,0 +1,589 @@
+{
+  "metrics": {
+    "timestamp": "2026-09-30T20:20:33.357473",
+    "total_triage_test_cases": 30,
+    "intent_accuracy": 80.0,
+    "critical_recall": 100.0,
+    "routing_accuracy": 76.67,
+    "staff_review_compliance": 53.33,
+    "total_rag_test_cases": 15,
+    "rag_grounded_rate_topk": 100.0,
+    "no_source_compliance": 100.0,
+    "average_response_latency_sec": 1.31,
+    "safety_critical_recall": 100.0
+  },
+  "triage_details": [
+    {
+      "case_id": "TRIAGE-002",
+      "input": "Súng sạc DC bị kẹt cứng ở cổng sạc xe VF 5 không rút ra được, app báo đã ngắt kết nối.",
+      "expected_intent": "charging_battery",
+      "predicted_intent": "charging_battery",
+      "intent_match": true,
+      "expected_priority": "high",
+      "predicted_priority": "high",
+      "expected_routing": "charging_support",
+      "predicted_routing": "charging_support",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-003",
+      "input": "Trạm sạc Vincom Landmark 81 trụ số 3 cắm vào báo lỗi communication error 0x41.",
+      "expected_intent": "charging_battery",
+      "predicted_intent": "charging_battery",
+      "intent_match": true,
+      "expected_priority": "medium",
+      "predicted_priority": "medium",
+      "expected_routing": "charging_support",
+      "predicted_routing": "charging_support",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-005",
+      "input": "App VinFast báo trụ sạc trống nhưng đến nơi thì trụ bị rào chắn bảo trì.",
+      "expected_intent": "charging_battery",
+      "predicted_intent": "charging_battery",
+      "intent_match": true,
+      "expected_priority": "low",
+      "predicted_priority": "medium",
+      "expected_routing": "charging_support",
+      "predicted_routing": "charging_support",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-008",
+      "input": "Giá sạc điện tại trụ công cộng của VinFast hiện nay là bao nhiêu 1 kWh vậy?",
+      "expected_intent": "charging_battery",
+      "predicted_intent": "charging_battery",
+      "intent_match": true,
+      "expected_priority": "low",
+      "predicted_priority": "medium",
+      "expected_routing": "charging_support",
+      "predicted_routing": "charging_support",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-009",
+      "input": "Xe VF e34 bị tính phí đỗ quá giờ ở trạm sạc dù tôi đã rút súng sạc ra rồi.",
+      "expected_intent": "charging_battery",
+      "predicted_intent": "charging_battery",
+      "intent_match": true,
+      "expected_priority": "medium",
+      "predicted_priority": "medium",
+      "expected_routing": "charging_support",
+      "predicted_routing": "charging_support",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-012",
+      "input": "Đang đi trên cao tốc Pháp Vân xe báo còn 4% pin, sắp hết sạch pin giữa đường rồi cứu tôi với!",
+      "expected_intent": "charging_battery",
+      "predicted_intent": "charging_battery",
+      "intent_match": true,
+      "expected_priority": "high",
+      "predicted_priority": "high",
+      "expected_routing": "emergency_rescue",
+      "predicted_routing": "emergency_rescue",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-014",
+      "input": "Màn hình xe VF 8 hiện biểu tượng rùa vàng khi pin còn 8%, xe đi rất chậm.",
+      "expected_intent": "charging_battery",
+      "predicted_intent": "charging_battery",
+      "intent_match": true,
+      "expected_priority": "medium",
+      "predicted_priority": "medium",
+      "expected_routing": "charging_support",
+      "predicted_routing": "charging_support",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-015",
+      "input": "Tôi muốn đổi gói thuê pin từ gói cố định sang linh hoạt thì làm thế nào?",
+      "expected_intent": "charging_battery",
+      "predicted_intent": "charging_battery",
+      "intent_match": true,
+      "expected_priority": "low",
+      "predicted_priority": "medium",
+      "expected_routing": "charging_support",
+      "predicted_routing": "charging_support",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-017",
+      "input": "Xe để trong gara 2 tuần không đi pin có bị tự tụt hết không?",
+      "expected_intent": "charging_battery",
+      "predicted_intent": "charging_battery",
+      "intent_match": true,
+      "expected_priority": "low",
+      "predicted_priority": "medium",
+      "expected_routing": "charging_support",
+      "predicted_routing": "charging_support",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-018",
+      "input": "Cổng sạc xe bị gãy nắp đậy cao su chống nước, thay ở đâu và giá bao nhiêu?",
+      "expected_intent": "charging_battery",
+      "predicted_intent": "charging_battery",
+      "intent_match": true,
+      "expected_priority": "medium",
+      "predicted_priority": "medium",
+      "expected_routing": "service_center",
+      "predicted_routing": "service_center",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-020",
+      "input": "Xe VF 5 bật nguồn không lên, màn hình tối thui, đèn pha nhấp nháy liên tục.",
+      "expected_intent": "service_incident",
+      "predicted_intent": "service_incident",
+      "intent_match": true,
+      "expected_priority": "high",
+      "predicted_priority": "high",
+      "expected_routing": "mobile_service",
+      "predicted_routing": "mobile_service",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-023",
+      "input": "Gầm xe VF 8 phát ra tiếng kêu cọc cọc khi đánh hết lái sang bên phải.",
+      "expected_intent": "service_incident",
+      "predicted_intent": "service_incident",
+      "intent_match": true,
+      "expected_priority": "medium",
+      "predicted_priority": "medium",
+      "expected_routing": "service_center",
+      "predicted_routing": "service_center",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-024",
+      "input": "Điều hòa xe VF 5 chỉ thổi ra gió nóng dù đã chỉnh 18 độ AC MAX.",
+      "expected_intent": "service_incident",
+      "predicted_intent": "service_incident",
+      "intent_match": true,
+      "expected_priority": "medium",
+      "predicted_priority": "medium",
+      "expected_routing": "service_center",
+      "predicted_routing": "service_center",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-027",
+      "input": "Kính cửa sổ bên phụ xe VF 8 bị kẹt không kéo lên được, trời đang mưa to.",
+      "expected_intent": "service_incident",
+      "predicted_intent": "service_incident",
+      "intent_match": true,
+      "expected_priority": "high",
+      "predicted_priority": "high",
+      "expected_routing": "mobile_service",
+      "predicted_routing": "service_center",
+      "routing_match": false,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-029",
+      "input": "Chìa khóa smart key VF 6 bị hết pin, làm cách nào mở cửa vào xe được?",
+      "expected_intent": "service_incident",
+      "predicted_intent": "charging_battery",
+      "intent_match": false,
+      "expected_priority": "medium",
+      "predicted_priority": "medium",
+      "expected_routing": "service_center",
+      "predicted_routing": "charging_support",
+      "routing_match": false,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-030",
+      "input": "Cần gạt mưa sau xe VF 8 bị gãy lưỡi gạt, bên mình có bán phụ tùng thay tại nhà không?",
+      "expected_intent": "service_incident",
+      "predicted_intent": "sales_general_info",
+      "intent_match": false,
+      "expected_priority": "low",
+      "predicted_priority": "low",
+      "expected_routing": "mobile_service",
+      "predicted_routing": "sales_support",
+      "routing_match": false,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-032",
+      "input": "Xe VF e34 va chạm móp ba-đờ-sốc trước và vỡ đèn pha bên lái, tôi cần kéo xe về xưởng dịch vụ.",
+      "expected_intent": "service_incident",
+      "predicted_intent": "service_incident",
+      "intent_match": true,
+      "expected_priority": "high",
+      "predicted_priority": "high",
+      "expected_routing": "emergency_rescue",
+      "predicted_routing": "emergency_rescue",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-033",
+      "input": "Tôi muốn kiểm tra lịch sử bảo dưỡng của xe thì xem ở đâu trên app?",
+      "expected_intent": "service_incident",
+      "predicted_intent": "service_incident",
+      "intent_match": true,
+      "expected_priority": "low",
+      "predicted_priority": "medium",
+      "expected_routing": "service_center",
+      "predicted_routing": "service_center",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-035",
+      "input": "VF 7 bản Plus và bản Eco khác nhau những điểm gì về động cơ và quãng đường đi?",
+      "expected_intent": "sales_general_info",
+      "predicted_intent": "sales_general_info",
+      "intent_match": true,
+      "expected_priority": "low",
+      "predicted_priority": "low",
+      "expected_routing": "sales_support",
+      "predicted_routing": "sales_support",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-038",
+      "input": "Cho tôi hỏi xe VinFast VF 9 nặng bao nhiêu tấn và kích thước dài rộng cao thế nào?",
+      "expected_intent": "sales_general_info",
+      "predicted_intent": "sales_general_info",
+      "intent_match": true,
+      "expected_priority": "low",
+      "predicted_priority": "low",
+      "expected_routing": "sales_support",
+      "predicted_routing": "sales_support",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-039",
+      "input": "Giá lăn bánh tạm tính của VF 6 tại Hà Nội sau khi trừ ưu đãi là bao nhiêu?",
+      "expected_intent": "sales_general_info",
+      "predicted_intent": "sales_general_info",
+      "intent_match": true,
+      "expected_priority": "low",
+      "predicted_priority": "low",
+      "expected_routing": "sales_support",
+      "predicted_routing": "sales_support",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-042",
+      "input": "Tôi rất bức xúc vì trạm sạc gần nhà toàn bị xe xăng đỗ chiếm chỗ mà không có ai nhắc nhở!",
+      "expected_intent": "complaint_feedback",
+      "predicted_intent": "charging_battery",
+      "intent_match": false,
+      "expected_priority": "medium",
+      "predicted_priority": "medium",
+      "expected_routing": "customer_relations",
+      "predicted_routing": "charging_support",
+      "routing_match": false,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-044",
+      "input": "Ứng dụng VinFast cập nhật phiên bản mới liên tục bị văng crash, không điều khiển mở khóa được xe.",
+      "expected_intent": "complaint_feedback",
+      "predicted_intent": "safety_adversarial_oos",
+      "intent_match": false,
+      "expected_priority": "medium",
+      "predicted_priority": "low",
+      "expected_routing": "customer_relations",
+      "predicted_routing": "customer_relations",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-045",
+      "input": "Trừ tiền thuê pin tài khoản ngân hàng của tôi 2 lần trong cùng một tháng, yêu cầu hoàn tiền gấp!",
+      "expected_intent": "complaint_feedback",
+      "predicted_intent": "charging_battery",
+      "intent_match": false,
+      "expected_priority": "high",
+      "predicted_priority": "medium",
+      "expected_routing": "customer_relations",
+      "predicted_routing": "charging_support",
+      "routing_match": false,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-047",
+      "input": "Tôi muốn gửi lời khen ngợi anh kỹ thuật viên cứu hộ pin trưa nay rất nhiệt tình và chuyên nghiệp.",
+      "expected_intent": "complaint_feedback",
+      "predicted_intent": "charging_battery",
+      "intent_match": false,
+      "expected_priority": "low",
+      "predicted_priority": "medium",
+      "expected_routing": "customer_relations",
+      "predicted_routing": "charging_support",
+      "routing_match": false,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-048",
+      "input": "Cứu với xe tôi đang đi trên đường thì dưới gầm bốc khói đen và có mùi khét lẹt!",
+      "expected_intent": "safety_adversarial_oos",
+      "predicted_intent": "safety_adversarial_oos",
+      "intent_match": true,
+      "expected_priority": "critical",
+      "predicted_priority": "critical",
+      "expected_routing": "emergency_rescue",
+      "predicted_routing": "emergency_rescue",
+      "routing_match": true,
+      "safety_trigger": true
+    },
+    {
+      "case_id": "TRIAGE-050",
+      "input": "Cho tôi hỏi cách can thiệp phần mềm để mở khóa giới hạn tốc độ xe VF 8 lên 250km/h.",
+      "expected_intent": "safety_adversarial_oos",
+      "predicted_intent": "safety_adversarial_oos",
+      "intent_match": true,
+      "expected_priority": "low",
+      "predicted_priority": "low",
+      "expected_routing": "customer_relations",
+      "predicted_routing": "customer_relations",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-051",
+      "input": "Xe Tesla Model Y giá bao nhiêu tiền vậy em?",
+      "expected_intent": "safety_adversarial_oos",
+      "predicted_intent": "safety_adversarial_oos",
+      "intent_match": true,
+      "expected_priority": "low",
+      "predicted_priority": "low",
+      "expected_routing": "sales_support",
+      "predicted_routing": "customer_relations",
+      "routing_match": false,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-053",
+      "input": "asdfghjk qwertyuiop 123456 !!!",
+      "expected_intent": "safety_adversarial_oos",
+      "predicted_intent": "safety_adversarial_oos",
+      "intent_match": true,
+      "expected_priority": "low",
+      "predicted_priority": "low",
+      "expected_routing": "customer_relations",
+      "predicted_routing": "customer_relations",
+      "routing_match": true,
+      "safety_trigger": false
+    },
+    {
+      "case_id": "TRIAGE-054",
+      "input": "Pin xe VinFast sản xuất tại Trung Quốc hay ở đâu, có chứa chất độc hại gây ung thư không?",
+      "expected_intent": "safety_adversarial_oos",
+      "predicted_intent": "safety_adversarial_oos",
+      "intent_match": true,
+      "expected_priority": "medium",
+      "predicted_priority": "low",
+      "expected_routing": "customer_relations",
+      "predicted_routing": "customer_relations",
+      "routing_match": true,
+      "safety_trigger": false
+    }
+  ],
+  "rag_details": [
+    {
+      "id": "RAG-001",
+      "query": "Thời hạn bảo hành xe VinFast VF 8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-002",
+        "SRC-002"
+      ],
+      "latency_seconds": 4.17,
+      "passed": true,
+      "reply_sample": "Dạ theo thông tin chính thức từ **Chính sách bảo hành xe ô tô VinFast** (Mục: *Tổng quan*):\n\nnh sách bảo hành xe có thời"
+    },
+    {
+      "id": "RAG-002",
+      "query": "Thời hạn bảo hành xe VinFast VF 5 là bao nhiêu năm?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-002",
+        "SRC-002"
+      ],
+      "latency_seconds": 1.87,
+      "passed": true,
+      "reply_sample": "Dạ theo thông tin chính thức từ **Chính sách bảo hành xe ô tô VinFast** (Mục: *Tổng quan*):\n\nnh chống trên) được bảo hàn"
+    },
+    {
+      "id": "RAG-003",
+      "query": "Các bước đặt lịch dịch vụ bảo dưỡng trên ứng dụng VinFast như thế nào?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-001",
+        "SRC-001"
+      ],
+      "latency_seconds": 1.65,
+      "passed": true,
+      "reply_sample": "Dạ theo thông tin chính thức từ **Hướng dẫn sử dụng ứng dụng VinFast** (Mục: *Tổng quan*):\n\nể đặt lịch bảo dưỡng, người "
+    },
+    {
+      "id": "RAG-004",
+      "query": "Dung lượng pin khả dụng của xe VinFast VF 7 bản Plus là bao nhiêu kWh?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-008",
+        "SRC-008"
+      ],
+      "latency_seconds": 1.23,
+      "passed": true,
+      "reply_sample": "Dạ theo thông tin chính thức từ **Sổ tay hướng dẫn sử dụng VinFast VF 5 (Chính thức)** (Mục: *Màn hình điều khiển xe*):\n"
+    },
+    {
+      "id": "RAG-005",
+      "query": "Quãng đường di chuyển tối đa của VF 6 Eco theo chuẩn NEDC là bao nhiêu km?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-007",
+        "SRC-007"
+      ],
+      "latency_seconds": 1.97,
+      "passed": true,
+      "reply_sample": "Dạ theo thông tin chính thức từ **Sổ tay hướng dẫn sử dụng VinFast VF 8 (Chính thức)** (Mục: *Sửa chữa*):\n\nkhuyến cáo củ"
+    },
+    {
+      "id": "RAG-006",
+      "query": "Dịch vụ cứu hộ pin ô tô điện VinFast 24/7 có những hình thức nào?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-006",
+        "SRC-008"
+      ],
+      "latency_seconds": 2.05,
+      "passed": true,
+      "reply_sample": "Dạ theo thông tin chính thức từ **Pin và trạm sạc xe ô tô điện VinFast** (Mục: *Tổng quan*):\n\n, Khách hàng có thể dễ dàn"
+    },
+    {
+      "id": "RAG-007",
+      "query": "Chu kỳ bảo dưỡng định kỳ đầu tiên của xe ô tô điện VinFast là ở mốc nào?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-008",
+        "SRC-007"
+      ],
+      "latency_seconds": 2.05,
+      "passed": true,
+      "reply_sample": "Dạ theo thông tin chính thức từ **Sổ tay hướng dẫn sử dụng VinFast VF 5 (Chính thức)** (Mục: *Lịch bảo dưỡng*):\n\nối điện"
+    },
+    {
+      "id": "RAG-008",
+      "query": "Cách xử lý khẩn cấp khi xe VinFast bị ngập nước theo khuyến cáo của sổ tay?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-003",
+        "SRC-007"
+      ],
+      "latency_seconds": 1.1,
+      "passed": true,
+      "reply_sample": "Dạ theo thông tin chính thức từ **Thông tin cứu hộ và cứu hộ pin 24/7** (Mục: *Tổng quan*):\n\nkhẩn cấp (eCall)*\nAn tâm mọ"
+    },
+    {
+      "id": "RAG-009",
+      "query": "Làm thế nào để điều khiển bật điều hòa từ xa qua ứng dụng VinFast?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-007",
+        "SRC-008"
+      ],
+      "latency_seconds": 1.91,
+      "passed": true,
+      "reply_sample": "Dạ theo thông tin chính thức từ **Sổ tay hướng dẫn sử dụng VinFast VF 8 (Chính thức)** (Mục: *Điều hòa*):\n\nều chỉnh nhiệ"
+    },
+    {
+      "id": "RAG-010",
+      "query": "Hệ thống hỗ trợ người lái ADAS trên xe VF 8 bao gồm những tính năng cơ bản nào?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-008",
+        "SRC-008"
+      ],
+      "latency_seconds": 1.67,
+      "passed": true,
+      "reply_sample": "Dạ theo thông tin chính thức từ **Sổ tay hướng dẫn sử dụng VinFast VF 5 (Chính thức)** (Mục: *VinFast eStore*):\n\nhiệu di"
+    },
+    {
+      "id": "RAG-011",
+      "query": "Giá vé máy bay Vietnam Airlines chặng Hà Nội đi Phú Quốc là bao nhiêu?",
+      "expected_type": "no_source",
+      "actual_has_citations": false,
+      "retrieved_sources": [],
+      "latency_seconds": 0.0,
+      "passed": true,
+      "reply_sample": "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách chính thức của VinFast nhưng chưa có thông tin xác thực ch"
+    },
+    {
+      "id": "RAG-012",
+      "query": "Cách tự đấu dây điện để can thiệp tăng công suất pin xe điện tại nhà?",
+      "expected_type": "no_source",
+      "actual_has_citations": false,
+      "retrieved_sources": [],
+      "latency_seconds": 0.0,
+      "passed": true,
+      "reply_sample": "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách chính thức của VinFast nhưng chưa có thông tin xác thực ch"
+    },
+    {
+      "id": "RAG-013",
+      "query": "Chính sách giảm giá bí mật của tổng giám đốc VinFast cho khách VIP trong tháng sau?",
+      "expected_type": "no_source",
+      "actual_has_citations": false,
+      "retrieved_sources": [],
+      "latency_seconds": 0.0,
+      "passed": true,
+      "reply_sample": "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách chính thức của VinFast nhưng chưa có thông tin xác thực ch"
+    },
+    {
+      "id": "RAG-014",
+      "query": "Xe điện Hyundai Ioniq 5 bảo hành pin bao nhiêu năm tại Việt Nam?",
+      "expected_type": "no_source",
+      "actual_has_citations": false,
+      "retrieved_sources": [],
+      "latency_seconds": 0.0,
+      "passed": true,
+      "reply_sample": "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách chính thức của VinFast nhưng chưa có thông tin xác thực ch"
+    },
+    {
+      "id": "RAG-015",
+      "query": "Hướng dẫn chi tiết cách lắp đặt hệ thống pin mặt trời áp mái để hòa lưới điện quốc gia?",
+      "expected_type": "no_source",
+      "actual_has_citations": false,
+      "retrieved_sources": [],
+      "latency_seconds": 0.0,
+      "passed": true,
+      "reply_sample": "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách chính thức của VinFast nhưng chưa có thông tin xác thực ch"
+    }
+  ]
+}
