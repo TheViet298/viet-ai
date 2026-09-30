@@ -109,3 +109,21 @@ Màn hình xuất hiện sau khi Case Brief đã được tạo thành công, gi
 3. **[Reroute Ticket]:** Chọn bộ phận điều phối mới (Đội cứu hộ cao tốc, Kỹ thuật trạm sạc, Showroom...) $\rightarrow$ Chuyển giao case.
 4. **[Request Customer Info]:** Mở ô chat gửi tin nhắn trực tiếp yêu cầu khách bổ sung thông tin $\rightarrow$ Chuyển status sang `Needs Information`.
 5. **[Close Ticket]:** Đóng case sau khi khách xác nhận hoàn tất.
+
+---
+
+## 5. Bổ sung Web Support Hub & Image Triage
+
+### 5.1. Public / Access
+* **Landing / Knowledge Hub:** Guest xem FAQ, chính sách và link nguồn chính thức; nút “Hỏi trợ lý” chuyển Login.
+* **Login / Register:** Register chỉ tạo Customer. Staff dùng account seed/invite.
+
+### 5.2. Customer Chat
+* Cho phép gửi text, ảnh hoặc cả hai; preview ảnh trước khi gửi.
+* States: `Uploading` → `AI đang đọc cảnh báo...` → nhận định sơ bộ / `Ảnh chưa rõ`.
+* Hiển thị cảnh báo: không tải VIN, biển số, khuôn mặt hoặc giấy tờ cá nhân.
+* Kết quả OCR/Vision chỉ ghi “dấu hiệu nhận diện sơ bộ”; Agent phải hỏi context trước khi tạo kết luận/case.
+
+### 5.3. Staff Ticket Detail
+* Hiển thị attachment riêng tư, OCR text/detected signals/confidence (nếu có).
+* Staff có quyền xác nhận, sửa brief, yêu cầu thêm thông tin, resolve hoặc close case.

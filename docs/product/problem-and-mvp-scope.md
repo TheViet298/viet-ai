@@ -9,7 +9,8 @@
 ## 1. Định vị và Tên gọi Chính xác của Hệ thống
 
 > [!IMPORTANT]
-> **Tên chính thức:** *Hệ thống AI Agent điều phối yêu cầu dịch vụ đa kênh và chuẩn hóa bàn giao case cho nhân viên VinFast.*  
+> **Tên triển khai MVP:** *VinFast ServiceFlow AI — Web Support Hub tiếp nhận và chuẩn hóa bàn giao case cho nhân viên dịch vụ.*
+> **Liên hệ đề bài VFO2O-18:** MVP chỉ triển khai Web; kiến trúc có thể mở rộng đa kênh ở giai đoạn sau.
 > **KHÔNG GỌI LÀ:** *"AI Agent tự động giải quyết / sửa chữa sự cố xe"*.  
 > Việc chẩn đoán chuyên sâu, cứu hộ hiện trường và sửa chữa kỹ thuật thực tế do Đội ngũ Kỹ thuật viên / Chuyên viên VinFast xử lý. AI đóng vai trò là "Cầu nối số" giúp tiếp nhận 24/7, sàng lọc, làm rõ thông tin và tổng hợp thành Case Brief chuẩn nghiệp vụ.
 
@@ -58,6 +59,11 @@
     * **Khi đã đủ dữ kiện và Agent sinh Brief hoàn chỉnh:** Vòng đời trạng thái diễn ra theo thứ tự: `New` $\rightarrow$ `Staff Reviewing` $\rightarrow$ `In Progress`.
   * **Thông báo Phản hồi An toàn:** *"Hệ thống đã ghi nhận sự cố và tạo hồ sơ hỗ trợ. Thông tin sẽ được hiển thị cho nhân viên xử lý trên môi trường demo; vui lòng theo dõi cập nhật trên giao diện này."*
 * **Case Brief Generation:** Tự động tóm tắt: *Vấn đề chính, Thông số xe (Model, Pin %), Mã lỗi/Hiện tượng, Mức độ ưu tiên, Hành động đề xuất cho Staff*.
+* **Web Support Hub & Image Triage:**
+  * Web là kênh tiếp nhận duy nhất trong MVP. Guest xem nội dung public; Customer đăng nhập để chat và xem case của mình; Staff dùng tài khoản seed/invite.
+  * Customer gửi text, ảnh cảnh báo/táp-lô hoặc cả hai. Ảnh được lưu cùng case để Staff xem.
+  * Nếu bật Vision/OCR, Agent chỉ trích xuất chữ cảnh báo, mã lỗi hoặc biểu tượng/dấu hiệu phổ biến để hỏi thêm context. Đây là nhận định sơ bộ, không phải chẩn đoán kỹ thuật.
+* **Public Knowledge Hub:** Landing, FAQ, chính sách và link tài liệu VinFast công khai; không làm CMS/cập nhật tự động.
 * **Cơ chế HITL (Human-in-the-Loop):** Staff Dashboard để Review, Chỉnh sửa (Edit), Duyệt (Approve), Điều phối (Reroute), Đóng phiếu.
 * **Trích dẫn nguồn RAG công khai:** Trích dẫn nguồn tài liệu VinFast chính thức đã được kiểm chứng (kèm URL, ngày kiểm chứng, model áp dụng). Chỉ trả lời nội dung chính sách khi đã có tài liệu nguồn xác thực.
 * **Bàn giao Dịch vụ Hiện hữu:** Đối với nhu cầu đặt lịch bảo dưỡng/sửa chữa hoặc xem trạng thái xe, hệ thống hướng dẫn khách hàng sử dụng các chức năng đã có trên **Ứng dụng VinFast chính thức**.
@@ -67,6 +73,9 @@
 * ❌ Không làm hệ thống đặt lịch hẹn (Booking Engine) riêng biệt (Ứng dụng VinFast đã có tính năng đặt lịch và theo dõi dịch vụ).
 * ❌ Không tự động hoàn tiền, xuất hóa đơn tài chính hoặc cam kết bồi thường mà không qua duyệt của Staff.
 * ❌ Không tích hợp Voice AI / Call Center thật (tập trung Web Chat text/rich UI).
+* ❌ Không triển khai Zalo, Email, Hotline transcript simulator trong MVP.
+* ❌ Không xác thực mã khách hàng/VinFast ID thật hoặc tích hợp CRM VinFast.
+* ❌ Không tự kết luận nguyên nhân hỏng hóc từ ảnh; ảnh mờ hoặc confidence thấp phải hỏi lại/chuyển Staff Review.
 * ❌ **Không thu thập và không lưu trữ PII thật:** Không yêu cầu họ tên, SĐT thật, CCCD, VIN hay biển số thật. MVP chỉ sử dụng `session_id`, `mock_customer_id`, `vehicle_model` (optional), `vehicle_code_mock` (optional dạng `VF-SF-xxxxx`). Tên và SĐT chỉ dùng trong seed demo nội bộ.
 
 ---
