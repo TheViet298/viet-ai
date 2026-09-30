@@ -67,3 +67,67 @@ Các phần chất lượng còn mở: README chính vẫn là template, chưa t
 - **Test commands and results:** `PYTHONDONTWRITEBYTECODE=1 python3 hello-world.py` printed `Hello, world!`. A synthetic hook integration test from a repository subdirectory wrote prompt and reply events to `/tmp`, preserved a 1,201-character prompt and Unicode reply, and verified the log file mode was `0600`. `python3 -c 'import json; from pathlib import Path; json.loads(Path(".codex/hooks.json").read_text())'` and `git diff --check` passed. The real `.ai-log/session.jsonl` is not present because the changed project hooks have not yet been trusted in Codex; automatic capture is therefore still awaiting activation.
 - **Remaining limitations:** Hook execution is conditional on project trust. Stop events contain the latest assistant message only when Codex provides it. `.ai-log/*.jsonl` remains ignored, so the prompt and reply contents are local and are not included in GitHub commits.
 - **Human review or decision:** Review and trust the project hooks in Codex `/hooks`, then start a new session and verify one prompt and its final reply appear in `.ai-log/session.jsonl`. Confirm the test script should remain in the repository after the smoke test.
+
+## ai-log
+summarise what have you done  
+
+The previous task was missing because Codex capture had missed its prompts. The pre-push hook only recovered Antigravity logs, so it reported “No logs to submit.”
+
+I have:
+
+- Recovered **1,011 missing activity records** from four repository sessions.
+- Added Codex recovery, broader hooks, and a watcher that captures every 3 seconds and uploads approximately every 15 seconds.
+- Fixed upload batching, retry handling, and tool payload compatibility.
+- Passed **12 regression tests**.
+- Verified server acknowledgment for **44 records**, with zero repository mismatches.
+
+The remaining backlog is being retried. I haven’t verified that all records appear on Phoenix, or confirmed the final push completed—the last command was interrupted.
+
+## T5 — Khôi phục và sửa luồng AI logging (2026-09-30)
+
+### Nguyên nhân và phạm vi
+
+Kiểm tra `.ai-log/archive/2026-09-30.jsonl` cho thấy archive ban đầu chỉ có **6 bản ghi**, không chứa các prompt của task tách dataset. Khi push task đó, không có log đang chờ nên hook báo `No logs to submit`. Pre-push lúc ấy chỉ quét lại transcript Antigravity, chưa có bước khôi phục transcript Codex. Bản sửa trước đó mới xử lý việc gửi log có sẵn và đọc cấu hình `.env`; chưa giải quyết việc Codex bỏ sót capture.
+
+Các prompt bị thiếu vẫn tồn tại trong transcript Codex cục bộ. Chưa xác định chắc chắn vì sao native hook không chạy cho những lượt đó; không kết luận project chưa trust hoặc hooks bị tắt chỉ từ việc thiếu log. Bản sửa bổ sung đường khôi phục độc lập với native hook, thay vì chỉ dựa vào lúc push.
+
+### File đã chỉnh sửa trong task logging
+
+| File có sẵn | Chi tiết thay đổi |
+| --- | --- |
+| `.codex/hooks.json` | Giữ hook prompt/Stop và bổ sung `PostToolUse`, `SessionStart`, `SessionEnd`, `Interrupt`, `PreCompact`, `PostCompact`; điều chỉnh timeout theo sự kiện. |
+| `scripts/log_hook.py` | Ghi đầy đủ prompt và phản hồi Codex khi payload cung cấp; ghi hoạt động công cụ và vòng đời session; bổ sung ID chống trùng, khôi phục từ transcript được cung cấp, gửi log tại Stop và trả JSON hợp lệ cho Codex. Xử lý trường hợp không tìm được Git root. |
+| `scripts/submit_log.py` | Đọc cấu hình bằng thư viện chuẩn; tách khóa capture/submission; chia batch tối đa 500 bản ghi với ngưỡng kích thước 256 KiB (một bản ghi lớn được giữ nguyên); timeout gửi 30 giây. Chỉ archive phần server xác nhận, giữ phần chưa gửi và khôi phục batch khi lỗi hoặc tiến trình bị ngắt. Lưu receipt; chuyển `tool_input`/`tool_response` có cấu trúc thành chuỗi JSON khi gửi để phù hợp schema ingestion. |
+| `scripts/setup_hooks.sh` | Cài pre-push theo đường dẫn Git của repository/worktree; chạy Codex recovery, Antigravity recovery rồi gửi toàn bộ batch. Thêm tùy chọn `--watch` để khởi động capture và submission liên tục. Hook vẫn không chặn push khi gửi log thất bại. |
+| `scripts/setup_hooks.ps1` | Bổ sung cùng luồng khôi phục/gửi log trên Windows và tùy chọn `-Watch`. Chưa chạy kiểm thử thực tế trên Windows. |
+| `.gitignore` | Bỏ qua toàn bộ nội dung `.ai-log/`, ngoại trừ `.gitkeep`, bao gồm transcript đã capture, archive, receipt, khóa và thông tin watcher. |
+| `README.md` | Mô tả native hook, recovery và watcher; hướng dẫn chạy lại sau khi khởi động máy, lệnh khôi phục/gửi thủ công, phạm vi dữ liệu được ghi và giới hạn của xác nhận HTTP 202. |
+
+### File mới đã tạo trong task logging trước đó
+
+Danh sách sau ghi nhận các file đã được tạo trong task sửa logging; lần cập nhật báo cáo này không tạo thêm file.
+
+| File mới | Vai trò |
+| --- | --- |
+| `.codex/config.toml` | Bật feature hooks trong cấu hình Codex của project. Không tự thay đổi danh sách hash hook đã được người dùng trust. |
+| `scripts/ai_log_store.py` | Các hàm dùng chung để tìm Git root, đọc `.env`, xác định thư mục log, khóa ghi, tạo ID ổn định, chống ghi trùng và che giá trị bí mật nhận diện được. |
+| `scripts/log_codex.py` | Quét session/transcript thuộc repository này, khôi phục prompt, câu trả lời công khai, hoạt động công cụ và lượt bị ngắt; hỗ trợ `--auto`, `--dry-run`, `--transcript`, `--watch`, `--submit`. Watcher quét khoảng mỗi 3 giây và thử gửi khoảng mỗi 15 giây. Bỏ qua reasoning và chỉ dẫn system/developer. |
+| `tests/test_ai_logging.py` | 12 kiểm thử hồi quy cho capture, Unicode/prompt dài, phạm vi repository, chống trùng, che bí mật, ghi đồng thời, batch/retry, khôi phục upload bị ngắt và chuyển payload công cụ sang schema server. |
+
+Ngoài mã nguồn, quá trình chạy có sinh dữ liệu riêng trong `.ai-log/`: log chờ gửi, archive được bổ sung, receipt và file vận hành watcher. Các dữ liệu này bị Git ignore và không nằm trong commit. Không xóa file mã nguồn trong hai commit sửa logging.
+
+### Kiểm tra và kết quả đã xác nhận
+
+- `python3 -m unittest discover -s tests -p test_ai_logging.py -q`: **12 tests passed**. Các request trong test được mock; kết quả test không được tính là upload thật.
+- Kiểm tra cú pháp Python, `bash -n scripts/setup_hooks.sh` và `git diff --check` đã chạy thành công trong quá trình sửa.
+- Lần recovery đầu ghi thêm **1.011 bản ghi hoạt động** từ **4 session thuộc repository**, gồm prompt và hoạt động công khai; đây không phải 1.011 prompt.
+- Server từng trả HTTP 422 vì `tool_response` có dạng cấu trúc, trong khi API yêu cầu chuỗi. Đã sửa phần chuyển đổi payload khi gửi và bổ sung kiểm thử giữ nguyên nội dung sau chuyển đổi.
+- Tại mốc xác nhận trong phần tổng kết trước, receipt ghi **44 bản ghi đã gửi**, HTTP **202**: server báo **42 accepted**, **2 duplicates**, **0 mismatched_repos**. Bản ghi chưa gửi thành công được giữ để retry; chưa xác nhận toàn bộ backlog đã gửi hết.
+- Đã cài lại Git pre-push và khởi động/restart watcher. Watcher cần được chạy lại sau khi khởi động máy; chưa cài dịch vụ tự khởi động cùng hệ điều hành.
+- Hai commit trên `feature/ai-khoi`: `06c9d08` — khôi phục Codex và gửi log liên tục; `b023c90` — tương thích payload ingestion. Khi bắt đầu cập nhật báo cáo này, Git hiển thị branch đồng bộ với `origin/feature/ai-khoi`, nên bước push trước đó đã hoàn thành dù lượt trả lời bị ngắt.
+
+### Giới hạn và trạng thái báo cáo
+
+HTTP 202 xác nhận server đã tiếp nhận batch, không chứng minh mọi hoạt động đã xuất hiện trên [Phoenix AI logs, cohort-4](https://phoenix.note.transformerlabs.ai/ai-logs?cohort=cohort-4). Chưa xác minh đầy đủ dashboard bằng session đăng nhập. Native hook vẫn cần được Codex tải và duyệt cấu hình khi có thay đổi; recovery/watcher bổ sung khả năng ghi lại những sự kiện native hook bỏ sót. Định dạng transcript là nội bộ và có thể thay đổi; việc che bí mật dựa trên giá trị/pattern nhận diện được, không phải bảo đảm loại bỏ mọi dữ liệu nhạy cảm.
+
+Lần cập nhật này chỉ bổ sung mục T5 vào `docs/change-report-2026-09-27-rag-metadata.md`, giữ nguyên nội dung có sẵn, không tạo hoặc xóa file và không commit/push báo cáo.
