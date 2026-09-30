@@ -52,6 +52,7 @@ import argparse
 import json
 import os
 import re
+import sqlite3
 import subprocess
 import sys
 from datetime import datetime, timezone, timedelta
@@ -72,6 +73,10 @@ GEMINI_HOME = Path.home() / ".gemini"
 BRAIN_CANDIDATES = (
     GEMINI_HOME / "antigravity-ide" / "brain",
     GEMINI_HOME / "antigravity" / "brain",
+)
+CONVERSATION_CANDIDATES = (
+    GEMINI_HOME / "antigravity-ide" / "conversations",
+    GEMINI_HOME / "antigravity" / "conversations",
 )
 
 USER_REQUEST_RE = re.compile(r"<USER_REQUEST>(.*?)</USER_REQUEST>", re.DOTALL)
@@ -123,6 +128,23 @@ def get_brain_dirs() -> list[Path]:
         p = Path(env)
         return [p] if p.exists() else []
     return [p for p in BRAIN_CANDIDATES if p.exists()]
+
+
+def get_conversation_dirs() -> list[Path]:
+    """Conversations directories to scan for SQLite DBs."""
+    env = os.environ.get("ANTIGRAVITY_CONVERSATIONS_DIR")
+    if env:
+        p = Path(env)
+        return [p] if p.exists() else []
+    return [p for p in CONVERSATION_CANDIDATES if p.exists()]
+
+
+def find_sqlite_db_for_conv(conv_id: str) -> Path | None:
+    for convs_dir in get_conversation_dirs():
+        cand = convs_dir / f"{conv_id}.db"
+        if cand.is_file():
+            return cand
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -269,28 +291,176 @@ def iter_transcript_inputs(transcript: Path, conv_id: str,
             }
 
 
+# ---------------------------------------------------------------------------
+# SQLite conversation DB parser (for Antigravity IDE newer versions)
+# ---------------------------------------------------------------------------
+
+def _decode_varint(data: bytes, offset: int) -> tuple[int | None, int]:
+    res = 0
+    shift = 0
+    while True:
+        if offset >= len(data):
+            return None, offset
+        b = data[offset]
+        offset += 1
+        res |= (b & 0x7f) << shift
+        shift += 7
+        if not (b & 0x80):
+            break
+    return res, offset
+
+
+def extract_sqlite_timestamp(meta: bytes | None) -> datetime | None:
+    """Extract unix timestamp from metadata protobuf (field 1 is Timestamp)."""
+    if not meta:
+        return None
+    i = 0
+    while i < len(meta):
+        tag = meta[i]
+        wire = tag & 7
+        field = tag >> 3
+        i += 1
+        if wire == 0:
+            val, i = _decode_varint(meta, i)
+        elif wire == 2:
+            length, i = _decode_varint(meta, i)
+            if length is None or i + length > len(meta):
+                break
+            sub = meta[i:i+length]
+            i += length
+            if field == 1:
+                j = 0
+                sec = None
+                while j < len(sub):
+                    stag = sub[j]
+                    swire = stag & 7
+                    sfield = stag >> 3
+                    j += 1
+                    if swire == 0:
+                        sval, j = _decode_varint(sub, j)
+                        if sfield == 1:
+                            sec = sval
+                    else:
+                        break
+                if sec is not None:
+                    return datetime.fromtimestamp(sec, timezone.utc)
+        else:
+            break
+    return None
+
+
+def extract_sqlite_prompt(payload: bytes | None) -> str:
+    """Extract user prompt from step_payload protobuf (field 19 -> subfield 2)."""
+    if not payload:
+        return ""
+    idx = 0
+    while True:
+        pos = payload.find(b'\x9a\x01', idx)
+        if pos == -1:
+            break
+        idx = pos + 1
+        length, i = _decode_varint(payload, pos + 2)
+        if length is None or i + length > len(payload):
+            continue
+        sub = payload[i:i+length]
+        j = 0
+        while j < len(sub):
+            tag = sub[j]
+            wire = tag & 7
+            field = tag >> 3
+            j += 1
+            if wire == 2:
+                slen, j = _decode_varint(sub, j)
+                if slen is not None and j + slen <= len(sub):
+                    val = sub[j:j+slen]
+                    j += slen
+                    if field == 2:
+                        try:
+                            text = val.decode('utf-8', errors='replace').strip()
+                            if len(text) >= 2:
+                                return text
+                        except Exception:
+                            pass
+            elif wire == 0:
+                _, j = _decode_varint(sub, j)
+            else:
+                break
+    return ""
+
+
+def iter_sqlite_db_inputs(db_path: Path, cutoff: datetime | None, repo_root_n: str):
+    """Yield user prompts from a conversation SQLite database."""
+    conv_id = db_path.stem
+    try:
+        conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        cur = conn.cursor()
+        if repo_root_n:
+            repo_fwd = repo_root_n.replace("\\", "/")
+            repo_hex = repo_root_n.encode("utf-8").hex()
+            repo_fwd_hex = repo_fwd.encode("utf-8").hex()
+            cur.execute(
+                "SELECT 1 FROM steps WHERE hex(step_payload) LIKE ? OR hex(step_payload) LIKE ? OR step_payload LIKE ? OR step_payload LIKE ? LIMIT 1",
+                (f"%{repo_hex}%", f"%{repo_fwd_hex}%", f"%{repo_root_n}%", f"%{repo_fwd}%")
+            )
+            if not cur.fetchone():
+                conn.close()
+                return
+
+        cur.execute("SELECT idx, metadata, step_payload FROM steps WHERE step_type = 14 ORDER BY idx ASC")
+        for idx, meta, payload in cur.fetchall():
+            dt = extract_sqlite_timestamp(meta)
+            if cutoff and dt and dt < cutoff:
+                continue
+            text = extract_sqlite_prompt(payload)
+            if len(text) < 2:
+                continue
+            ts_str = dt.isoformat() if dt else datetime.now(timezone.utc).isoformat()
+            yield {
+                "conv_id": conv_id,
+                "step_index": int(idx),
+                "timestamp": ts_str,
+                "text": text,
+            }
+        conn.close()
+    except Exception:
+        pass
+
+
 def iter_user_inputs(brain_dirs: list[Path], cutoff: datetime | None,
                      only_conv: str | None, repo_root_n: str):
-    """Yield user-input dicts from every matching conversation transcript."""
+    """Yield user-input dicts from matching conversation transcripts (JSONL or SQLite)."""
+    seen_convs: set[str] = set()
+
     for brain in brain_dirs:
         for conv_dir in sorted(brain.iterdir()):
             if not conv_dir.is_dir():
                 continue
             if only_conv and conv_dir.name != only_conv:
                 continue
+            seen_convs.add(conv_dir.name)
             transcript = (
                 conv_dir / ".system_generated" / "logs" / "transcript.jsonl"
             )
-            if not transcript.exists() or transcript.stat().st_size == 0:
-                continue
+            if transcript.exists() and transcript.stat().st_size > 0:
+                cwds = _conv_cwds(transcript)
+                # If we have a repo root, skip convs that never touched it.
+                if repo_root_n and not _conv_matches_repo(cwds, repo_root_n):
+                    continue
+                yield from iter_transcript_inputs(transcript, conv_dir.name, cutoff)
+            else:
+                db_path = find_sqlite_db_for_conv(conv_dir.name)
+                if db_path:
+                    yield from iter_sqlite_db_inputs(db_path, cutoff, repo_root_n)
 
-            cwds = _conv_cwds(transcript)
-            # If we have a repo root, skip convs that never touched it.
-            if repo_root_n and not _conv_matches_repo(cwds, repo_root_n):
+    for convs_dir in get_conversation_dirs():
+        for db_file in sorted(convs_dir.glob("*.db")):
+            conv_id = db_file.stem
+            if conv_id in seen_convs:
                 continue
-
-            yield from iter_transcript_inputs(transcript, conv_dir.name,
-                                              cutoff)
+            if only_conv and conv_id != only_conv:
+                continue
+            seen_convs.add(conv_id)
+            yield from iter_sqlite_db_inputs(db_file, cutoff, repo_root_n)
 
 
 # ---------------------------------------------------------------------------
@@ -349,16 +519,9 @@ def transcript_from_payload(data: dict) -> Path | None:
     return None
 
 
-def log_from_hook(transcript: Path, data: dict) -> int:
-    """Append every not-yet-logged prompt of this conversation; return how many.
-
-    No time window and no repo filter: the payload already says which
-    conversation and which workspace we are in, and `entry_id` dedup makes a
-    full re-scan idempotent. PreInvocation fires once per user turn, so the
-    prompt of turn N lands at turn N or N+1; whatever the final turn leaves
-    behind is swept up by the pre-push `--auto` run.
-    """
-    conv_id = data.get("conversationId") or transcript.parents[2].name
+def log_from_hook(transcript: Path | None, data: dict) -> int:
+    """Append every not-yet-logged prompt of this conversation; return how many."""
+    conv_id = data.get("conversationId") or (transcript.parents[2].name if transcript else "")
     workspaces = [w for w in (data.get("workspacePaths") or []) if w]
     root = Path(workspaces[0]) if workspaces else Path.cwd()
 
@@ -372,10 +535,22 @@ def log_from_hook(transcript: Path, data: dict) -> int:
     repo, branch, commit, student = repo_context(root)
     model = data.get("modelName") or "gemini"
 
+    # Source inputs from transcript if not empty, otherwise fallback to SQLite DB
+    inputs = []
+    if transcript and transcript.exists() and transcript.stat().st_size > 0:
+        inputs = list(iter_transcript_inputs(transcript, conv_id, None))
+    elif conv_id:
+        db_path = find_sqlite_db_for_conv(conv_id)
+        if db_path:
+            inputs = list(iter_sqlite_db_inputs(db_path, None, ""))
+
+    if not inputs:
+        return 0
+
     new_entries = [
         e for e in (
             build_entry(msg, repo, branch, commit, student, model)
-            for msg in iter_transcript_inputs(transcript, conv_id, None)
+            for msg in inputs
         )
         if e["entry_id"] not in logged_ids
     ]
@@ -402,11 +577,10 @@ def hook_mode() -> None:
         if not isinstance(data, dict):
             data = {}
         transcript = transcript_from_payload(data)
-        if transcript:
-            n = log_from_hook(transcript, data)
-            if n:
-                print(f"[antigravity-log] Logged {n} prompt(s).",
-                      file=sys.stderr)
+        n = log_from_hook(transcript, data)
+        if n:
+            print(f"[antigravity-log] Logged {n} prompt(s).",
+                  file=sys.stderr)
     except Exception:
         pass
     print("{}")
