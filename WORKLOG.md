@@ -26,7 +26,7 @@
 | Cả nhóm | Tổng hợp tiến độ Gate G1, chuẩn bị nội dung Mentor Duty submit | ✅ Done | Mentor Duty log (Done/Doing/Blocked/Questions) | 2h |
 | Thế Việt, Long | Thiết kế form khảo sát người dùng xe điện VinFast để kiểm chứng pain point | ✅ Done | Draft câu hỏi khảo sát cho chủ xe & tài xế GSM | 3h |
 | Khôi | Xây dựng bộ test cases đánh giá Intent Accuracy & Critical Recall | 🔄 WIP | Benchmark dataset (40 mẫu test) | 4h |
-| Long | Thiết kế chi tiết LangGraph state schema và guardrails | 🔄 WIP | State TypedDict + Emergency fast-track rules | 4h |
+| Long | Thiết kế chi tiết LangGraph state schema và guardrails | ✅ Done | `src/agents/state.py` & `src/agents/guardrails.py` + 19 unit tests | 4h |
 | Triển | Khởi tạo cấu trúc Pydantic models và FastAPI routes cho Case lifecycle | 🔄 WIP | `src/models/schemas.py` & `src/api/routes.py` | 4h |
 
 **Tổng kết ngày:** Đã nộp Mentor Duty ngày 23/09/2026. Nhóm đang triển khai form khảo sát và phân chia task WBS để bắt đầu code các module nền tảng của LangGraph & FastAPI backend.

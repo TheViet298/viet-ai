@@ -75,7 +75,7 @@ export function useTicketDetail(initialId: string) {
     setError(null);
     try {
       const res = await getTicketDetail(initialId);
-      if (res && res.data) {
+      if (res && res.success && res.data) {
         setDetail(res.data);
         setStatus(res.data.case.status);
         setEditedSummary(res.data.case_brief.summary);
@@ -92,8 +92,27 @@ export function useTicketDetail(initialId: string) {
   }, [initialId]);
 
   useEffect(() => {
-    loadTicket();
-  }, [loadTicket]);
+    let isMounted = true;
+    const fetchDetail = async () => {
+      setLoading(true);
+      try {
+        const res = await getTicketDetail(initialId);
+        if (isMounted && res && res.success && res.data) {
+          setDetail(res.data);
+          setStatus(res.data.case.status);
+          setEditedSummary(res.data.case_brief.summary);
+        }
+      } catch {
+        // Fallback to mock data if backend unavailable
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    fetchDetail();
+    return () => {
+      isMounted = false;
+    };
+  }, [initialId]);
 
   const handleSaveBrief = () => {
     setDetail((prev) => ({
@@ -116,30 +135,54 @@ export function useTicketDetail(initialId: string) {
 
   const executeAction = async (
     actionName: string,
-    actionType: StaffActionType,
-    newStatus: TicketStatus
+    actionTypeOrStatus?: StaffActionType | TicketStatus,
+    targetStatus?: TicketStatus
   ) => {
+    let finalActionType: StaffActionType = "EDIT_BRIEF";
+    let finalStatus: TicketStatus = "In Progress";
+
+    if (typeof actionTypeOrStatus === "string") {
+      if (
+        actionTypeOrStatus === "APPROVE" ||
+        actionTypeOrStatus === "EDIT_BRIEF" ||
+        actionTypeOrStatus === "REROUTE" ||
+        actionTypeOrStatus === "CLOSE" ||
+        actionTypeOrStatus === "REOPEN" ||
+        actionTypeOrStatus === "REQUEST_INFO"
+      ) {
+        finalActionType = actionTypeOrStatus;
+        finalStatus = targetStatus || "In Progress";
+      } else {
+        finalStatus = actionTypeOrStatus as TicketStatus;
+        if (actionName.includes("Duyệt") || actionName.includes("Approve")) finalActionType = "APPROVE";
+        else if (actionName.includes("Yêu cầu") || actionName.includes("thông tin")) finalActionType = "REQUEST_INFO";
+        else if (actionName.includes("Chuyển") || actionName.includes("Reroute")) finalActionType = "REROUTE";
+        else if (actionName.includes("Đóng") || actionName.includes("Close")) finalActionType = "CLOSE";
+        else if (actionName.includes("Mở lại")) finalActionType = "REOPEN";
+      }
+    }
+
+    setStatus(finalStatus);
     setIsSubmitting(true);
+    setActionSuccess(`Đang ghi nhận: ${actionName}...`);
+
     try {
       await submitStaffAction(initialId, {
-        action: actionType,
-        staff_id: "STAFF_CURR_USER",
-        updated_status: newStatus,
+        action: finalActionType,
+        staff_id: "STAFF_VINFAST_DEMO",
+        updated_status: finalStatus,
+        edited_brief: detail.case_brief.is_edited_by_staff ? { summary: editedSummary } : undefined,
         notes: notes || undefined,
-        edited_brief: detail.case_brief.is_edited_by_staff
-          ? { summary: editedSummary }
-          : undefined,
       });
+      setActionSuccess(`Đã thực hiện thành công: ${actionName} cho hồ sơ ${initialId}!`);
     } catch {
-      // Optimistic update locally
+      setActionSuccess(`Đã cập nhật trạng thái: ${actionName} (chế độ demo).`);
     } finally {
-      setStatus(newStatus);
+      setIsSubmitting(false);
       setDetail((prev) => ({
         ...prev,
-        case: { ...prev.case, status: newStatus },
+        case: { ...prev.case, status: finalStatus },
       }));
-      setActionSuccess(`Thành công: ${actionName} cho hồ sơ ${initialId}!`);
-      setIsSubmitting(false);
       setTimeout(() => setActionSuccess(null), 4000);
     }
   };

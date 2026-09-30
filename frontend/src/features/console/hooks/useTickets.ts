@@ -87,12 +87,12 @@ export function useTickets() {
         status: statusFilter !== "ALL" ? statusFilter : undefined,
         priority: priorityFilter !== "ALL" ? priorityFilter : undefined,
       });
-      if (res && res.data && Array.isArray(res.data.items)) {
+      if (res && res.success && res.data?.items) {
         setTickets(res.data.items);
         setIsLiveApi(true);
       }
     } catch {
-      // Graceful fallback to initial mock data for local/offline demo without breaking
+      // Fallback to initial state if backend is not reachable
       setIsLiveApi(false);
     } finally {
       setLoading(false);
@@ -100,8 +100,29 @@ export function useTickets() {
   }, [statusFilter, priorityFilter]);
 
   useEffect(() => {
-    fetchTickets();
-  }, [fetchTickets]);
+    let isMounted = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await getTicketQueue({
+          status: statusFilter !== "ALL" ? statusFilter : undefined,
+          priority: priorityFilter !== "ALL" ? priorityFilter : undefined,
+        });
+        if (isMounted && res && res.success && res.data?.items) {
+          setTickets(res.data.items);
+          setIsLiveApi(true);
+        }
+      } catch {
+        if (isMounted) setIsLiveApi(false);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [statusFilter, priorityFilter]);
 
   const priorityWeight: Record<TicketPriority, number> = {
     CRITICAL: 4,
