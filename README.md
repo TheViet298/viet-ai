@@ -160,14 +160,31 @@ bằng bất kỳ markdown viewer nào.
 
 ## AI usage logging
 
-Mọi prompt được ghi vào `.ai-log/session.jsonl` và tự động gửi lên grading server
-ở bước pre-push.
+Prompt và hoạt động công khai được ghi vào `.ai-log/session.jsonl`; pre-push
+khôi phục log Codex bị bỏ sót rồi gửi các batch lên grading server. Log, archive,
+receipt và thông tin tiến trình trong `.ai-log/` không được commit.
+
+Để ghi và gửi liên tục, chạy `bash scripts/setup_hooks.sh --watch` (Windows:
+thêm `-Watch` vào lệnh PowerShell ở trên). Watcher quét transcript Codex của
+repo mỗi 3 giây và gửi khoảng mỗi 15 giây, kể cả khi chưa push. Chạy lại sau
+khi khởi động máy. Nó giữ nguyên prompt, ghi câu trả lời công khai, hoạt động
+công cụ và lượt bị ngắt; bỏ qua reasoning, chỉ dẫn system/developer và che
+giá trị bí mật nhận diện được. Transcript là định dạng nội bộ có thể thay đổi.
+
+Hook Codex gốc cần project được trust và cấu hình hook được duyệt trong
+`/hooks`; thay đổi cấu hình có thể cần session mới. Watcher hoạt động độc lập
+với việc tải lại hook. Khôi phục thủ công bằng
+`bash scripts/_pyrun.sh scripts/log_codex.py --auto`, rồi gửi bằng
+`bash scripts/_pyrun.sh scripts/submit_log.py --all`. Có thể thêm `--dry-run`
+vào lệnh khôi phục để chỉ xem số lượng. `.ai-log/receipts.jsonl` lưu xác nhận
+HTTP của server; HTTP 202 xác nhận tiếp nhận, không chứng minh dashboard đã
+hiển thị xong.
 
 | Công cụ | Cấu hình | Thời điểm ghi |
 |---|---|---|
 | Claude Code | `.claude/settings.json` | mỗi prompt (`UserPromptSubmit`) |
 | Cursor | `.cursor/hooks.json` | mỗi prompt và khi dừng |
-| OpenAI Codex CLI | `.codex/hooks.json` | mỗi prompt và khi dừng |
+| OpenAI Codex CLI | `.codex/hooks.json` | prompt, tool, dừng, ngắt và vòng đời session; watcher khôi phục |
 | Gemini CLI | `.gemini/settings.json` | mỗi lượt agent chạy |
 | GitHub Copilot | `.github/hooks/hooks.json` | mỗi prompt và cuối session |
 | Antigravity IDE | `.agents/hooks.json` | mỗi prompt, kèm lần quét lại lúc `git push` |

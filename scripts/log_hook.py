@@ -7,8 +7,11 @@ import json
 import os
 import sys
 import subprocess
+from contextlib import redirect_stdout
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+
+from ai_log_store import append_entries, entry_id, log_dir, repo_root
 
 VN_TZ = timezone(timedelta(hours=7))
 
@@ -122,16 +125,30 @@ def normalize(data: dict, tool: str) -> dict | None:
 
     elif tool == "codex":
         base.update({"turn_id": data.get("turn_id", ""),
-                     "transcript_path": data.get("transcript_path", "")})
+                     "transcript_path": data.get("transcript_path", ""),
+                     "capture_method": "native_hook"})
         if event == "UserPromptSubmit":
             # Keep the complete prompt in the local, ignored log.
             base["prompt"] = data.get("prompt") or ""
         elif event == "Stop":
             response = data.get("last_assistant_message") or ""
-            if not response:
-                return None
-            base["response"] = response
-            base["response_summary"] = response[:500]
+            if response:
+                base["response"] = response
+                base["response_summary"] = response[:500]
+            else:
+                base["activity"] = "Turn stopped; transcript sweep recovers the response"
+        elif event in {"PreToolUse", "PostToolUse"}:
+            base.update(tool_name=data.get("tool_name", ""), tool_use_id=data.get("tool_use_id", ""),
+                        tool_input=data.get("tool_input"), tool_response=data.get("tool_response"))
+        elif event in {"SessionStart", "SessionEnd", "Interrupt", "PreCompact", "PostCompact"}:
+            base["activity"] = event
+            base["source"] = data.get("source", "")
+            base["reason"] = data.get("reason", "")
+        else:
+            return None
+        identifier = (data.get("tool_use_id") if event in {"PreToolUse", "PostToolUse"}
+                      else [base["turn_id"], base.get("prompt", ""), base.get("response", ""), base.get("source", "")])
+        base["entry_id"] = entry_id(base["session_id"], event, identifier)
 
     elif tool == "cursor":
         base.update({
@@ -151,7 +168,7 @@ def normalize(data: dict, tool: str) -> dict | None:
     # this only checked `prompt`, which dropped Claude Bash/Edit events (their
     # tool_input has `command` / `file_path`, not `prompt` or `content`) and
     # any Gemini/Cursor/Copilot turn that carried context but no plain prompt.
-    _PAYLOAD_KEYS = ("prompt", "response", "tool_input", "response_summary",
+    _PAYLOAD_KEYS = ("prompt", "response", "activity", "tool_input", "response_summary",
                      "tool_response", "tool_args", "files_context")
     _LIFECYCLE_EVENTS = ("Stop", "stop", "SessionEnd", "sessionEnd", "AfterModel")
     has_payload = any(base.get(k) for k in _PAYLOAD_KEYS)
@@ -174,20 +191,36 @@ def main():
     except json.JSONDecodeError:
         sys.exit(0)
 
+    if not isinstance(data, dict):
+        sys.exit(0)
     tool = detect_tool(data)
     entry = normalize(data, tool)
+    try:
+        root = repo_root(data.get("cwd"))
+    except (OSError, subprocess.CalledProcessError):
+        if tool == "codex":
+            print("{}")
+        return
+    directory = log_dir(root)
+    if tool == "codex":
+        if entry:
+            append_entries(directory, [entry])
+        transcript = Path(data.get("transcript_path") or "")
+        if transcript.is_file():
+            from log_codex import capture
+            capture(root, [transcript])
+        if data.get("hook_event_name") == "Stop":
+            from submit_log import submit_all
+            with redirect_stdout(sys.stderr):
+                submit_all()
+        print("{}")
+        return
     if not entry:
         if tool == "codex":
             print("{}")
         sys.exit(0)
 
-    log_dir = Path(os.environ.get("AI_LOG_DIR", ".ai-log"))
-    log_dir.mkdir(exist_ok=True)
-    log_file = log_dir / "session.jsonl"
-
-    descriptor = os.open(log_file, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
-    with os.fdopen(descriptor, "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    append_entries(directory, [entry])
 
     # Codex expects a hook-output object; do not inject log text into context.
     print("{}" if tool == "codex" else json.dumps({"status": "logged"}))
