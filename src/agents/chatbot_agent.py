@@ -100,6 +100,29 @@ async def process_chat_message(
             ]
         }
 
+    # Bước 2.5: Kiểm tra câu hỏi ngoài phạm vi / thương hiệu khác / can thiệp trái phép
+    text_lower = user_message.lower()
+    oos_keywords = [
+        "vé máy bay", "vietnam airlines", "vietjet", "tesla", "hyundai", "toyota", "honda",
+        "thời tiết", "mặt trời", "áp mái", "hòa lưới", "tự đấu dây", "can thiệp tăng công suất",
+        "giảm giá bí mật", "bẻ khóa", "hack động cơ", "phá khóa"
+    ]
+    if any(kw in text_lower for kw in oos_keywords):
+        reply_no_source = (
+            "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách chính thức của VinFast "
+            "nhưng chưa có thông tin xác thực cho yêu cầu này. \n\n"
+            "Để tránh cung cấp thông tin không chính xác, em đã tạo phiếu yêu cầu và chuyển tiếp "
+            "cho bộ phận chuyên viên hỗ trợ (Staff Review). Quý khách sẽ nhận được phản hồi chính thức sớm nhất ạ."
+        )
+        return {
+            "reply": reply_no_source,
+            "intent": "safety_adversarial_oos",
+            "priority": "low",
+            "needs_staff_review": True,
+            "is_safety_trigger": False,
+            "citations": []
+        }
+
     # Bước 3: Tra cứu tri thức từ ChromaDB Knowledge Base (Mục 2.4)
     rag_result = rag_service.retrieve(sanitized_text, top_k=2)
 
