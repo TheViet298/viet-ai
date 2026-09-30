@@ -1,15 +1,16 @@
 # Evaluation Target Metrics & Benchmark Report
 
-> **Người phụ trách:** Khôi (Data/Eval Lead)  
-> **Cập nhật lần cuối:** 2026-09-24  
-> **Trạng thái:** Benchmark Ready / Baseline Testing
+> **Người phụ trách:** Khôi (Data/Eval Lead)
+> **Cập nhật lần cuối:** 2026-09-30
+>
+> **Trạng thái:** Đã định nghĩa mục tiêu và dataset mẫu; chưa chạy baseline
 
 ---
 
 ## 1. Định nghĩa Công thức & Mục tiêu Đánh giá (Evaluation Metrics Definition)
 
 > [!NOTE]
-> Các công thức dưới đây là **chuẩn đo lường thống nhất** để Khôi và nhóm AI triển khai benchmark trên tập dữ liệu mô phỏng `eval/datasets/triage_cases_v1.jsonl`.
+> Các công thức dưới đây là **chuẩn đo lường thống nhất** để Khôi và nhóm AI triển khai benchmark. Tình huống Agent dùng `eval/datasets/triage_cases_v1.jsonl`; QA hậu mãi/CSKH cho RAG dùng `eval/datasets/after_sales_customer_care_v1.csv`.
 
 | Tên Chỉ số (Metric) | Công thức Tính Toán Thống Nhất | Target Benchmark | Mục đích Đo lường |
 | :--- | :--- | :---: | :--- |
@@ -23,14 +24,18 @@
 
 ## 2. Danh mục Bộ dữ liệu Đánh giá (Evaluation Datasets)
 
-* **Tập dữ liệu Benchmark v1:** [`eval/datasets/triage_cases_v1.jsonl`](file:///d:/Vin_AI/P-142/eval/datasets/triage_cases_v1.jsonl)
+* **Hotline cứu hộ/hỗ trợ trên đường/cảnh báo:** [`triage_cases_v1.jsonl`](../datasets/triage_cases_v1.jsonl), 50 case (10 chuyển đổi, 40 mới), giữ nhãn đánh giá Agent. Bộ này là tập con theo chủ đề, chưa đo đầy đủ cả 4 intent của hệ thống.
+* **Hậu mãi và chăm sóc khách hàng:** [`after_sales_customer_care_v1.csv`](../datasets/after_sales_customer_care_v1.csv), 61 case (21 chuyển đổi, 40 mới), QA kèm citation, không có nhãn triage. Dùng để đối chiếu câu trả lời/citation khi xây RAG sau này; cần harness đánh giá riêng.
+* **Schema và cách tách:** [`datasets/README.md`](../datasets/README.md). Bộ hỗn hợp 52 case cũ được giữ trong archive để truy vết, không ghép vào hai bộ đang sử dụng khi benchmark.
 * **Quy chuẩn dữ liệu:**
-  * 100% dữ liệu tình huống được mô phỏng dựa trên tín hiệu từ khảo sát thăm dò ban đầu (Charging, Battery, Taplo warning, Khiếu nại dịch vụ, Hướng dẫn tính năng ứng dụng).
+  * Dữ liệu tình huống được mô phỏng từ nguồn VinFast công khai và quy tắc dự án, bao gồm sạc/pin, cảnh báo, cứu hộ, phản ánh dịch vụ và hướng dẫn tính năng ứng dụng.
   * **Tuyệt đối không chứa PII:** Toàn bộ thông tin cá nhân (email, họ tên, số điện thoại, biển số xe) đã được loại bỏ và thay bằng ID mô phỏng.
 
 ---
 
 ## 3. Kế hoạch Chạy Đánh giá Tự động (Execution Plan)
+
+Flow 1 (`Charging/Battery`) được triển khai và đánh giá trước. Các chỉ số FAQ/RAG trong bảng trên là mục tiêu cho giai đoạn sau Flow 1, chưa phải kết quả đạt được. Script `scripts/run_triage_eval.py` trong ví dụ dưới đây hiện chưa có trong repo; cần tạo script và ghi kết quả chạy thực tế trước khi công bố baseline.
 
 ```bash
 # 1. Chạy kiểm thử Unit test cho Rule Engine và Parser
