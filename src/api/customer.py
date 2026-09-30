@@ -308,7 +308,7 @@ async def customer_chat(
             error=None,
         )
 
-    # 3. KIỂM TRA FAQ / TRA CỨU HƯỚNG DẪN ỨNG DỤNG VINFAST (RAG FAQ)
+    # 3. KIỂM TRA FAQ / TRA CỨU HƯỚNG DẪN & BẢO DƯỠNG (RAG FAQ)
     faq_keywords = [
         "tính năng app",
         "ứng dụng",
@@ -321,9 +321,22 @@ async def customer_chat(
         "giá",
         "bảng giá",
         "chính sách",
+        "bảo dưỡng",
+        "định kỳ",
+        "hạng mục",
+        "12.000",
+        "12000",
+        "km",
+        "bảo trì",
+        "thời hạn",
+        "bao lâu",
+        "mấy năm",
+        "sổ tay",
+        "áp suất lốp",
+        "thuê pin",
     ]
     is_faq = any(kw in lower_text for kw in faq_keywords)
-    if is_faq and not any(kw in lower_text for kw in ["lỗi", "hỏng", "không sạc", "sự cố", "rùa vàng"]):
+    if is_faq and not any(kw in lower_text for kw in ["không sạc", "không vào điện", "rùa vàng", "cháy", "khói", "mất phanh"]):
         ai_res = await process_chat_message(text)
         agent_reply = ai_res.get("reply") or (
             "Theo Hướng dẫn sử dụng Ứng dụng VinFast, anh/chị có thể dễ dàng quản lý tình trạng xe, "

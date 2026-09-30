@@ -17,9 +17,18 @@ export function useChat() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState<VehicleModel>("VF8");
-  const [sessionId] = useState(() => `sess_vf_${Math.random().toString(36).substring(2, 9)}`);
+  const [sessionId, setSessionId] = useState(() => `sess_vf_${Math.random().toString(36).substring(2, 9)}`);
   const [currentCaseId, setCurrentCaseId] = useState<string | null>(null);
   const [criticalBanner, setCriticalBanner] = useState(false);
+
+  const resetChat = () => {
+    setMessages([INITIAL_WELCOME_MESSAGE]);
+    setInput("");
+    setLoading(false);
+    setCurrentCaseId(null);
+    setCriticalBanner(false);
+    setSessionId(`sess_vf_${Math.random().toString(36).substring(2, 9)}`);
+  };
 
   const sendMessage = async (messageText?: string, attachmentIds?: string[]) => {
     const textToSend = messageText || input.trim();
@@ -43,9 +52,13 @@ export function useChat() {
       attachment_ids: attachmentIds,
     };
 
+    // 1. Xuất hiện câu hỏi của User trước
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    // 2. Kích hoạt trạng thái AI đang suy nghĩ
     setLoading(true);
+
+    const startTime = Date.now();
 
     try {
       const response = await sendChatMessage({
@@ -59,6 +72,12 @@ export function useChat() {
           vehicle_code_mock: `VF-${selectedModel}-8899`,
         },
       });
+
+      // Đảm bảo có một khoảng delay tự nhiên (~400ms) để người dùng thấy AI đang phân tích
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 400) {
+        await new Promise((resolve) => setTimeout(resolve, 400 - elapsed));
+      }
 
       if (response.success && response.data) {
         const data = response.data;
@@ -83,10 +102,16 @@ export function useChat() {
           setCriticalBanner(true);
         }
 
+        // 3. AI trả lời xuất hiện sau khi suy nghĩ xong
         setMessages((prev) => [...prev, agentMsg]);
       }
     } catch {
       // Mock fallback response for smooth testing before backend is started
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 400) {
+        await new Promise((resolve) => setTimeout(resolve, 400 - elapsed));
+      }
+
       const fallbackMsg: ChatMessage = {
         id: `mock_${Date.now()}`,
         sender: "AGENT",
@@ -116,5 +141,6 @@ export function useChat() {
     criticalBanner,
     setCriticalBanner,
     sendMessage,
+    resetChat,
   };
 }

@@ -61,6 +61,22 @@ FALLBACK_KNOWLEDGE_BASE = [
             "Quá thời gian trên, hệ thống sẽ áp dụng phí chiếm dụng trụ sạc (1.000 VNĐ/phút) để đảm bảo quyền lợi cho các chủ xe khác."
         ),
     },
+    {
+        "source_id": "SRC-005",
+        "title": "Cẩm nang Bảo dưỡng Định kỳ Ô tô Điện VinFast",
+        "url": "https://vinfastauto.com/vn_vi/lich-bao-duong-dinh-ky-xe-dien",
+        "section": "Các hạng mục bảo dưỡng định kỳ 12.000 km",
+        "keywords": ["bảo dưỡng", "định kỳ", "12.000", "12000", "km", "hạng mục", "cấp 1", "vf8", "vf 8", "lịch", "bảo trì"],
+        "content": (
+            "Theo Cẩm nang Bảo dưỡng Định kỳ chính thức của VinFast, các hạng mục kiểm tra mốc 12.000 km (hoặc 12 tháng) cho xe ô tô điện VinFast (VF 8, VF 9, VF 5, VF e34) bao gồm:\n"
+            "1. Kiểm tra tổng thể pack pin cao áp, độ kín khít và mức dung dịch làm mát pin.\n"
+            "2. Kiểm tra hệ thống phanh (má phanh, đĩa phanh, dầu phanh) và hoạt động của phanh tái sinh.\n"
+            "3. Kiểm tra hệ thống lái, thanh giằng, rô-tuyn, giảm xóc và siết lực ốc gầm theo tiêu chuẩn.\n"
+            "4. Kiểm tra độ mòn hoa lốp và cân chỉnh áp suất tiêu chuẩn cho 4 bánh xe.\n"
+            "5. Vệ sinh hoặc thay thế lọc gió điều hòa (lọc gió cabin) để đảm bảo không khí trong xe.\n"
+            "6. Chẩn đoán quét lỗi phần mềm qua cổng OBD-II, cập nhật phiên bản phần mềm FRS mới nhất tại Xưởng dịch vụ."
+        ),
+    },
 ]
 
 class RAGService:

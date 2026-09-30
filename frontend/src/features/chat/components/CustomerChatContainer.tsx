@@ -1,6 +1,6 @@
 "use client";
 
-import { Car, FileImage, ScanLine, ShieldCheck } from "lucide-react";
+import { Car, FileImage, RotateCcw, ScanLine, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { VehicleModel } from "../types";
 import { useChat } from "../hooks/useChat";
@@ -32,12 +32,20 @@ export function CustomerChatContainer() {
     currentCaseId,
     criticalBanner,
     sendMessage,
+    resetChat,
   } = useChat();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
   const [uploadedAttachmentId, setUploadedAttachmentId] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
   const [aiStatus, setAiStatus] = useState<string>("VinFast RAG Chatbot Agent • Guardrails sẵn sàng");
+
+  const handleResetAll = () => {
+    resetChat();
+    setImagePreview(null);
+    setImageName(null);
+    setUploadedAttachmentId(null);
+  };
 
   // Load AI System Status from /api/v1/status
   useState(() => {
@@ -135,8 +143,18 @@ export function CustomerChatContainer() {
               </div>
             </div>
 
-            {/* Model Selector */}
+            {/* Header Right Actions */}
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleResetAll}
+                className="flex items-center gap-1.5 rounded-[10px] bg-white/10 hover:bg-white/20 text-white text-[12px] font-medium px-2.5 py-1 border border-white/15 transition shadow-sm"
+                title="Làm mới cuộc trò chuyện và bắt đầu phiên hỏi mới"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Làm mới</span>
+              </button>
+
               <span className="text-[11px] text-[#64748B] hidden sm:inline uppercase tracking-wider font-semibold">Dòng xe:</span>
               <select
                 value={selectedModel}
@@ -203,6 +221,17 @@ export function CustomerChatContainer() {
                   <p className="text-[11px] text-[#1E40AF] font-medium">Mã hồ sơ tiếp nhận</p>
                   <p className="mt-0.5 font-mono text-[12px] font-bold text-[#0F172A]">{currentCaseId}</p>
                 </div>
+              )}
+
+              {messages.length > 1 && (
+                <button
+                  type="button"
+                  onClick={handleResetAll}
+                  className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-xl border border-[#E2E8F0] bg-[#F6F7F9] hover:bg-[#EFF3FC] py-2 text-[12px] font-semibold text-[#1E40AF] transition"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Bắt đầu cuộc trò chuyện mới</span>
+                </button>
               )}
             </div>
           </div>
