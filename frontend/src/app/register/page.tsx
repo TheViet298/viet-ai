@@ -27,7 +27,9 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleRegister = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim() || !password) {
       setErrorMessage("Vui lòng điền đầy đủ các thông tin bắt buộc.");
@@ -36,6 +38,39 @@ export default function RegisterPage() {
     if (password !== confirmPassword) {
       setErrorMessage("Mật khẩu xác nhận không khớp.");
       return;
+    }
+
+    setSubmitting(true);
+    setErrorMessage("");
+
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const res = await fetch(`${baseUrl}/api/v1/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: phone.trim(),
+          password: password,
+          mock_customer_id: `CUST_${phone.slice(-4) || "NEW"}`,
+        }),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.data?.token) {
+          localStorage.setItem("vf_customer_token", json.data.token);
+        }
+      } else {
+        const errJson = await res.json().catch(() => null);
+        if (errJson?.detail) {
+          // If already exists, user can still proceed with login
+          console.warn("Register notice:", errJson.detail);
+        }
+      }
+    } catch {
+      // Offline fallback
+    } finally {
+      setSubmitting(false);
     }
 
     loginAs("CUSTOMER", {

@@ -12,14 +12,25 @@ import {
   PhoneCall,
   Sparkles,
   FileText,
+  Loader2,
+  RotateCcw,
+  Star,
+  Check,
 } from "lucide-react";
+import {
+  getCaseStatus,
+  getCustomerCases,
+  reopenCustomerCase,
+  submitCustomerFeedback,
+} from "@/features/chat/api/chatApi";
+import { CustomerCaseItem } from "@/features/chat/types";
 
 interface TrackedCase {
   id: string;
   vehicleModel: string;
   vehicleCode: string;
-  status: "Staff Reviewing" | "Needs Information" | "In Progress" | "Resolved";
-  priority: "CRITICAL" | "HIGH" | "MEDIUM";
+  status: "Staff Reviewing" | "Needs Information" | "In Progress" | "Resolved" | "Closed" | "Reopened";
+  priority: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
   createdAt: string;
   issueSummary: string;
   suggestedAction: string;
@@ -74,13 +85,66 @@ const SAMPLE_CASES: Record<string, TrackedCase> = {
 };
 
 export default function TrackCasePage() {
-  const [searchId, setSearchId] = useState("VF-SF-8921");
+  const [searchId, setSearchId] = useState("CASE-20260924-001");
   const [currentCase, setCurrentCase] = useState<TrackedCase | null>(SAMPLE_CASES["VF-SF-8921"]);
   const [searched, setSearched] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const clean = searchId.trim().toUpperCase();
+  const [userCases, setUserCases] = useState<CustomerCaseItem[]>([]);
+  const [feedbackRating, setFeedbackRating] = useState<number>(5);
+  const [feedbackComment, setFeedbackComment] = useState<string>("");
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(false);
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
+  const [reopenLoading, setReopenLoading] = useState<boolean>(false);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+
+  // Load danh sách hồ sơ của user từ backend
+  useState(() => {
+    if (typeof window !== "undefined") {
+      getCustomerCases()
+        .then((res) => {
+          if (res?.success && res.data?.cases) {
+            setUserCases(res.data.cases);
+          }
+        })
+        .catch(() => {});
+    }
+  });
+
+  const handleSearch = async (e?: React.FormEvent, customId?: string) => {
+    if (e) e.preventDefault();
+    const clean = (customId || searchId).trim().toUpperCase();
+    if (!clean) return;
+
+    setLoading(true);
+    setActionNotice(null);
+    setFeedbackSubmitted(false);
+
+    try {
+      const res = await getCaseStatus(clean);
+      if (res && res.success && res.data) {
+        const d = res.data;
+        setCurrentCase({
+          id: d.case_id || clean,
+          vehicleModel: d.vehicle_model ? `VinFast ${d.vehicle_model}` : "VinFast VF8",
+          vehicleCode: d.vehicle_code_mock || "VF-SF-00231",
+          status: (d.status as TrackedCase["status"]) || "Staff Reviewing",
+          priority: (d.priority as TrackedCase["priority"]) || "HIGH",
+          createdAt: d.created_at ? new Date(d.created_at).toLocaleString("vi-VN") : "Gần đây",
+          issueSummary: d.summary || "Hồ sơ sự cố tiếp nhận qua hệ thống VinFast ServiceFlow AI.",
+          suggestedAction: d.suggested_action || "Đang được xử lý bởi Cố vấn Dịch vụ.",
+          reviewerNotes: d.reviewer_notes || "Hồ sơ đang trong quy trình xử lý theo tiêu chuẩn xưởng.",
+        });
+        setSearched(true);
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // Fallback to sample cases
+    } finally {
+      setLoading(false);
+    }
+
     if (SAMPLE_CASES[clean]) {
       setCurrentCase(SAMPLE_CASES[clean]);
     } else {
@@ -97,6 +161,41 @@ export default function TrackCasePage() {
       });
     }
     setSearched(true);
+  };
+
+  const handleReopen = async (caseId: string) => {
+    setReopenLoading(true);
+    setActionNotice(null);
+    try {
+      const res = await reopenCustomerCase(caseId);
+      if (res?.success) {
+        setActionNotice("Hồ sơ đã được mở lại thành công (Trạng thái: Reopened)!");
+        setCurrentCase((prev) => (prev ? { ...prev, status: "Reopened" } : null));
+      }
+    } catch (err: any) {
+      setActionNotice("Lưu ý: " + (err?.message || "Không thể mở lại hồ sơ lúc này."));
+    } finally {
+      setReopenLoading(false);
+    }
+  };
+
+  const handleSubmitFeedback = async (caseId: string) => {
+    setIsSubmittingFeedback(true);
+    setActionNotice(null);
+    try {
+      const res = await submitCustomerFeedback(caseId, {
+        rating: feedbackRating,
+        comment: feedbackComment,
+      });
+      if (res?.success) {
+        setFeedbackSubmitted(true);
+        setActionNotice("Cảm ơn anh/chị đã gửi đánh giá chất lượng dịch vụ!");
+      }
+    } catch (err: any) {
+      setActionNotice("Lưu ý: " + (err?.message || "Lỗi khi gửi đánh giá."));
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
   };
 
   const getStatusStep = (status: TrackedCase["status"]) => {
@@ -160,32 +259,79 @@ export default function TrackCasePage() {
             </div>
             <button
               type="submit"
-              className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-[10px] bg-[#1E40AF] hover:bg-[#1E3A8A] px-5 py-2 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition shrink-0"
+              disabled={loading}
+              className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-[10px] bg-[#1E40AF] hover:bg-[#1E3A8A] px-5 py-2 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition shrink-0 disabled:opacity-60"
             >
-              <span>Tra cứu</span>
-              <ArrowRight className="h-3.5 w-3.5" />
+              {loading ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Đang tra cứu...</span>
+                </>
+              ) : (
+                <>
+                  <span>Tra cứu</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </>
+              )}
             </button>
           </form>
 
-          {/* Quick sample chips - pill bo tròn */}
-          <div className="mt-3 flex items-center gap-1.5 flex-wrap text-[12px] text-[#64748B] pt-2.5 border-t border-[#E2E8F0]">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Mẫu thử:</span>
-            {Object.keys(SAMPLE_CASES).map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => {
-                  setSearchId(k);
-                  setCurrentCase(SAMPLE_CASES[k]);
-                  setSearched(true);
-                }}
-                className="rounded-full bg-[#F6F7F9] px-2.5 py-0.5 font-mono text-[11px] font-medium text-[#1E40AF] hover:bg-[#EFF3FC] transition border border-[#E2E8F0]"
-              >
-                {k} ({SAMPLE_CASES[k].status})
-              </button>
-            ))}
+          {/* Quick sample chips & User Live Cases */}
+          <div className="mt-3 flex flex-col gap-2 pt-2.5 border-t border-[#E2E8F0]">
+            {userCases.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap text-[12px] text-[#0F172A]">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#10B981] flex items-center gap-1">
+                  <Check className="h-3 w-3" /> Hồ sơ của bạn:
+                </span>
+                {userCases.map((uc) => (
+                  <button
+                    key={uc.id}
+                    type="button"
+                    onClick={() => {
+                      setSearchId(uc.id);
+                      handleSearch(undefined, uc.id);
+                    }}
+                    className="rounded-full bg-[#ECFDF5] px-2.5 py-0.5 font-mono text-[11px] font-semibold text-[#065F46] hover:bg-[#D1FAE5] transition border border-[#10B981]/30"
+                  >
+                    {uc.id} ({uc.status})
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center gap-1.5 flex-wrap text-[12px] text-[#64748B]">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">Mẫu thử demo:</span>
+              {Object.keys(SAMPLE_CASES).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => {
+                    setSearchId(k);
+                    setCurrentCase(SAMPLE_CASES[k]);
+                    setSearched(true);
+                  }}
+                  className="rounded-full bg-[#F6F7F9] px-2.5 py-0.5 font-mono text-[11px] font-medium text-[#1E40AF] hover:bg-[#EFF3FC] transition border border-[#E2E8F0]"
+                >
+                  {k} ({SAMPLE_CASES[k].status})
+                </button>
+              ))}
+            </div>
           </div>
         </div>
+
+        {/* Action Notice Alert */}
+        {actionNotice && (
+          <div className="mb-4 rounded-xl border border-[#10B981]/30 bg-[#ECFDF5] p-3 text-[13px] font-medium text-[#065F46] flex items-center justify-between shadow-sm">
+            <span>{actionNotice}</span>
+            <button
+              type="button"
+              onClick={() => setActionNotice(null)}
+              className="text-[#065F46] hover:text-[#047857] text-[12px] font-bold ml-2"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Case Details Card - Card 16px, shadow rất nhẹ */}
         {searched && currentCase && (
@@ -217,13 +363,27 @@ export default function TrackCasePage() {
                   </div>
                 </div>
 
-                <Link
-                  href="/chat"
-                  className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#E2E8F0] bg-[#F6F7F9] px-3 py-1.5 text-[12px] font-medium text-[#0D9488] hover:border-[#0D9488] hover:bg-white transition"
-                >
-                  <FileText className="h-3.5 w-3.5" />
-                  <span>Mở chat về case này</span>
-                </Link>
+                <div className="flex items-center gap-2">
+                  {(currentCase.status === "Resolved" || currentCase.status === "Closed") && (
+                    <button
+                      type="button"
+                      disabled={reopenLoading}
+                      onClick={() => handleReopen(currentCase.id)}
+                      className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#D97706]/40 bg-[#FFFBEB] px-3 py-1.5 text-[12px] font-semibold text-[#D97706] hover:bg-[#FEF3C7] transition"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      <span>{reopenLoading ? "Đang mở lại..." : "Yêu cầu mở lại"}</span>
+                    </button>
+                  )}
+
+                  <Link
+                    href="/chat"
+                    className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#E2E8F0] bg-[#F6F7F9] px-3 py-1.5 text-[12px] font-medium text-[#0D9488] hover:border-[#0D9488] hover:bg-white transition"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    <span>Mở chat về case này</span>
+                  </Link>
+                </div>
               </div>
 
               {/* 4 Step Progress Bar */}
@@ -311,6 +471,71 @@ export default function TrackCasePage() {
                 </div>
               </div>
             </div>
+
+            {/* Feedback Section (hiển thị khi hồ sơ đã giải quyết hoặc đóng) */}
+            {(currentCase.status === "Resolved" || currentCase.status === "Closed") && (
+              <div className="rounded-2xl border border-[#10B981]/30 bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                <h3 className="text-[14px] font-bold text-[#0F172A] flex items-center gap-2">
+                  <Star className="h-4 w-4 text-[#F59E0B] fill-[#F59E0B]" />
+                  Đánh giá chất lượng hỗ trợ
+                </h3>
+                <p className="mt-1 text-[12px] text-[#64748B]">
+                  Ý kiến của anh/chị giúp VinFast ServiceFlow AI và đội ngũ kỹ thuật nâng cao chất lượng phục vụ.
+                </p>
+
+                {feedbackSubmitted ? (
+                  <div className="mt-3 rounded-xl bg-[#ECFDF5] p-3 text-[13px] font-semibold text-[#065F46] flex items-center gap-2">
+                    <Check className="h-4 w-4 text-[#10B981]" />
+                    Đã ghi nhận đánh giá của bạn. Trân trọng cảm ơn!
+                  </div>
+                ) : (
+                  <div className="mt-3 space-y-3">
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setFeedbackRating(star)}
+                          className="p-1 text-[#F59E0B] hover:scale-110 transition"
+                        >
+                          <Star
+                            className={`h-6 w-6 ${
+                              star <= feedbackRating ? "fill-[#F59E0B]" : "text-[#E2E8F0]"
+                            }`}
+                          />
+                        </button>
+                      ))}
+                      <span className="ml-2 text-[12px] font-bold text-[#0F172A]">
+                        {feedbackRating === 5
+                          ? "Rất hài lòng"
+                          : feedbackRating === 4
+                          ? "Hài lòng"
+                          : feedbackRating === 3
+                          ? "Bình thường"
+                          : "Chưa hài lòng"}
+                      </span>
+                    </div>
+
+                    <textarea
+                      value={feedbackComment}
+                      onChange={(e) => setFeedbackComment(e.target.value)}
+                      placeholder="Nhận xét bổ sung về tốc độ và chất lượng hỗ trợ (tùy chọn)..."
+                      rows={2}
+                      className="w-full rounded-xl border border-[#E2E8F0] p-2.5 text-[12px] text-[#0F172A] focus:border-[#1E40AF] focus:outline-none"
+                    />
+
+                    <button
+                      type="button"
+                      disabled={isSubmittingFeedback}
+                      onClick={() => handleSubmitFeedback(currentCase.id)}
+                      className="rounded-[10px] bg-[#10B981] hover:bg-[#059669] px-4 py-1.5 text-[12px] font-bold text-white transition disabled:opacity-60"
+                    >
+                      {isSubmittingFeedback ? "Đang gửi..." : "Gửi đánh giá"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

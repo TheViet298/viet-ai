@@ -9,6 +9,8 @@ import { QuickPromptsBar } from "./QuickPromptsBar";
 import { ChatFeed } from "./ChatFeed";
 import { ChatInputBar } from "./ChatInputBar";
 
+import { uploadAttachment } from "../api/chatApi";
+
 const VEHICLE_MODELS: VehicleModel[] = [
   "VF8",
   "VF5",
@@ -33,6 +35,8 @@ export function CustomerChatContainer() {
   } = useChat();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
+  const [uploadedAttachmentId, setUploadedAttachmentId] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
 
   // Pre-load draft from Landing Hero if available
   useState(() => {
@@ -64,17 +68,34 @@ export function CustomerChatContainer() {
     }
   });
 
-  const selectImage = (file: File) => {
+  const selectImage = async (file: File) => {
     setImageName(file.name);
     const reader = new FileReader();
     reader.onload = () => setImagePreview(String(reader.result));
     reader.readAsDataURL(file);
+
+    // Upload lên máy chủ backend để OCR/Vision phân tích tín hiệu sơ bộ
+    setIsUploadingImage(true);
+    try {
+      const res = await uploadAttachment(file);
+      if (res?.success && res.data?.attachment_id) {
+        setUploadedAttachmentId(res.data.attachment_id);
+      }
+    } catch {
+      // Offline fallback: keep local image preview
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const submit = () => {
     const text = input.trim() || (imagePreview ? "Tôi gửi ảnh cảnh báo và chưa rõ vấn đề. Nhờ trợ lý nhận diện dấu hiệu sơ bộ." : "");
     if (!text) return;
-    sendMessage(text);
+    sendMessage(text, uploadedAttachmentId ? [uploadedAttachmentId] : undefined);
+    // Sau khi gửi thì reset preview
+    setImagePreview(null);
+    setImageName(null);
+    setUploadedAttachmentId(null);
   };
 
   return (

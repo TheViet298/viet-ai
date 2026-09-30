@@ -52,10 +52,44 @@ export interface ChatMessage {
   safe_guidance?: string;
   case_id?: string | null;
   priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  attachment_ids?: string[];
 }
 
 export interface QuickPrompt {
   label: string;
   model: VehicleModel;
   text: string;
+}
+
+export interface AttachmentOut {
+  attachment_id: string;
+  storage_key: string;
+  mime_type: string;
+  analysis_status: string;
+  ocr_text?: string | null;
+  detected_signals?: Record<string, any> | null;
+  vision_confidence?: number | null;
+  created_at: string;
+}
+
+export interface CustomerCaseItem {
+  id: string;
+  vehicle_model: string;
+  vehicle_code_mock?: string;
+  intent: string;
+  priority: string;
+  status: string;
+  summary?: string | null;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export interface ArticleItem {
+  id: string;
+  title: string;
+  category: string;
+  summary: string;
+  content: string;
+  source_url: string;
+  verified_at: string;
 }

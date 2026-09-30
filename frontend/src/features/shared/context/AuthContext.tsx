@@ -77,6 +77,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(newUser);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
+      const username = role === "STAFF" ? "staff@vinfast.vn" : "customer@vinfast.vn";
+      const password = role === "STAFF" ? "staff123" : "customer123";
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      fetch(`${baseUrl}/api/v1/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+          if (json?.data?.token) {
+            if (role === "STAFF") localStorage.setItem("vf_staff_token", json.data.token);
+            else localStorage.setItem("vf_customer_token", json.data.token);
+          }
+        })
+        .catch(() => {});
     } catch {}
   };
 
@@ -84,6 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     try {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("vf_staff_token");
+      localStorage.removeItem("vf_customer_token");
     } catch {}
   };
 

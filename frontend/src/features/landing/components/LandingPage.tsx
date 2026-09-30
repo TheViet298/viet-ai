@@ -21,7 +21,11 @@ import {
   Sparkles,
   Wrench,
   X,
+  BookOpen,
+  ExternalLink,
 } from "lucide-react";
+import { getPublicArticles } from "@/features/chat/api/chatApi";
+import { ArticleItem } from "@/features/chat/types";
 
 const VEHICLE_OPTIONS = [
   "VinFast VF8",
@@ -140,6 +144,19 @@ export function LandingPage() {
   const [selectedModel, setSelectedModel] = useState("VinFast VF8");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
+  const [articles, setArticles] = useState<ArticleItem[]>([]);
+
+  useState(() => {
+    if (typeof window !== "undefined") {
+      getPublicArticles()
+        .then((res) => {
+          if (res?.success && res.data?.articles) {
+            setArticles(res.data.articles);
+          }
+        })
+        .catch(() => {});
+    }
+  });
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -422,6 +439,76 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ─────────────────────────────────────────────────────────
+          KNOWLEDGE HUB: CẨM NANG & CHÍNH SÁCH KIỂM CHỨNG
+      ───────────────────────────────────────────────────────── */}
+      {articles.length > 0 && (
+        <section className="border-t border-[#E2E8F0] bg-[#F6F7F9] py-12 lg:py-16">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+              <div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#10B981] flex items-center gap-1.5">
+                  <BookOpen className="h-3.5 w-3.5" /> Nguồn chính thức VinFast
+                </span>
+                <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#0F172A]">
+                  Cẩm nang kỹ thuật & Chính sách đã kiểm chứng
+                </h2>
+                <p className="mt-1 text-[13px] text-[#64748B]">
+                  Dữ liệu kiến thức đối chiếu chuẩn hóa mà AI Agent sử dụng để phản hồi khách hàng.
+                </p>
+              </div>
+              <Link
+                href="/chat"
+                className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#1E40AF] hover:underline"
+              >
+                Hỏi Agent về các bài viết này <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {articles.map((art) => (
+                <div
+                  key={art.id}
+                  className="rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="rounded-full bg-[#EFF3FC] px-2.5 py-0.5 text-[11px] font-semibold text-[#1E40AF]">
+                        {art.category}
+                      </span>
+                      <span className="font-mono text-[11px] text-[#64748B]">
+                        {art.id}
+                      </span>
+                    </div>
+                    <h3 className="text-[15px] font-bold text-[#0F172A]">
+                      {art.title}
+                    </h3>
+                    <p className="mt-2 text-[13px] leading-relaxed text-[#64748B]">
+                      {art.summary}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-[#E2E8F0] flex items-center justify-between text-[12px]">
+                    <span className="text-[#64748B] text-[11px]">
+                      Kiểm chứng: {art.verified_at}
+                    </span>
+                    <a
+                      href={art.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 font-semibold text-[#0D9488] hover:underline"
+                    >
+                      <span>Xem nguồn gốc</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ─────────────────────────────────────────────────────────
           4. CAM KẾT TIN CẬY & AN TOÀN NO-PII

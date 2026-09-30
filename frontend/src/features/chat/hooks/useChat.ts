@@ -21,7 +21,7 @@ export function useChat() {
   const [currentCaseId, setCurrentCaseId] = useState<string | null>(null);
   const [criticalBanner, setCriticalBanner] = useState(false);
 
-  const sendMessage = async (messageText?: string) => {
+  const sendMessage = async (messageText?: string, attachmentIds?: string[]) => {
     const textToSend = messageText || input.trim();
     if (!textToSend || loading) return;
 
@@ -40,6 +40,7 @@ export function useChat() {
       sender: "CUSTOMER",
       content: textToSend,
       timestamp: new Date().toISOString(),
+      attachment_ids: attachmentIds,
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -51,8 +52,9 @@ export function useChat() {
         sessionId,
         message: textToSend,
         caseId: currentCaseId,
+        attachmentIds: attachmentIds,
         clientContext: {
-          mock_customer_id: "CUST_MOCK_DEMO",
+          mock_customer_id: "CUST_MOCK_01",
           vehicle_model: selectedModel,
           vehicle_code_mock: `VF-${selectedModel}-8899`,
         },

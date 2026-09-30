@@ -60,6 +60,7 @@ export type StaffActionType =
   | "REROUTE"
   | "CLOSE"
   | "REOPEN"
+  | "RESOLVE"
   | "REQUEST_INFO";
 
 export interface StaffActionPayload {
