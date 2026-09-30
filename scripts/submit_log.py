@@ -28,7 +28,7 @@ API_KEY = os.environ.get('AI_LOG_API_KEY', '')
 LOG_FILE = LOG_DIR / 'session.jsonl'
 ARCHIVE_DIR = LOG_DIR / 'archive'
 BATCH_LIMIT = 500
-BATCH_BYTES = 1024 * 1024
+BATCH_BYTES = 256 * 1024
 
 
 def wire_entry(entry):
@@ -111,7 +111,7 @@ def _submit_one():
         request = urllib.request.Request(SERVER_URL,
             data=json.dumps({'entries': [wire_entry(e) for e in entries[:count]]}, ensure_ascii=False).encode('utf-8'),
             headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {API_KEY}'}, method='POST')
-        with urllib.request.urlopen(request, timeout=10) as response:
+        with urllib.request.urlopen(request, timeout=30) as response:
             status, body = response.status, response.read(65536)
             if not 200 <= status < 300:
                 raise ValueError('Unexpected response status')
