@@ -9,7 +9,7 @@ import { QuickPromptsBar } from "./QuickPromptsBar";
 import { ChatFeed } from "./ChatFeed";
 import { ChatInputBar } from "./ChatInputBar";
 
-import { uploadAttachment } from "../api/chatApi";
+import { getAiSystemStatus, uploadAttachment } from "../api/chatApi";
 
 const VEHICLE_MODELS: VehicleModel[] = [
   "VF8",
@@ -37,6 +37,20 @@ export function CustomerChatContainer() {
   const [imageName, setImageName] = useState<string | null>(null);
   const [uploadedAttachmentId, setUploadedAttachmentId] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
+  const [aiStatus, setAiStatus] = useState<string>("VinFast RAG Chatbot Agent • Guardrails sẵn sàng");
+
+  // Load AI System Status from /api/v1/status
+  useState(() => {
+    if (typeof window !== "undefined") {
+      getAiSystemStatus()
+        .then((res) => {
+          if (res?.status === "ready") {
+            setAiStatus(`${res.agent} • ${res.safety_guardrails === "enabled" ? "Guardrails bảo vệ" : "Sẵn sàng"}`);
+          }
+        })
+        .catch(() => {});
+    }
+  });
 
   // Pre-load draft from Landing Hero if available
   useState(() => {
@@ -116,7 +130,7 @@ export function CustomerChatContainer() {
                 <div className="font-bold text-[14px] text-white">Trợ lý Kỹ thuật VinFast AI</div>
                 <div className="text-[11px] text-[#64748B] flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] inline-block animate-pulse"></span>
-                  <span>Agent sẵn sàng • No-PII Safe Mode</span>
+                  <span className="truncate max-w-[240px] sm:max-w-none">{aiStatus}</span>
                 </div>
               </div>
             </div>

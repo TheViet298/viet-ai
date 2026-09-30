@@ -180,3 +180,46 @@ export async function getPublicArticles(): Promise<ApiResponse<{ articles: Artic
   return res.json();
 }
 
+/**
+ * Gửi tin nhắn trực tiếp đến AI RAG Chatbot Agent (/api/v1/chat từ nhánh develop)
+ */
+export async function sendDirectAiChat(message: string): Promise<{
+  response: string;
+  analysis?: string;
+  intent?: string;
+  priority?: string;
+  needs_staff_review?: boolean;
+  is_safety_trigger?: boolean;
+  citations?: Array<{ source_id: string; title: string; url: string; section?: string }>;
+}> {
+  const res = await fetch(`${BASE_URL}/api/v1/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ message }),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`AI Chat error (${res.status}): ${errorText}`);
+  }
+  return res.json();
+}
+
+/**
+ * Kiểm tra trạng thái sẵn sàng của AI Agent & Knowledge Base (/api/v1/status từ nhánh develop)
+ */
+export async function getAiSystemStatus(): Promise<{
+  status: string;
+  agent: string;
+  knowledge_base: string;
+  safety_guardrails: string;
+}> {
+  const res = await fetch(`${BASE_URL}/api/v1/status`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch AI status: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+

@@ -4,8 +4,10 @@ import json
 
 sys.stdout.reconfigure(encoding='utf-8')
 
+import os
+
 # Ensure P-142 is in sys.path
-sys.path.insert(0, r"d:\142.AI20K\P-142")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.agents.chatbot_agent import process_chat_message
 

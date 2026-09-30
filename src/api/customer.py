@@ -39,6 +39,7 @@ from src.models.schemas import (
     ServiceHandoff,
 )
 from src.services.auth import check_case_ownership, require_customer
+from src.agents.chatbot_agent import process_chat_message
 
 router = APIRouter(prefix="/customer", tags=["customer"])
 
@@ -323,22 +324,39 @@ async def customer_chat(
     ]
     is_faq = any(kw in lower_text for kw in faq_keywords)
     if is_faq and not any(kw in lower_text for kw in ["lỗi", "hỏng", "không sạc", "sự cố", "rùa vàng"]):
-        agent_reply = (
+        ai_res = await process_chat_message(text)
+        agent_reply = ai_res.get("reply") or (
             "Theo Hướng dẫn sử dụng Ứng dụng VinFast, anh/chị có thể dễ dàng quản lý tình trạng xe, "
             "kiểm tra mức pin/sạc và chủ động đặt lịch dịch vụ bảo dưỡng/sửa chữa trực tiếp trên Ứng dụng VinFast."
         )
-        citations = [
-            Citation(
-                source_id="SRC-APP-001",
-                title="Hướng dẫn sử dụng Ứng dụng VinFast",
-                url="https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast",
-                verified_at="2026-09-24",
-                status_code=200,
-                applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"],
-                source_type="OFFICIAL_APP_GUIDE",
-                relevant_snippet="Khách hàng có thể theo dõi tình trạng xe, kiểm tra dung lượng pin, đặt lịch dịch vụ và theo dõi tiến độ sửa chữa trực tiếp trên ứng dụng VinFast.",
-            )
-        ]
+        citations = []
+        if ai_res.get("citations"):
+            for c in ai_res["citations"]:
+                citations.append(
+                    Citation(
+                        source_id=c.get("source_id", "SRC-KB"),
+                        title=c.get("title", "Tài liệu VinFast"),
+                        url=c.get("url", "https://vinfastauto.com/vn_vi"),
+                        verified_at="2026-09-24",
+                        status_code=200,
+                        applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"],
+                        source_type="OFFICIAL_MANUAL",
+                        relevant_snippet=c.get("section", ""),
+                    )
+                )
+        if not citations:
+            citations = [
+                Citation(
+                    source_id="SRC-APP-001",
+                    title="Hướng dẫn sử dụng Ứng dụng VinFast",
+                    url="https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast",
+                    verified_at="2026-09-24",
+                    status_code=200,
+                    applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"],
+                    source_type="OFFICIAL_APP_GUIDE",
+                    relevant_snippet="Khách hàng có thể theo dõi tình trạng xe, kiểm tra dung lượng pin, đặt lịch dịch vụ và theo dõi tiến độ sửa chữa trực tiếp trên ứng dụng VinFast.",
+                )
+            ]
         service_handoff = ServiceHandoff(
             has_app_feature=True,
             app_feature_name="Đặt lịch dịch vụ / Theo dõi xe",
