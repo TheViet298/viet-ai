@@ -8,9 +8,16 @@
 
 ## 1. Customer User Flow
 
+**Access flow:** Guest xem Landing/FAQ/Policy. Khi bấm “Hỏi trợ lý”, hệ thống yêu cầu Login/Register Customer. Customer chỉ xem case của mình.
+
 ```mermaid
 flowchart TD
-    Start([Khách truy cập Chat]) --> Intake[Nhập nội dung vấn đề / câu hỏi]
+    Start([Guest xem Landing / FAQ / Policy]) --> Login[Login / Register Customer]
+    Login --> Intake[Nhập text và/hoặc upload ảnh]
+    Intake --> Image{Có ảnh?}
+    Image -->|Có| Vision[OCR/Vision nhận diện dấu hiệu sơ bộ]
+    Image -->|Không| CheckSafety
+    Vision --> CheckSafety
     Intake --> CheckSafety{Phát hiện rủi ro an toàn khẩn cấp?}
     
     %% Emergency Path
@@ -56,7 +63,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    StaffLogin([Nhân viên Dịch vụ mở Dashboard]) --> ViewQueue[Xem Ticket Queue: Filter theo Priority / Status / Intent]
+    StaffLogin([Nhân viên Dịch vụ đăng nhập Dashboard]) --> ViewQueue[Xem Ticket Queue: Filter theo Priority / Status / Intent]
     ViewQueue --> SelectTicket[Chọn Ticket để xử lý]
     SelectTicket --> ViewDetail[Xem Ticket Detail: Case Brief + Lịch sử Chat + AI Đề xuất]
     

@@ -10,13 +10,19 @@
 
 ```mermaid
 flowchart TD
+    %% Public / Access
+    Guest["Guest: Landing / FAQ / Policy"] -->|Bấm Hỏi trợ lý| Login["Login / Register Customer"]
+
     %% Customer App
     subgraph CustomerApp ["Giao diện Khách hàng (Customer Experience)"]
-        M1["SCR-01: Customer Chat / Intake\n(Nhập yêu cầu ban đầu)"]
+        M1["SCR-01: Customer Chat / Intake\n(Nhập text và/hoặc upload ảnh)"]
         M2["SCR-02: AI Clarification View\n(Chọn gợi ý mã lỗi / trụ sạc)"]
         M3["SCR-03: Case Status & Result\n(Xem Case ID, Tiến độ & Hướng dẫn)"]
         FAQView["FAQ Answer Modal\n(Xem câu trả lời + Trích dẫn URL)"]
 
+        Login --> M1
+        M1 -->|Ảnh| Vision["AI đang đọc cảnh báo...\nOCR/Vision sơ bộ"]
+        Vision --> M2
         M1 -->|Hỏi thông tin chung| FAQView
         M1 -->|Sự cố kỹ thuật thiếu field| M2
         M2 -->|Khách bấm chọn hoặc gửi tin nhắn| M1

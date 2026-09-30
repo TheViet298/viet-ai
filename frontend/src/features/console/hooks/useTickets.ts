@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TicketItem } from "../types";
+import { getTicketQueue } from "../api/consoleApi";
 
 export const INITIAL_TICKETS: TicketItem[] = [
   {
@@ -47,6 +48,30 @@ export function useTickets() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchTickets = async () => {
+      setLoading(true);
+      try {
+        const res = await getTicketQueue({
+          status: statusFilter,
+          priority: priorityFilter,
+        });
+        if (isMounted && res.success && res.data?.items) {
+          setTickets(res.data.items);
+        }
+      } catch {
+        // Fallback to initial state if backend is not reachable
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    fetchTickets();
+    return () => {
+      isMounted = false;
+    };
+  }, [statusFilter, priorityFilter]);
 
   const filteredTickets = tickets.filter((t) => {
     if (statusFilter !== "ALL" && t.status !== statusFilter) return false;
