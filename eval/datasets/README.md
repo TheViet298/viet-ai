@@ -65,3 +65,11 @@ Hướng dẫn giao diện app chỉ mô tả khả năng trong tài liệu đư
 | `TEST-049`, `TEST-052` | Chỉ giữ trong archive: báo giá chưa có nguồn và điều khiển điểm RAG không phải QA có citation; dành cho harness fallback sau này |
 
 Hai bộ đang sử dụng có tổng cộng 111 case, gồm 31 case chuyển đổi và 80 case mới. Chưa chạy baseline Agent/RAG; kiểm tra dữ liệu chỉ xác nhận định dạng, số lượng, tính duy nhất, metadata citation và tính nhất quán của nhãn.
+
+
+<!-- update info from feature/ai-long branch -->
+## Ghi chú merge với feature/ai-long
+
+`triage_cases_v1.jsonl` hiện dùng schema và bộ train/dev/test của Long. Phiên bản 50 case trước merge của feature/ai-khoi được giữ nguyên trong `archive/triage_cases_v1_ai_khoi_before_long_merge_2026-09-30.jsonl`. Không ghép hai schema vào một benchmark; hướng dẫn 50 case ở phần trên phản ánh phiên bản trước merge.
+
+Các script và test mới của Long hiện chứa đường dẫn tuyệt đối Windows `d:\142.AI20K\P-142`; cần cấu hình hoặc sửa đường dẫn trước khi chạy trên Linux. Báo cáo giữ cả nội dung cũ và nội dung Long để đối chiếu; chưa xác minh lại số liệu và nhãn đạt mục tiêu.

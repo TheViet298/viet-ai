@@ -31,6 +31,19 @@
 | Long | Thiết kế chi tiết LangGraph state schema và guardrails | 🔄 WIP | State TypedDict/graph mẫu; emergency rules mới ở tài liệu | 4h |
 | Triển | Khởi tạo cấu trúc Pydantic models và FastAPI routes cho Case lifecycle | 🔄 WIP | `src/models/schemas.py` và `src/api/routes.py` hiện chỉ xử lý chat mẫu | 4h |
 
+<!-- update info from feature/ai-long branch: merge giữ nguyên cả hai phiên bản để nhóm review sau. -->
+<!-- Khác biệt: feature/ai-khoi ghi nhận kiểm chứng ngày 27/09, các mục chưa xác minh/WIP; Long ghi state và guardrails Done, có 19 unit tests. Bảng Long giữ các trạng thái gốc Done của Mentor Duty/form. Giữ cả hai bảng, chưa kết luận về thời điểm hoàn thành hay bằng chứng nộp bài. -->
+
+### Nội dung Long bổ sung — chờ đối chiếu
+
+| Member | Task | Status | Output | Time |
+|---|---|---|---|---|
+| Cả nhóm | Tổng hợp tiến độ Gate G1, chuẩn bị nội dung Mentor Duty submit | ✅ Done | Mentor Duty log (Done/Doing/Blocked/Questions) | 2h |
+| Thế Việt, Long | Thiết kế form khảo sát người dùng xe điện VinFast để kiểm chứng pain point | ✅ Done | Draft câu hỏi khảo sát cho chủ xe & tài xế GSM | 3h |
+| Khôi | Xây dựng bộ test cases đánh giá Intent Accuracy & Critical Recall | 🔄 WIP | Benchmark dataset (40 mẫu test) | 4h |
+| Long | Thiết kế chi tiết LangGraph state schema và guardrails | ✅ Done | `src/agents/state.py` & `src/agents/guardrails.py` + 19 unit tests | 4h |
+| Triển | Khởi tạo cấu trúc Pydantic models và FastAPI routes cho Case lifecycle | 🔄 WIP | `src/models/schemas.py` & `src/api/routes.py` | 4h |
+
 **Tổng kết ngày (đã đối chiếu 27/09):** WORKLOG ban đầu ghi đã nộp Mentor Duty ngày 23/09/2026, nhưng repo chưa có bằng chứng để xác nhận việc nộp. Form khảo sát và WBS chi tiết cũng chưa có đầu ra kiểm tra được trong repo. Các module LangGraph và FastAPI vẫn đang WIP.
 
 ---

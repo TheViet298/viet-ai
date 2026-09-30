@@ -76,6 +76,17 @@ Nội dung trang đọc được qua trình duyệt ngày 2026-09-27. Lệnh ki�
 
 ---
 
+<!-- update info from feature/ai-long branch: merge giữ nguyên cả hai phiên bản để nhóm review sau. -->
+<!-- Hai phần bên dưới có thể khác nhau về trạng thái, phạm vi hoặc số liệu; chưa chọn một phiên bản thay cho phiên bản còn lại. -->
+
+<!-- Phiên bản feature/ai-khoi -->
 ## 5. Thứ tự triển khai
 
 Flow 1 (`Charging/Battery`: tiếp nhận, làm rõ, tạo Case Brief, Staff Review, khách xem trạng thái) là ưu tiên trước. Metadata nguồn ở tài liệu này là phần chuẩn bị; FAQ/RAG hoàn chỉnh thuộc giai đoạn sau khi Flow 1 chạy xuyên suốt. Chỉ bật câu trả lời FAQ tự động khi đã có nguồn được nạp, kiểm tra trích dẫn và kiểm thử fallback khi không có nguồn.
+
+<!-- Phiên bản feature/ai-long -->
+## 5. Knowledge Hub Public
+
+* Landing/FAQ/Policy chỉ hiển thị nội dung hoặc link từ nguồn VinFast đã kiểm chứng.
+* Knowledge Hub không phải CMS và không tự crawl/cập nhật trong MVP.
+* Nội dung public không mặc định được đưa hết vào Vector DB; chỉ index nguồn đã được Data/RAG kiểm duyệt.

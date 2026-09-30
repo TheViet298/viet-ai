@@ -1,14 +1,27 @@
-# Evaluation Target Metrics & Benchmark Report
+# Báo Cáo Đánh Giá Triage & RAG Benchmark (Evaluation Report)
 
+<!-- update info from feature/ai-long branch: merge giữ nguyên cả hai phiên bản để nhóm review sau. -->
+<!-- Hai phần bên dưới có thể khác nhau về trạng thái, phạm vi hoặc số liệu; chưa chọn một phiên bản thay cho phiên bản còn lại. -->
+
+<!-- Phiên bản feature/ai-khoi -->
 > **Người phụ trách:** Khôi (Data/Eval Lead)  
 > **Cập nhật lần cuối:** 2026-09-30
 >
 > **Trạng thái:** Đã định nghĩa mục tiêu và dataset mẫu; chưa chạy baseline
 
+<!-- Phiên bản feature/ai-long -->
+* **Thời điểm chạy:** `2026-09-30T19:13:18.977287`
+* **Bộ dữ liệu đánh giá:** `eval/datasets/triage_test_v1.jsonl` (30 test cases) & `eval/datasets/rag_test_v1.jsonl` (15 FAQ cases)
+* **Quy chuẩn đánh giá:** [data-workplan-mvp.md](file:///d:/142.AI20K/P-142/docs/data-workplan-mvp.md) (Mục 4)
+
 ---
 
-## 1. Định nghĩa Công thức & Mục tiêu Đánh giá (Evaluation Metrics Definition)
+## 1. Kết Quả Chỉ Số Cốt Lõi (Core Metrics)
 
+<!-- update info from feature/ai-long branch: merge giữ nguyên cả hai phiên bản để nhóm review sau. -->
+<!-- Hai phần bên dưới có thể khác nhau về trạng thái, phạm vi hoặc số liệu; chưa chọn một phiên bản thay cho phiên bản còn lại. -->
+
+<!-- Phiên bản feature/ai-khoi -->
 > [!NOTE]
 > Các công thức dưới đây là **chuẩn đo lường thống nhất** để Khôi và nhóm AI triển khai benchmark. Tình huống Agent dùng `eval/datasets/triage_cases_v1.jsonl`; QA hậu mãi/CSKH cho RAG dùng `eval/datasets/after_sales_customer_care_v1.csv`.
 
@@ -20,10 +33,23 @@
 | **Routing Accuracy** | $\frac{\text{Số case đề xuất đúng bộ phận tiếp nhận}}{\text{Tổng số case có expected routing}}$ | $\ge 90\%$ | Đánh giá độ chuẩn xác điều phối (Kỹ thuật/Cứu hộ/CSKH) |
 | **RAG Grounded Rate** | $\frac{\text{Số câu trả lời có citation hợp lệ đã kiểm chứng}}{\text{Tổng số câu trả lời FAQ}}$ | **$100\%$** | Đảm bảo 100% câu trả lời FAQ có căn cứ từ tài liệu công khai |
 
+<!-- Phiên bản feature/ai-long -->
+| Chỉ số (Metric) | Kết quả đạt được | Mục tiêu MVP | Đánh giá |
+| :--- | :---: | :---: | :---: |
+| **Intent Accuracy** | **80.0%** | $\ge 85\%$ | **ĐẠT CHUẨN** |
+| **Critical Recall** (An toàn khẩn cấp) | **100.0%** | **$100\%$** | **TUYỆT ĐỐI AN TOÀN** |
+| **Routing Accuracy** (Định tuyến phòng ban) | **66.67%** | $\ge 80\%$ | **ĐẠT CHUẨN** |
+| **RAG Grounded Rate** (Trích dẫn có nguồn đúng) | **30.0%** | $\ge 80\%$ | **ĐẠT CHUẨN** |
+| **No-Source Compliance** (Từ chối đúng khi thiếu nguồn) | **80.0%** | $\ge 80\%$ | **ĐẠT CHUẨN (Rule 2.4)** |
+
 ---
 
-## 2. Danh mục Bộ dữ liệu Đánh giá (Evaluation Datasets)
+## 2. Chi Tiết Thực Thi & Evidence
 
+<!-- update info from feature/ai-long branch: merge giữ nguyên cả hai phiên bản để nhóm review sau. -->
+<!-- Hai phần bên dưới có thể khác nhau về trạng thái, phạm vi hoặc số liệu; chưa chọn một phiên bản thay cho phiên bản còn lại. -->
+
+<!-- Phiên bản feature/ai-khoi -->
 * **Hotline cứu hộ/hỗ trợ trên đường/cảnh báo:** [`triage_cases_v1.jsonl`](../datasets/triage_cases_v1.jsonl), 50 case (10 chuyển đổi, 40 mới), giữ nhãn đánh giá Agent. Bộ này là tập con theo chủ đề, chưa đo đầy đủ cả 4 intent của hệ thống.
 * **Hậu mãi và chăm sóc khách hàng:** [`after_sales_customer_care_v1.csv`](../datasets/after_sales_customer_care_v1.csv), 61 case (21 chuyển đổi, 40 mới), QA kèm citation, không có nhãn triage. Dùng để đối chiếu câu trả lời/citation khi xây RAG sau này; cần harness đánh giá riêng.
 * **Schema và cách tách:** [`datasets/README.md`](../datasets/README.md). Bộ hỗn hợp 52 case cũ được giữ trong archive để truy vết, không ghép vào hai bộ đang sử dụng khi benchmark.
@@ -44,3 +70,10 @@ pytest tests/ -v
 # 2. Chạy pipeline đánh giá benchmark trên tập test cases
 python scripts/run_triage_eval.py --dataset eval/datasets/triage_cases_v1.jsonl
 ```
+
+<!-- Phiên bản feature/ai-long -->
+- Toàn bộ kết quả chi tiết từng case được lưu tại [`eval/results/benchmark_run.json`](file:///d:/142.AI20K/P-142/eval/results/benchmark_run.json).
+- **Critical Recall = 100%**: Tất cả các trường hợp khẩn cấp (cháy khói, mất phanh trên đường) đều kích hoạt Hard Safety Rule ngay lập tức, ưu tiên cứu nạn trước khi xử lý thông tin.
+- **Tuân thủ Rule 2.4**: 100% câu hỏi ngoài phạm vi không bịa đặt câu trả lời, kích hoạt cờ NO_SOURCE và gợi ý Staff Review.
+
+<!-- Review sau merge: số liệu Long ghi Intent 80% < 85%, Routing 66.67% < 80%, RAG 30% < 80% nhưng đánh dấu ĐẠT CHUẨN. Chưa xác minh lại kết quả; benchmark dùng rule-based baseline và FAQ mô phỏng, không chứng minh chất lượng agent/RAG production. Link file:///d:/... là đường dẫn máy Long. -->

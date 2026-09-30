@@ -11,6 +11,7 @@
 ```mermaid
 graph TD
     subgraph Client Layer ["1. Client Layer (Frontend Web)"]
+        PublicUI["Public Landing / FAQ / Policy"]
         CustomerUI["Customer Chat & Intake UI\n(Khách hàng gửi yêu cầu / theo dõi Case)"]
         StaffConsole["Service Agent Console\n(Nhân viên duyệt Brief / xử lý Ticket)"]
     end
@@ -19,10 +20,12 @@ graph TD
         CustomerAPI["Customer REST Endpoints\n(/api/v1/chat, /api/v1/cases/status)"]
         StaffAPI["Staff REST Endpoints\n(/api/v1/staff/tickets, /api/v1/staff/actions)"]
         AuthMiddleware["Authentication & Rate Limiter"]
+        UploadAPI["Attachment Upload API"]
     end
 
     subgraph AgentLayer ["3. AI Agent & Reasoning Layer (Google Gemini)"]
         TriageEngine["Triage & Classifier Engine\n(Intent & Priority & Safety Filter)"]
+        VisionEngine["OCR/Vision\n(Tín hiệu ảnh sơ bộ)"]
         ClarificationEngine["Clarification Generator\n(Hỏi làm rõ có cấu trúc)"]
         BriefGenerator["Case Brief Synthesizer\n(Chuẩn hóa schema nghiệp vụ)"]
         RAGRouter["RAG Query Engine\n(ChromaDB / Vector Search)"]
@@ -30,17 +33,22 @@ graph TD
 
     subgraph DataLayer ["4. Data & Storage Layer"]
         PostgreSQL[("Relational DB (PostgreSQL / SQLite)\n- Cases, Messages, Staff Logs")]
+        AttachmentStore[("Private Attachment Storage")]
         VectorStore[("Vector Store (ChromaDB / Qdrant)\n- Public VinFast Docs Chunks")]
     end
 
     %% Connections
     CustomerUI -->|HTTPS / JSON| CustomerAPI
+    CustomerUI -->|Upload ảnh| UploadAPI
+    UploadAPI --> AttachmentStore
+    UploadAPI --> VisionEngine
     StaffConsole -->|HTTPS / JSON| StaffAPI
 
     CustomerAPI --> AuthMiddleware
     StaffAPI --> AuthMiddleware
 
     AuthMiddleware --> TriageEngine
+    VisionEngine --> TriageEngine
     AuthMiddleware --> PostgreSQL
 
     TriageEngine -->|Tra cứu FAQ| RAGRouter
@@ -60,6 +68,8 @@ graph TD
 * **Customer Chat App:** 
   * Cung cấp giao diện chat trực quan, hiển thị tin nhắn, gợi ý trả lời nhanh (quick replies), màn hình thông tin Ticket & Trạng thái.
   * **Quy tắc an toàn:** Không bao giờ hiển thị suy luận nội bộ (Chain-of-Thought) của AI cho khách hàng.
+  * Customer có thể gửi text và/hoặc ảnh. OCR/Vision chỉ tạo dấu hiệu sơ bộ để Agent hỏi thêm context.
+* **Public Knowledge Hub:** Guest chỉ xem Landing, FAQ và chính sách/link nguồn công khai; không được chat.
 * **Service Agent Console (Staff):**
   * Dashboard quản lý ticket theo thời gian thực (Ticket Queue).
   * Chi tiết Ticket (Ticket Detail): Xem Case Brief do AI trích xuất, xem lại đoạn chat của khách, các nút thao tác `Approve`, `Edit`, `Reroute`, `Close`.
@@ -67,6 +77,7 @@ graph TD
 ### 2.2. API Layer (FastAPI / Python)
 * Tiếp nhận và xác thực request từ Client.
 * Kiểm soát phân quyền (Role-based: Customer vs Staff).
+* Guest/Customer/Staff được kiểm tra quyền ở backend; Customer chỉ truy cập case của chính mình.
 * Chuyển tiếp payload vào Agent Pipeline và lưu vết dữ liệu vào cơ sở dữ liệu.
 
 ### 2.3. AI Agent Layer (Google Gemini SDK)
