@@ -19,11 +19,36 @@ import urllib.error
 from datetime import datetime, timezone
 from pathlib import Path
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
+def _load_local_env() -> None:
+    """Load the repo's .env even when the hook's Python lacks python-dotenv."""
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        env_file = Path.cwd() / ".env"
+        if not env_file.is_file():
+            return
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.startswith("export "):
+                line = line[7:].lstrip()
+            name, separator, value = line.partition("=")
+            if not separator:
+                continue
+            name = name.strip()
+            value = value.strip()
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
+                value = value[1:-1]
+            else:
+                value = value.split(" #", 1)[0].rstrip()
+            if name and name not in os.environ:
+                os.environ[name] = value
+    else:
+        load_dotenv()
+
+
+_load_local_env()
 
 SERVER_URL = os.environ.get("AI_LOG_SERVER", "")
 API_KEY = os.environ.get("AI_LOG_API_KEY", "")
