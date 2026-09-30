@@ -42,6 +42,12 @@
 
 ## 3. Ngưỡng Tự tin (Confidence Threshold) & Điều kiện bắt buộc HITL
 
+### Quy tắc Image/Vision
+* OCR/Vision chỉ đọc chữ cảnh báo, mã lỗi hoặc nhận diện dấu hiệu phổ biến từ ảnh táp-lô.
+* Kết quả ảnh là **evidence sơ bộ**, không được dùng một mình để chẩn đoán nguyên nhân, auto-resolve hoặc đóng case.
+* `vision_confidence` thấp / ảnh không rõ: hỏi khách gửi ảnh rõ hơn hoặc chuyển Staff Review.
+* Tín hiệu nguy hiểm nhìn thấy từ ảnh phải được Staff xác nhận hoặc hỏi lại context an toàn; Hard Safety Rule vẫn ưu tiên tín hiệu text/context đã xác nhận.
+
 Hệ thống tính toán `confidence_score` $\in [0.0, 1.0]$ cho việc phân loại Intent và trích xuất dữ liệu:
 
 ```mermaid
