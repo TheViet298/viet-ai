@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { TicketDetail, TicketStatus } from "../types";
+import { useEffect, useState } from "react";
+import { StaffActionType, TicketDetail, TicketStatus } from "../types";
+import { getTicketDetail, submitStaffAction } from "../api/consoleApi";
 
 export const MOCK_DETAIL_DATA: TicketDetail = {
   case: {
@@ -63,9 +64,49 @@ export function useTicketDetail(initialId: string) {
   const [notes, setNotes] = useState("");
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
-  const executeAction = (actionName: string, newStatus: TicketStatus) => {
+  useEffect(() => {
+    let isMounted = true;
+    const fetchDetail = async () => {
+      try {
+        const res = await getTicketDetail(initialId);
+        if (isMounted && res.success && res.data) {
+          setDetail(res.data);
+          setStatus(res.data.case.status);
+          setEditedSummary(res.data.case_brief.summary);
+        }
+      } catch {
+        // Fallback to mock data if backend unavailable
+      }
+    };
+    fetchDetail();
+    return () => {
+      isMounted = false;
+    };
+  }, [initialId]);
+
+  const executeAction = async (actionName: string, newStatus: TicketStatus) => {
     setStatus(newStatus);
-    setActionSuccess(`Đã thực hiện: ${actionName} cho hồ sơ ${initialId}!`);
+    setActionSuccess(`Đang ghi nhận: ${actionName}...`);
+
+    let staffAction: StaffActionType = "EDIT_BRIEF";
+    if (actionName.includes("Duyệt") || actionName.includes("Approve")) staffAction = "APPROVE";
+    else if (actionName.includes("Yêu cầu") || actionName.includes("thông tin")) staffAction = "REQUEST_INFO";
+    else if (actionName.includes("Chuyển") || actionName.includes("Reroute")) staffAction = "REROUTE";
+    else if (actionName.includes("Đóng") || actionName.includes("Close")) staffAction = "CLOSE";
+    else if (actionName.includes("Mở lại")) staffAction = "REOPEN";
+
+    try {
+      await submitStaffAction(initialId, {
+        action: staffAction,
+        staff_id: "STAFF_VINFAST_DEMO",
+        updated_status: newStatus,
+        edited_brief: { summary: editedSummary },
+        notes: notes || undefined,
+      });
+      setActionSuccess(`Đã thực hiện thành công: ${actionName} cho hồ sơ ${initialId}!`);
+    } catch {
+      setActionSuccess(`Đã cập nhật trạng thái tạm: ${actionName} (chế độ demo).`);
+    }
     setTimeout(() => setActionSuccess(null), 4000);
   };
 
