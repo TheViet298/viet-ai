@@ -136,3 +136,10 @@ graph TD
 | **Attachment / Vision** | Private storage + OCR/Vision API | Lưu ảnh táp-lô; trích xuất tín hiệu sơ bộ để hỏi context, không chẩn đoán kỹ thuật |
 | **Database** | SQLite (MVP) / PostgreSQL | Lưu user/role, case, message, attachment, intent, priority, brief, audit log, ticket status |
 | **Console (HITL)** | React / Next.js / Tailwind UI | Service Agent Console — **Reviewer là người quyết định cuối cùng** với escalation, chỉnh sửa brief và routing trước khi dispatch |
+
+
+<!-- update info from feature/ai-khoi branch -->
+
+### Các trường database đề xuất từ feature/ai-khoi
+
+| **Database** | SQLite (MVP) / PostgreSQL | Lưu trữ đầy đủ: `source_channel`, `intent`, `priority`, `confidence_score`, `suggested_action`, `captured_fields`, `reviewer_feedback`, `status` |
