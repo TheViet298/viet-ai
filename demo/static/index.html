@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ServiceFlow — Demo trợ lý VinFast</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/"><span class="brand-icon">V</span><span>ServiceFlow<span class="brand-sub">VINFAST SERVICE ASSISTANT</span></span></a>
+    <div class="workspace-label">KHÔNG GIAN DEMO</div>
+    <button class="nav-item active" id="chatNav"><span>◈</span> Trợ lý dịch vụ <span class="nav-dot"></span></button>
+    <button class="nav-item" id="queueNav"><span>▤</span> Bàn kỹ thuật <span class="count" id="navCount">0</span></button>
+    <div class="side-card"><span class="eyebrow">MỘT CUỘC HỘI THOẠI</span><h3>Đúng thông tin.<br>Đúng người xử lý.</h3><p>Tư vấn có nguồn. Sự cố có ngữ cảnh. Con người quyết định bước tiếp theo.</p><div class="side-line"></div><span class="small-status"><i></i> SQLite · dữ liệu cục bộ</span></div>
+    <div class="sidebar-bottom"><span class="avatar">D</span><div>Khách hàng demo<small>Phiên thử nghiệm độc lập</small></div></div>
+  </aside>
+  <main>
+    <header class="topbar"><div><span class="breadcrumb">Không gian demo</span><span class="slash">/</span><strong id="pageTitle">Trợ lý dịch vụ</strong></div><span class="mode-badge"><i></i> DEMO LOCAL</span></header>
+    <section class="page-heading"><div><div class="eyebrow">VINFAST SERVICEFLOW</div><h1>Mọi hành trình, luôn có hỗ trợ.</h1><p>Tìm thông tin bạn cần, hoặc kết nối đúng người khi xe cần trợ giúp.</p></div><button id="newChat" class="button secondary">＋ Cuộc trò chuyện mới</button></section>
+    <div class="demo-note"><span>ⓘ</span><span>Đây là môi trường thử nghiệm. Hồ sơ được chuyển vào hàng đợi demo; chưa kết nối hệ thống điều phối VinFast.</span></div>
+    <div class="content-grid" id="chatView">
+      <section class="chat-panel">
+        <div class="chat-header"><span class="assistant-icon">✦</span><div><strong>Trợ lý ServiceFlow</strong><small><i></i> Sẵn sàng hỗ trợ bằng tiếng Việt</small></div><span class="header-tag">Tư vấn & kỹ thuật</span></div>
+        <div class="messages" id="messages" role="log" aria-live="polite" aria-label="Hội thoại với trợ lý"></div>
+        <div id="waiting" class="waiting hidden" role="status"><span class="dots"><i></i><i></i><i></i></span><span id="waitingText">Đợi tôi một chút, tôi đang kiểm tra ngữ cảnh và tra cứu thông tin…</span></div>
+        <form id="chatForm" class="composer"><label class="sr-only" for="messageInput">Tin nhắn</label><textarea id="messageInput" placeholder="Ví dụ: Tôi muốn tư vấn một chiếc xe cho gia đình…" rows="1" maxlength="5000" required></textarea><button class="send-button" id="sendButton" type="submit" aria-label="Gửi tin nhắn">↑</button></form>
+        <div class="composer-footer"><span>Enter để gửi · Shift + Enter để xuống dòng</span><span>Không nhập thông tin cá nhân</span></div>
+      </section>
+      <aside class="context-column">
+        <section class="info-panel"><div class="panel-heading"><span class="eyebrow">NGỮ CẢNH ĐANG CÓ</span><span class="mini-icon">⌘</span></div><div id="contextData" class="context-data"><p>Trợ lý sẽ ghi nhận ngữ cảnh khi bạn bắt đầu trò chuyện.</p></div></section>
+        <section class="info-panel"><div class="panel-heading"><span class="eyebrow">LUỒNG XỬ LÝ</span><span class="mini-icon">↗</span></div><ol class="workflow" id="trace"><li>Kiểm tra mức độ khẩn cấp</li><li>Phân loại bằng luật</li><li>Hỏi bổ sung hoặc tra cứu</li><li>Trả lời / bàn giao kỹ thuật</li></ol></section>
+        <section class="info-panel queue-preview"><div class="panel-heading"><span class="eyebrow">HỒ SƠ KỸ THUẬT</span><span class="mini-icon">▤</span></div><div id="casePreview"><p>Chưa có hồ sơ trong cuộc trò chuyện này.</p></div><button class="text-button" id="openQueue">Mở bàn kỹ thuật <span>→</span></button></section>
+        <div class="trust-note"><span>◇</span><p>Thông tin tư vấn đi kèm nguồn. Nội dung database là dữ liệu demo từ repo, cần đối chiếu chính sách hiện hành.</p></div>
+      </aside>
+    </div>
+    <section id="queueView" class="queue-view hidden"><div class="queue-heading"><div><h2>Hàng đợi nhân viên kỹ thuật</h2><p>URGENT được đưa lên đầu. Dùng các nút dưới đây để mô phỏng nhân viên tiếp nhận.</p></div><button class="button secondary" id="refreshQueue">↻ Làm mới</button></div><div class="queue-metrics" id="queueMetrics"></div><div class="queue-list" id="queueList"></div></section>
+    <footer class="page-footer"><span>ServiceFlow / Prototype 01</span><span>Rule-based triage · SQLite retrieval · Human handoff</span></footer>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

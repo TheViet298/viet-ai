@@ -131,3 +131,44 @@ Ngoài mã nguồn, quá trình chạy có sinh dữ liệu riêng trong `.ai-lo
 HTTP 202 xác nhận server đã tiếp nhận batch, không chứng minh mọi hoạt động đã xuất hiện trên [Phoenix AI logs, cohort-4](https://phoenix.note.transformerlabs.ai/ai-logs?cohort=cohort-4). Chưa xác minh đầy đủ dashboard bằng session đăng nhập. Native hook vẫn cần được Codex tải và duyệt cấu hình khi có thay đổi; recovery/watcher bổ sung khả năng ghi lại những sự kiện native hook bỏ sót. Định dạng transcript là nội bộ và có thể thay đổi; việc che bí mật dựa trên giá trị/pattern nhận diện được, không phải bảo đảm loại bỏ mọi dữ liệu nhạy cảm.
 
 Lần cập nhật này chỉ bổ sung mục T5 vào `docs/change-report-2026-09-27-rag-metadata.md`, giữ nguyên nội dung có sẵn, không tạo hoặc xóa file và không commit/push báo cáo.
+
+## T6 — Đồng bộ API backend từ develop (2026-09-30)
+
+### Mục tiêu và phạm vi
+
+Đồng bộ `src/api/routes.py`, `src/main.py`, `src/models/schemas.py` và `tests/test_api/test_routes.py` theo `develop` làm chuẩn. Kiểm tra cho thấy bốn file này phụ thuộc vào các module backend trên `develop` chưa có trong `feature/ai-khoi`; vì vậy đã bổ sung các module cần thiết để ứng dụng khởi động và các router được đăng ký đầy đủ.
+
+### File đã đồng bộ và bổ sung
+
+| File | Nội dung |
+| --- | --- |
+| `src/api/routes.py` | Đồng bộ endpoint chat và status của chatbot theo develop. |
+| `src/main.py` | Đồng bộ khởi tạo FastAPI, SQLite, CORS và đăng ký các router auth, public, customer, staff, cases và chat. |
+| `src/models/schemas.py` | Đồng bộ schema request/response cho chat, tài khoản, public articles, attachments, customer cases và staff tickets/actions. |
+| `tests/test_api/test_routes.py` | Đồng bộ các kiểm thử health, validation, chat và agent status từ develop. |
+| `src/config.py` | Đồng bộ cấu hình SQLite bền vững và đường dẫn ChromaDB theo develop. |
+| `requirements.txt` | Bật SQLAlchemy và Alembic cần cho backend SQLite/migrations; giữ các dependency của develop. |
+| `src/db.py` | Khởi tạo SQLAlchemy engine, declarative base, session và dependency lấy DB. |
+| `src/models/db_models.py` | Định nghĩa user, case, brief, message, attachment, feedback và audit log. |
+| `src/api/auth.py` | Đăng ký, đăng nhập và truy vấn thông tin tài khoản hiện tại. |
+| `src/api/public.py` | Router xem public articles. |
+| `src/api/customer.py` | Router customer chat, upload attachment, danh sách/trạng thái/reopen case và feedback. |
+| `src/api/staff.py` | Router hàng đợi ticket, chi tiết và hành động của staff. |
+| `src/api/cases.py` | Các endpoint case tương thích hiện có. |
+| `src/services/auth.py` | Token, xác thực và kiểm tra quyền customer/staff, gồm quyền sở hữu case. |
+| `src/agents/chatbot_agent.py` | Luồng chatbot kết hợp guardrails, RAG và phản hồi có citation. |
+| `src/services/rag_service.py` | Thay đường dẫn Windows hard-coded bằng `chroma_persist_dir`; chỉ mở Chroma collection khi cần truy xuất. Khi collection chưa được nạp, trả kết quả `NO_SOURCE` để ứng dụng vẫn khởi động; lỗi lưu trữ khác tiếp tục được báo ra. |
+| `tests/test_rag_service.py` | Hai kiểm thử xác nhận collection chưa có thì trả `NO_SOURCE`, có thể truy xuất sau khi collection xuất hiện, và lỗi storage không bị che thành lỗi thiếu nguồn. |
+
+### Kiểm tra và kết quả
+
+- Xác nhận bốn file được yêu cầu khớp từng byte với phiên bản `origin/develop` tại thời điểm đồng bộ. `git diff --check` sạch.
+- `APP_ENV=test ... pytest tests/test_api/test_routes.py tests/test_rag_service.py tests/test_agents/test_guardrails.py -q`: **25 tests passed**, gồm API, RAG fallback và guardrails.
+- Smoke test với SQLite ở `/tmp`: khởi động app, đăng ký/đăng nhập, `/auth/me`, customer case list, từ chối customer truy cập staff API, public articles và kiểm tra route không trùng — tất cả đạt.
+- Dependency thiếu được cài trong virtual environment tạm tại `/tmp/p142-test-YfxrIF`; không cài hoặc sinh dữ liệu database/Chroma trong repo.
+
+### Giới hạn
+
+Chưa chạy toàn bộ `pytest tests/` hoặc Ruff. Smoke test chỉ dùng dữ liệu tài khoản tổng hợp và SQLite tạm. Bốn file API/test đã đồng bộ từ develop; thay đổi cấu hình và RAG service là phần hỗ trợ để các import, khởi động và hành vi chưa có knowledge collection hoạt động trong nhánh này.
+
+Lần cập nhật này bổ sung mục T6 vào báo cáo; không commit hoặc push báo cáo.

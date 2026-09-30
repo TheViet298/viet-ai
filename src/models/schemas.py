@@ -1,85 +1,281 @@
-from enum import Enum
-from typing import Any, Literal
+from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from datetime import UTC, datetime, timezone
+from typing import Any, Generic, Literal, TypeVar
+
+from pydantic import BaseModel, Field
+
+T = TypeVar("T")
 
 
-class CaseStatus(str, Enum):
-    NEW = "New"
-    NEEDS_INFORMATION = "Needs Information"
-    STAFF_REVIEWING = "Staff Reviewing"
-    IN_PROGRESS = "In Progress"
-    RESOLVED = "Resolved"
-    CLOSED = "Closed"
-    REOPENED = "Reopened"
+# ==============================================================================
+# RESPONSE ENVELOPE — Nguồn: docs/architecture/api-contract.md Mục 1
+# ==============================================================================
+
+
+class ApiMeta(BaseModel):
+    timestamp: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+
+class ApiResponse(BaseModel, Generic[T]):
+    """Chuẩn envelope bắt buộc cho toàn bộ response API."""
+
+    success: bool = True
+    data: T
+    error: str | None = None
+    meta: ApiMeta = Field(default_factory=ApiMeta)
+
+
+# ==============================================================================
+# AUTH & RBAC SCHEMAS — Nguồn: docs/architecture/api-contract.md Mục 1.1 & auth-and-rbac.md
+# ==============================================================================
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=1)
+
+
+class RegisterRequest(BaseModel):
+    username: str = Field(..., min_length=3)
+    password: str = Field(..., min_length=6)
+    mock_customer_id: str | None = "CUST_MOCK_01"
+
+
+class UserOut(BaseModel):
+    id: str
+    username: str
+    role: Literal["CUSTOMER", "STAFF", "GUEST"]
+    mock_customer_id: str | None = None
+
+
+class AuthResponseData(BaseModel):
+    token: str
+    user: UserOut
+
+
+# ==============================================================================
+# PUBLIC KNOWLEDGE / ARTICLES SCHEMAS — Nguồn: rag-and-data-sources.md Mục 5
+# ==============================================================================
+
+
+class ArticleItem(BaseModel):
+    id: str
+    title: str
+    category: str
+    summary: str
+    content: str
+    source_url: str
+    verified_at: str
+
+
+class PublicArticlesData(BaseModel):
+    articles: list[ArticleItem]
+    total: int
+
+
+# ==============================================================================
+# ATTACHMENT SCHEMAS — Nguồn: ADR-004 & api-contract.md Mục 1.1
+# ==============================================================================
+
+
+class AttachmentOut(BaseModel):
+    attachment_id: str
+    storage_key: str
+    mime_type: str
+    analysis_status: Literal["UPLOADED", "ANALYZED", "FAILED"]
+    ocr_text: str | None = None
+    detected_signals: dict[str, Any] | None = None
+    vision_confidence: float | None = None
+    created_at: str
+
+
+# ==============================================================================
+# LEGACY / TEMPLATE SCHEMAS (Giữ nguyên để tương thích bài test gốc của template)
+# ==============================================================================
+
+
+# =====================================================================
+# 1. Simplified Chat Schemas (Phục vụ Demo & Lightweight Frontend)
+# =====================================================================
+
+class ChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=5000, description="Tin nhắn từ user")
+
+
+class ChatResponse(BaseModel):
+    response: str = Field(..., description="Phản hồi từ agent")
+    analysis: str = Field(default="", description="Phân tích nội bộ")
+    intent: str | None = Field(default=None, description="Ý định phân loại")
+    priority: str | None = Field(default=None, description="Mức độ ưu tiên")
+    needs_staff_review: bool = Field(default=False, description="Cần chuyên viên duyệt")
+    is_safety_trigger: bool = Field(default=False, description="Kích hoạt cảnh báo an toàn khẩn cấp")
+    citations: list[dict[str, Any]] = Field(default_factory=list, description="Danh sách trích dẫn nguồn")
+
+
+# ==============================================================================
+# CUSTOMER API SCHEMAS — Nguồn: docs/architecture/api-contract.md Mục 2
+# ==============================================================================
 
 
 class ClientContext(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    mock_customer_id: str | None = Field(default=None, max_length=50)
-    vehicle_model: str | None = Field(default=None, max_length=50)
-    vehicle_code_mock: str | None = Field(default=None, max_length=50)
+    mock_customer_id: str | None = "CUST_MOCK_01"
+    vehicle_model: str | None = "VF8"
+    vehicle_code_mock: str | None = "VF-SF-00231"
 
 
 class CustomerChatRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    session_id: str = Field(default="sess_default", description="Mã phiên hội thoại (No-PII)")
+    case_id: str | None = None  # e.g. CASE-20260924-001, null nếu là tin nhắn đầu tiên
+    message: str = Field(..., min_length=1, max_length=5000, description="Nội dung tin nhắn khách hàng")
+    attachment_ids: list[str] | None = Field(default_factory=list, description="Danh sách mã file/ảnh đính kèm")
+    client_context: ClientContext | None = Field(default=None, description="Ngữ cảnh mô phỏng (No-PII)")
 
-    session_id: str = Field(min_length=8, max_length=64)
+
+class ApiResponseEnvelope(BaseModel):
+    success: bool = True
+    data: dict[str, Any] = Field(default_factory=dict, description="Payload dữ liệu trả về")
+    error: str | None = Field(default=None, description="Thông báo lỗi nếu có")
+    meta: dict[str, Any] = Field(
+        default_factory=lambda: {"timestamp": datetime.now(timezone.utc).isoformat()},
+        description="Metadata phản hồi",
+    )
+
+
+class Citation(BaseModel):
+    source_id: str
+    title: str
+    url: str
+    verified_at: str | None = "2026-09-24"
+    status_code: int | None = 200
+    applicable_models: list[str] | None = None
+    source_type: str | None = "OFFICIAL_APP_GUIDE"
+    relevant_snippet: str | None = None
+
+
+class ServiceHandoff(BaseModel):
+    has_app_feature: bool = True
+    app_feature_name: str
+    guide_url: str
+
+
+class ChatResponseData(BaseModel):
+    response_type: Literal["CLARIFICATION", "FAQ_ANSWER", "CASE_CREATED"]
+    message: str
     case_id: str | None = None
-    message: str = Field(min_length=1, max_length=5000)
-    client_context: ClientContext = Field(default_factory=ClientContext)
+    status: str | None = None  # New, Staff Reviewing, Needs Information...
+    priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"] | None = None
+    clarification_turn: int | None = None
+    max_clarification_turns: int | None = None
+    suggested_replies: list[str] | None = None
+    citations: list[Citation] | None = None
+    service_handoff: ServiceHandoff | None = None
+    safe_guidance: str | None = None
 
 
-class CustomerActionRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    action: Literal["CONFIRM_RESOLUTION", "REOPEN"]
-    reason: str | None = Field(default=None, max_length=1000)
-
-    @model_validator(mode="after")
-    def require_reopen_reason(self):
-        if self.action == "REOPEN" and not (self.reason or "").strip():
-            raise ValueError("REOPEN requires a reason")
-        return self
+class CustomerCaseStatusData(BaseModel):
+    case_id: str
+    status: str
+    status_description: str | None = None
+    created_at: str
+    updated_at: str | None = None
 
 
-class CaseBrief(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+class CustomerCaseItem(BaseModel):
+    id: str
+    vehicle_model: str | None = None
+    vehicle_code_mock: str | None = None
+    intent: str
+    priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    status: str
+    summary: str | None = None
+    created_at: str
+    updated_at: str | None = None
 
-    summary: str = Field(min_length=1, max_length=5000)
+
+class CustomerCaseListData(BaseModel):
+    cases: list[CustomerCaseItem]
+    total: int
+
+
+class CustomerFeedbackPayload(BaseModel):
+    rating: int = Field(..., ge=1, le=5, description="Đánh giá từ 1 đến 5 sao")
+    comment: str | None = None
+
+
+class CustomerFeedbackResponseData(BaseModel):
+    success: bool = True
+    feedback_id: str
+    case_id: str
+
+
+class ReopenCaseResponseData(BaseModel):
+    success: bool = True
+    case_id: str
+    status: str
+
+
+# ==============================================================================
+# STAFF API SCHEMAS — Nguồn: docs/architecture/api-contract.md Mục 3
+# ==============================================================================
+
+
+class TicketItem(BaseModel):
+    id: str
+    mock_customer_id: str
+    vehicle_model: str
+    intent: str
+    priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    status: str
+    missing_info_flag: bool = False
+    created_at: str
+    confidence_score: float
+
+
+class TicketQueueData(BaseModel):
+    items: list[TicketItem]
+    total: int
+
+
+class CaseBriefOut(BaseModel):
+    summary: str
     captured_fields: dict[str, Any] = Field(default_factory=dict)
-    missing_fields: list[str] = Field(default_factory=list)
     suggested_action: str | None = None
-    suggested_routing: str | None = None
-    confidence_score: float = Field(default=0.0, ge=0.0, le=1.0)
-    safety_flags: list[str] = Field(default_factory=list)
+    confidence_score: float = 0.90
     is_edited_by_staff: bool = False
 
 
-class StaffActionRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    action: Literal[
-        "APPROVE", "EDIT_BRIEF", "REROUTE", "REQUEST_INFO", "RESOLVE", "CLOSE", "REOPEN"
-    ]
-    edited_brief: CaseBrief | None = None
-    notes: str | None = Field(default=None, max_length=2000)
-    target_team: str | None = Field(default=None, max_length=100)
-
-    @model_validator(mode="after")
-    def validate_action_fields(self):
-        if self.action == "EDIT_BRIEF" and self.edited_brief is None:
-            raise ValueError("EDIT_BRIEF requires edited_brief")
-        if self.action == "REROUTE" and not (self.target_team or "").strip():
-            raise ValueError("REROUTE requires target_team")
-        if self.action in {"REQUEST_INFO", "RESOLVE", "CLOSE", "REOPEN"} and not (self.notes or "").strip():
-            raise ValueError(f"{self.action} requires notes")
-        return self
+class ConversationItem(BaseModel):
+    sender: Literal["CUSTOMER", "AGENT", "STAFF", "SYSTEM"]
+    content: str
+    created_at: str
 
 
-class Envelope(BaseModel):
-    success: bool
-    data: Any = None
-    error: dict[str, str] | None = None
-    meta: dict[str, str]
+class TicketDetailCase(BaseModel):
+    id: str
+    mock_customer_id: str
+    vehicle_code_mock: str | None = None
+    vehicle_model: str
+    intent: str
+    priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    status: str
+
+
+class TicketDetailData(BaseModel):
+    case: TicketDetailCase
+    case_brief: CaseBriefOut
+    conversation_history: list[ConversationItem]
+    attachments: list[AttachmentOut] = Field(default_factory=list)
+
+
+class StaffActionPayload(BaseModel):
+    action: Literal["APPROVE", "EDIT_BRIEF", "REROUTE", "REQUEST_INFO", "RESOLVE", "CLOSE", "REOPEN"]
+    staff_id: str
+    updated_status: str | None = None
+    edited_brief: dict[str, Any] | None = None
+    notes: str | None = None
+
+
+class StaffActionResponseData(BaseModel):
+    success: bool = True
+    case_id: str
