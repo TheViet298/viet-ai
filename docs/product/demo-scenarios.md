@@ -25,9 +25,10 @@
 ### Các bước thực hiện:
 
 1. **Bước 1 (Customer Intake):**
-   * *User nhập:* `"Tôi đang ở trạm sạc Vincom Metropolis, cắm súng sạc DC vào xe VF8 nhưng đèn báo trên trụ nháy đỏ và xe không nhận sạc."`
+   * *User gửi:* ảnh màn hình/táp-lô hoặc trụ sạc kèm: `"Em không biết lỗi gì, xe không nhận sạc."`
+   * *Vision/OCR:* trích xuất tín hiệu sơ bộ (nếu ảnh rõ), ví dụ mã `CC01` hoặc đèn đỏ; nếu không đọc được thì Agent hỏi ảnh rõ hơn/mô tả hiện tượng.
 2. **Bước 2 (AI Triage & Clarify - Lượt 1):**
-   * *AI nhận diện:* Intent `Charging/Battery`, Priority `HIGH`.
+   * *AI nhận diện sơ bộ:* Intent `Charging/Battery`, Priority `HIGH`.
    * *AI phân tích thiếu:* Mã cổng sạc và mã lỗi cụ thể hiển thị trên màn hình xe.
    * *AI phản hồi (kèm gợi ý):* *"Dạ em ghi nhận xe VF8 đang gặp sự cố sạc tại Vincom Metropolis. Màn hình xe có hiển thị mã lỗi (ví dụ: CC01, BMS_012) hoặc mã trụ sạc không ạ?"*
    * *Gợi ý Quick Replies:* `["Mã lỗi CC01, trụ P02", "Đèn đỏ, không hiện mã", "Không thấy mã lỗi"]`

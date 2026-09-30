@@ -16,7 +16,9 @@ Agent hoạt động theo quy trình tuần tự có kiểm soát chặt chẽ:
 
 ```mermaid
 stateDiagram-v2
-    [*] --> IntakeState: Khách gửi tin nhắn
+    [*] --> IntakeState: Khách gửi text và/hoặc ảnh
+    IntakeState --> ImageAnalysisState: Có ảnh đính kèm
+    ImageAnalysisState --> SafetyCheckState: OCR/Vision tạo tín hiệu sơ bộ
     
     IntakeState --> SafetyCheckState: Kiểm tra Hard Safety Rules (Code/Regex)
     
@@ -49,6 +51,8 @@ stateDiagram-v2
 
 ### Bước 1: Intake (Tiếp nhận & Làm sạch)
 * Chuẩn hóa văn bản đầu vào: loại bỏ ký tự rác, tách ngữ cảnh hội thoại gần nhất ($N=5$ tin nhắn gần nhất).
+* Nếu có ảnh: lưu attachment riêng tư, chạy OCR/Vision để lấy `ocr_text`, `detected_signals`, `vision_confidence`. Kết quả chỉ là tín hiệu đầu vào cho Triage.
+* Nếu ảnh mờ hoặc `vision_confidence` thấp: Agent yêu cầu ảnh rõ hơn hoặc chuyển Staff Review; không tự suy đoán lỗi xe.
 * Tuyệt đối không yêu cầu hoặc lưu trữ PII cá nhân thật (Họ tên, SĐT thật, CCCD, Biển số thật).
 
 ### Bước 2: Hard Safety Rules & Triage

@@ -31,6 +31,9 @@ erDiagram
     CASE ||--o{ MESSAGE : contains
     CASE ||--|| CASE_BRIEF : has
     CASE ||--o{ STAFF_AUDIT_LOG : tracks
+    CASE ||--o{ ATTACHMENT : includes
+    CASE ||--o{ CUSTOMER_FEEDBACK : receives
+    USER ||--o{ CASE : owns
     
     CASE {
         string id PK "e.g. CASE-20260924-001"
@@ -46,6 +49,24 @@ erDiagram
         string assigned_staff_id "Nullable FK"
         datetime created_at
         datetime updated_at
+    }
+
+    USER {
+        string id PK
+        string role "CUSTOMER | STAFF"
+        string mock_customer_id "Nullable; no real VinFast verification"
+    }
+
+    ATTACHMENT {
+        string id PK
+        string case_id FK "Nullable before case creation"
+        string message_id FK
+        string storage_key "Private path only"
+        string mime_type
+        string analysis_status "UPLOADED | ANALYZED | FAILED"
+        string ocr_text "Nullable"
+        jsonb detected_signals "Nullable"
+        float vision_confidence "Nullable"
     }
 
     MESSAGE {
@@ -97,7 +118,7 @@ erDiagram
 | `vehicle_model` | `VARCHAR(50)` | Yes | | Dòng xe (`VF3`, `VF5`, `VF6`, `VF7`, `VF8`, `VF9`, `e34`) |
 | `intent` | `VARCHAR(50)` | No | | Phân loại Intent |
 | `priority` | `VARCHAR(20)` | No | Default `'MEDIUM'` | `LOW`, `MEDIUM`, `HIGH`, `CRITICAL` |
-| `status` | `VARCHAR(30)` | No | Default `'Staff Reviewing'` | Trạng thái vòng đời ticket |
+| `status` | `VARCHAR(30)` | No | Default `'New'` | Trạng thái vòng đời ticket |
 | `assigned_staff_id` | `VARCHAR(50)` | Yes | | ID nhân viên phụ trách |
 | `created_at` | `TIMESTAMP WITH TZ` | No | `NOW()` | Thời gian tạo |
 | `updated_at` | `TIMESTAMP WITH TZ` | No | `NOW()` | Thời gian cập nhật cuối |
