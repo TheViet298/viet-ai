@@ -5,7 +5,7 @@ Cập nhật: 2026-09-30. Đây là dữ liệu tình huống mô phỏng phục
 | Bộ dữ liệu đang sử dụng | Chủ đề | Định dạng | Số case | Case mới |
 | --- | --- | --- | ---: | ---: |
 | [after_sales_customer_care_v1.csv](after_sales_customer_care_v1.csv) | Hậu mãi và chăm sóc khách hàng | CSV UTF-8 | 61 | 40 |
-| [triage_cases_v1.jsonl](triage_cases_v1.jsonl) | Thông tin cứu hộ, hỗ trợ trên đường, Dịch vụ > Cảnh báo | JSONL UTF-8 | 50 | 40 |
+| [triage_service_support_v1.jsonl](triage_service_support_v1.jsonl) | Thông tin cứu hộ, hỗ trợ trên đường, Dịch vụ > Cảnh báo | JSONL UTF-8 | 50 | 40 |
 
 ## 1. Hậu mãi và chăm sóc khách hàng — chuẩn bị cho RAG
 
@@ -30,7 +30,7 @@ CSV này là tập QA tham chiếu. Khi đánh giá RAG, nạp tài liệu ngu�
 
 ## 2. Hotline xưởng dịch vụ — chuẩn bị cho Agent
 
-Giữ đường dẫn `triage_cases_v1.jsonl` để các tham chiếu triage hiện có tiếp tục sử dụng được. Mỗi dòng là một JSON object độc lập, như định dạng gốc; đây không phải một mảng JSON trong file `.json`.
+Bộ 50 case dịch vụ của feature/ai-khoi được lưu riêng tại `triage_service_support_v1.jsonl`; không thay thế master benchmark `triage_cases_v1.jsonl` trên develop. Mỗi dòng là một JSON object độc lập, như định dạng gốc; đây không phải một mảng JSON trong file `.json`.
 
 Case mới dùng ID `HOTLINE-001` đến `HOTLINE-040`, với ba nhóm `topic`:
 
@@ -65,3 +65,13 @@ Hướng dẫn giao diện app chỉ mô tả khả năng trong tài liệu đư
 | `TEST-049`, `TEST-052` | Chỉ giữ trong archive: báo giá chưa có nguồn và điều khiển điểm RAG không phải QA có citation; dành cho harness fallback sau này |
 
 Hai bộ đang sử dụng có tổng cộng 111 case, gồm 31 case chuyển đổi và 80 case mới. Chưa chạy baseline Agent/RAG; kiểm tra dữ liệu chỉ xác nhận định dạng, số lượng, tính duy nhất, metadata citation và tính nhất quán của nhãn.
+
+
+<!-- update info from feature/ai-khoi branch -->
+## 4. Tích hợp vào develop và ranh giới benchmark
+
+- `triage_cases_v1.jsonl` và `triage_train_v1.jsonl`, `triage_dev_v1.jsonl`, `triage_test_v1.jsonl` giữ nguyên bộ benchmark của Long.
+- `triage_service_support_v1.jsonl`: 50 case cứu hộ/cảnh báo/hỗ trợ trên đường của Khôi, giữ nguyên schema `user_message`; cần harness riêng hoặc adapter trước khi dùng với runner đọc trường `input`.
+- `after_sales_customer_care_v1.csv`: 61 case QA hậu mãi của Khôi, cần harness RAG riêng.
+- Archive 50 case trước merge và archive 52 case hỗn hợp được giữ nguyên để truy vết; không đưa archive vào benchmark để tránh trùng dữ liệu.
+- Báo cáo `eval/results/report.md` và kết quả benchmark trên develop được giữ nguyên. PR chỉ bổ sung dữ liệu, không công bố kết quả đánh giá mới.
