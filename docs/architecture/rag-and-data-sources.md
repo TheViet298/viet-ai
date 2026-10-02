@@ -77,3 +77,4 @@
 * Landing/FAQ/Policy chỉ hiển thị nội dung hoặc link từ nguồn VinFast đã kiểm chứng.
 * Knowledge Hub không phải CMS và không tự crawl/cập nhật trong MVP.
 * Nội dung public không mặc định được đưa hết vào Vector DB; chỉ index nguồn đã được Data/RAG kiểm duyệt.
+* Không index raw ticket, chat history, ảnh hoặc location của Customer vào Knowledge Hub/RAG public. Nếu dùng insight từ case demo, phải biên soạn lại thành bài viết ẩn danh và được Staff duyệt.

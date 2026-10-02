@@ -3,7 +3,7 @@ import re
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
@@ -11,8 +11,11 @@ from src.db import get_db
 from src.models.db_models import (
     Attachment,
     AttachmentStatus,
+    AuthorType,
     Case,
     CaseBrief,
+    CaseLocation,
+    CaseUpdate,
     CustomerFeedback,
     Intent,
     Message,
@@ -27,18 +30,28 @@ from src.models.db_models import (
 from src.models.schemas import (
     ApiResponse,
     AttachmentOut,
+    CaseBriefOut,
+    CaseLocationOut,
+    CaseLocationPayload,
+    CaseUpdateOut,
     ChatResponseData,
     Citation,
+    ConversationItem,
+    CustomerCaseDetailData,
     CustomerCaseItem,
     CustomerCaseListData,
     CustomerCaseStatusData,
     CustomerChatRequest,
+    CustomerConfirmationPayload,
+    CustomerConfirmationResponseData,
     CustomerFeedbackPayload,
     CustomerFeedbackResponseData,
     ReopenCaseResponseData,
     ServiceHandoff,
+    ServicePointItem,
+    ServicePointsData,
 )
-from src.services.auth import check_case_ownership, require_customer
+from src.services.auth import check_case_ownership, get_optional_user, require_customer
 
 router = APIRouter(prefix="/customer", tags=["customer"])
 
@@ -155,22 +168,57 @@ async def upload_attachment(
 @router.post("/chat", response_model=ApiResponse[ChatResponseData])
 async def customer_chat(
     payload: CustomerChatRequest,
-    current_user: User = Depends(require_customer),
+    current_user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
     """
-    Tiếp nhận tin nhắn chat từ khách hàng đã xác thực:
+    Tiếp nhận tin nhắn chat từ khách hàng (đã đăng nhập) hoặc Guest (dùng thử tối đa 5 lượt):
     - Hỗ trợ text và/hoặc ảnh đính kèm (OCR/Vision tín hiệu sơ bộ)
     - Áp dụng Hard Safety Rules (CRITICAL)
     - Clarification tối đa 2 lượt kèm Quick Replies
     - Phản hồi FAQ kèm Trích dẫn nguồn
     - Sinh Case Brief và lưu vết vào Database SQLite
+    - Guest trial: giới hạn 5 lượt/phiên, trả remaining_guest_messages
     """
+    # 0. Kiểm tra xác thực hoặc Guest Trial (ADR-005 & api-contract.md Mục 1)
+    remaining_guest_msgs: int | None = None
+    if not current_user:
+        if not payload.guest_session_id:
+            raise HTTPException(
+                status_code=401,
+                detail="Chưa đăng nhập. Vui lòng đăng nhập tài khoản Customer hoặc cung cấp guest_session_id để trải nghiệm.",
+            )
+        # Giới hạn Guest tối đa 5 lượt chat
+        guest_count = (
+            db.query(func.count(Message.id))
+            .filter(
+                (Message.session_id == payload.guest_session_id) | (Message.session_id == payload.session_id),
+                Message.sender_type == SenderType.CUSTOMER.value,
+            )
+            .scalar()
+            or 0
+        )
+        if guest_count >= 5:
+            raise HTTPException(
+                status_code=403,
+                detail="Bạn đã sử dụng hết 5 lượt chat thử nghiệm dành cho Guest. Vui lòng đăng nhập tài khoản Customer để tiếp tục tạo và theo dõi hồ sơ hỗ trợ.",
+            )
+        remaining_guest_msgs = max(0, 5 - (guest_count + 1))
+
     text = payload.message.strip()
     lower_text = text.lower()
     ctx = payload.client_context
 
-    mock_cust_id = current_user.mock_customer_id or (ctx.mock_customer_id if ctx else "CUST_MOCK_01")
+    user_id = current_user.id if current_user else None
+    mock_cust_id = (
+        current_user.mock_customer_id
+        if current_user and current_user.mock_customer_id
+        else (
+            ctx.mock_customer_id
+            if ctx and ctx.mock_customer_id
+            else (f"GUEST_{payload.guest_session_id[:8]}" if payload.guest_session_id else "CUST_MOCK_01")
+        )
+    )
     vehicle_model = (ctx.vehicle_model if ctx and ctx.vehicle_model else "VF8").upper()
     vehicle_code = ctx.vehicle_code_mock if ctx else "VF-SF-00231"
 
@@ -196,6 +244,7 @@ async def customer_chat(
             "client_context": ctx.model_dump() if ctx else {},
             "attachment_ids": payload.attachment_ids or [],
             "attached_signals": attached_signals,
+            "guest_session_id": payload.guest_session_id,
         },
     )
     db.add(cust_msg)
@@ -228,7 +277,7 @@ async def customer_chat(
         if not case:
             case = Case(
                 id=new_case_id,
-                user_id=current_user.id,
+                user_id=user_id,
                 session_id=payload.session_id,
                 mock_customer_id=mock_cust_id,
                 vehicle_code_mock=vehicle_code,
@@ -303,6 +352,7 @@ async def customer_chat(
                 priority=Priority.CRITICAL.value,
                 message=agent_reply,
                 safe_guidance=safe_guidance,
+                remaining_guest_messages=remaining_guest_msgs,
             ),
             error=None,
         )
@@ -364,6 +414,7 @@ async def customer_chat(
                 case_id=None,
                 citations=citations,
                 service_handoff=service_handoff,
+                remaining_guest_messages=remaining_guest_msgs,
             ),
             error=None,
         )
@@ -381,7 +432,7 @@ async def customer_chat(
         if not case:
             case = Case(
                 id=new_case_id,
-                user_id=current_user.id,
+                user_id=user_id,
                 session_id=payload.session_id,
                 mock_customer_id=mock_cust_id,
                 vehicle_code_mock=vehicle_code,
@@ -458,6 +509,7 @@ async def customer_chat(
                 priority=Priority.HIGH.value,
                 message=agent_reply,
                 safe_guidance=safe_guidance,
+                remaining_guest_messages=remaining_guest_msgs,
             ),
             error=None,
         )
@@ -498,6 +550,7 @@ async def customer_chat(
                 clarification_turn=prior_turns,
                 max_clarification_turns=2,
                 suggested_replies=suggested_replies,
+                remaining_guest_messages=remaining_guest_msgs,
             ),
             error=None,
         )
@@ -508,7 +561,7 @@ async def customer_chat(
     if not case:
         case = Case(
             id=new_case_id,
-            user_id=current_user.id,
+            user_id=user_id,
             session_id=payload.session_id,
             mock_customer_id=mock_cust_id,
             vehicle_code_mock=vehicle_code,
@@ -570,36 +623,319 @@ async def customer_chat(
             priority=Priority.MEDIUM.value,
             message=agent_reply,
             safe_guidance=safe_guidance,
+            remaining_guest_messages=remaining_guest_msgs,
         ),
         error=None,
     )
 
 
 # ==============================================================================
-# 3. CUSTOMER CASE MANAGEMENT APIs — Nguồn: api-contract.md Mục 2.2 & 2.3
+# 3. LOCATION & SERVICE POINTS APIs — Nguồn: api-contract.md 1.1 & ADR-005
+# ==============================================================================
+
+
+@router.post("/location", response_model=ApiResponse[CaseLocationOut])
+def submit_case_location(
+    payload: CaseLocationPayload,
+    current_user: User = Depends(require_customer),
+    db: Session = Depends(get_db),
+):
+    """
+    Khách hàng chia sẻ vị trí sự cố (Consent hoặc tự nhập) theo api-contract.md 1.1 & ADR-005.
+    Tuyệt đối không tự động trích xuất GPS từ ảnh/EXIF.
+    """
+    case = db.get(Case, payload.case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {payload.case_id}")
+    check_case_ownership(case, current_user)
+
+    loc = db.query(CaseLocation).filter(CaseLocation.case_id == payload.case_id).first()
+    if not loc:
+        loc = CaseLocation(
+            id=str(uuid.uuid4()),
+            case_id=payload.case_id,
+            status=payload.status,
+            source=payload.source,
+            location_label=payload.location_label,
+            latitude=payload.latitude,
+            longitude=payload.longitude,
+            precision=payload.precision,
+            share_with_staff=payload.share_with_staff,
+            created_at=utcnow(),
+        )
+        db.add(loc)
+    else:
+        loc.status = payload.status
+        loc.source = payload.source
+        loc.location_label = payload.location_label
+        loc.latitude = payload.latitude
+        loc.longitude = payload.longitude
+        loc.precision = payload.precision
+        loc.share_with_staff = payload.share_with_staff
+
+    db.commit()
+    db.refresh(loc)
+
+    return ApiResponse(
+        success=True,
+        data=CaseLocationOut(
+            case_id=loc.case_id,
+            status=loc.status,
+            source=loc.source,
+            location_label=loc.location_label,
+            latitude=loc.latitude,
+            longitude=loc.longitude,
+            precision=loc.precision,
+            share_with_staff=loc.share_with_staff,
+            created_at=loc.created_at.isoformat() if loc.created_at else utcnow().isoformat(),
+        ),
+        error=None,
+    )
+
+
+DEMO_SERVICE_POINTS = [
+    ServicePointItem(
+        id="SP-HN-001",
+        name="Trạm sạc VinFast Vincom Metropolis",
+        category="CHARGING_STATION",
+        address="29 Liễu Giai, Ngọc Khánh, Ba Đình, Hà Nội",
+        distance_km=1.2,
+        latitude=21.0315,
+        longitude=105.8145,
+        hotline="1900-232389",
+        operating_hours="24/7",
+        charger_types=["DC 250kW (Siêu nhanh)", "DC 60kW", "AC 11kW"],
+    ),
+    ServicePointItem(
+        id="SP-HCM-001",
+        name="Trạm sạc & Dịch vụ VinFast Landmark 81",
+        category="CHARGING_STATION",
+        address="720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP.HCM",
+        distance_km=2.5,
+        latitude=10.7950,
+        longitude=106.7218,
+        hotline="1900-232389",
+        operating_hours="24/7",
+        charger_types=["DC 150kW", "DC 60kW", "AC 7.4kW"],
+    ),
+    ServicePointItem(
+        id="SP-DN-001",
+        name="Trạm Cứu hộ Cao tốc Long Thành - Dầu Giây",
+        category="RESCUE_POST",
+        address="Km 28 Cao tốc TP.HCM - Long Thành - Dầu Giây",
+        distance_km=5.0,
+        latitude=10.7712,
+        longitude=106.9450,
+        hotline="1900-232389 (Phím 1 Cứu hộ khẩn cấp)",
+        operating_hours="24/7",
+        charger_types=None,
+    ),
+    ServicePointItem(
+        id="SP-HCM-002",
+        name="Xưởng Dịch vụ VinFast Thảo Điền",
+        category="SERVICE_CENTER",
+        address="159 Xa Lộ Hà Nội, Thảo Điền, TP. Thủ Đức, TP.HCM",
+        distance_km=3.8,
+        latitude=10.8030,
+        longitude=106.7350,
+        hotline="1900-232389",
+        operating_hours="08:00 - 18:00 (Thứ 2 - Thứ 7)",
+        charger_types=["DC 60kW", "AC 11kW"],
+    ),
+    ServicePointItem(
+        id="SP-HN-002",
+        name="VinFast Showroom & Service Smart City",
+        category="SHOWROOM",
+        address="Khu đô thị Vinhomes Smart City, Tây Mỗ, Nam Từ Liêm, Hà Nội",
+        distance_km=8.4,
+        latitude=20.9982,
+        longitude=105.7420,
+        hotline="1900-232389",
+        operating_hours="08:30 - 20:00 Hàng ngày",
+        charger_types=["DC 150kW", "DC 60kW"],
+    ),
+]
+
+
+@router.get("/cases/{case_id}/service-points", response_model=ApiResponse[ServicePointsData])
+def get_case_service_points(
+    case_id: str,
+    current_user: User = Depends(require_customer),
+    db: Session = Depends(get_db),
+):
+    """
+    Lấy danh sách điểm hỗ trợ / trạm sạc / xưởng dịch vụ gợi ý theo sự cố (ADR-005).
+    P0 dùng 3-5 điểm seed demo phù hợp intent.
+    """
+    case = db.get(Case, case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
+    check_case_ownership(case, current_user)
+
+    # Sắp xếp ưu tiên theo intent
+    points = list(DEMO_SERVICE_POINTS)
+    if case.intent == Intent.CHARGING_BATTERY.value:
+        points.sort(key=lambda p: 0 if p.category == "CHARGING_STATION" else 1)
+    elif case.intent == Intent.SERVICE_INCIDENT.value:
+        points.sort(key=lambda p: 0 if p.category in ("RESCUE_POST", "SERVICE_CENTER") else 1)
+
+    return ApiResponse(
+        success=True,
+        data=ServicePointsData(case_id=case.id, recommended_points=points),
+        error=None,
+    )
+
+
+# ==============================================================================
+# 4. CUSTOMER CONFIRMATION API — Nguồn: api-contract.md 2.3 & ADR-005
+# ==============================================================================
+
+
+@router.post("/cases/{case_id}/confirmation", response_model=ApiResponse[CustomerConfirmationResponseData])
+def confirm_customer_case_resolution(
+    case_id: str,
+    payload: CustomerConfirmationPayload,
+    current_user: User = Depends(require_customer),
+    db: Session = Depends(get_db),
+):
+    """
+    Khách hàng xác nhận sau khi case ở trạng thái Resolved (ADR-005 & api-contract.md 2.3):
+    - RESOLVED_CONFIRMED: Khách hàng hài lòng -> Chuyển trạng thái sang 'Closed'
+    - STILL_UNRESOLVED: Khách phản ánh chưa xong -> Chuyển trạng thái sang 'Reopened' (quay lại Staff Queue)
+    """
+    case = db.get(Case, case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
+    check_case_ownership(case, current_user)
+
+    # Tắt cờ awaiting_customer_confirmation ở các CaseUpdate trước đó
+    db.query(CaseUpdate).filter(
+        CaseUpdate.case_id == case.id,
+        CaseUpdate.awaiting_customer_confirmation.is_(True),
+    ).update({"awaiting_customer_confirmation": False}, synchronize_session=False)
+
+    if payload.confirmation == "RESOLVED_CONFIRMED":
+        prev_status = case.status
+        case.status = TicketStatus.CLOSED.value
+        case.updated_at = utcnow()
+
+        audit = StaffAuditLog(
+            id=str(uuid.uuid4()),
+            case_id=case.id,
+            staff_id=f"CUSTOMER_{current_user.id}",
+            action=StaffAction.CLOSE.value,
+            previous_state={"status": prev_status},
+            new_state={"status": TicketStatus.CLOSED.value},
+            notes=f"Khách hàng xác nhận đã được hỗ trợ thỏa đáng. {payload.feedback_note or ''}".strip(),
+            created_at=utcnow(),
+        )
+        db.add(audit)
+
+        update = CaseUpdate(
+            id=str(uuid.uuid4()),
+            case_id=case.id,
+            author_type=AuthorType.SYSTEM.value,
+            status_after_update=TicketStatus.CLOSED.value,
+            customer_message="Cảm ơn quý khách đã xác nhận. Hồ sơ sự cố đã được đóng thành công.",
+            next_step="Cảm ơn quý khách đã tin tưởng và đồng hành cùng VinFast.",
+            awaiting_customer_confirmation=False,
+            created_at=utcnow(),
+        )
+        db.add(update)
+        db.commit()
+
+        return ApiResponse(
+            success=True,
+            data=CustomerConfirmationResponseData(
+                success=True,
+                case_id=case.id,
+                status=TicketStatus.CLOSED.value,
+                message="Xác nhận thành công. Hồ sơ sự cố đã được đóng.",
+            ),
+            error=None,
+        )
+    else:
+        prev_status = case.status
+        case.status = TicketStatus.REOPENED.value
+        case.updated_at = utcnow()
+
+        audit = StaffAuditLog(
+            id=str(uuid.uuid4()),
+            case_id=case.id,
+            staff_id=f"CUSTOMER_{current_user.id}",
+            action=StaffAction.REOPEN.value,
+            previous_state={"status": prev_status},
+            new_state={"status": TicketStatus.REOPENED.value},
+            notes=f"Khách hàng báo vẫn chưa được giải quyết xong: {payload.feedback_note or ''}".strip(),
+            created_at=utcnow(),
+        )
+        db.add(audit)
+
+        update = CaseUpdate(
+            id=str(uuid.uuid4()),
+            case_id=case.id,
+            author_type=AuthorType.SYSTEM.value,
+            status_after_update=TicketStatus.REOPENED.value,
+            customer_message="Hệ thống ghi nhận sự cố chưa được khắc phục hoàn toàn và đã chuyển lại hồ sơ sang hàng đợi chuyên viên kỹ thuật.",
+            next_step="Chuyên viên dịch vụ sẽ liên hệ lại quý khách trong thời gian sớm nhất.",
+            awaiting_customer_confirmation=False,
+            created_at=utcnow(),
+        )
+        db.add(update)
+        db.commit()
+
+        return ApiResponse(
+            success=True,
+            data=CustomerConfirmationResponseData(
+                success=True,
+                case_id=case.id,
+                status=TicketStatus.REOPENED.value,
+                message="Hệ thống đã ghi nhận phản hồi và mở lại hồ sơ sự cố để nhân viên tiếp tục hỗ trợ.",
+            ),
+            error=None,
+        )
+
+
+# ==============================================================================
+# 5. CUSTOMER CASE MANAGEMENT APIs — Nguồn: api-contract.md Mục 2.2 & 2.3
 # ==============================================================================
 
 
 @router.get("/cases", response_model=ApiResponse[CustomerCaseListData])
 def list_customer_cases(
+    query: str | None = Query(None, description="Tìm case theo ID hoặc từ khóa"),
+    status: str | None = Query(None, description="Lọc theo trạng thái ticket"),
     current_user: User = Depends(require_customer),
     db: Session = Depends(get_db),
 ):
     """
     Lấy danh sách các Case thuộc về chính Customer đang đăng nhập theo api-contract.md Mục 2.3.
+    Hỗ trợ tìm kiếm theo query và lọc theo status.
     """
-    query = db.query(Case).options(joinedload(Case.brief))
+    db_query = db.query(Case).options(joinedload(Case.brief))
 
     # Lọc theo quyền sở hữu của Customer
     if current_user.role != "STAFF":
         if current_user.mock_customer_id:
-            query = query.filter(
+            db_query = db_query.filter(
                 (Case.user_id == current_user.id) | (Case.mock_customer_id == current_user.mock_customer_id)
             )
         else:
-            query = query.filter(Case.user_id == current_user.id)
+            db_query = db_query.filter(Case.user_id == current_user.id)
 
-    cases = query.order_by(Case.created_at.desc()).all()
+    if query:
+        q_pattern = f"%{query}%"
+        db_query = db_query.filter(
+            Case.id.ilike(q_pattern)
+            | Case.intent.ilike(q_pattern)
+            | Case.vehicle_model.ilike(q_pattern)
+            | Case.vehicle_code_mock.ilike(q_pattern)
+        )
+
+    if status and status != "ALL":
+        db_query = db_query.filter(Case.status == status)
+
+    cases = db_query.order_by(Case.created_at.desc()).all()
 
     items: list[CustomerCaseItem] = []
     for c in cases:
@@ -620,6 +956,127 @@ def list_customer_cases(
     return ApiResponse(
         success=True,
         data=CustomerCaseListData(cases=items, total=len(items)),
+        error=None,
+    )
+
+
+@router.get("/cases/{case_id}", response_model=ApiResponse[CustomerCaseDetailData])
+def get_customer_case_detail(
+    case_id: str,
+    current_user: User = Depends(require_customer),
+    db: Session = Depends(get_db),
+):
+    """
+    Lấy chi tiết hồ sơ sự cố của chính khách hàng (api-contract.md Mục 2.3).
+    Bao gồm brief an toàn, vị trí đã chia sẻ, các cập nhật tiến độ (Customer Updates),
+    ảnh đính kèm và lịch sử hội thoại đã kiểm tra ownership.
+    """
+    case = (
+        db.query(Case)
+        .options(
+            joinedload(Case.brief),
+            joinedload(Case.location),
+            joinedload(Case.updates),
+            joinedload(Case.attachments),
+            joinedload(Case.messages),
+        )
+        .filter(Case.id == case_id)
+        .first()
+    )
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
+    check_case_ownership(case, current_user)
+
+    brief_out: CaseBriefOut | None = None
+    if case.brief:
+        brief_out = CaseBriefOut(
+            summary=case.brief.summary,
+            captured_fields=case.brief.captured_fields or {},
+            suggested_action=case.brief.suggested_action,
+            confidence_score=case.brief.confidence_score,
+            is_edited_by_staff=case.brief.is_edited_by_staff,
+        )
+
+    loc_out: CaseLocationOut | None = None
+    if case.location:
+        loc_out = CaseLocationOut(
+            case_id=case.location.case_id,
+            status=case.location.status,
+            source=case.location.source,
+            location_label=case.location.location_label,
+            latitude=case.location.latitude,
+            longitude=case.location.longitude,
+            precision=case.location.precision,
+            share_with_staff=case.location.share_with_staff,
+            created_at=case.location.created_at.isoformat() if case.location.created_at else utcnow().isoformat(),
+        )
+
+    updates_out: list[CaseUpdateOut] = []
+    if case.updates:
+        for u in case.updates:
+            updates_out.append(
+                CaseUpdateOut(
+                    id=u.id,
+                    case_id=u.case_id,
+                    author_type=u.author_type,
+                    status_after_update=u.status_after_update,
+                    customer_message=u.customer_message,
+                    next_step=u.next_step,
+                    awaiting_customer_confirmation=u.awaiting_customer_confirmation,
+                    created_at=u.created_at.isoformat() if u.created_at else utcnow().isoformat(),
+                )
+            )
+
+    attachments_out: list[AttachmentOut] = []
+    if case.attachments:
+        for att in case.attachments:
+            attachments_out.append(
+                AttachmentOut(
+                    attachment_id=att.id,
+                    storage_key=att.storage_key,
+                    mime_type=att.mime_type,
+                    analysis_status=att.analysis_status,
+                    ocr_text=att.ocr_text,
+                    detected_signals=att.detected_signals,
+                    vision_confidence=att.vision_confidence,
+                    created_at=att.created_at.isoformat() if att.created_at else utcnow().isoformat(),
+                )
+            )
+
+    conv_items: list[ConversationItem] = []
+    if case.messages:
+        for msg in case.messages:
+            sender_role = msg.sender_type if msg.sender_type in ("CUSTOMER", "AGENT", "STAFF", "SYSTEM") else "SYSTEM"
+            conv_items.append(
+                ConversationItem(
+                    sender=sender_role,
+                    content=msg.content,
+                    created_at=msg.created_at.isoformat() if msg.created_at else utcnow().isoformat(),
+                )
+            )
+
+    case_item = CustomerCaseItem(
+        id=case.id,
+        vehicle_model=case.vehicle_model,
+        vehicle_code_mock=case.vehicle_code_mock,
+        intent=case.intent,
+        priority=case.priority,
+        status=case.status,
+        summary=case.brief.summary if case.brief else None,
+        created_at=case.created_at.isoformat() if case.created_at else utcnow().isoformat(),
+        updated_at=case.updated_at.isoformat() if case.updated_at else None,
+    )
+
+    return ApiResponse(
+        success=True,
+        data=CustomerCaseDetailData(
+            case=case_item,
+            case_brief=brief_out,
+            location=loc_out,
+            updates=updates_out,
+            attachments=attachments_out,
+            conversation_history=conv_items,
+        ),
         error=None,
     )
 

@@ -20,10 +20,16 @@ from src.db import Base, SessionLocal, engine
 from src.models.db_models import (
     Attachment,
     AttachmentStatus,
+    AuthorType,
     Case,
     CaseBrief,
+    CaseLocation,
+    CaseUpdate,
     CustomerFeedback,
     Intent,
+    LocationPrecision,
+    LocationSource,
+    LocationStatus,
     Message,
     Priority,
     SenderType,
@@ -43,7 +49,17 @@ def seed_database() -> None:
     reset = "--reset" in sys.argv
     with SessionLocal() as db:
         if reset:
-            for model in (CustomerFeedback, Attachment, StaffAuditLog, CaseBrief, Message, Case, User):
+            for model in (
+                CaseLocation,
+                CaseUpdate,
+                CustomerFeedback,
+                Attachment,
+                StaffAuditLog,
+                CaseBrief,
+                Message,
+                Case,
+                User,
+            ):
                 db.query(model).delete()
             db.commit()
             print("[seed] Đã xóa toàn bộ dữ liệu cũ.")
@@ -171,6 +187,20 @@ def seed_database() -> None:
             created_at=now - timedelta(hours=3),
         )
 
+        # Vị trí đã consent cho Case 1 theo ADR-005
+        loc_1 = CaseLocation(
+            id=str(uuid.uuid4()),
+            case_id=case_1.id,
+            status=LocationStatus.CONSENTED.value,
+            source=LocationSource.MAP_PICKER.value,
+            location_label="Trạm sạc Vincom Metropolis Liễu Giai, Ba Đình, Hà Nội",
+            latitude=21.0315,
+            longitude=105.8145,
+            precision=LocationPrecision.EXACT.value,
+            share_with_staff=True,
+            created_at=now - timedelta(hours=2, minutes=55),
+        )
+
         # ======================================================================
         # KỊCH BẢN DEMO 2: Sự cố khẩn cấp trên Cao tốc (CRITICAL - Hard Safety Rule)
         # ======================================================================
@@ -239,6 +269,31 @@ def seed_database() -> None:
             previous_state={"status": TicketStatus.STAFF_REVIEWING.value},
             new_state={"status": TicketStatus.IN_PROGRESS.value},
             notes="Đã gọi khách hàng hướng dẫn an toàn và chuyển đội cứu hộ cao tốc khu vực trạm thu phí Dầu Giây.",
+            created_at=now - timedelta(hours=1),
+        )
+
+        # Vị trí cho Case 2 (Người dùng nhập tay vị trí cao tốc)
+        loc_2 = CaseLocation(
+            id=str(uuid.uuid4()),
+            case_id=case_2.id,
+            status=LocationStatus.CONSENTED.value,
+            source=LocationSource.USER_TEXT.value,
+            location_label="Cao tốc Long Thành - Dầu Giây (Km 28)",
+            latitude=10.7712,
+            longitude=106.9450,
+            precision=LocationPrecision.APPROXIMATE.value,
+            share_with_staff=True,
+            created_at=now - timedelta(hours=1, minutes=14),
+        )
+
+        update_2 = CaseUpdate(
+            id=str(uuid.uuid4()),
+            case_id=case_2.id,
+            author_type=AuthorType.STAFF.value,
+            status_after_update=TicketStatus.IN_PROGRESS.value,
+            customer_message="Đội cứu hộ cao tốc đã xuất phát từ trạm thu phí Dầu Giây, dự kiến tiếp cận xe trong 15 phút. Quý khách vui lòng đứng an toàn phía sau lan can đường.",
+            next_step="Kỹ thuật viên cứu hộ liên hệ trực tiếp số điện thoại.",
+            awaiting_customer_confirmation=False,
             created_at=now - timedelta(hours=1),
         )
 
@@ -380,6 +435,17 @@ def seed_database() -> None:
             created_at=now - timedelta(hours=18),
         )
 
+        update_4 = CaseUpdate(
+            id=str(uuid.uuid4()),
+            case_id=case_4.id,
+            author_type=AuthorType.STAFF.value,
+            status_after_update=TicketStatus.RESOLVED.value,
+            customer_message="Đã gửi tài liệu chi tiết chương trình miễn phí sạc V-GREEN và bảng tính thuê pin VF5 đến email khách hàng.",
+            next_step="Khách hàng xác nhận kết quả hỗ trợ trên ứng dụng.",
+            awaiting_customer_confirmation=True,
+            created_at=now - timedelta(hours=18),
+        )
+
         feedback_4 = CustomerFeedback(
             id=str(uuid.uuid4()),
             case_id=case_4.id,
@@ -393,11 +459,15 @@ def seed_database() -> None:
         db.add_all([brief_1, brief_2, brief_3, brief_4])
         db.add_all(msgs_1 + msgs_2 + msgs_3 + msgs_4)
         db.add_all([att_1])
+        db.add_all([loc_1, loc_2])
+        db.add_all([update_2, update_4])
         db.add_all([audit_2, audit_4])
         db.add(feedback_4)
         db.commit()
 
-        print("[seed] Đã seed thành công 4 kịch bản chuẩn hóa (CASE-20260924-001 -> 004) vào SQLite!")
+        print(
+            "[seed] Đã seed thành công 4 kịch bản chuẩn hóa (CASE-20260924-001 -> 004) kèm Location & Updates vào SQLite!"
+        )
 
 
 if __name__ == "__main__":

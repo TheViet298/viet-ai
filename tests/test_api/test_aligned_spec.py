@@ -234,3 +234,182 @@ async def test_staff_ticket_queue_and_actions(client):
     # Kiểm tra trạng thái cuối là Resolved
     detail_after = await client.get("/api/v1/staff/tickets/CASE-20260924-001", headers=headers)
     assert detail_after.json()["data"]["case"]["status"] == "Resolved"
+    assert len(detail_after.json()["data"]["updates"]) >= 1
+
+
+@pytest.mark.asyncio
+async def test_guest_chat_trial(client):
+    """Kiểm tra Guest trial: tối đa 5 lượt chat, trả remaining_guest_messages, chặn lượt thứ 6 (ADR-005 & api-contract.md 1)."""
+    import uuid
+
+    guest_session = f"guest_{uuid.uuid4().hex[:8]}"
+
+    # Lượt 1 đến 5: Thành công và remaining_guest_messages giảm dần từ 4 xuống 0
+    for i in range(5):
+        payload = {
+            "session_id": guest_session,
+            "guest_session_id": guest_session,
+            "message": f"Tôi muốn hỏi về ứng dụng VinFast lần {i + 1}",
+        }
+        res = await client.post("/api/v1/customer/chat", json=payload)
+        assert res.status_code == 200
+        body = res.json()
+        assert body["success"] is True
+        assert body["data"]["remaining_guest_messages"] == 4 - i
+
+    # Lượt thứ 6: Bị chặn 403 Forbidden
+    payload_blocked = {
+        "session_id": guest_session,
+        "guest_session_id": guest_session,
+        "message": "Tôi muốn hỏi thêm lần thứ 6",
+    }
+    res_blocked = await client.post("/api/v1/customer/chat", json=payload_blocked)
+    assert res_blocked.status_code == 403
+    assert "hết 5 lượt chat" in res_blocked.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_customer_location_and_service_points(client):
+    """Kiểm tra Chia sẻ vị trí (Consent) và Gợi ý Điểm hỗ trợ/Trạm sạc theo sự cố (ADR-005)."""
+    token = await get_auth_token(client, "customer@vinfast.vn", "customer123")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. Khách hàng chia sẻ vị trí sự cố
+    loc_payload = {
+        "case_id": "CASE-20260924-001",
+        "status": "CONSENTED",
+        "source": "MAP_PICKER",
+        "location_label": "Trạm sạc Vincom Metropolis Liễu Giai, Ba Đình, Hà Nội",
+        "latitude": 21.0315,
+        "longitude": 105.8145,
+        "precision": "EXACT",
+        "share_with_staff": True,
+    }
+    res_loc = await client.post("/api/v1/customer/location", json=loc_payload, headers=headers)
+    assert res_loc.status_code == 200
+    loc_body = res_loc.json()
+    assert loc_body["success"] is True
+    assert loc_body["data"]["location_label"] == "Trạm sạc Vincom Metropolis Liễu Giai, Ba Đình, Hà Nội"
+    assert loc_body["data"]["latitude"] == 21.0315
+
+    # 2. Lấy gợi ý điểm hỗ trợ (Service Points)
+    res_sp = await client.get("/api/v1/customer/cases/CASE-20260924-001/service-points", headers=headers)
+    assert res_sp.status_code == 200
+    sp_body = res_sp.json()
+    assert sp_body["success"] is True
+    assert len(sp_body["data"]["recommended_points"]) >= 3
+    # Case 001 là Charging/Battery nên trạm sạc được ưu tiên lên đầu
+    assert sp_body["data"]["recommended_points"][0]["category"] == "CHARGING_STATION"
+
+
+@pytest.mark.asyncio
+async def test_customer_confirmation_flow(client):
+    """Kiểm tra luồng xác nhận Customer Confirmation: STILL_UNRESOLVED -> Reopened; RESOLVED_CONFIRMED -> Closed (ADR-005)."""
+    cust_token = await get_auth_token(client, "customer@vinfast.vn", "customer123")
+    cust_headers = {"Authorization": f"Bearer {cust_token}"}
+    staff_token = await get_auth_token(client, "staff@vinfast.vn", "staff123")
+    staff_headers = {"Authorization": f"Bearer {staff_token}"}
+
+    # 1. Staff Resolve Case 003
+    res_resolve = await client.post(
+        "/api/v1/staff/tickets/CASE-20260924-003/actions",
+        json={"action": "RESOLVE", "staff_id": "STAFF_001", "notes": "Đã hướng dẫn khách sử dụng bộ sạc đúng cách."},
+        headers=staff_headers,
+    )
+    assert res_resolve.status_code == 200
+
+    # 2. Customer phản hồi STILL_UNRESOLVED -> chuyển thành Reopened
+    res_unresolved = await client.post(
+        "/api/v1/customer/cases/CASE-20260924-003/confirmation",
+        json={"confirmation": "STILL_UNRESOLVED", "feedback_note": "Cắm lại vẫn không sạc được."},
+        headers=cust_headers,
+    )
+    assert res_unresolved.status_code == 200
+    assert res_unresolved.json()["data"]["status"] == "Reopened"
+
+    # 3. Staff Resolve lại
+    await client.post(
+        "/api/v1/staff/tickets/CASE-20260924-003/actions",
+        json={"action": "RESOLVE", "staff_id": "STAFF_001", "notes": "Kỹ thuật đã qua kiểm tra ổ cắm."},
+        headers=staff_headers,
+    )
+
+    # 4. Customer phản hồi RESOLVED_CONFIRMED -> chuyển thành Closed
+    res_confirmed = await client.post(
+        "/api/v1/customer/cases/CASE-20260924-003/confirmation",
+        json={"confirmation": "RESOLVED_CONFIRMED", "feedback_note": "Xe đã sạc bình thường."},
+        headers=cust_headers,
+    )
+    assert res_confirmed.status_code == 200
+    assert res_confirmed.json()["data"]["status"] == "Closed"
+
+
+@pytest.mark.asyncio
+async def test_customer_case_search_and_detail(client):
+    """Kiểm tra tìm kiếm case theo từ khóa/trạng thái và xem Customer Case Detail (api-contract.md 2.3)."""
+    token = await get_auth_token(client, "customer@vinfast.vn", "customer123")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 1. Tìm kiếm theo từ khóa 'VF8'
+    res_search = await client.get("/api/v1/customer/cases?query=VF8", headers=headers)
+    assert res_search.status_code == 200
+    search_body = res_search.json()
+    assert search_body["success"] is True
+    assert all("VF8" in c["vehicle_model"] for c in search_body["data"]["cases"])
+
+    # 2. Xem Customer Case Detail
+    res_detail = await client.get("/api/v1/customer/cases/CASE-20260924-001", headers=headers)
+    assert res_detail.status_code == 200
+    detail_body = res_detail.json()
+    assert detail_body["success"] is True
+    data = detail_body["data"]
+    assert data["case"]["id"] == "CASE-20260924-001"
+    assert data["case_brief"] is not None
+    assert data["location"] is not None
+    assert isinstance(data["updates"], list)
+    assert isinstance(data["attachments"], list)
+    assert isinstance(data["conversation_history"], list)
+
+
+@pytest.mark.asyncio
+async def test_public_support_insights(client):
+    """Kiểm tra Thư viện tình huống thường gặp đã biên soạn/ẩn danh (api-contract.md 2.3 & ADR-005)."""
+    res = await client.get("/api/v1/public/support-insights")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["success"] is True
+    assert body["data"]["total"] >= 5
+    first_insight = body["data"]["items"][0]
+    assert "title" in first_insight
+    assert "symptom" in first_insight
+    assert "recommended_action" in first_insight
+    assert "hotline_support" in first_insight
+
+
+@pytest.mark.asyncio
+async def test_staff_dashboard_and_routing_directory(client):
+    """Kiểm tra Staff Dashboard counter và Routing Directory (api-contract.md 3.1.1)."""
+    staff_token = await get_auth_token(client, "staff@vinfast.vn", "staff123")
+    headers = {"Authorization": f"Bearer {staff_token}"}
+
+    # 1. Staff Dashboard
+    res_dash = await client.get("/api/v1/staff/dashboard", headers=headers)
+    assert res_dash.status_code == 200
+    dash_body = res_dash.json()
+    assert dash_body["success"] is True
+    data = dash_body["data"]
+    assert "critical_count" in data
+    assert "staff_reviewing_count" in data
+    assert "needs_information_count" in data
+    assert "resolved_today_count" in data
+    assert data["total_cases_count"] >= 4
+
+    # 2. Staff Routing Directory
+    res_routing = await client.get("/api/v1/staff/routing-directory", headers=headers)
+    assert res_routing.status_code == 200
+    routing_body = res_routing.json()
+    assert routing_body["success"] is True
+    assert routing_body["data"]["total"] == 5
+    dept_names = [d["name"] for d in routing_body["data"]["departments"]]
+    assert "Charging Operations" in dept_names
+    assert "Emergency Support Demo" in dept_names

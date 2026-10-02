@@ -118,6 +118,7 @@ class CustomerChatRequest(BaseModel):
     case_id: str | None = None  # e.g. CASE-20260924-001, null nếu là tin nhắn đầu tiên
     message: str = Field(..., min_length=1)
     attachment_ids: list[str] | None = None  # Danh sách ID ảnh đã upload trước đó
+    guest_session_id: str | None = None  # Dùng khi chưa login (giới hạn 5 lượt)
     client_context: ClientContext | None = None
 
 
@@ -150,6 +151,7 @@ class ChatResponseData(BaseModel):
     citations: list[Citation] | None = None
     service_handoff: ServiceHandoff | None = None
     safe_guidance: str | None = None
+    remaining_guest_messages: int | None = None  # Số lượt chat còn lại cho Guest trial (tối đa 5)
 
 
 class CustomerCaseStatusData(BaseModel):
@@ -192,6 +194,100 @@ class ReopenCaseResponseData(BaseModel):
     success: bool = True
     case_id: str
     status: str
+
+
+# ==============================================================================
+# LOCATION & SERVICE POINTS SCHEMAS — Nguồn: ADR-005 & api-contract.md 1.1
+# ==============================================================================
+
+
+class CaseLocationPayload(BaseModel):
+    case_id: str
+    status: Literal["CONSENTED", "MANUAL", "NOT_SHARED", "UNKNOWN"] = "CONSENTED"
+    source: Literal["BROWSER_GPS", "USER_TEXT", "MAP_PICKER"] = "USER_TEXT"
+    location_label: str = Field(..., min_length=1)
+    latitude: float | None = None
+    longitude: float | None = None
+    precision: Literal["APPROXIMATE", "EXACT"] = "APPROXIMATE"
+    share_with_staff: bool = True
+
+
+class CaseLocationOut(BaseModel):
+    case_id: str
+    status: str
+    source: str
+    location_label: str
+    latitude: float | None = None
+    longitude: float | None = None
+    precision: str
+    share_with_staff: bool
+    created_at: str
+
+
+class ServicePointItem(BaseModel):
+    id: str
+    name: str
+    category: Literal["CHARGING_STATION", "SERVICE_CENTER", "RESCUE_POST", "SHOWROOM"]
+    address: str
+    distance_km: float | None = None
+    latitude: float
+    longitude: float
+    hotline: str | None = None
+    operating_hours: str | None = None
+    charger_types: list[str] | None = None
+
+
+class ServicePointsData(BaseModel):
+    case_id: str
+    recommended_points: list[ServicePointItem]
+
+
+# ==============================================================================
+# CUSTOMER CONFIRMATION & CASE UPDATES — Nguồn: ADR-005 & api-contract.md 2.3
+# ==============================================================================
+
+
+class CustomerConfirmationPayload(BaseModel):
+    confirmation: Literal["RESOLVED_CONFIRMED", "STILL_UNRESOLVED"]
+    feedback_note: str | None = None
+
+
+class CustomerConfirmationResponseData(BaseModel):
+    success: bool = True
+    case_id: str
+    status: str
+    message: str
+
+
+class CaseUpdateOut(BaseModel):
+    id: str
+    case_id: str
+    author_type: Literal["STAFF", "SYSTEM"]
+    status_after_update: str
+    customer_message: str
+    next_step: str | None = None
+    awaiting_customer_confirmation: bool = False
+    created_at: str
+
+
+# ==============================================================================
+# PUBLIC SUPPORT INSIGHTS — Nguồn: ADR-005 & api-contract.md 2.3
+# ==============================================================================
+
+
+class SupportInsightItem(BaseModel):
+    id: str
+    title: str
+    category: str
+    vehicle_models: list[str]
+    symptom: str
+    recommended_action: str
+    hotline_support: str | None = None
+
+
+class PublicSupportInsightsData(BaseModel):
+    items: list[SupportInsightItem]
+    total: int
 
 
 # ==============================================================================
@@ -245,6 +341,17 @@ class TicketDetailData(BaseModel):
     case_brief: CaseBriefOut
     conversation_history: list[ConversationItem]
     attachments: list[AttachmentOut] = Field(default_factory=list)
+    location: CaseLocationOut | None = None
+    updates: list[CaseUpdateOut] = Field(default_factory=list)
+
+
+class CustomerCaseDetailData(BaseModel):
+    case: CustomerCaseItem
+    case_brief: CaseBriefOut | None = None
+    location: CaseLocationOut | None = None
+    updates: list[CaseUpdateOut] = Field(default_factory=list)
+    attachments: list[AttachmentOut] = Field(default_factory=list)
+    conversation_history: list[ConversationItem] = Field(default_factory=list)
 
 
 class StaffActionPayload(BaseModel):
@@ -258,3 +365,23 @@ class StaffActionPayload(BaseModel):
 class StaffActionResponseData(BaseModel):
     success: bool = True
     case_id: str
+
+
+class StaffDashboardData(BaseModel):
+    critical_count: int
+    staff_reviewing_count: int
+    needs_information_count: int
+    resolved_today_count: int
+    total_cases_count: int
+
+
+class RoutingDepartmentItem(BaseModel):
+    id: str
+    name: str
+    description: str
+    contact_email: str | None = None
+
+
+class RoutingDirectoryData(BaseModel):
+    departments: list[RoutingDepartmentItem]
+    total: int

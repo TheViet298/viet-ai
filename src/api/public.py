@@ -1,6 +1,12 @@
 from fastapi import APIRouter
 
-from src.models.schemas import ApiResponse, ArticleItem, PublicArticlesData
+from src.models.schemas import (
+    ApiResponse,
+    ArticleItem,
+    PublicArticlesData,
+    PublicSupportInsightsData,
+    SupportInsightItem,
+)
 
 router = APIRouter(prefix="/public", tags=["public"])
 
@@ -60,6 +66,56 @@ VERIFIED_ARTICLES: list[ArticleItem] = [
     ),
 ]
 
+# Thư viện tình huống thường gặp đã biên soạn/ẩn danh theo api-contract.md 2.3 & ADR-005
+# Không sử dụng raw ticket/chat của khách hàng
+SUPPORT_INSIGHTS: list[SupportInsightItem] = [
+    SupportInsightItem(
+        id="INS-001",
+        title="Trụ sạc báo lỗi kết nối CC01 tại trạm sạc công cộng",
+        category="CHARGING",
+        vehicle_models=["VF8", "VF9", "VF7", "VF6", "VF5", "e34"],
+        symptom="Cắm súng sạc nhưng trụ nhấp nháy đèn đỏ, màn hình xe báo lỗi CC01 và không thể bắt đầu phiên sạc.",
+        recommended_action="Rút súng sạc, đợi 30 giây, nâng chắc tay súng sạc vuông góc với cổng sạc và ấn chặt cho đến khi nghe tiếng ngàm khóa. Nếu tiếp tục lỗi, chuyển sang trụ sạc khác gần nhất.",
+        hotline_support="1900-232389 (Phím 1)",
+    ),
+    SupportInsightItem(
+        id="INS-002",
+        title="Biểu tượng rùa vàng hiển thị và xe giảm công suất trên đường",
+        category="OPERATING",
+        vehicle_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"],
+        symptom="Đèn cảnh báo rùa vàng bật sáng trên màn hình ODO, xe bị giới hạn tốc độ và mất công suất tăng tốc.",
+        recommended_action="Bật ngay đèn Hazard, từ từ tấp vào làn dừng khẩn cấp an toàn. Tắt máy khóa xe khoảng 5 phút để hệ thống BMS tái thiết lập, sau đó khởi động lại.",
+        hotline_support="1900-232389 (Phím 1 - Cứu hộ khẩn cấp 24/7)",
+    ),
+    SupportInsightItem(
+        id="INS-003",
+        title="Bộ sạc di động tại nhà báo đèn đỏ lỗi tiếp địa (Ground Error)",
+        category="BATTERY",
+        vehicle_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"],
+        symptom="Bộ sạc 2.2kW / 3.5kW cắm vào ổ điện gia đình nhưng đèn Fault đỏ nháy liên tục, không nạp điện.",
+        recommended_action="Kiểm tra hệ thống tiếp địa của ổ cắm dân dụng. Tránh cắm chung với ổ chia chịu tải kém và đảm bảo dây dẫn có tiết diện từ 2.5mm² trở lên.",
+        hotline_support="1900-232389",
+    ),
+    SupportInsightItem(
+        id="INS-004",
+        title="Ứng dụng VinFast không đồng bộ phần trăm pin (SoC) theo thời gian thực",
+        category="SOFTWARE",
+        vehicle_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"],
+        symptom="Ứng dụng điện thoại hiển thị số liệu sạc hoặc vị trí xe cũ so với thực tế.",
+        recommended_action="Kiểm tra tín hiệu sóng 4G/eSIM trên màn hình xe. Kéo màn hình ứng dụng từ trên xuống (Pull-to-refresh) hoặc đăng xuất và đăng nhập lại tài khoản trên ứng dụng.",
+        hotline_support="1900-232389",
+    ),
+    SupportInsightItem(
+        id="INS-005",
+        title="Tối ưu hóa thời gian sạc pin trong điều kiện thời tiết nắng nóng",
+        category="BATTERY",
+        vehicle_models=["VF6", "VF7", "VF8", "VF9"],
+        symptom="Tốc độ sạc nhanh DC giảm xuống khi nhiệt độ ngoài trời cao trên 38°C.",
+        recommended_action="Hệ thống quản lý nhiệt pin tự động giảm dòng để bảo vệ tuổi thọ cell pin. Khuyến nghị đỗ xe tại bóng râm hoặc bật tính năng làm mát trước khoang pin trước khi sạc DC.",
+        hotline_support="1900-232389",
+    ),
+]
+
 
 @router.get("/articles", response_model=ApiResponse[PublicArticlesData])
 def get_public_articles():
@@ -72,6 +128,22 @@ def get_public_articles():
         data=PublicArticlesData(
             articles=VERIFIED_ARTICLES,
             total=len(VERIFIED_ARTICLES),
+        ),
+        error=None,
+    )
+
+
+@router.get("/support-insights", response_model=ApiResponse[PublicSupportInsightsData])
+def get_public_support_insights():
+    """
+    Thư viện tình huống thường gặp đã biên soạn/ẩn danh theo api-contract.md 2.3 & ADR-005.
+    Không trả raw case của khách hàng khác. Cho phép Guest truy cập công khai.
+    """
+    return ApiResponse(
+        success=True,
+        data=PublicSupportInsightsData(
+            items=SUPPORT_INSIGHTS,
+            total=len(SUPPORT_INSIGHTS),
         ),
         error=None,
     )

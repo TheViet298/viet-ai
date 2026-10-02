@@ -1,7 +1,7 @@
 # API Contract Specification (Customer & Staff)
 
 > **Người phụ trách chính:** Triển (Backend Lead)  
-> **Cập nhật lần cuối:** 2026-09-24  
+> **Cập nhật lần cuối:** 2026-10-02  
 > **Trạng thái:** In Review (Đã chuẩn hóa No-PII Schema, Distinct State Rules và Safe Guidance)
 
 ---
@@ -26,6 +26,7 @@
   * Sử dụng định danh phiên: `session_id`, `mock_customer_id` (nếu có profile giả lập), `vehicle_model`, `vehicle_code_mock`.
 * **Quy tắc An toàn:** Tuyệt đối không trả về Chain-of-Thought (suy luận nội bộ của LLM) trong response của Customer API.
 * **RBAC:** Guest chỉ gọi public APIs; Customer chỉ gọi chat/case của mình; Staff mới gọi `/staff/*`. Backend trả `401` khi chưa đăng nhập và `403` khi sai role/ownership.
+* **Guest trial:** `guest_session_id` được giới hạn 5 lượt chat; response trả `remaining_guest_messages`. Guest vẫn nhận FAQ/citation nhưng phải login để theo dõi case.
 
 ## 1.1. Auth, Public Content & Attachment APIs
 
@@ -38,6 +39,12 @@
 | `POST /api/v1/customer/attachments` | Upload ảnh riêng tư, trả `attachment_id` |
 
 `POST /customer/attachments` trả `attachment_id`, `analysis_status`, và (nếu Vision được bật) `ocr_text`, `detected_signals`, `vision_confidence`. Đây là quan sát sơ bộ, không phải chẩn đoán.
+
+| Endpoint | Mô tả |
+| :--- | :--- |
+| `POST /api/v1/customer/location` | Customer consent vị trí hiện tại hoặc nhập khu vực cho case |
+| `GET /api/v1/customer/cases/{case_id}/service-points` | Lấy điểm dịch vụ/trạm sạc/showroom gợi ý cho case |
+| `POST /api/v1/customer/cases/{case_id}/confirmation` | Customer chọn `RESOLVED_CONFIRMED` hoặc `STILL_UNRESOLVED` |
 
 ---
 
@@ -54,6 +61,7 @@
   "case_id": "CASE-20260924-001", // null nếu là tin nhắn đầu tiên
   "message": "Xe VF8 của tôi không nhận sạc ở trạm Metropolis, trụ báo đèn đỏ.",
   "attachment_ids": ["ATT-20260930-001"],
+  "guest_session_id": "guest_abc", // dùng khi chưa login
   "client_context": {
     "mock_customer_id": "CUST_MOCK_01",
     "vehicle_model": "VF8",
@@ -166,8 +174,12 @@
 | Endpoint | Mô tả |
 | :--- | :--- |
 | `GET /api/v1/customer/cases` | Danh sách case của chính Customer |
+| `GET /api/v1/customer/cases?query={query}&status={status}` | Tìm case của chính Customer theo Case ID/từ khóa/trạng thái |
+| `GET /api/v1/customer/cases/{case_id}` | Case Detail: brief an toàn, timeline, Customer Update, attachment và lịch sử chat đã được ownership check |
 | `POST /api/v1/customer/cases/{case_id}/reopen` | Mở lại case đã Resolved/Closed |
 | `POST /api/v1/customer/cases/{case_id}/feedback` | Gửi rating/feedback sau xử lý |
+| `POST /api/v1/customer/cases/{case_id}/confirmation` | Xác nhận đã được hỗ trợ hoặc mở lại case |
+| `GET /api/v1/public/support-insights` | Thư viện tình huống thường gặp đã biên soạn/ẩn danh; không trả raw case của Customer |
 
 ---
 
@@ -209,6 +221,18 @@
   "error": null
 }
 ```
+
+---
+
+### 3.1.1. Staff Dashboard, History & Routing Directory
+
+| Endpoint | Mô tả |
+| :--- | :--- |
+| `GET /api/v1/staff/dashboard` | Counter demo: Critical, Staff Reviewing, Needs Information, Resolved hôm nay |
+| `GET /api/v1/staff/tickets?status=Resolved,Closed,Reopened` | Lịch sử case, có filter intent/routing/staff/thời gian |
+| `GET /api/v1/staff/routing-directory` | Danh sách bộ phận demo để Staff chọn khi Reroute |
+
+Routing directory P0: `Charging Operations`, `Service Center`, `Customer Care`, `Sales Advisor`, `Emergency Support Demo`.
 
 ---
 
