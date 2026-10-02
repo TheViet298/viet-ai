@@ -34,6 +34,10 @@ export interface TicketItem {
   missing_info_flag: boolean;
   created_at: string;
   confidence_score: number;
+  issue_summary?: string;
+  suggested_action?: string;
+  has_location_consent?: boolean;
+  error_code_short?: string;
 }
 
 export interface TicketDetail {

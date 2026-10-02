@@ -9,5 +9,7 @@ export * from "./components/TicketCard";
 export * from "./components/TicketFilters";
 export * from "./components/CaseBriefCard";
 export * from "./components/HitlActionBar";
-export * from "./components/ConversationTimeline";
 export * from "./components/TicketSkeleton";
+export * from "./components/StaffGuardGate";
+export * from "./components/StaffConsoleShell";
+export * from "./components/TicketDetailPanel";

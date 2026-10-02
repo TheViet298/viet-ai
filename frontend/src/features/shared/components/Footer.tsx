@@ -1,7 +1,18 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ScanLine, PhoneCall, ShieldCheck, FileCheck, BatteryCharging, Wrench, AlertTriangle } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 
 export function Footer() {
+  const pathname = usePathname();
+  const { role } = useAuth();
+
+  // Ẩn Footer khi Staff đang ở màn /console để tạo không gian làm việc chuyên nghiệp
+  if (pathname?.startsWith("/console") && role === "STAFF") {
+    return null;
+  }
   return (
     <footer className="border-t border-[#E2E8F0] bg-white text-[#64748B]">
       {/* Top Banner: Hotline */}

@@ -5,46 +5,61 @@ import { usePathname } from "next/navigation";
 import {
   ScanLine,
   MessageSquare,
-  ShieldCheck,
   Search,
+  BookOpen,
   LogOut,
-  ChevronDown,
-  Sparkles,
+  User,
+  ShieldAlert,
+  ArrowRight,
 } from "lucide-react";
-import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, role, loginAs, logout } = useAuth();
-  const [showRoleMenu, setShowRoleMenu] = useState(false);
+  const { user, role, logout } = useAuth();
 
-  const navItems = [
-    {
-      name: "Trang chủ",
-      href: "/",
-      exact: true,
-    },
-    {
-      name: "Trợ lý Chat",
-      href: "/chat",
-      icon: MessageSquare,
-    },
-    {
-      name: "Tra cứu sự cố",
-      href: "/track-case",
-      icon: Search,
-    },
-    {
-      name: "Bàn điều phối",
-      href: "/console",
-      icon: ShieldCheck,
-      badge: "Staff",
-    },
-  ];
+  // Khi Staff đang ở màn /console -> Ẩn Navbar Customer để nhường toàn bộ giao diện cho Staff Console Shell
+  if (pathname?.startsWith("/console") && role === "STAFF") {
+    return null;
+  }
+
+  // Cấu hình Menu linh hoạt theo vai trò (Role-Based Navigation)
+  // GUEST: Trang chủ | Trợ lý Chat | Knowledge Hub | Đăng nhập | Đăng ký
+  // CUSTOMER: Trang chủ | Trợ lý Chat | Trung tâm hỗ trợ | Knowledge Hub | Hồ sơ
+  const navItems =
+    role === "CUSTOMER"
+      ? [
+          { name: "Trang chủ", href: "/", exact: true },
+          { name: "Trợ lý Chat", href: "/chat", icon: MessageSquare },
+          { name: "Trung tâm hỗ trợ", href: "/track-case", icon: Search },
+          { name: "Knowledge Hub", href: "/#knowledge-hub", icon: BookOpen },
+        ]
+      : [
+          { name: "Trang chủ", href: "/", exact: true },
+          { name: "Trợ lý Chat", href: "/chat", icon: MessageSquare },
+          { name: "Knowledge Hub", href: "/#knowledge-hub", icon: BookOpen },
+        ];
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md text-[#0F172A] shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+      {/* Banner nhỏ thông báo khi Staff đang ở chế độ Customer Preview */}
+      {role === "STAFF" && (
+        <div className="bg-[#EFF3FC] border-b border-[#1E40AF]/20 px-4 py-1 text-[11px] font-medium text-[#1E40AF] flex items-center justify-between">
+          <div className="mx-auto max-w-6xl w-full flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <ShieldAlert className="w-3.5 h-3.5 text-[#1E40AF]" />
+              Bạn đang duyệt giao diện với tư cách xem trước (Staff Preview Mode).
+            </span>
+            <Link
+              href="/console"
+              className="inline-flex items-center gap-1 font-bold underline hover:text-[#1D4ED8]"
+            >
+              Quay lại Bàn Điều Phối <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           {/* Logo Brand */}
@@ -64,16 +79,16 @@ export function Navbar() {
             </Link>
           </div>
 
-          {/* Navigation Links */}
+          {/* Navigation Links theo Role (Guest hoặc Customer) */}
           <nav className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => {
               const isActive = item.exact
                 ? pathname === item.href
-                : pathname.startsWith(item.href);
+                : pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
               const Icon = item.icon;
               return (
                 <Link
-                  key={item.href}
+                  key={item.name}
                   href={item.href}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[13px] font-medium transition-colors ${
                     isActive
@@ -83,103 +98,30 @@ export function Navbar() {
                 >
                   {Icon && <Icon className="w-3.5 h-3.5" />}
                   <span>{item.name}</span>
-                  {item.badge && (
-                    <span className="rounded-full bg-[#6D5BD0]/10 px-1.5 py-0.2 text-[10px] font-bold text-[#6D5BD0] border border-[#6D5BD0]/20">
-                      {item.badge}
-                    </span>
-                  )}
                 </Link>
               );
             })}
           </nav>
 
-          {/* Right Action: Role Switcher & Auth */}
+          {/* Right Action: Auth / User Profile */}
           <div className="flex items-center gap-2">
-            {/* Quick Demo Switcher Dropdown */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowRoleMenu(!showRoleMenu)}
-                className="flex items-center gap-1.5 rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 py-1.5 text-[12px] font-medium text-[#0F172A] hover:bg-[#F1F5F9] transition shadow-xs"
-                title="Chuyển vai trò thử nghiệm demo"
-              >
-                <Sparkles className="w-3 h-3 text-[#1E40AF]" />
-                <span className="hidden sm:inline text-[#64748B]">Role:</span>
-                <span className="font-semibold text-[#0F172A]">
-                  {role === "STAFF"
-                    ? "Staff KTV"
-                    : role === "CUSTOMER"
-                    ? "Chủ xe"
-                    : "Guest"}
-                </span>
-                <ChevronDown className="w-3 h-3 text-[#64748B]" />
-              </button>
-
-              {showRoleMenu && (
-                <div
-                  className="absolute right-0 mt-2 w-52 rounded-2xl border border-[#E2E8F0] bg-white p-2 shadow-lg text-[12px] z-50"
-                  onMouseLeave={() => setShowRoleMenu(false)}
-                >
-                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#64748B] border-b border-[#E2E8F0]">
-                    Chuyển vai trò (Demo)
+            {user && role === "CUSTOMER" ? (
+              /* Hồ sơ Customer */
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1 rounded-xl">
+                  <div className="w-6 h-6 rounded-full bg-[#1E40AF] text-white flex items-center justify-center text-[11px] font-bold">
+                    <User className="w-3.5 h-3.5" />
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      loginAs("CUSTOMER");
-                      setShowRoleMenu(false);
-                    }}
-                    className={`mt-1 flex w-full items-center justify-between rounded-[10px] px-2 py-1.5 text-left transition ${
-                      role === "CUSTOMER"
-                        ? "bg-[#EFF3FC] text-[#1E40AF] font-semibold"
-                        : "text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
-                    }`}
-                  >
-                    <span>Khách hàng (VF8)</span>
-                    {role === "CUSTOMER" && <span className="h-1.5 w-1.5 rounded-full bg-[#10B981]" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      loginAs("STAFF");
-                      setShowRoleMenu(false);
-                    }}
-                    className={`flex w-full items-center justify-between rounded-[10px] px-2 py-1.5 text-left transition ${
-                      role === "STAFF"
-                        ? "bg-[#EFF3FC] text-[#1E40AF] font-semibold"
-                        : "text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
-                    }`}
-                  >
-                    <span>Kỹ thuật viên (Staff)</span>
-                    {role === "STAFF" && <span className="h-1.5 w-1.5 rounded-full bg-[#6D5BD0]" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      logout();
-                      setShowRoleMenu(false);
-                    }}
-                    className={`flex w-full items-center justify-between rounded-[10px] px-2 py-1.5 text-left transition ${
-                      role === "GUEST"
-                        ? "bg-[#EFF3FC] text-[#1E40AF] font-semibold"
-                        : "text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
-                    }`}
-                  >
-                    <span>Khách vãng lai (Guest)</span>
-                  </button>
+                  <div className="flex flex-col text-left">
+                    <span className="text-[12px] font-semibold leading-tight text-[#0F172A]">
+                      {user.name}
+                    </span>
+                    <span className="text-[10px] text-[#1E40AF] font-mono font-medium">
+                      {user.vehicleModel || "VF8"}
+                    </span>
+                  </div>
                 </div>
-              )}
-            </div>
 
-            {/* Auth Buttons */}
-            {user ? (
-              <div className="flex items-center gap-2">
-                <div className="hidden lg:flex flex-col text-right">
-                  <span className="text-[12px] font-semibold leading-tight text-[#0F172A]">{user.name}</span>
-                  <span className="text-[11px] text-[#64748B] font-mono">
-                    {user.role === "CUSTOMER" ? `${user.vehicleModel || "VF8"}` : "Reviewer"}
-                  </span>
-                </div>
                 <button
                   type="button"
                   onClick={logout}
@@ -189,7 +131,19 @@ export function Navbar() {
                   <LogOut className="h-4 w-4" />
                 </button>
               </div>
+            ) : role === "STAFF" ? (
+              /* Staff đang xem Customer Preview */
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/console"
+                  className="inline-flex items-center gap-1.5 rounded-[10px] bg-[#1E40AF] hover:bg-[#1D4ED8] px-3 py-1.5 text-[12px] font-semibold text-white transition shadow-sm"
+                >
+                  <span>Bàn điều phối (Console)</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             ) : (
+              /* Guest Actions */
               <div className="flex items-center gap-1.5">
                 <Link
                   href="/login"
@@ -199,7 +153,7 @@ export function Navbar() {
                 </Link>
                 <Link
                   href="/register"
-                  className="hidden sm:inline-flex rounded-[10px] bg-[#1E40AF] hover:bg-[#1D4ED8] px-3 py-1.5 text-[12px] font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition"
+                  className="inline-flex rounded-[10px] bg-[#1E40AF] hover:bg-[#1D4ED8] px-3 py-1.5 text-[12px] font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition"
                 >
                   Đăng ký
                 </Link>

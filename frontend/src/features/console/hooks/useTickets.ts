@@ -16,6 +16,10 @@ export const INITIAL_TICKETS: TicketItem[] = [
     missing_info_flag: false,
     created_at: "2026-09-24T08:30:00Z",
     confidence_score: 0.92,
+    issue_summary: "Trụ P02 Vincom Metropolis lỗi CC01 không sạc được DC",
+    suggested_action: "Kiểm tra handshake trụ sạc P02 từ xa hoặc cử nhân viên trạm khởi động lại module",
+    has_location_consent: true,
+    error_code_short: "CC01",
   },
   {
     id: "CASE-20260924-002",
@@ -28,6 +32,10 @@ export const INITIAL_TICKETS: TicketItem[] = [
     missing_info_flag: false,
     created_at: "2026-09-24T08:35:00Z",
     confidence_score: 0.95,
+    issue_summary: "Cảnh báo rùa vàng & mất trợ lực lái nhẹ trên cao tốc Long Thành",
+    suggested_action: "Kích hoạt cứu hộ 24/7 khẩn cấp, hướng dẫn tài xế đứng sau rào hộ lan an toàn",
+    has_location_consent: true,
+    error_code_short: "TURTLE_WARN",
   },
   {
     id: "CASE-20260924-003",
@@ -40,6 +48,10 @@ export const INITIAL_TICKETS: TicketItem[] = [
     missing_info_flag: true,
     created_at: "2026-09-24T08:40:00Z",
     confidence_score: 0.65,
+    issue_summary: "Đèn cảnh báo rùa vàng do dung lượng pin dưới 10% trong đô thị",
+    suggested_action: "Yêu cầu khách chụp ảnh táp-lô và hướng dẫn tới điểm sạc gần nhất 500m",
+    has_location_consent: false,
+    error_code_short: "RÙA VÀNG",
   },
   {
     id: "CASE-20260924-004",
@@ -52,6 +64,10 @@ export const INITIAL_TICKETS: TicketItem[] = [
     missing_info_flag: false,
     created_at: "2026-09-24T07:15:00Z",
     confidence_score: 0.88,
+    issue_summary: "Bộ sạc tại nhà 7.4kW tự động ngắt sau 2 tiếng sạc ban đêm",
+    suggested_action: "Kiểm tra nhiệt độ dây nguồn và cài đặt giới hạn dòng sạc trên xe",
+    has_location_consent: true,
+    error_code_short: "WALLBOX_AC",
   },
   {
     id: "CASE-20260924-005",
@@ -64,6 +80,10 @@ export const INITIAL_TICKETS: TicketItem[] = [
     missing_info_flag: false,
     created_at: "2026-09-24T06:45:00Z",
     confidence_score: 0.94,
+    issue_summary: "Cảnh báo áp suất lốp TPMS bánh sau bên phụ tụt còn 1.8 bar",
+    suggested_action: "Đã hướng dẫn ghé xưởng VinFast Trần Duy Hưng bơm lốp tiêu chuẩn 2.4 bar",
+    has_location_consent: true,
+    error_code_short: "TPMS_1.8",
   },
 ];
 
