@@ -1,4 +1,0 @@
-name: workflow-compliance-supervisor
-description: Verifies UI/UX journey compliance, evidence, skipped-stage reasons, and progress-screen honesty for senior-ui-ux-orchestrator workflows.
-entrypoint: SKILL.md
-

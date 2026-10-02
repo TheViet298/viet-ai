@@ -1,6 +1,0 @@
-interface:
-  display_name: "Omnichannel Comms Builder"
-  short_description: "Plans safe site communication workflows"
-  default_prompt: "Use $omnichannel-comms-builder to plan forms, inboxes, chat, CRM handoffs, consent, templates, and operator routing without sending real messages."
-policy:
-  allow_implicit_invocation: true

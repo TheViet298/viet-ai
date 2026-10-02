@@ -3,7 +3,7 @@
 > **Phiên bản Milestone:** Demo v1.0 — Phục vụ buổi báo cáo / demo  
 > **Cập nhật ngày:** 30/09/2026  
 > **Người phụ trách:** Frontend & UI/UX Team  
-> **Tài liệu tham chiếu:** [screen-spec.md](screen-spec.md) | [ui-flow.md](ui-flow.md) | [ui-ux-skills-generic](../../frontend/ui-ux-skills-generic/AGENTS.md)
+> **Tài liệu tham chiếu:** [screen-spec.md](screen-spec.md) | [ui-flow.md](ui-flow.md)
 
 ---
 

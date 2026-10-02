@@ -60,23 +60,30 @@
   * **Thông báo Phản hồi An toàn:** *"Hệ thống đã ghi nhận sự cố và tạo hồ sơ hỗ trợ. Thông tin sẽ được hiển thị cho nhân viên xử lý trên môi trường demo; vui lòng theo dõi cập nhật trên giao diện này."*
 * **Case Brief Generation:** Tự động tóm tắt: *Vấn đề chính, Thông số xe (Model, Pin %), Mã lỗi/Hiện tượng, Mức độ ưu tiên, Hành động đề xuất cho Staff*.
 * **Web Support Hub & Image Triage:**
-  * Web là kênh tiếp nhận duy nhất trong MVP. Guest xem nội dung public; Customer đăng nhập để chat và xem case của mình; Staff dùng tài khoản seed/invite.
+  * Web là kênh tiếp nhận duy nhất trong MVP. Có 3 role: `Guest`, `Customer`, `Staff`.
+  * Guest xem public content và chat tối đa 5 lượt/phiên để hỏi FAQ/tư vấn có citation; case cần theo dõi yêu cầu đăng nhập.
+  * Customer đăng nhập bằng SĐT + OTP demo, chat/tạo case/xem case của mình. Đây không phải xác minh chủ xe VinFast thật vì MVP không có CRM/API VinFast.
+  * Staff dùng tài khoản seed/invite; xem Staff Console và có thể dùng public/chat ở chế độ preview.
   * Customer gửi text, ảnh cảnh báo/táp-lô hoặc cả hai. Ảnh được lưu cùng case để Staff xem.
   * Nếu bật Vision/OCR, Agent chỉ trích xuất chữ cảnh báo, mã lỗi hoặc biểu tượng/dấu hiệu phổ biến để hỏi thêm context. Đây là nhận định sơ bộ, không phải chẩn đoán kỹ thuật.
 * **Public Knowledge Hub:** Landing, FAQ, chính sách và link tài liệu VinFast công khai; không làm CMS/cập nhật tự động.
+* **Location & Service Suggestion:** Khi intent cần địa điểm, Agent hiển thị card xin consent `Dùng vị trí hiện tại / Nhập khu vực / Bỏ qua`. Sau consent hoặc user nhập vị trí, UI gợi ý điểm dịch vụ/trạm sạc/showroom phù hợp. P0 dùng 3–5 điểm seed; không điều phối hoặc cứu hộ thật.
+* **Customer Support Center:** Customer tìm kiếm và theo dõi case của **chính mình**, xem timeline, Customer Update, visual evidence và lịch sử chat của case; có thể xác nhận đã được hỗ trợ hoặc reopen.
+* **Thư viện Tình huống thường gặp:** Hiển thị bài viết/FAQ đã được Staff biên soạn và ẩn danh, có nguồn chính thức khi phù hợp. Đây không phải ticket, chat history hoặc case raw của Customer khác.
 * **Cơ chế HITL (Human-in-the-Loop):** Staff Dashboard để Review, Chỉnh sửa (Edit), Duyệt (Approve), Điều phối (Reroute), Đóng phiếu.
 * **Trích dẫn nguồn RAG công khai:** Trích dẫn nguồn tài liệu VinFast chính thức đã được kiểm chứng (kèm URL, ngày kiểm chứng, model áp dụng). Chỉ trả lời nội dung chính sách khi đã có tài liệu nguồn xác thực.
 * **Bàn giao Dịch vụ Hiện hữu:** Đối với nhu cầu đặt lịch bảo dưỡng/sửa chữa hoặc xem trạng thái xe, hệ thống hướng dẫn khách hàng sử dụng các chức năng đã có trên **Ứng dụng VinFast chính thức**.
 
 ### 3.2. Out-of-Scope (KHÔNG làm trong MVP)
-* ❌ Không tích hợp Telemetry trực tiếp qua CAN Bus / OBD-II xe thật.
-* ❌ Không làm hệ thống đặt lịch hẹn (Booking Engine) riêng biệt (Ứng dụng VinFast đã có tính năng đặt lịch và theo dõi dịch vụ).
-* ❌ Không tự động hoàn tiền, xuất hóa đơn tài chính hoặc cam kết bồi thường mà không qua duyệt của Staff.
-* ❌ Không tích hợp Voice AI / Call Center thật (tập trung Web Chat text/rich UI).
-* ❌ Không triển khai Zalo, Email, Hotline transcript simulator trong MVP.
-* ❌ Không xác thực mã khách hàng/VinFast ID thật hoặc tích hợp CRM VinFast.
-* ❌ Không tự kết luận nguyên nhân hỏng hóc từ ảnh; ảnh mờ hoặc confidence thấp phải hỏi lại/chuyển Staff Review.
-* ❌ **Không thu thập và không lưu trữ PII thật:** Không yêu cầu họ tên, SĐT thật, CCCD, VIN hay biển số thật. MVP chỉ sử dụng `session_id`, `mock_customer_id`, `vehicle_model` (optional), `vehicle_code_mock` (optional dạng `VF-SF-xxxxx`). Tên và SĐT chỉ dùng trong seed demo nội bộ.
+*  Không tích hợp Telemetry trực tiếp qua CAN Bus / OBD-II xe thật.
+*  Không làm hệ thống đặt lịch hẹn (Booking Engine) riêng biệt (Ứng dụng VinFast đã có tính năng đặt lịch và theo dõi dịch vụ).
+*  Không tự động hoàn tiền, xuất hóa đơn tài chính hoặc cam kết bồi thường mà không qua duyệt của Staff.
+*  Không tích hợp Voice AI / Call Center thật (tập trung Web Chat text/rich UI).
+*  Không triển khai Zalo, Email, Hotline transcript simulator trong MVP.
+*  Không xác thực mã khách hàng/VinFast ID thật hoặc tích hợp CRM VinFast.
+*  Không tự lấy vị trí nền, không lấy GPS từ EXIF ảnh; chỉ lưu/chia sẻ vị trí khi Customer đồng ý hoặc tự nhập.
+*  Không tự kết luận nguyên nhân hỏng hóc từ ảnh; ảnh mờ hoặc confidence thấp phải hỏi lại/chuyển Staff Review.
+*  **Không thu thập và không lưu trữ PII thật:** Không yêu cầu họ tên, SĐT thật, CCCD, VIN hay biển số thật. MVP chỉ sử dụng `session_id`, `mock_customer_id`, `vehicle_model` (optional), `vehicle_code_mock` (optional dạng `VF-SF-xxxxx`). Tên và SĐT chỉ dùng trong seed demo nội bộ.
 
 ---
 
@@ -85,7 +92,7 @@
 | Flow # | Tên kịch bản | Intent chính | Điểm mấu chốt cần Demo |
 | :---: | :--- | :--- | :--- |
 | **Flow 1** *(Vertical Slice - Ưu tiên số 1)* | **Sự cố trụ sạc không nhận súng / lỗi kết nối** | `Charging/Battery` | Khách báo lỗi sạc $\rightarrow$ AI Clarify (max 2 lượt kèm quick replies) $\rightarrow$ Sinh Case Brief $\rightarrow$ Đẩy sang Staff Console $\rightarrow$ Staff duyệt/cập nhật $\rightarrow$ Khách theo dõi trạng thái. |
-| **Flow 2** | **Cảnh báo rủi ro an toàn / Đèn taplo** | `Service/Incident` | Khách báo lỗi $\rightarrow$ Kiểm tra Safety Rule (Rùa vàng + Cao tốc / Nguy cơ an toàn) $\rightarrow$ Gán `CRITICAL` + Hotline cứu hộ $\rightarrow$ Tạo ticket khẩn cho Kỹ thuật viên. |
+| **Flow 2** | **Cảnh báo rủi ro an toàn / Đèn taplo** | `Service/Incident` | Khách gửi text/ảnh $\rightarrow$ Safety Rule $\rightarrow$ tạo Case `CRITICAL` tối thiểu + hotline/cảnh báo an toàn ngay $\rightarrow$ xin consent vị trí $\rightarrow$ map gợi ý điểm hỗ trợ $\rightarrow$ Staff Review. |
 | **Flow 3** | **Tra cứu FAQ hướng dẫn tính năng & Dịch vụ** | `Sales/General Info` | Hỏi tính năng/dịch vụ $\rightarrow$ RAG trích dẫn URL chính thức kèm ngày kiểm chứng $\rightarrow$ Hướng dẫn vào luồng dịch vụ trên Ứng dụng VinFast. |
 
 ---

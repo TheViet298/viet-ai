@@ -76,7 +76,7 @@ Màn hình xuất hiện sau khi Case Brief đã được tạo thành công, gi
 | **Case Created / Reviewing** | `Staff Reviewing` | Hiển thị Mã Case (`CASE-xxxx`), Step 1: "Chuyên viên đang tiếp nhận và xem xét". |
 | **In Progress** | `In Progress` | Step 2: "Kỹ thuật viên đang xử lý sự cố". Hiển thị ghi chú hỗ trợ sơ bộ. |
 | **Needs Information** | `Needs Information` | Card thông báo màu vàng: "Nhân viên cần anh/chị cung cấp thêm thông tin" kèm ô nhập tin nhắn. |
-| **Resolved** | `Resolved` | Step 3: "Sự cố đã có phương án giải quyết". Hiển thị hướng dẫn xử lý từ nhân viên & Nút "Xác nhận hài lòng". |
+| **Resolved** | `Resolved` | Step 3: Customer Update từ Staff + next step + nút `Đã được hỗ trợ` / `Vẫn chưa giải quyết`. |
 | **Closed** | `Closed` | Hiển thị màn hình đánh giá chất lượng dịch vụ (1 - 5 sao). |
 
 ---
@@ -115,7 +115,7 @@ Màn hình xuất hiện sau khi Case Brief đã được tạo thành công, gi
 ## 5. Bổ sung Web Support Hub & Image Triage
 
 ### 5.1. Public / Access
-* **Landing / Knowledge Hub:** Guest xem FAQ, chính sách và link nguồn chính thức; nút “Hỏi trợ lý” chuyển Login.
+* **Landing / Knowledge Hub:** Guest xem FAQ, chính sách, link nguồn chính thức và thử chat tối đa 5 lượt/phiên; tạo/theo dõi case yêu cầu Login.
 * **Login / Register:** Register chỉ tạo Customer. Staff dùng account seed/invite.
 
 ### 5.2. Customer Chat
@@ -127,3 +127,14 @@ Màn hình xuất hiện sau khi Case Brief đã được tạo thành công, gi
 ### 5.3. Staff Ticket Detail
 * Hiển thị attachment riêng tư, OCR text/detected signals/confidence (nếu có).
 * Staff có quyền xác nhận, sửa brief, yêu cầu thêm thông tin, resolve hoặc close case.
+
+### 5.4. Service Map Preview & Customer Confirmation
+* Map chỉ xuất hiện sau triage có nhu cầu địa điểm hoặc sau khi Critical case đã được tạo.
+* Card consent gồm `Dùng vị trí hiện tại`, `Nhập khu vực`, `Bỏ qua`; map gợi ý 3–5 service point seed.
+* Case Detail hiển thị Customer Update, next step, `Đã được hỗ trợ` và `Vẫn chưa giải quyết`.
+* Staff thấy map/location source chỉ khi Customer đã consent hoặc tự nhập.
+
+### 5.5. Customer Support Center
+* Tab `Yêu cầu của tôi`: search Case ID/từ khóa, filter status, timeline, Customer Update, attachment và mở lại lịch sử chat của case.
+* Tab `Tình huống thường gặp`: card FAQ/insight đã biên soạn, intent/tag, dấu hiệu, dữ kiện nên chuẩn bị, citation và CTA `Hỏi Agent`.
+* Không hiển thị case raw, chat history, ảnh, vị trí hoặc phản hồi Staff của Customer khác.
