@@ -71,6 +71,7 @@
 * **Customer Support Center:** Customer tìm kiếm và theo dõi case của **chính mình**, xem timeline, Customer Update, visual evidence và lịch sử chat của case; có thể xác nhận đã được hỗ trợ hoặc reopen.
 * **Thư viện Tình huống thường gặp:** Hiển thị bài viết/FAQ đã được Staff biên soạn và ẩn danh, có nguồn chính thức khi phù hợp. Đây không phải ticket, chat history hoặc case raw của Customer khác.
 * **Cơ chế HITL (Human-in-the-Loop):** Staff Dashboard để Review, Chỉnh sửa (Edit), Duyệt (Approve), Điều phối (Reroute), Đóng phiếu.
+* **Staff Service Console:** Staff xem dashboard summary, queue đang xử lý, lịch sử case `Resolved/Closed/Reopened`, Ticket Detail, routing directory demo, Knowledge Hub và Customer Preview. Đây là console nghiệp vụ, không phải Admin system.
 * **Trích dẫn nguồn RAG công khai:** Trích dẫn nguồn tài liệu VinFast chính thức đã được kiểm chứng (kèm URL, ngày kiểm chứng, model áp dụng). Chỉ trả lời nội dung chính sách khi đã có tài liệu nguồn xác thực.
 * **Bàn giao Dịch vụ Hiện hữu:** Đối với nhu cầu đặt lịch bảo dưỡng/sửa chữa hoặc xem trạng thái xe, hệ thống hướng dẫn khách hàng sử dụng các chức năng đã có trên **Ứng dụng VinFast chính thức**.
 
@@ -81,6 +82,7 @@
 *  Không tích hợp Voice AI / Call Center thật (tập trung Web Chat text/rich UI).
 *  Không triển khai Zalo, Email, Hotline transcript simulator trong MVP.
 *  Không xác thực mã khách hàng/VinFast ID thật hoặc tích hợp CRM VinFast.
+* ❌ Không làm user management, cấp quyền Staff động hoặc cấu hình hệ thống kiểu Admin.
 *  Không tự lấy vị trí nền, không lấy GPS từ EXIF ảnh; chỉ lưu/chia sẻ vị trí khi Customer đồng ý hoặc tự nhập.
 *  Không tự kết luận nguyên nhân hỏng hóc từ ảnh; ảnh mờ hoặc confidence thấp phải hỏi lại/chuyển Staff Review.
 *  **Không thu thập và không lưu trữ PII thật:** Không yêu cầu họ tên, SĐT thật, CCCD, VIN hay biển số thật. MVP chỉ sử dụng `session_id`, `mock_customer_id`, `vehicle_model` (optional), `vehicle_code_mock` (optional dạng `VF-SF-xxxxx`). Tên và SĐT chỉ dùng trong seed demo nội bộ.

@@ -1,7 +1,7 @@
 # API Contract Specification (Customer & Staff)
 
 > **Người phụ trách chính:** Triển (Backend Lead)  
-> **Cập nhật lần cuối:** 2026-09-24  
+> **Cập nhật lần cuối:** 2026-10-02  
 > **Trạng thái:** In Review (Đã chuẩn hóa No-PII Schema, Distinct State Rules và Safe Guidance)
 
 ---
@@ -221,6 +221,18 @@
   "error": null
 }
 ```
+
+---
+
+### 3.1.1. Staff Dashboard, History & Routing Directory
+
+| Endpoint | Mô tả |
+| :--- | :--- |
+| `GET /api/v1/staff/dashboard` | Counter demo: Critical, Staff Reviewing, Needs Information, Resolved hôm nay |
+| `GET /api/v1/staff/tickets?status=Resolved,Closed,Reopened` | Lịch sử case, có filter intent/routing/staff/thời gian |
+| `GET /api/v1/staff/routing-directory` | Danh sách bộ phận demo để Staff chọn khi Reroute |
+
+Routing directory P0: `Charging Operations`, `Service Center`, `Customer Care`, `Sales Advisor`, `Emergency Support Demo`.
 
 ---
 

@@ -127,6 +127,14 @@ Màn hình xuất hiện sau khi Case Brief đã được tạo thành công, gi
 ### 5.3. Staff Ticket Detail
 * Hiển thị attachment riêng tư, OCR text/detected signals/confidence (nếu có).
 * Staff có quyền xác nhận, sửa brief, yêu cầu thêm thông tin, resolve hoặc close case.
+* Staff chọn routing từ directory demo và gửi Customer Update khi Resolve.
+
+### 5.4. Staff Console Navigation
+* `Tổng quan`: counter Critical, Staff Reviewing, Needs Information, Resolved hôm nay; danh sách case ưu tiên.
+* `Hàng đợi xử lý`: ticket cần hành động theo Priority/Status/Intent.
+* `Lịch sử case`: filter Resolved/Closed/Reopened, intent, routing, Staff, khoảng thời gian; mở lại Ticket Detail để review.
+* `Knowledge Hub`: xem citation/source và thư viện tình huống thường gặp.
+* `Customer Preview`: session demo để Staff xem public/chat UI, không mạo danh Customer thật.
 
 ### 5.4. Service Map Preview & Customer Confirmation
 * Map chỉ xuất hiện sau triage có nhu cầu địa điểm hoặc sau khi Critical case đã được tạo.

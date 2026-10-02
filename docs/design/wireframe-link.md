@@ -26,6 +26,7 @@
 | **AUTH-01** | **Login / Register** | Customer / Staff | Register chỉ tạo Customer; Staff dùng account seed/invite. |
 | **CUS-03** | **Service Map Preview** | Customer | Panel trong Chat: consent vị trí, map và điểm hỗ trợ gợi ý; không cần page mới. |
 | **CUS-04** | **Customer Support Center** | Customer | Tab Yêu cầu của tôi: search, timeline, lịch sử chat, confirm/reopen. Tab Tình huống thường gặp: content đã biên soạn/ẩn danh. |
+| **STF-03** | **Staff Dashboard & Case History** | Staff | Counter case, queue ưu tiên, lịch sử Resolved/Closed/Reopened, routing directory, Knowledge Hub/Customer Preview links. |
 
 > Cập nhật cho `SCR-01`: có upload/preview ảnh, trạng thái “AI đang đọc cảnh báo”, cảnh báo không gửi biển số/VIN/khuôn mặt/giấy tờ. `SCR-04B` hiển thị ảnh và OCR/Vision observation trong Ticket Detail.
 > Cập nhật thêm: Guest có 5 lượt chat; `SCR-03` có Customer Update + confirm/reopen; `SCR-04B` có location source/consent + map preview khi case có vị trí.

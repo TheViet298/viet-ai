@@ -79,7 +79,8 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    StaffLogin([Nhân viên Dịch vụ đăng nhập Dashboard]) --> ViewQueue[Xem Ticket Queue: Filter theo Priority / Status / Intent]
+    StaffLogin([Nhân viên Dịch vụ đăng nhập Dashboard]) --> Dashboard[Dashboard Summary: Critical / Reviewing / Needs Info / Resolved]
+    Dashboard --> ViewQueue[Xem Ticket Queue: Filter theo Priority / Status / Intent]
     ViewQueue --> SelectTicket[Chọn Ticket để xử lý]
     SelectTicket --> ViewDetail[Xem Ticket Detail: Case Brief + Lịch sử Chat + AI Đề xuất]
     
@@ -99,6 +100,11 @@ flowchart TD
     ResolveTicket --> ConfirmCustomer{Customer xác nhận kết quả?}
     ConfirmCustomer -->|Xác nhận| CloseTicket[Trạng thái: Closed]
     ConfirmCustomer -->|Vẫn còn lỗi| ReopenTicket[Trạng thái: Reopened $\rightarrow$ Quay lại Queue]
+
+    ViewQueue --> CaseHistory[Lịch sử case: Resolved / Closed / Reopened]
+    CaseHistory --> ViewDetail
+    ViewDetail --> RoutingDirectory[Chọn Routing Directory demo]
+    RoutingDirectory --> Reroute
 ```
 
 ---
@@ -117,6 +123,19 @@ flowchart LR
 
 * Customer chỉ truy cập case mà `customer_id` sở hữu.
 * Tab `Tình huống thường gặp` không hiển thị raw case, ảnh, vị trí, Case ID, chat history hoặc kết quả xử lý của Customer khác.
+
+## 4. Staff Console Navigation
+
+```text
+Tổng quan → Hàng đợi xử lý → Ticket Detail → Customer Update
+                ↓
+          Lịch sử case
+
+Knowledge Hub / Customer Preview
+```
+
+* `Knowledge Hub`: Staff xem nguồn/citation và thư viện tình huống thường gặp.
+* `Customer Preview`: Staff thử giao diện public/chat bằng session demo, không truy cập Customer Chat của khách thật.
 
 ---
 

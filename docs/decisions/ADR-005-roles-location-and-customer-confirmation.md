@@ -14,6 +14,7 @@
 * Critical tạo Case Brief tối thiểu + cảnh báo/hotline ngay; location là dữ kiện bổ sung, không được chặn case.
 * Khi Staff Resolve, Customer nhận update và chọn `Đã được hỗ trợ` (Closed) hoặc `Vẫn chưa giải quyết` (Reopened).
 * Customer Support Center cho phép tìm kiếm/xem timeline, Customer Update và chat history của **case thuộc Customer đó**. Tình huống thường gặp là thư viện đã biên soạn/ẩn danh.
+* Staff Console là console nghiệp vụ: dashboard, queue, ticket detail, case history, routing directory demo, Knowledge Hub và Customer Preview; không phải Admin system.
 
 ## Không thuộc MVP
 
@@ -21,3 +22,4 @@
 * Browser GPS bắt buộc, map live hay điều cứu hộ/booking thật.
 * Tự chia sẻ vị trí nền hoặc hiển thị case của khách khác.
 * Hiển thị raw ticket, chat, visual evidence, location hoặc Customer Update của khách khác.
+* User management hoặc phân quyền Staff động trong MVP.
