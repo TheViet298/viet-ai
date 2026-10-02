@@ -82,7 +82,7 @@
 *  Không tích hợp Voice AI / Call Center thật (tập trung Web Chat text/rich UI).
 *  Không triển khai Zalo, Email, Hotline transcript simulator trong MVP.
 *  Không xác thực mã khách hàng/VinFast ID thật hoặc tích hợp CRM VinFast.
-* ❌ Không làm user management, cấp quyền Staff động hoặc cấu hình hệ thống kiểu Admin.
+*  Không làm user management, cấp quyền Staff động hoặc cấu hình hệ thống kiểu Admin.
 *  Không tự lấy vị trí nền, không lấy GPS từ EXIF ảnh; chỉ lưu/chia sẻ vị trí khi Customer đồng ý hoặc tự nhập.
 *  Không tự kết luận nguyên nhân hỏng hóc từ ảnh; ảnh mờ hoặc confidence thấp phải hỏi lại/chuyển Staff Review.
 *  **Không thu thập và không lưu trữ PII thật:** Không yêu cầu họ tên, SĐT thật, CCCD, VIN hay biển số thật. MVP chỉ sử dụng `session_id`, `mock_customer_id`, `vehicle_model` (optional), `vehicle_code_mock` (optional dạng `VF-SF-xxxxx`). Tên và SĐT chỉ dùng trong seed demo nội bộ.
