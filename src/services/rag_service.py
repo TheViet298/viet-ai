@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Any
 import chromadb
 
@@ -39,26 +40,27 @@ FALLBACK_KNOWLEDGE_BASE = [
     },
     {
         "source_id": "SRC-003",
-        "title": "Thông tin cứu hộ và cứu hộ pin 24/7",
-        "url": "https://vinfastauto.com/vn_vi/thong-tin-cuu-ho-oto",
-        "section": "Quy trình Cứu hộ khẩn cấp",
-        "keywords": ["cứu hộ", "khẩn cấp", "cháy", "khói", "mất phanh", "rùa vàng", "cao tốc", "1900-232389"],
+        "title": "Chính sách Cứu hộ Giao thông & Cứu hộ Pin 24/7 VinFast",
+        "url": "https://vinfastauto.com/vn_vi/dich-vu-cuu-ho-24-7",
+        "section": "Đường dây nóng Cứu hộ khẩn cấp",
+        "keywords": ["cứu hộ", "hotline", "gọi cứu hộ", "hết pin", "kéo xe", "tai nạn", "khẩn cấp", "1900"],
         "content": (
-            "VinFast cung cấp dịch vụ Cứu hộ khẩn cấp 24/7 trên toàn quốc qua Tổng đài 1900-232389. "
-            "Khi gặp sự cố nguy hiểm hoặc dừng xe trên cao tốc: người lái cần bật đèn báo khẩn cấp (Hazard), "
-            "từ từ đưa xe vào làn khẩn cấp, đưa tất cả hành khách ra ngoài phía sau hộ lan an toàn và gọi ngay Tổng đài cứu hộ."
+            "Tổng đài cứu hộ khẩn cấp chính thức của VinFast hoạt động 24/7 trên toàn quốc: 1900-232389 (Phím 1).\n"
+            "VinFast cung cấp dịch vụ Cứu hộ Pin lưu động (Mobile Charging) hỗ trợ sạc nhanh cứu hộ khi xe hết pin trên đường, "
+            "và điều xe cứu hộ chuyên dụng đưa xe về Xưởng dịch vụ gần nhất hoàn toàn miễn phí trong thời gian bảo hành."
         ),
     },
     {
         "source_id": "SRC-004",
-        "title": "Chính sách và Biểu phí Sạc pin Trạm công cộng VinFast",
-        "url": "https://vinfastauto.com/vn_vi/chinh-sach-va-bieu-phi-sac-pin-cong-cong",
-        "section": "Biểu phí sạc & Phí quá giờ",
-        "keywords": ["sạc", "trụ sạc", "biểu phí", "giá sạc", "phí phạt", "chiếm chỗ", "kwh", "tiền điện"],
+        "title": "Biểu phí và Chính sách Sạc xe điện tại Trạm sạc Công cộng VinFast",
+        "url": "https://vinfastauto.com/vn_vi/chinh-sach-bieu-phi-sac-xe-dien",
+        "section": "Đơn giá sạc & Phí chiếm dụng trụ sạc",
+        "keywords": ["biểu phí", "giá sạc", "chi phí sạc", "tiền sạc", "phí chiếm dụng", "quá giờ", "kwh"],
         "content": (
-            "Đơn giá sạc tại các trạm sạc công cộng của VinFast được niêm yết theo quy định hiện hành. "
-            "Sau khi pin sạc đầy (100% hoặc mức SoC cài đặt), chủ xe có 10 phút miễn phí để di chuyển xe. "
-            "Quá thời gian trên, hệ thống sẽ áp dụng phí chiếm dụng trụ sạc (1.000 VNĐ/phút) để đảm bảo quyền lợi cho các chủ xe khác."
+            "Chính sách sạc xe điện VinFast tại trạm sạc công cộng:\n"
+            "1. Đơn giá sạc: Áp dụng đơn giá tính theo kWh theo biểu giá công bố của VinFast (thanh toán tự động qua App).\n"
+            "2. Phí chiếm dụng trụ sạc: Kể từ phút thứ 10 sau khi pin đã sạc đầy (100%) mà chủ xe chưa rút súng sạc di chuyển xe, "
+            "hệ thống sẽ bắt đầu tính phí chiếm dụng trụ sạc là 1.000 VNĐ/phút nhằm đảm bảo tính công bằng cho các chủ xe khác."
         ),
     },
     {
@@ -112,6 +114,8 @@ FALLBACK_KNOWLEDGE_BASE = [
     },
 ]
 
+KNOWN_MODELS = ["VF 3", "VF 5", "VF 6", "VF 7", "VF 8", "VF 9", "VF e34"]
+
 class RAGService:
     def __init__(self, chroma_dir: str = CHROMA_DIR, collection_name: str = COLLECTION_NAME):
         self.chroma_dir = chroma_dir
@@ -128,31 +132,74 @@ class RAGService:
 
     def retrieve(self, query: str, top_k: int = 3, threshold: float = DEFAULT_SIMILARITY_THRESHOLD) -> dict[str, Any]:
         """
-        Truy vấn tài liệu từ ChromaDB hoặc Fallback Knowledge Base và kiểm tra Rule 2.4:
-        - Có nguồn phù hợp (distance <= threshold) -> SUCCESS + citations
-        - Không có nguồn / khoảng cách quá xa -> NO_SOURCE
+        Truy vấn tài liệu từ ChromaDB kết hợp Model-Aware Filtering, Fallback Knowledge Base và Rule 2.4.
         """
-        # Thử truy vấn ChromaDB nếu collection đã nạp dữ liệu
+        query_lower = query.lower()
+
+        # Nhận diện dòng xe cụ thể nếu người dùng hỏi đích danh model
+        detected_model = None
+        for m in KNOWN_MODELS:
+            # Match "vf 7", "vf7", etc.
+            pattern = r'\b' + re.escape(m.lower()).replace(r'\ ', r'\s*') + r'\b'
+            if re.search(pattern, query_lower):
+                detected_model = m
+                break
+
+        docs = []
+        metas = []
+        dists = []
+        chunk_ids = []
+
+        # 1. Thử truy vấn ChromaDB nếu collection đã nạp dữ liệu
         if self.collection is not None:
             try:
                 count = self.collection.count()
                 if count > 0:
-                    results = self.collection.query(
+                    # Nếu có model cụ thể -> Truy vấn ưu tiên catalog/tài liệu của model đó
+                    if detected_model:
+                        try:
+                            model_res = self.collection.query(
+                                query_texts=[query],
+                                n_results=top_k,
+                                where={"applicable_models": detected_model}
+                            )
+                            if model_res and model_res.get("documents") and model_res["documents"][0]:
+                                docs.extend(model_res["documents"][0])
+                                metas.extend(model_res["metadatas"][0])
+                                dists.extend(model_res["distances"][0])
+                                chunk_ids.extend(model_res["ids"][0])
+                        except Exception:
+                            pass
+
+                    # Truy vấn ngữ nghĩa chung (Toàn bộ database)
+                    general_res = self.collection.query(
                         query_texts=[query],
                         n_results=top_k,
                         include=["documents", "metadatas", "distances"]
                     )
-                    docs = results["documents"][0] if results.get("documents") else []
-                    metas = results["metadatas"][0] if results.get("metadatas") else []
-                    dists = results["distances"][0] if results.get("distances") else []
-                    chunk_ids = results["ids"][0] if results.get("ids") else []
-                    best_distance = dists[0] if dists else 999.0
+
+                    gen_docs = general_res["documents"][0] if general_res.get("documents") else []
+                    gen_metas = general_res["metadatas"][0] if general_res.get("metadatas") else []
+                    gen_dists = general_res["distances"][0] if general_res.get("distances") else []
+                    gen_cids = general_res["ids"][0] if general_res.get("ids") else []
+
+                    # Ghép và lọc trùng lặp
+                    seen_cids = set(chunk_ids)
+                    for d, m, dist, cid in zip(gen_docs, gen_metas, gen_dists, gen_cids):
+                        if cid not in seen_cids:
+                            seen_cids.add(cid)
+                            docs.append(d)
+                            metas.append(m)
+                            dists.append(dist)
+                            chunk_ids.append(cid)
+
+                    best_distance = min(dists) if dists else 999.0
 
                     if docs and best_distance <= threshold:
                         citations = []
                         context_parts = []
                         for idx, (doc, meta, dist, cid) in enumerate(zip(docs, metas, dists, chunk_ids), 1):
-                            if dist <= threshold + 0.15:
+                            if idx <= top_k and dist <= threshold + 0.15:
                                 context_parts.append(f"[Tài liệu {idx} - Nguồn {meta.get('source_id')} | {meta.get('title')}]:\n{doc}")
                                 citations.append({
                                     "source_id": meta.get("source_id", ""),
@@ -162,16 +209,17 @@ class RAGService:
                                     "section": meta.get("section", ""),
                                     "distance": round(dist, 4)
                                 })
-                        return {
-                            "status": "SUCCESS",
-                            "best_distance": round(best_distance, 4),
-                            "context_text": "\n\n".join(context_parts),
-                            "citations": citations
-                        }
+                        if citations:
+                            return {
+                                "status": "SUCCESS",
+                                "best_distance": round(best_distance, 4),
+                                "context_text": "\n\n".join(context_parts),
+                                "citations": citations
+                            }
             except Exception:
                 pass
 
-        # Fallback Knowledge Base đối soát từ khóa thông minh
+        # 2. Fallback Knowledge Base đối soát từ khóa thông minh
         q_lower = query.lower()
         matched_items = []
         for item in FALLBACK_KNOWLEDGE_BASE:
@@ -208,4 +256,3 @@ class RAGService:
 
 # Singleton instance phục vụ tái sử dụng nhanh
 rag_service = RAGService()
-
