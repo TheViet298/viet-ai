@@ -129,13 +129,13 @@ export function CustomerChatContainer() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="bg-white border border-[#E2E8F0] rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col h-[740px]">
           {/* Header */}
-          <div className="px-4 py-3 bg-[#0F1115] text-white flex items-center justify-between border-b border-[#1A1F26]">
+          <div className="px-4 py-3 bg-[#F8FAFC] text-[#0F172A] flex items-center justify-between border-b border-[#E2E8F0]">
             <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-[10px] bg-[#1E40AF] flex items-center justify-center text-[#10B981]">
+              <div className="w-8 h-8 rounded-[10px] bg-[#1E40AF] flex items-center justify-center text-white shadow-xs">
                 <Car className="w-4 h-4 text-white" />
               </div>
               <div>
-                <div className="font-bold text-[14px] text-white">Trợ lý Kỹ thuật VinFast AI</div>
+                <div className="font-bold text-[14px] text-[#0F172A]">Trợ lý Kỹ thuật VinFast AI</div>
                 <div className="text-[11px] text-[#64748B] flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] inline-block animate-pulse"></span>
                   <span className="truncate max-w-[240px] sm:max-w-none">{aiStatus}</span>
@@ -148,7 +148,7 @@ export function CustomerChatContainer() {
               <button
                 type="button"
                 onClick={handleResetAll}
-                className="flex items-center gap-1.5 rounded-[10px] bg-white/10 hover:bg-white/20 text-white text-[12px] font-medium px-2.5 py-1 border border-white/15 transition shadow-sm"
+                className="flex items-center gap-1.5 rounded-[10px] bg-white hover:bg-[#F1F5F9] text-[#475569] hover:text-[#0F172A] text-[12px] font-medium px-2.5 py-1 border border-[#E2E8F0] transition shadow-xs"
                 title="Làm mới cuộc trò chuyện và bắt đầu phiên hỏi mới"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -159,10 +159,10 @@ export function CustomerChatContainer() {
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value as VehicleModel)}
-                className="bg-white/10 text-white text-[12px] rounded-[10px] px-2 py-1 border border-white/10 focus:outline-none focus:border-[#0D9488]"
+                className="bg-white text-[#0F172A] text-[12px] rounded-[10px] px-2 py-1 border border-[#E2E8F0] focus:outline-none focus:border-[#1E40AF]"
               >
                 {VEHICLE_MODELS.map((model) => (
-                  <option key={model} value={model} className="bg-[#0F1115] text-white">
+                  <option key={model} value={model} className="bg-white text-[#0F172A]">
                     {model}
                   </option>
                 ))}

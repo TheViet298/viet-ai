@@ -77,6 +77,39 @@ FALLBACK_KNOWLEDGE_BASE = [
             "6. Chẩn đoán quét lỗi phần mềm qua cổng OBD-II, cập nhật phiên bản phần mềm FRS mới nhất tại Xưởng dịch vụ."
         ),
     },
+    {
+        "source_id": "SRC-006",
+        "title": "Danh mục Sản phẩm và Chính sách Bán hàng Ô tô điện VinFast",
+        "url": "https://vinfastauto.com/vn_vi/cac-dong-xe-o-to",
+        "section": "Tư vấn mua xe & Dải sản phẩm xe điện",
+        "keywords": ["mua xe", "bán xe", "tư vấn", "giá xe", "bảng giá", "dòng xe", "vf3", "vf 3", "vf5", "vf 5", "vf6", "vf 6", "vf7", "vf 7", "vf8", "vf 8", "vf9", "vf 9", "lái thử", "đặt cọc", "trả góp", "ưu đãi", "lăn bánh"],
+        "content": (
+            "VinFast hiện cung cấp dải sản phẩm ô tô điện toàn diện phủ khắp các phân khúc:\n"
+            "- VF 3: Mini SUV đô thị nhỏ gọn, thiết kế vuông vức cá tính, di chuyển linh hoạt.\n"
+            "- VF 5 Plus: A-SUV trẻ trung, tối ưu chi phí vận hành cho gia đình và đô thị.\n"
+            "- VF 6: B-SUV thời thượng, ngập tràn công nghệ thông minh và an toàn.\n"
+            "- VF 7: C-SUV phong cách thể thao, hiệu năng ấn tượng với 2 phiên bản Eco và Plus.\n"
+            "- VF 8: D-SUV sang trọng, hệ thống hỗ trợ lái nâng cao ADAS và trợ lý ảo thông minh.\n"
+            "- VF 9: E-SUV 7 chỗ đẳng cấp thương gia, tiện nghi hàng đầu.\n"
+            "Khách hàng có thể đăng ký trải nghiệm lái thử miễn phí và đặt cọc xe trực tiếp tại website VinFast Auto hoặc hệ thống Showroom/Nhà phân phối trên toàn quốc."
+        ),
+    },
+    {
+        "source_id": "SRC-007",
+        "title": "Thông số Kỹ thuật Chi tiết Ô tô điện VinFast (Catalog)",
+        "url": "https://vinfastauto.com/vn_vi/thong-so-ky-thuat-o-to-dien",
+        "section": "So sánh thông số kỹ thuật xe",
+        "keywords": ["thông số", "khác nhau", "so sánh", "vf7", "vf 7", "plus", "eco", "vf9", "vf 9", "nặng bao nhiêu", "dài rộng", "kích thước", "trọng lượng", "động cơ", "quãng đường"],
+        "content": (
+            "Thông số kỹ thuật tiêu chuẩn của các dòng xe ô tô điện VinFast:\n"
+            "1. So sánh VF 7 phiên bản Plus và Eco:\n"
+            "- Động cơ & Dẫn động: Bản Plus trang bị 2 mô tơ điện AWD (công suất tối đa 349 mã lực, mô-men xoắn 500 Nm); Bản Eco trang bị 1 mô tơ FWD (công suất 201 mã lực, mô-men xoắn 310 Nm).\n"
+            "- Pin & Quãng đường: Bản Plus pin 70,8 kWh cho tầm hoạt động tới 431 km (WLTP); Bản Eco pin 59,6 kWh cho tầm hoạt động tới 450 km (WLTP).\n"
+            "2. Thông số kích thước và trọng lượng xe VF 9:\n"
+            "- Kích thước tổng thể (Dài x Rộng x Cao): 5.118 x 2.254 x 1.696 (mm), chiều dài cơ sở 3.150 mm.\n"
+            "- Trọng lượng không tải của xe VF 9: khoảng 2,83 tấn đến 2,88 tấn tùy phiên bản."
+        ),
+    },
 ]
 
 class RAGService:

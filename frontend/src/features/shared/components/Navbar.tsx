@@ -44,20 +44,20 @@ export function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[#1A1F26] bg-[#0F1115] text-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+    <header className="sticky top-0 z-50 w-full border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md text-[#0F172A] shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           {/* Logo Brand */}
           <div className="flex items-center space-x-3">
             <Link href="/" className="flex items-center space-x-2 group">
-              <div className="w-8 h-8 rounded-[10px] bg-[#1E40AF] flex items-center justify-center text-[#10B981] shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-transform group-hover:scale-105">
+              <div className="w-8 h-8 rounded-[10px] bg-[#1E40AF] flex items-center justify-center text-white shadow-sm transition-transform group-hover:scale-105">
                 <ScanLine className="w-4 h-4 text-white" />
               </div>
               <div>
-                <div className="font-bold text-[15px] tracking-tight flex items-center gap-1.5 font-display text-white">
-                  ServiceFlow <span className="text-[#0D9488] font-medium">AI</span>
+                <div className="font-bold text-[15px] tracking-tight flex items-center gap-1.5 font-display text-[#0F172A]">
+                  ServiceFlow <span className="text-[#1E40AF] font-bold">AI</span>
                 </div>
-                <div className="text-[10px] text-[#64748B] tracking-wider font-mono uppercase">
+                <div className="text-[10px] text-[#64748B] tracking-wider font-mono uppercase font-semibold">
                   EV Support Hub
                 </div>
               </div>
@@ -77,14 +77,14 @@ export function Navbar() {
                   href={item.href}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[13px] font-medium transition-colors ${
                     isActive
-                      ? "bg-[#1E40AF] text-white font-semibold"
-                      : "text-[#94A3B8] hover:bg-white/5 hover:text-white"
+                      ? "bg-[#EFF3FC] text-[#1E40AF] font-semibold border border-[#1E40AF]/20"
+                      : "text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
                   }`}
                 >
                   {Icon && <Icon className="w-3.5 h-3.5" />}
                   <span>{item.name}</span>
                   {item.badge && (
-                    <span className="rounded-full bg-[#6D5BD0]/20 px-1.5 py-0.2 text-[10px] font-bold text-[#A78BFA] border border-[#6D5BD0]/30">
+                    <span className="rounded-full bg-[#6D5BD0]/10 px-1.5 py-0.2 text-[10px] font-bold text-[#6D5BD0] border border-[#6D5BD0]/20">
                       {item.badge}
                     </span>
                   )}
@@ -100,27 +100,27 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => setShowRoleMenu(!showRoleMenu)}
-                className="flex items-center gap-1.5 rounded-[10px] border border-white/10 bg-white/5 px-2.5 py-1.5 text-[12px] font-medium text-slate-200 hover:bg-white/10 hover:text-white transition"
+                className="flex items-center gap-1.5 rounded-[10px] border border-[#E2E8F0] bg-[#F8FAFC] px-2.5 py-1.5 text-[12px] font-medium text-[#0F172A] hover:bg-[#F1F5F9] transition shadow-xs"
                 title="Chuyển vai trò thử nghiệm demo"
               >
-                <Sparkles className="w-3 h-3 text-[#0D9488]" />
+                <Sparkles className="w-3 h-3 text-[#1E40AF]" />
                 <span className="hidden sm:inline text-[#64748B]">Role:</span>
-                <span className="font-semibold text-white">
+                <span className="font-semibold text-[#0F172A]">
                   {role === "STAFF"
                     ? "Staff KTV"
                     : role === "CUSTOMER"
                     ? "Chủ xe"
                     : "Guest"}
                 </span>
-                <ChevronDown className="w-3 h-3 opacity-60" />
+                <ChevronDown className="w-3 h-3 text-[#64748B]" />
               </button>
 
               {showRoleMenu && (
                 <div
-                  className="absolute right-0 mt-2 w-52 rounded-2xl border border-[#1A1F26] bg-[#0F1115] p-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)] text-[12px] z-50"
+                  className="absolute right-0 mt-2 w-52 rounded-2xl border border-[#E2E8F0] bg-white p-2 shadow-lg text-[12px] z-50"
                   onMouseLeave={() => setShowRoleMenu(false)}
                 >
-                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#64748B] border-b border-[#1A1F26]">
+                  <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#64748B] border-b border-[#E2E8F0]">
                     Chuyển vai trò (Demo)
                   </div>
                   <button
@@ -131,8 +131,8 @@ export function Navbar() {
                     }}
                     className={`mt-1 flex w-full items-center justify-between rounded-[10px] px-2 py-1.5 text-left transition ${
                       role === "CUSTOMER"
-                        ? "bg-[#1E40AF] text-white font-semibold"
-                        : "text-[#94A3B8] hover:bg-white/5 hover:text-white"
+                        ? "bg-[#EFF3FC] text-[#1E40AF] font-semibold"
+                        : "text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
                     }`}
                   >
                     <span>Khách hàng (VF8)</span>
@@ -146,8 +146,8 @@ export function Navbar() {
                     }}
                     className={`flex w-full items-center justify-between rounded-[10px] px-2 py-1.5 text-left transition ${
                       role === "STAFF"
-                        ? "bg-[#1E40AF] text-white font-semibold"
-                        : "text-[#94A3B8] hover:bg-white/5 hover:text-white"
+                        ? "bg-[#EFF3FC] text-[#1E40AF] font-semibold"
+                        : "text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
                     }`}
                   >
                     <span>Kỹ thuật viên (Staff)</span>
@@ -161,8 +161,8 @@ export function Navbar() {
                     }}
                     className={`flex w-full items-center justify-between rounded-[10px] px-2 py-1.5 text-left transition ${
                       role === "GUEST"
-                        ? "bg-[#1E40AF] text-white font-semibold"
-                        : "text-[#64748B] hover:bg-white/5 hover:text-white"
+                        ? "bg-[#EFF3FC] text-[#1E40AF] font-semibold"
+                        : "text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
                     }`}
                   >
                     <span>Khách vãng lai (Guest)</span>
@@ -175,7 +175,7 @@ export function Navbar() {
             {user ? (
               <div className="flex items-center gap-2">
                 <div className="hidden lg:flex flex-col text-right">
-                  <span className="text-[12px] font-semibold leading-tight text-white">{user.name}</span>
+                  <span className="text-[12px] font-semibold leading-tight text-[#0F172A]">{user.name}</span>
                   <span className="text-[11px] text-[#64748B] font-mono">
                     {user.role === "CUSTOMER" ? `${user.vehicleModel || "VF8"}` : "Reviewer"}
                   </span>
@@ -183,7 +183,7 @@ export function Navbar() {
                 <button
                   type="button"
                   onClick={logout}
-                  className="rounded-[10px] p-1.5 text-[#64748B] hover:bg-white/5 hover:text-[#DC2626] transition"
+                  className="rounded-[10px] p-1.5 text-[#64748B] hover:bg-[#FEE2E2] hover:text-[#DC2626] transition"
                   title="Đăng xuất"
                 >
                   <LogOut className="h-4 w-4" />
@@ -193,13 +193,13 @@ export function Navbar() {
               <div className="flex items-center gap-1.5">
                 <Link
                   href="/login"
-                  className="rounded-[10px] px-3 py-1.5 text-[12px] font-medium text-[#94A3B8] hover:bg-white/5 hover:text-white transition"
+                  className="rounded-[10px] px-3 py-1.5 text-[12px] font-medium text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A] transition"
                 >
                   Đăng nhập
                 </Link>
                 <Link
                   href="/register"
-                  className="hidden sm:inline-flex rounded-[10px] bg-[#1E40AF] hover:bg-[#1E3A8A] px-3 py-1.5 text-[12px] font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition"
+                  className="hidden sm:inline-flex rounded-[10px] bg-[#1E40AF] hover:bg-[#1D4ED8] px-3 py-1.5 text-[12px] font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition"
                 >
                   Đăng ký
                 </Link>

@@ -206,8 +206,8 @@ export function LandingPage() {
           <div className="inline-flex flex-col items-center justify-center mb-5">
             <div className="relative inline-flex items-center gap-3">
               {/* Mascot Avatar - bo tròn 16px, shadow rất nhẹ */}
-              <div className="relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[#0F1115] text-[#10B981] shadow-[0_1px_2px_rgba(0,0,0,0.04)] border border-[#E2E8F0]">
-                <ScanLine className="h-7 w-7 text-[#0D9488]" />
+              <div className="relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[#1E40AF] text-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] border border-[#1E40AF]/20">
+                <ScanLine className="h-7 w-7 text-white" />
                 <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#10B981] text-white text-[9px] font-bold">
                   ✓
                 </span>

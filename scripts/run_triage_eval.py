@@ -7,7 +7,7 @@ from datetime import datetime
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-PROJECT_ROOT = r"d:\142.AI20K\P-142"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EVAL_DIR = os.path.join(PROJECT_ROOT, "eval")
 DATASETS_DIR = os.path.join(EVAL_DIR, "datasets")
 RESULTS_DIR = os.path.join(EVAL_DIR, "results")

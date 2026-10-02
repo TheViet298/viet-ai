@@ -34,6 +34,63 @@ Bổ sung các tính năng cốt lõi theo đặc tả mới nhất trong `docs/
    - Bảng `cases`: Bổ sung `user_id` liên kết với tài khoản chủ sở hữu, cập nhật trạng thái mặc định ban đầu là `New`.
    - Tạo migration mới `9f03985a11a8_web_auth_and_attachments.py` nâng cấp mượt mà từ `84802fff010b`.
 
+### 1.2. Cập nhật ngày 2026-09-30 (Tích hợp AI RAG Core, Chuẩn hóa Triage 5 Intents & Kết nối Live Full-Stack)
+
+1. **Đồng bộ nhánh `origin/develop` vào `feature/frontend-ui`:**
+   - Kéo và merge sạch sẽ code AI Agent từ `develop` (commit `1835eb1`), zero merge conflict.
+   - Tích hợp `src/agents/chatbot_agent.py`:
+     + **Hard Safety Guardrails:** Nhận diện tình huống khẩn cấp đe dọa an toàn (cháy nổ, khói đen, mất phanh, rùa vàng trên cao tốc). Bỏ qua hỏi đáp thông thường, kích hoạt ngay hướng dẫn bật đèn hazard, tấp lề khẩn cấp và gọi Hotline cứu hộ VinFast **1900-232389**.
+     + **Bảo vệ dữ liệu No-PII:** Module `sanitize_pii` tự động ẩn danh hóa các thông tin nhạy cảm (SĐT thật, CCCD, biển số xe thật) trước khi chuyển vào context RAG.
+     + **Đánh giá cờ duyệt HITL:** Module `is_hitl_mandatory` đánh giá tính bắt buộc cần chuyên viên xem xét dựa trên Intent, Priority, và RAG Confidence Score.
+   - Mở rộng tri thức trong `src/services/rag_service.py`:
+     + Chuyển đổi đường dẫn tuyệt đối tĩnh sang đường dẫn tương đối theo thư mục gốc của dự án (`os.path.dirname(...)`).
+     + Mở rộng `FALLBACK_KNOWLEDGE_BASE` thành 7 nguồn tài liệu chính thống:
+       * `SRC-001`: Chính sách bảo hành ô tô điện VinFast (VF 8: 10 năm hoặc 200.000km; pin cao áp mua đứt 10 năm không giới hạn km lăn bánh).
+       * `SRC-002`: Hướng dẫn sử dụng Ứng dụng VinFast (đặt lịch bảo dưỡng, theo dõi dung lượng pin và tiến độ dịch vụ).
+       * `SRC-003`: Thông tin cứu hộ khẩn cấp & Cứu hộ pin 24/7 (Hotline 1900-232389).
+       * `SRC-004`: Chính sách và Biểu phí sạc pin trạm công cộng VinFast (đơn giá sạc, phí chiếm dụng trụ 1.000 VNĐ/phút sau 10 phút sạc đầy).
+       * `SRC-005`: Cẩm nang bảo dưỡng định kỳ 12.000km (6 hạng mục kiểm tra tiêu chuẩn cho xe VF 8/VF 5/VF 9/e34).
+       * `SRC-006`: Danh mục sản phẩm & Chính sách bán hàng (dải xe điện VF 3, VF 5, VF 6, VF 7, VF 8, VF 9, đăng ký lái thử, đặt cọc).
+       * `SRC-007`: Thông số kỹ thuật chi tiết Catalog (so sánh VF 7 Plus 349 mã lực AWD vs Eco 201 mã lực FWD; kích thước và trọng lượng ~2.8 tấn của xe VF 9).
+
+2. **Chuẩn hóa Triage Router Khớp 100% Data Model (`triage_test_v1.jsonl`):**
+   - **Khắc phục lỗi hiểu nhầm câu hỏi thường:** Trước đó mọi câu không khớp từ khóa FAQ đều bị rơi xuống luồng sự cố sạc và hỏi mã lỗi táp-lô. Đã tái cấu trúc hoàn chỉnh 5 nhóm Intent theo thiết kế chuẩn:
+     * **`sales_general_info` (Tư vấn bán hàng & Chào hỏi):**
+       - Khách chào hỏi xã giao (*"xin chào", "chào em"*) -> Chào mừng lịch sự, giới thiệu các mảng dịch vụ AI hỗ trợ kèm nút phản hồi nhanh.
+       - Khách hỏi mua xe (*"tôi muốn mua xe"*, *"tư vấn xe 7 chỗ"*, *"giá xe"*) -> Đóng vai trò chuyên viên tư vấn bán hàng giới thiệu toàn diện hệ sinh thái xe điện VinFast từ VF 3 đến VF 9, chính sách lái thử và bảng giá, đính kèm Citation `SRC-006`. Tuyệt đối không tạo case kỹ thuật thừa thãi.
+       - Khách hỏi thông số xe (*"VF 7 Plus và Eco khác nhau gì"*, *"VF 9 nặng bao nhiêu"*) -> Tra cứu RAG trả lời chính xác thông số kỹ thuật.
+     * **`charging_battery` & `service_incident` (Sự cố sạc / Kỹ thuật):**
+       - Chỉ kích hoạt khi khách thực sự gặp lỗi/sự cố (*"không sạc", "kẹt súng", "báo lỗi", "0x41", "cc01", "bms", "kêu cọc cọc"*, hoặc có ảnh đính kèm).
+       - Bóc tách thực thể thông minh: Tự động trích xuất Trạm sạc (`Landmark 81`), Trụ sạc (`Trụ số 3`), Mã lỗi (`0x41`), Dòng xe (`VF8`).
+       - Khi đủ thông tin (như case `TRIAGE-003`): Tạo ngay hồ sơ `STAFF_REVIEWING` và chuyển thẳng lên Bàn điều phối (Console), không hỏi lặp lại.
+       - Khi thiếu thông tin: Hỏi làm rõ chính xác trường còn thiếu kèm gợi ý phản hồi nhanh (Quick Replies).
+     * **`safety_adversarial_oos` (An toàn & Ngoài phạm vi):**
+       - Nguy hiểm khẩn cấp (cháy, khói dưới gầm) -> Cảnh báo đỏ, hotline 1900-232389, tạo hồ sơ CRITICAL.
+       - Ngoài phạm vi (Rule 2.4 - xe Tesla, vé máy bay, hack tốc độ) -> Từ chối lịch sự theo quy tắc No Source.
+     * **`complaint_feedback` (Khiếu nại / Góp ý):**
+       - Tiếp nhận phản ánh xe xăng chiếm chỗ sạc, trừ tiền 2 lần, lỗi app văng crash -> Tạo hồ sơ khiếu nại chuyển CSKH xử lý ưu tiên.
+
+3. **Kết nối Toàn diện Frontend UI với Live Backend APIs:**
+   - **Customer Chat (`chatApi.ts` & `CustomerChatContainer.tsx`):**
+     + Đấu nối trực tiếp vào `POST /api/v1/customer/chat`.
+     + Đấu nối tải ảnh đính kèm táp-lô qua `POST /api/v1/customer/attachments`.
+     + Đấu nối danh sách case khách hàng qua `GET /api/v1/customer/cases`.
+     + Đấu nối mở lại case `POST /api/v1/customer/cases/{id}/reopen` và đánh giá dịch vụ `POST /api/v1/customer/cases/{id}/feedback`.
+   - **Bàn điều phối Staff Console (`consoleApi.ts`):**
+     + Tự động gắn token xác thực chuyên viên (`staff_token_demo_auto`) khi gọi `/api/v1/staff/tickets` và `/api/v1/staff/actions`.
+     + Loại bỏ hoàn toàn lỗi 401 Unauthorized, hiển thị tức thời các Case kỹ thuật vừa tạo từ phòng chat để nhân viên duyệt HITL.
+   - **Theo dõi Tiến độ Sự cố (`track-case/page.tsx`):**
+     + Kết nối thời gian thực với backend để hiển thị quy trình xử lý 5 bước, thông tin tóm tắt Case Brief và quyết định của chuyên viên.
+   - **Xác thực Người dùng (`AuthContext.tsx`):**
+     + Đồng bộ đăng nhập, đăng ký và lấy thông tin phiên làm việc từ `POST /api/v1/auth/login`, `POST /api/v1/auth/register`, `GET /api/v1/auth/me`.
+
+4. **Nâng cấp Trải nghiệm Chatbot (Chat UX):**
+   - **Nút "Làm mới" (Reset Chat):** Bố trí tiện lợi tại thanh công cụ trên đầu khung chat và thanh bên trái; cho phép làm mới phiên hội thoại, reset session ID, xóa case cũ và dọn sạch ảnh đính kèm.
+   - **Hiệu ứng AI Thinking (Sequential AI Bubble):** Khi người dùng gửi câu hỏi, giao diện lập tức hiển thị trạng thái suy nghĩ của bot với avatar thương hiệu, nhãn trạng thái nhấp nháy (*"Trợ lý VinFast AI • Đang suy nghĩ..."*) và hiệu ứng 3 chấm nảy sinh động trước khi câu trả lời hoàn tất.
+
+5. **Cơ chế Database Auto-Fallback Thông minh:**
+   - Trong `src/db.py`: Bổ sung cơ chế tự động bắt lỗi khi chuỗi kết nối là PostgreSQL nhưng máy chưa cài driver `psycopg`. Hệ thống tự động chuyển mượt sang SQLite cục bộ (`sqlite:///./data/app.db`) mà không bao giờ ném lỗi dừng server.
+
 ---
 
 ## 2. Bản đồ cấu trúc thư mục Backend

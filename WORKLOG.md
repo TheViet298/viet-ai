@@ -47,14 +47,21 @@
 
 ---
 
-## [YYYY-MM-DD]
+## 2026-09-30 (Gate G2: Core Engine, Vertical Slice & Full-Stack AI Integration)
 
 | Member | Task | Status | Output | Time |
 |---|---|---|---|---|
-| | | | | |
+| Thế Việt | Tích hợp toàn diện giao diện Frontend (Chat, Case Tracking, Console, Auth) với Live REST APIs | ✅ Done | `chatApi.ts`, `track-case/page.tsx`, `CustomerChatContainer.tsx`, `AuthContext.tsx` | 5h |
+| Thế Việt | Nâng cấp trải nghiệm Chat: Nút làm mới phiên hội thoại (Reset Chat) và hiệu ứng AI Thinking Bubble sinh động | ✅ Done | `ChatFeed.tsx`, `CustomerChatContainer.tsx`, `useChat.ts` | 3h |
+| Long | Tích hợp Core AI Chatbot Agent từ nhánh develop, chuẩn hóa Guardrails (Hard Safety, No-PII, HITL flag) | ✅ Done | `src/agents/chatbot_agent.py`, `src/agents/guardrails.py` | 4h |
+| Khôi | Mở rộng Fallback Knowledge Base lên 7 nguồn (bổ sung danh mục xe VF 3 - VF 9 và catalog thông số kỹ thuật) | ✅ Done | `src/services/rag_service.py` (SRC-001 đến SRC-007) | 3h |
+| Triển | Chuẩn hóa Triage Router 5 Intents (`sales_general_info`, `charging_battery`, `service_incident`, `complaint_feedback`, `safety_adversarial_oos`); xử lý thông minh câu hỏi tư vấn mua xe | ✅ Done | `src/api/customer.py` | 4h |
+| Cả nhóm | Kiểm thử End-to-End Vertical Slice: Khẩn cấp (Safety) $\rightarrow$ Tra cứu (RAG FAQ) $\rightarrow$ Sự cố sạc ($\text{Landmark 81}$) $\rightarrow$ Bàn điều phối (Console HITL) | ✅ Done | Hệ thống chạy thông suốt trên `localhost:3000` & `localhost:8000` | 3h |
 
-**Tổng kết ngày:**
+**Tổng kết ngày:** Đã merge và kết nối hoàn chỉnh giữa Frontend UI, Backend FastAPI, SQLite Database và Core AI Agent. Đã tinh chỉnh router theo đúng chuẩn bộ dataset `triage_test_v1.jsonl`, loại bỏ hiện tượng hỏi mặc định và cho phép phân luồng thông minh từ chào hỏi, tư vấn bán hàng đến tiếp nhận sự cố kỹ thuật.
 
 ---
+
+<!-- Format: copy block trên cho mỗi ngày làm việc -->
 
 <!-- Format: copy block trên cho mỗi ngày làm việc -->
