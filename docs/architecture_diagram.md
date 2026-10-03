@@ -147,3 +147,10 @@ graph TD
 | **Location / Map** | Consent API + điểm dịch vụ seed | Customer chia sẻ vị trí/nhập khu vực; gợi ý điểm hỗ trợ, không điều phối cứu hộ thật |
 | **Database** | SQLite (MVP) / PostgreSQL | Lưu user/role, case, message, attachment, intent, priority, brief, audit log, ticket status |
 | **Console (HITL)** | React / Next.js / Tailwind UI | Service Agent Console — **Reviewer là người quyết định cuối cùng** với escalation, chỉnh sửa brief và routing trước khi dispatch |
+
+
+<!-- update info from feature/ai-khoi branch -->
+
+### Các trường database đề xuất từ feature/ai-khoi
+
+| **Database** | SQLite (MVP) / PostgreSQL | Lưu trữ đầy đủ: `source_channel`, `intent`, `priority`, `confidence_score`, `suggested_action`, `captured_fields`, `reviewer_feedback`, `status` |
