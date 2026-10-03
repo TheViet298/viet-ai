@@ -24,5 +24,9 @@
 | **SCR-04** | **Service Agent Console (Staff)** | Nhân viên CSKH/KTV | Gồm 2 Sub-views:<br>• **4A. Ticket Queue:** Lọc danh sách case theo Priority/Status/Intent.<br>• **4B. Ticket Detail:** Xem Case Brief, Chat history, nút Approve / Edit / Reroute / Close. |
 | **PUB-01** | **Landing / Knowledge Hub** | Guest | Xem giới thiệu, FAQ, chính sách và link tài liệu VinFast công khai; bấm “Hỏi trợ lý” chuyển Login. |
 | **AUTH-01** | **Login / Register** | Customer / Staff | Register chỉ tạo Customer; Staff dùng account seed/invite. |
+| **CUS-03** | **Service Map Preview** | Customer | Panel trong Chat: consent vị trí, map và điểm hỗ trợ gợi ý; không cần page mới. |
+| **CUS-04** | **Customer Support Center** | Customer | Tab Yêu cầu của tôi: search, timeline, lịch sử chat, confirm/reopen. Tab Tình huống thường gặp: content đã biên soạn/ẩn danh. |
+| **STF-03** | **Staff Dashboard & Case History** | Staff | Counter case, queue ưu tiên, lịch sử Resolved/Closed/Reopened, routing directory, Knowledge Hub/Customer Preview links. |
 
 > Cập nhật cho `SCR-01`: có upload/preview ảnh, trạng thái “AI đang đọc cảnh báo”, cảnh báo không gửi biển số/VIN/khuôn mặt/giấy tờ. `SCR-04B` hiển thị ảnh và OCR/Vision observation trong Ticket Detail.
+> Cập nhật thêm: Guest có 5 lượt chat; `SCR-03` có Customer Update + confirm/reopen; `SCR-04B` có location source/consent + map preview khi case có vị trí.

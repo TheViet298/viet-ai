@@ -1,0 +1,68 @@
+[
+  {
+    "name": "Điểm hỗ trợ demo Hà Nội 1",
+    "address": "Khu vực demo phía Bắc Hà Nội",
+    "area": "Hà Nội",
+    "latitude": 21.07,
+    "longitude": 105.82,
+    "intents": [
+      "Charging/Battery",
+      "Service/Incident",
+      "Complaint/Feedback",
+      "Sales/General Info"
+    ],
+    "demo": true
+  },
+  {
+    "name": "Điểm hỗ trợ demo Hà Nội 2",
+    "address": "Khu vực demo trung tâm Hà Nội",
+    "area": "Hà Nội",
+    "latitude": 21.03,
+    "longitude": 105.85,
+    "intents": [
+      "Charging/Battery",
+      "Service/Incident",
+      "Complaint/Feedback",
+      "Sales/General Info"
+    ],
+    "demo": true
+  },
+  {
+    "name": "Điểm hỗ trợ demo Hà Nội 3",
+    "address": "Khu vực demo phía Nam Hà Nội",
+    "area": "Hà Nội",
+    "latitude": 20.99,
+    "longitude": 105.84,
+    "intents": [
+      "Charging/Battery",
+      "Service/Incident",
+      "Complaint/Feedback",
+      "Sales/General Info"
+    ],
+    "demo": true
+  },
+  {
+    "name": "Điểm tư vấn demo Hà Nội 4",
+    "address": "Khu vực tư vấn demo Hà Nội",
+    "area": "Hà Nội",
+    "latitude": 21.01,
+    "longitude": 105.8,
+    "intents": [
+      "Complaint/Feedback",
+      "Sales/General Info"
+    ],
+    "demo": true
+  },
+  {
+    "name": "Điểm tư vấn demo Hà Nội 5",
+    "address": "Khu vực tư vấn demo Hà Nội",
+    "area": "Hà Nội",
+    "latitude": 21.05,
+    "longitude": 105.86,
+    "intents": [
+      "Complaint/Feedback",
+      "Sales/General Info"
+    ],
+    "demo": true
+  }
+]

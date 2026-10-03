@@ -33,6 +33,8 @@ erDiagram
     CASE ||--o{ STAFF_AUDIT_LOG : tracks
     CASE ||--o{ ATTACHMENT : includes
     CASE ||--o{ CUSTOMER_FEEDBACK : receives
+    CASE ||--o{ CASE_LOCATION : may_have
+    CASE ||--o{ CASE_UPDATE : receives
     USER ||--o{ CASE : owns
     
     CASE {
@@ -67,6 +69,28 @@ erDiagram
         string ocr_text "Nullable"
         jsonb detected_signals "Nullable"
         float vision_confidence "Nullable"
+    }
+
+    CASE_LOCATION {
+        string case_id FK
+        string status "CONSENTED | MANUAL | NOT_SHARED | UNKNOWN"
+        string source "BROWSER_GPS | USER_TEXT | MAP_PICKER"
+        string location_label
+        float latitude "Nullable"
+        float longitude "Nullable"
+        string precision "APPROXIMATE | EXACT"
+        boolean share_with_staff
+    }
+
+    CASE_UPDATE {
+        string id PK
+        string case_id FK
+        string author_type "STAFF | SYSTEM"
+        string status_after_update
+        string customer_message "Nội dung an toàn hiển thị Customer"
+        string next_step "Nullable"
+        boolean awaiting_customer_confirmation
+        datetime created_at
     }
 
     MESSAGE {
@@ -122,6 +146,13 @@ erDiagram
 | `assigned_staff_id` | `VARCHAR(50)` | Yes | | ID nhân viên phụ trách |
 | `created_at` | `TIMESTAMP WITH TZ` | No | `NOW()` | Thời gian tạo |
 | `updated_at` | `TIMESTAMP WITH TZ` | No | `NOW()` | Thời gian cập nhật cuối |
+
+### 3.3. Quy tắc Location & Customer Confirmation
+* `case_locations` chỉ được tạo khi Customer consent hoặc tự nhập khu vực. Không đọc vị trí từ ảnh/EXIF.
+* `Resolved` có thể kèm `awaiting_customer_confirmation = true`; không thêm trạng thái mới.
+* Customer chọn `Đã được hỗ trợ` $\rightarrow$ `Closed`; chọn `Vẫn chưa giải quyết` $\rightarrow$ `Reopened` và quay lại Staff Queue.
+* Customer Support Center chỉ query Case/Message/Case Update có `customer_id` thuộc user đăng nhập.
+* “Tình huống thường gặp” là public content đã biên soạn, không dùng bảng `cases`, `messages`, `attachments` để hiển thị cho Customer khác.
 
 ### 3.2. Bảng `case_briefs`
 | Tên Cột | Kiểu Dữ liệu | Nullable | Ràng buộc / Mặc định | Ý nghĩa |

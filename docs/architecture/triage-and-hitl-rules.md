@@ -63,6 +63,14 @@ graph LR
 3. Câu hỏi tra cứu thông tin (FAQ) nhưng điểm tương đồng vector RAG $< 0.70$ hoặc không có tài liệu trích dẫn.
 4. Mọi yêu cầu liên quan đến cam kết tài chính, bồi thường, khiếu nại chất lượng dịch vụ.
 
+## 3.1. Location Consent & Service Suggestion
+
+* Agent chỉ mở luồng location sau khi nhận diện nhu cầu Charging/Service hoặc Sales cần showroom.
+* UI luôn cho 3 lựa chọn: `Dùng vị trí hiện tại`, `Nhập khu vực`, `Bỏ qua`.
+* Không có consent: `location_status = NOT_SHARED`; vẫn được tạo case và Staff xử lý bình thường.
+* Critical: hiển thị hotline/cảnh báo và tạo case trước; chỉ sau đó mới hỏi vị trí nếu Customer có thể phản hồi an toàn.
+* Map chỉ gợi ý điểm hỗ trợ. Không được khẳng định đã cử cứu hộ/đặt lịch/điều phối thật.
+
 ---
 
 ## 4. Ghi nhận Log Đánh giá Nhân viên (Staff Reviewer Feedback Audit)

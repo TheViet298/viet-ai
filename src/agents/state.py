@@ -35,6 +35,8 @@ ResponseType = Literal[
     "CASE_CREATED",
     "OUT_OF_SCOPE",
     "EMERGENCY_ALERT",
+    "LOGIN_REQUIRED",
+    "SAFETY_REFUSAL",
 ]
 
 
@@ -48,6 +50,9 @@ class CitationSource(TypedDict, total=False):
     status_code: int
     applicable_models: list[str]
     source_type: str
+    relevant_snippet: str
+    chunk_id: str
+    distance: float
 
 
 class CaseBriefData(TypedDict, total=False):
@@ -149,3 +154,18 @@ class AgentState(TypedDict, total=False):
     # 8. Guardrails Diagnostics
     # -------------------------------------------------------------
     guardrails: GuardrailAuditFlags
+    user_role: Literal["guest", "customer", "staff"]
+    guest_turn_count: int
+    turn: int
+    needs_staff_review: bool
+    routing: str
+    is_no_source: bool
+    rag_distance: float | None
+    fact_history: list[dict[str, Any]]
+    memory_summary: str
+    location: dict[str, Any]
+    service_points: list[dict[str, Any]]
+    attachment_signals: dict[str, Any]
+    policy_blocked: bool
+    login_required: bool
+    remaining_guest_messages: int

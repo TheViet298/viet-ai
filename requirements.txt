@@ -18,6 +18,9 @@ langgraph>=0.2.0
 
 # Vector Store (uncomment as needed)
 # chromadb>=0.5.0
+chromadb>=1.0.0,<2
+
+# Optional cloud tracing: pip install langfuse>=3,<4
 
 # Dev tools
 ruff>=0.8.0
