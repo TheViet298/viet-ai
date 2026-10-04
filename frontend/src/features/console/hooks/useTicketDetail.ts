@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { StaffActionType, TicketDetail, TicketStatus } from "../types";
+import { useState, useEffect, useCallback } from "react";
+import { TicketDetail, TicketStatus, StaffActionType } from "../types";
 import { getTicketDetail, submitStaffAction } from "../api/consoleApi";
 
 export const MOCK_DETAIL_DATA: TicketDetail = {
@@ -57,25 +57,55 @@ export const MOCK_DETAIL_DATA: TicketDetail = {
 };
 
 export function useTicketDetail(initialId: string) {
-  const [detail, setDetail] = useState<TicketDetail>(MOCK_DETAIL_DATA);
+  const [detail, setDetail] = useState<TicketDetail>(() => ({
+    ...MOCK_DETAIL_DATA,
+    case: { ...MOCK_DETAIL_DATA.case, id: initialId },
+  }));
   const [status, setStatus] = useState<TicketStatus>(detail.case.status);
   const [isEditing, setIsEditing] = useState(false);
   const [editedSummary, setEditedSummary] = useState(detail.case_brief.summary);
   const [notes, setNotes] = useState("");
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadTicket = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await getTicketDetail(initialId);
+      if (res && res.success && res.data) {
+        setDetail(res.data);
+        setStatus(res.data.case.status);
+        setEditedSummary(res.data.case_brief.summary);
+      }
+    } catch {
+      // Fallback to local mock data without breaking UI
+      setDetail((prev) => ({
+        ...prev,
+        case: { ...prev.case, id: initialId },
+      }));
+    } finally {
+      setLoading(false);
+    }
+  }, [initialId]);
 
   useEffect(() => {
     let isMounted = true;
     const fetchDetail = async () => {
+      setLoading(true);
       try {
         const res = await getTicketDetail(initialId);
-        if (isMounted && res.success && res.data) {
+        if (isMounted && res && res.success && res.data) {
           setDetail(res.data);
           setStatus(res.data.case.status);
           setEditedSummary(res.data.case_brief.summary);
         }
       } catch {
         // Fallback to mock data if backend unavailable
+      } finally {
+        if (isMounted) setLoading(false);
       }
     };
     fetchDetail();
@@ -84,30 +114,77 @@ export function useTicketDetail(initialId: string) {
     };
   }, [initialId]);
 
-  const executeAction = async (actionName: string, newStatus: TicketStatus) => {
-    setStatus(newStatus);
-    setActionSuccess(`Đang ghi nhận: ${actionName}...`);
+  const handleSaveBrief = () => {
+    setDetail((prev) => ({
+      ...prev,
+      case_brief: {
+        ...prev.case_brief,
+        summary: editedSummary,
+        is_edited_by_staff: true,
+      },
+    }));
+    setIsEditing(false);
+    setActionSuccess("Đã lưu chỉnh sửa tóm tắt hồ sơ (Case Brief)!");
+    setTimeout(() => setActionSuccess(null), 3500);
+  };
 
-    let staffAction: StaffActionType = "EDIT_BRIEF";
-    if (actionName.includes("Duyệt") || actionName.includes("Approve")) staffAction = "APPROVE";
-    else if (actionName.includes("Yêu cầu") || actionName.includes("thông tin")) staffAction = "REQUEST_INFO";
-    else if (actionName.includes("Chuyển") || actionName.includes("Reroute")) staffAction = "REROUTE";
-    else if (actionName.includes("Đóng") || actionName.includes("Close")) staffAction = "CLOSE";
-    else if (actionName.includes("Mở lại")) staffAction = "REOPEN";
+  const handleCancelBrief = () => {
+    setEditedSummary(detail.case_brief.summary);
+    setIsEditing(false);
+  };
+
+  const executeAction = async (
+    actionName: string,
+    actionTypeOrStatus?: StaffActionType | TicketStatus,
+    targetStatus?: TicketStatus
+  ) => {
+    let finalActionType: StaffActionType = "EDIT_BRIEF";
+    let finalStatus: TicketStatus = "In Progress";
+
+    if (typeof actionTypeOrStatus === "string") {
+      if (
+        actionTypeOrStatus === "APPROVE" ||
+        actionTypeOrStatus === "EDIT_BRIEF" ||
+        actionTypeOrStatus === "REROUTE" ||
+        actionTypeOrStatus === "CLOSE" ||
+        actionTypeOrStatus === "REOPEN" ||
+        actionTypeOrStatus === "REQUEST_INFO"
+      ) {
+        finalActionType = actionTypeOrStatus;
+        finalStatus = targetStatus || "In Progress";
+      } else {
+        finalStatus = actionTypeOrStatus as TicketStatus;
+        if (actionName.includes("Duyệt") || actionName.includes("Approve")) finalActionType = "APPROVE";
+        else if (actionName.includes("Yêu cầu") || actionName.includes("thông tin")) finalActionType = "REQUEST_INFO";
+        else if (actionName.includes("Chuyển") || actionName.includes("Reroute")) finalActionType = "REROUTE";
+        else if (actionName.includes("Đóng") || actionName.includes("Close")) finalActionType = "CLOSE";
+        else if (actionName.includes("Mở lại")) finalActionType = "REOPEN";
+      }
+    }
+
+    setStatus(finalStatus);
+    setIsSubmitting(true);
+    setActionSuccess(`Đang ghi nhận: ${actionName}...`);
 
     try {
       await submitStaffAction(initialId, {
-        action: staffAction,
+        action: finalActionType,
         staff_id: "STAFF_VINFAST_DEMO",
-        updated_status: newStatus,
-        edited_brief: { summary: editedSummary },
+        updated_status: finalStatus,
+        edited_brief: detail.case_brief.is_edited_by_staff ? { summary: editedSummary } : undefined,
         notes: notes || undefined,
       });
       setActionSuccess(`Đã thực hiện thành công: ${actionName} cho hồ sơ ${initialId}!`);
     } catch {
-      setActionSuccess(`Đã cập nhật trạng thái tạm: ${actionName} (chế độ demo).`);
+      setActionSuccess(`Đã cập nhật trạng thái: ${actionName} (chế độ demo).`);
+    } finally {
+      setIsSubmitting(false);
+      setDetail((prev) => ({
+        ...prev,
+        case: { ...prev.case, status: finalStatus },
+      }));
+      setTimeout(() => setActionSuccess(null), 4000);
     }
-    setTimeout(() => setActionSuccess(null), 4000);
   };
 
   return {
@@ -117,9 +194,15 @@ export function useTicketDetail(initialId: string) {
     setIsEditing,
     editedSummary,
     setEditedSummary,
+    handleSaveBrief,
+    handleCancelBrief,
     notes,
     setNotes,
     actionSuccess,
     executeAction,
+    loading,
+    isSubmitting,
+    error,
+    reload: loadTicket,
   };
 }

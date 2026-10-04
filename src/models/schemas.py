@@ -1,4 +1,6 @@
-from datetime import UTC, datetime
+from __future__ import annotations
+
+from datetime import UTC, datetime, timezone
 from typing import Any, Generic, Literal, TypeVar
 
 from pydantic import BaseModel, Field
@@ -65,6 +67,7 @@ class ArticleItem(BaseModel):
     content: str
     source_url: str
     verified_at: str
+    applicable_models: list[str] | None = None
 
 
 class PublicArticlesData(BaseModel):
@@ -93,6 +96,10 @@ class AttachmentOut(BaseModel):
 # ==============================================================================
 
 
+# =====================================================================
+# 1. Simplified Chat Schemas (Phục vụ Demo & Lightweight Frontend)
+# =====================================================================
+
 class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=5000, description="Tin nhắn từ user")
 
@@ -100,6 +107,11 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str = Field(..., description="Phản hồi từ agent")
     analysis: str = Field(default="", description="Phân tích nội bộ")
+    intent: str | None = Field(default=None, description="Ý định phân loại")
+    priority: str | None = Field(default=None, description="Mức độ ưu tiên")
+    needs_staff_review: bool = Field(default=False, description="Cần chuyên viên duyệt")
+    is_safety_trigger: bool = Field(default=False, description="Kích hoạt cảnh báo an toàn khẩn cấp")
+    citations: list[dict[str, Any]] = Field(default_factory=list, description="Danh sách trích dẫn nguồn")
 
 
 # ==============================================================================
@@ -114,12 +126,22 @@ class ClientContext(BaseModel):
 
 
 class CustomerChatRequest(BaseModel):
-    session_id: str
+    session_id: str = Field(default="sess_default", description="Mã phiên hội thoại (No-PII)")
     case_id: str | None = None  # e.g. CASE-20260924-001, null nếu là tin nhắn đầu tiên
-    message: str = Field(..., min_length=1)
-    attachment_ids: list[str] | None = None  # Danh sách ID ảnh đã upload trước đó
-    guest_session_id: str | None = None  # Dùng khi chưa login (giới hạn 5 lượt)
-    client_context: ClientContext | None = None
+    message: str = Field(..., min_length=1, max_length=5000, description="Nội dung tin nhắn khách hàng")
+    attachment_ids: list[str] | None = Field(default_factory=list, description="Danh sách mã file/ảnh đính kèm")
+    guest_session_id: str | None = Field(default=None, description="Dùng khi chưa login (giới hạn 5 lượt)")
+    client_context: ClientContext | None = Field(default=None, description="Ngữ cảnh mô phỏng (No-PII)")
+
+
+class ApiResponseEnvelope(BaseModel):
+    success: bool = True
+    data: dict[str, Any] = Field(default_factory=dict, description="Payload dữ liệu trả về")
+    error: str | None = Field(default=None, description="Thông báo lỗi nếu có")
+    meta: dict[str, Any] = Field(
+        default_factory=lambda: {"timestamp": datetime.now(timezone.utc).isoformat()},
+        description="Metadata phản hồi",
+    )
 
 
 class Citation(BaseModel):

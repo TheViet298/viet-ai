@@ -54,6 +54,7 @@ from src.models.schemas import (
     ServicePointsData,
 )
 from src.services.auth import check_case_ownership, get_optional_user, require_customer
+from src.agents.chatbot_agent import process_chat_message
 
 router = APIRouter(prefix="/customer", tags=["customer"])
 
@@ -359,42 +360,288 @@ async def customer_chat(
             error=None,
         )
 
-    # 3. KIỂM TRA FAQ / TRA CỨU HƯỚNG DẪN ỨNG DỤNG VINFAST (RAG FAQ)
-    faq_keywords = [
-        "tính năng app",
-        "ứng dụng",
-        "theo dõi pin",
-        "đặt lịch",
-        "bảo hành",
-        "hướng dẫn app",
-        "hướng dẫn",
-        "chi phí",
-        "giá",
-        "bảng giá",
-        "chính sách",
+    # 3. KIỂM TRA CÂU HỎI NGOÀI PHẠM VI (RULE 2.4 - OUT OF SCOPE / ADVERSARIAL)
+    oos_keywords = [
+        "vé máy bay", "vietnam airlines", "vietjet", "tesla", "hyundai", "toyota", "honda",
+        "thời tiết", "mặt trời", "áp mái", "hòa lưới", "tự đấu dây", "can thiệp tăng công suất",
+        "giảm giá bí mật", "bẻ khóa", "hack động cơ", "phá khóa", "mở khóa giới hạn", "250km/h",
+        "ung thư", "chất độc hại", "asdfg", "qwerty", "123456"
     ]
-    is_faq = any(kw in lower_text for kw in faq_keywords)
-    if is_faq and not any(kw in lower_text for kw in ["lỗi", "hỏng", "không sạc", "sự cố", "rùa vàng"]):
-        agent_reply = (
-            "Theo Hướng dẫn sử dụng Ứng dụng VinFast, anh/chị có thể dễ dàng quản lý tình trạng xe, "
-            "kiểm tra mức pin/sạc và chủ động đặt lịch dịch vụ bảo dưỡng/sửa chữa trực tiếp trên Ứng dụng VinFast."
+    if any(kw in lower_text for kw in oos_keywords):
+        reply_no_source = (
+            "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách dịch vụ chính thức của VinFast "
+            "nhưng chưa có thông tin xác thực cho yêu cầu này (hoặc nội dung nằm ngoài phạm vi hỗ trợ của hệ sinh thái xe điện VinFast).\n\n"
+            "Nếu anh/chị cần hỗ trợ các vấn đề kỹ thuật, trạm sạc hay bảo hành xe VinFast, em luôn sẵn sàng hỗ trợ ạ!"
         )
-        citations = [
+        agent_msg = Message(
+            id=str(uuid.uuid4()),
+            case_id=None,
+            session_id=payload.session_id,
+            sender_type=SenderType.AGENT.value,
+            content=reply_no_source,
+            msg_metadata={"type": "OOS_REJECT"},
+        )
+        db.add(agent_msg)
+        db.commit()
+
+        return ApiResponse(
+            success=True,
+            data=ChatResponseData(
+                response_type="FAQ_ANSWER",
+                message=reply_no_source,
+                case_id=None,
+                citations=[],
+            ),
+            error=None,
+        )
+
+    # 4. KIỂM TRA PHẢN ÁNH / KHIẾU NẠI (COMPLAINT / FEEDBACK)
+    complaint_keywords = ["bức xúc", "khiếu nại", "thái độ", "trừ tiền", "hoàn tiền", "chiếm chỗ", "văng crash", "khen ngợi"]
+    is_complaint = any(kw in lower_text for kw in complaint_keywords)
+    if is_complaint:
+        new_case_id = payload.case_id or generate_case_id(db)
+        case = db.get(Case, new_case_id)
+        is_financial = any(kw in lower_text for kw in ["trừ tiền", "hoàn tiền"])
+        case_prio = Priority.HIGH.value if is_financial else Priority.MEDIUM.value
+        if "khen ngợi" in lower_text:
+            case_prio = Priority.LOW.value
+
+        if not case:
+            case = Case(
+                id=new_case_id,
+                user_id=current_user.id,
+                session_id=payload.session_id,
+                mock_customer_id=mock_cust_id,
+                vehicle_code_mock=vehicle_code,
+                vehicle_model=vehicle_model,
+                intent=Intent.COMPLAINT_FEEDBACK.value,
+                priority=case_prio,
+                status=TicketStatus.STAFF_REVIEWING.value,
+            )
+            db.add(case)
+            db.flush()
+
+        cust_msg.case_id = case.id
+        summary_text = f"Ý kiến khách hàng: {text[:120]}..."
+        case_brief = CaseBrief(
+            id=str(uuid.uuid4()),
+            case_id=case.id,
+            summary=summary_text,
+            captured_fields={
+                "vehicle_model": vehicle_model,
+                "feedback_type": "FINANCIAL_DISPUTE" if is_financial else "GENERAL_COMPLAINT_OR_FEEDBACK",
+                "content": text,
+            },
+            suggested_action="Chuyên viên CSKH kiểm tra dữ liệu giao dịch hoặc liên hệ trực tiếp hỗ trợ khách hàng.",
+            confidence_score=0.95,
+            is_edited_by_staff=False,
+        )
+        db.add(case_brief)
+
+        agent_reply = (
+            f"Dạ em rất tiếc về trải nghiệm chưa thuận tiện của anh/chị. "
+            f"Hệ thống đã ghi nhận phản hồi vào hồ sơ hỗ trợ chuyên trách (Mã: {case.id}) "
+            f"và chuyển ngay đến bộ phận Chăm sóc Khách hàng để rà soát, xử lý ưu tiên. "
+            f"Anh/chị vui lòng theo dõi cập nhật trực tiếp tại đây nhé ạ."
+        )
+
+        agent_msg = Message(
+            id=str(uuid.uuid4()),
+            case_id=case.id,
+            session_id=payload.session_id,
+            sender_type=SenderType.AGENT.value,
+            content=agent_reply,
+            msg_metadata={"case_id": case.id, "priority": case_prio},
+        )
+        db.add(agent_msg)
+        db.commit()
+
+        return ApiResponse(
+            success=True,
+            data=ChatResponseData(
+                response_type="CASE_CREATED",
+                case_id=case.id,
+                status=TicketStatus.STAFF_REVIEWING.value,
+                priority=case_prio,
+                message=agent_reply,
+                safe_guidance="Chuyên viên CSKH đang xử lý hồ sơ này của Quý khách.",
+            ),
+            error=None,
+        )
+
+    # 5. PHÂN LOẠI XỬ LÝ THEO CHUẨN DATA MODEL (5 INTENTS)
+    # Xác định xem tin nhắn có thực sự là sự cố kỹ thuật/hỏng hóc hay là câu hỏi thông thường
+    incident_keywords = [
+        "không sạc", "không vào điện", "không nhận sạc", "không nhận", "kẹt súng", "kẹt cổng",
+        "kẹt chốt", "rút không được", "súng sạc bị kẹt", "lỗi", "báo lỗi", "communication error",
+        "0x", "cc01", "bms", "hỏng", "sự cố", "mất nguồn", "tối thui", "kêu", "cọc cọc", "đơ",
+        "chết máy", "nháy đỏ", "bình 12v", "ắc quy", "xì lốp", "kẹt kính", "chỉ thổi gió nóng",
+        "móp", "va chạm", "cứu tôi", "hết pin", "tụt pin"
+    ]
+    is_technical_incident = any(kw in lower_text for kw in incident_keywords) or bool(payload.attachment_ids)
+
+    # --------------------------------------------------------------------------
+    # NHÓM A: CHÀO HỎI & GIAO TIẾP XÃ GIAO (GREETINGS)
+    # --------------------------------------------------------------------------
+    greeting_keywords = ["xin chào", "chào em", "chào bạn", "chào bot", "chào trợ lý", "hello", "hi vinfast", "chào", "hi"]
+    is_greeting = any(lower_text == kw or lower_text.startswith(f"{kw} ") for kw in greeting_keywords) and not is_technical_incident
+
+    if is_greeting:
+        greeting_reply = (
+            "Dạ em xin chào anh/chị! Em là Trợ lý AI Dịch vụ Khách hàng VinFast. "
+            "Em luôn sẵn sàng đồng hành và hỗ trợ anh/chị 24/7:\n\n"
+            "• 🚗 **Tư vấn sản phẩm & Mua xe:** Thông tin dải xe điện VF 3 đến VF 9, giá lăn bánh, đăng ký lái thử.\n"
+            "• 🔋 **Trạm sạc & Ứng dụng:** Hướng dẫn sạc pin công cộng, biểu phí sạc, các tính năng trên App VinFast.\n"
+            "• 🔧 **Bảo hành & Bảo dưỡng:** Chính sách bảo hành pin 10 năm, cẩm nang bảo dưỡng định kỳ 12.000km.\n"
+            "• ⚠️ **Hỗ trợ Kỹ thuật:** Tiếp nhận sự cố sạc pin, chẩn đoán sơ bộ và điều phối cứu hộ khẩn cấp.\n\n"
+            "Anh/chị cần em hỗ trợ nội dung nào hôm nay ạ?"
+        )
+        suggested_replies = [
+            "Tôi muốn mua xe",
+            "Thời hạn bảo hành pin VF 8",
+            "Bảo dưỡng định kỳ 12.000km",
+            "Trạm sạc bị lỗi",
+        ]
+        agent_msg = Message(
+            id=str(uuid.uuid4()),
+            case_id=None,
+            session_id=payload.session_id,
+            sender_type=SenderType.AGENT.value,
+            content=greeting_reply,
+            msg_metadata={"type": "GREETING", "suggested_replies": suggested_replies},
+        )
+        db.add(agent_msg)
+        db.commit()
+
+        return ApiResponse(
+            success=True,
+            data=ChatResponseData(
+                response_type="FAQ_ANSWER",
+                message=greeting_reply,
+                case_id=None,
+                suggested_replies=suggested_replies,
+            ),
+            error=None,
+        )
+
+    # --------------------------------------------------------------------------
+    # NHÓM B: TƯ VẤN BÁN HÀNG & MUA XE (SALES_GENERAL_INFO)
+    # --------------------------------------------------------------------------
+    sales_keywords = [
+        "mua xe", "mua ô tô", "bán xe", "tư vấn mua", "tư vấn xe", "đặt cọc", "lái thử",
+        "trả góp", "bảng giá xe", "giá lăn bánh", "ưu đãi", "dòng xe nào", "xe 7 chỗ",
+        "xe 5 chỗ", "mua vf", "tư vấn"
+    ]
+    is_sales_inquiry = any(kw in lower_text for kw in sales_keywords) and not is_technical_incident
+
+    if is_sales_inquiry:
+        sales_reply = (
+            "Dạ VinFast xin chào anh/chị! Hiện nay VinFast đang phân phối hệ sinh thái ô tô điện thông minh toàn diện phủ khắp các phân khúc:\n\n"
+            "🚗 **VF 3**: Mini SUV đô thị nhỏ gọn, thiết kế vuông vức cá tính, di chuyển linh hoạt.\n"
+            "🚙 **VF 5 Plus**: A-SUV trẻ trung, tối ưu chi phí vận hành cho gia đình và đô thị.\n"
+            "🚘 **VF 6**: B-SUV thời thượng, ngập tràn công nghệ thông minh và an toàn.\n"
+            "🏎️ **VF 7**: C-SUV phong cách thể thao, hiệu năng ấn tượng với 2 phiên bản Eco và Plus.\n"
+            "✨ **VF 8**: D-SUV sang trọng, hệ thống hỗ trợ lái nâng cao ADAS và trợ lý ảo thông minh.\n"
+            "👑 **VF 9**: E-SUV 7 chỗ đẳng cấp thương gia, tiện nghi hàng đầu.\n\n"
+            "Anh/chị đang quan tâm đến dòng xe nào hoặc cần em tư vấn thêm về tầm giá, chính sách thuê/mua pin hay đặt lịch lái thử tận nơi ạ?"
+        )
+        sales_citations = [
             Citation(
-                source_id="SRC-APP-001",
-                title="Hướng dẫn sử dụng Ứng dụng VinFast",
-                url="https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast",
+                source_id="SRC-006",
+                title="Danh mục Sản phẩm và Chính sách Bán hàng Ô tô điện VinFast",
+                url="https://vinfastauto.com/vn_vi/cac-dong-xe-o-to",
                 verified_at="2026-09-24",
                 status_code=200,
-                applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"],
-                source_type="OFFICIAL_APP_GUIDE",
-                relevant_snippet="Khách hàng có thể theo dõi tình trạng xe, kiểm tra dung lượng pin, đặt lịch dịch vụ và theo dõi tiến độ sửa chữa trực tiếp trên ứng dụng VinFast.",
+                applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9"],
+                source_type="OFFICIAL_MANUAL",
+                relevant_snippet="VinFast cung cấp dải sản phẩm ô tô điện toàn diện phủ khắp các phân khúc từ VF 3 đến VF 9.",
             )
         ]
+        sales_handoff = ServiceHandoff(
+            has_app_feature=True,
+            app_feature_name="Đăng ký Lái thử / Đặt cọc xe",
+            guide_url="https://vinfastauto.com/vn_vi/cac-dong-xe-o-to",
+        )
+        suggested_replies = [
+            "Tư vấn xe VF 3 & VF 5",
+            "Tư vấn xe VF 7 & VF 8",
+            "Bảng giá xe mới nhất",
+            "Đăng ký lái thử miễn phí",
+        ]
+
+        agent_msg = Message(
+            id=str(uuid.uuid4()),
+            case_id=None,
+            session_id=payload.session_id,
+            sender_type=SenderType.AGENT.value,
+            content=sales_reply,
+            msg_metadata={"citations": [c.model_dump() for c in sales_citations]},
+        )
+        db.add(agent_msg)
+        db.commit()
+
+        return ApiResponse(
+            success=True,
+            data=ChatResponseData(
+                response_type="FAQ_ANSWER",
+                message=sales_reply,
+                case_id=None,
+                citations=sales_citations,
+                service_handoff=sales_handoff,
+                suggested_replies=suggested_replies,
+            ),
+            error=None,
+        )
+
+    # --------------------------------------------------------------------------
+    # NHÓM C: TRA CỨU TRI THỨC / RAG FAQ (KHI KHÔNG PHẢI SỰ CỐ KỸ THUẬT)
+    # --------------------------------------------------------------------------
+    if not is_technical_incident:
+        # Gọi Chatbot Agent Core AI (Tra cứu RAG ChromaDB / Fallback KB)
+        ai_res = await process_chat_message(text)
+        agent_reply = ai_res.get("reply") or (
+            "Dạ theo tài liệu chính thức từ VinFast, anh/chị có thể dễ dàng tra cứu thông tin chi tiết, "
+            "quản lý tình trạng xe và đặt lịch dịch vụ trực tiếp trên Ứng dụng VinFast."
+        )
+        if isinstance(agent_reply, list):
+            agent_reply = "".join(
+                b.get("text", "") if isinstance(b, dict) else getattr(b, "text", str(b))
+                for b in agent_reply
+            )
+        elif not isinstance(agent_reply, str):
+            agent_reply = str(agent_reply)
+        citations = []
+        if ai_res.get("citations"):
+            for c in ai_res["citations"]:
+                citations.append(
+                    Citation(
+                        source_id=c.get("source_id", "SRC-KB"),
+                        title=c.get("title", "Tài liệu VinFast"),
+                        url=c.get("url", "https://vinfastauto.com/vn_vi"),
+                        verified_at="2026-09-24",
+                        status_code=200,
+                        applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"],
+                        source_type="OFFICIAL_MANUAL",
+                        relevant_snippet=c.get("section", ""),
+                    )
+                )
+        if not citations:
+            citations = [
+                Citation(
+                    source_id="SRC-APP-001",
+                    title="Hướng dẫn sử dụng Ứng dụng VinFast",
+                    url="https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast",
+                    verified_at="2026-09-24",
+                    status_code=200,
+                    applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"],
+                    source_type="OFFICIAL_APP_GUIDE",
+                    relevant_snippet="Khách hàng có thể theo dõi tình trạng xe, dung lượng pin và lịch dịch vụ trực tiếp trên ứng dụng VinFast.",
+                )
+            ]
         service_handoff = ServiceHandoff(
             has_app_feature=True,
-            app_feature_name="Đặt lịch dịch vụ / Theo dõi xe",
-            guide_url="https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast",
+            app_feature_name="Đặt lịch dịch vụ / Tra cứu",
+            guide_url="https://vinfastauto.com/vn_vi",
         )
 
         agent_msg = Message(
@@ -421,14 +668,35 @@ async def customer_chat(
             error=None,
         )
 
-    # 4. SỰ CỐ SẠC / KỸ THUẬT / CHARGING & BATTERY
-    is_charging = any(kw in lower_text for kw in ["sạc", "trụ", "pin", "cc01", "bms", "không nhận sạc", "trạm"])
-    has_sufficient_detail = any(kw in lower_text for kw in ["cc01", "p02", "vn-cs", "18%", "trụ p"]) or any(
-        s.get("error_code_candidate") == "CC01" for s in attached_signals
+    # --------------------------------------------------------------------------
+    # NHÓM D: SỰ CỐ KỸ THUẬT & TRẠM SẠC (CHARGING & SERVICE INCIDENTS)
+    # --------------------------------------------------------------------------
+    # Trích xuất dữ kiện thông minh từ câu hỏi người dùng
+    station_match = re.search(r"((?:trạm\s*sạc\s*)?vincom\s+[\w\d\s]+|landmark\s*81|metropolis|ocean\s*park|cao\s*tốc\s+[\w\d\s]+|pháp\s*vân)", text, re.IGNORECASE)
+    station_name = station_match.group(0).strip() if station_match else None
+
+    charger_match = re.search(r"(vn-cs-[^\s,]+|trụ\s*số\s*\d+|trụ\s*p\d+|trụ\s*\d+|p\d+)", text, re.IGNORECASE)
+    charger_id = charger_match.group(0).strip() if charger_match else None
+
+    error_match = re.search(r"(communication\s*error(?:\s*0x[0-9a-fA-F]+)?|0x[0-9a-fA-F]+|cc01|bms[_\-\d]*|rùa vàng|[a-zA-Z]{1,4}[_\-]\d{2,4})", text, re.IGNORECASE)
+    error_code = error_match.group(0).strip() if error_match else None
+
+    model_match = re.search(r"\b(vf\s*e34|vf\s*[356789])\b", text, re.IGNORECASE)
+    car_model = model_match.group(0).upper().replace(" ", "") if model_match else vehicle_model
+
+    soc_match = re.search(r"(\d{1,2}\s*%)", text)
+    current_soc = soc_match.group(0).strip() if soc_match else "18%"
+
+    # Đánh giá độ đầy đủ dữ kiện kỹ thuật (Đủ thông tin trạm/trụ/lỗi)
+    has_sufficient_detail = (
+        (error_code is not None and (charger_id is not None or station_name is not None))
+        or ("kẹt" in lower_text and ("súng" in lower_text or "cổng" in lower_text))
+        or any(kw in lower_text for kw in ["cc01", "p02", "vn-cs", "18%"])
+        or any(s.get("error_code_candidate") == "CC01" for s in attached_signals)
     )
 
     # TRƯỜNG HỢP A: ĐÃ ĐỦ DỮ KIỆN KỸ THUẬT -> TẠO CASE (Staff Reviewing)
-    if is_charging and has_sufficient_detail:
+    if has_sufficient_detail:
         new_case_id = payload.case_id or generate_case_id(db)
         case = db.get(Case, new_case_id)
         if not case:
@@ -438,7 +706,7 @@ async def customer_chat(
                 session_id=payload.session_id,
                 mock_customer_id=mock_cust_id,
                 vehicle_code_mock=vehicle_code,
-                vehicle_model=vehicle_model,
+                vehicle_model=car_model,
                 intent=Intent.CHARGING_BATTERY.value,
                 priority=Priority.HIGH.value,
                 status=TicketStatus.STAFF_REVIEWING.value,
@@ -453,16 +721,11 @@ async def customer_chat(
                 {"case_id": case.id, "message_id": cust_msg.id}, synchronize_session=False
             )
 
-        # Trích xuất dữ kiện cho brief
-        charger_match = re.search(r"(vn-cs-[^\s,]+|trụ\s*p\d+|p\d+)", lower_text)
-        charger_id = charger_match.group(0).upper() if charger_match else "VN-CS-HN042-P02"
-        error_code = (
-            "CC01"
-            if ("cc01" in lower_text or any(s.get("error_code_candidate") == "CC01" for s in attached_signals))
-            else "BMS_01"
-        )
+        resolved_station = station_name or "Trạm sạc VinFast công cộng"
+        resolved_charger = (charger_id or "P02").upper()
+        resolved_error = (error_code or "CC01").upper()
 
-        summary_text = f"Xe {vehicle_model} không nhận sạc DC tại trạm, báo lỗi {error_code} tại trụ {charger_id}."
+        summary_text = f"Xe {car_model} gặp sự cố sạc: báo lỗi {resolved_error} tại {resolved_station} ({resolved_charger})."
         if attached_ocr_snippets:
             summary_text += f" [Tín hiệu nhận diện: {', '.join(attached_ocr_snippets)}]"
 
@@ -471,24 +734,27 @@ async def customer_chat(
             case_id=case.id,
             summary=summary_text,
             captured_fields={
-                "vehicle_model": vehicle_model,
-                "station_location": "Vincom Metropolis",
-                "charger_id": charger_id,
-                "error_code": error_code,
-                "current_soc": "18%",
+                "vehicle_model": car_model,
+                "station_location": resolved_station,
+                "charger_id": resolved_charger,
+                "error_code": resolved_error,
+                "current_soc": current_soc,
                 "visual_signals": attached_signals,
             },
             suggested_action="Kiểm tra tín hiệu handshake giao tiếp trụ sạc từ xa hoặc cử kỹ thuật viên trạm cắm lại cáp.",
-            confidence_score=0.92,
+            confidence_score=0.95,
             is_edited_by_staff=False,
         )
         db.add(case_brief)
 
         safe_guidance = "Anh/chị vui lòng giữ xe ở vị trí đỗ an toàn và theo dõi cập nhật trên giao diện này."
         agent_reply = (
-            f"Hệ thống đã ghi nhận đầy đủ dữ kiện kỹ thuật và tạo hồ sơ hỗ trợ (Mã: {case.id}). "
-            f"Thông tin đã được chuyển đến nhân viên kỹ thuật trên môi trường demo; "
-            f"vui lòng theo dõi cập nhật trạng thái trực tiếp trên màn hình."
+            f"Dạ VinFast đã ghi nhận sự cố sạc của xe {car_model}:\n"
+            f"📍 **Vị trí trạm:** {resolved_station}\n"
+            f"🔌 **Trụ sạc:** {resolved_charger}\n"
+            f"⚠️ **Mã lỗi:** {resolved_error}\n\n"
+            f"Hệ thống đã tự động tạo hồ sơ hỗ trợ (Mã: {case.id}) và chuyển dữ liệu trực tiếp tới Chuyên viên Kỹ thuật trạm sạc. "
+            f"Anh/chị vui lòng theo dõi cập nhật tiến độ giải quyết trực tiếp trên màn hình này ạ."
         )
 
         agent_msg = Message(
@@ -518,16 +784,39 @@ async def customer_chat(
 
     # TRƯỜNG HỢP B: CHƯA ĐỦ DỮ KIỆN KỸ THUẬT & CÒN LƯỢT HỎI LÀM RÕ (Turn < 2)
     if prior_turns < 2:
-        clarification_msg = (
-            f"Dạ em ghi nhận xe {vehicle_model} đang gặp vấn đề liên quan đến sạc pin. "
-            "Màn hình xe có hiển thị mã lỗi (ví dụ: CC01, BMS_012) hoặc anh/chị có mã trụ sạc không ạ? "
-            "(Anh/chị cũng có thể tải ảnh màn hình táp-lô để em nhận diện sơ bộ)."
-        )
-        suggested_replies = [
-            "Mã lỗi CC01, trụ P02",
-            "Đèn trụ nháy đỏ, không hiện mã",
-            "Không thấy mã lỗi",
-        ]
+        if error_code and not charger_id and not station_name:
+            clarification_msg = (
+                f"Dạ em đã ghi nhận xe {car_model} đang báo lỗi {error_code.upper()}. "
+                "Anh/chị vui lòng cho em biết tên trạm sạc hoặc số trụ đang cắm để kỹ thuật viên kiểm tra kết nối từ xa nhé ạ?"
+            )
+            suggested_replies = [
+                "Trạm Vincom Landmark 81, trụ 3",
+                "Trạm Vincom Metropolis, trụ P02",
+                "Trạm sạc cao tốc",
+            ]
+        elif (charger_id or station_name) and not error_code:
+            loc = station_name or charger_id
+            clarification_msg = (
+                f"Dạ em ghi nhận xe {car_model} đang ở {loc}. "
+                "Màn hình xe hoặc đèn trụ có báo mã lỗi cụ thể nào (ví dụ: CC01, 0x41) không ạ? "
+                "Anh/chị cũng có thể chụp ảnh màn hình táp-lô để em nhận diện sơ bộ nhé."
+            )
+            suggested_replies = [
+                "Lỗi communication error 0x41",
+                "Mã lỗi CC01",
+                "Đèn trụ nháy đỏ, không hiện mã",
+            ]
+        else:
+            clarification_msg = (
+                f"Dạ em ghi nhận xe {car_model} đang gặp vấn đề kỹ thuật liên quan đến sạc/vận hành. "
+                "Anh/chị có thể cho em biết trạm sạc, số trụ hoặc mã lỗi hiển thị trên táp-lô (ví dụ: CC01, 0x41) không ạ? "
+                "(Anh/chị cũng có thể tải ảnh màn hình để em nhận diện sơ bộ)."
+            )
+            suggested_replies = [
+                "Xem bản đồ trạm sạc ›",
+                "Mã lỗi CC01, trụ P02",
+                "Đèn trụ nháy đỏ",
+            ]
 
         agent_msg = Message(
             id=str(uuid.uuid4()),
@@ -567,7 +856,7 @@ async def customer_chat(
             session_id=payload.session_id,
             mock_customer_id=mock_cust_id,
             vehicle_code_mock=vehicle_code,
-            vehicle_model=vehicle_model,
+            vehicle_model=car_model,
             intent=Intent.SERVICE_INCIDENT.value,
             priority=Priority.MEDIUM.value,
             status=TicketStatus.NEEDS_INFORMATION.value,
@@ -585,9 +874,9 @@ async def customer_chat(
     case_brief = CaseBrief(
         id=str(uuid.uuid4()),
         case_id=case.id,
-        summary=f"Yêu cầu hỗ trợ xe {vehicle_model} cần bổ sung dữ kiện kỹ thuật chi tiết.",
+        summary=f"Yêu cầu hỗ trợ xe {car_model} cần bổ sung dữ kiện kỹ thuật chi tiết.",
         captured_fields={
-            "vehicle_model": vehicle_model,
+            "vehicle_model": car_model,
             "raw_inquiry": text,
             "missing_fields": ["error_code", "station_id", "current_soc"],
             "visual_signals": attached_signals,

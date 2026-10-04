@@ -92,9 +92,9 @@ graph TD
 | **Contextual Clarifier** | LangGraph State Loop | Phát hiện thiếu dữ kiện cốt lõi (nhánh Service), hỏi làm rõ có ngữ cảnh và duy trì session |
 | **Vector DB (RAG)** | ChromaDB | Lưu trữ tài liệu chính hãng, FAQ xe điện, chính sách bảo hành, cẩm nang hướng dẫn sử dụng VinFast |
 | **LLM Inference** | LLM API (Structured Output) | Cấu hình linh hoạt theo môi trường (`gpt-4o-mini`, `gpt-4o`, `gemini-1.5-flash`...) |
-| **Guardrails & Safety** | Rule Engine + Sentiment Guard | Kích hoạt khi có **Safety trigger**, **Khiếu nại nhạy cảm** hoặc **Confidence thấp (< 0.75)** |
+| **Guardrails & Safety** | Rule Engine + Sentiment Guard | Kích hoạt khi có **Safety trigger**, **Khiếu nại nhạy cảm** hoặc **Score < 0.60 / Sự cố** (HITL) |
 | **Case Brief Generator** | Pydantic Schema + Prompting | Tạo Case Brief chuẩn hóa: *Sales Inquiry Brief, Charging Brief, Complaint Brief, Service Brief* |
-| **Database** | SQLite (MVP) / PostgreSQL | Lưu `source_channel`, `intent`, `priority`, `confidence`, `suggested_routing`, `brief_data`, `reviewer_feedback`, `ticket_status` |
+| **Database** | SQLite (MVP) / PostgreSQL | Lưu `source_channel`, `intent`, `priority`, `confidence_score`, `suggested_action`, `captured_fields`, `reviewer_feedback`, `status` |
 | **Service Agent Console** | React / Next.js / Tailwind | Bảng điều khiển cho Reviewer — **người quyết định cuối cùng** phê duyệt, sửa đổi và dispatch |
 
 ---
