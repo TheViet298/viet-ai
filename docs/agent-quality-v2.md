@@ -34,3 +34,40 @@ Chạy eval dưới đây với `DATABASE_URL` riêng cho từng run và tắt c
 ```
 
 Bộ 90 ca có nhãn draft và đã được dùng chẩn đoán. `acceptance_approved=false` là chủ đích; cần tập độc lập được review và đủ model coverage trước nghiệm thu. RAG v1 còn thấp; danh bạ điểm dịch vụ, auth production, Vision/OCR và hạ tầng nằm ngoài phạm vi cải thiện này.
+
+## Nâng cấp nền tảng RAG ngày 04/10/2026
+
+Context budget dùng **byte UTF-8**, không phải token Gemini: `RAG_CONTEXT_MAX_BYTES=6000`, `AGENT_CONTEXT_MAX_BYTES=8000`. Các parent/mục được chọn nguyên văn. Quá budget có category `context_budget_exceeded`; prompt giữ system/policy/câu hỏi. `token_count` và tham số `max_tokens` chỉ là alias legacy đơn vị byte. Retrieval phân biệt `NO_SOURCE`, `UNAVAILABLE`, `ERROR`, `TIMEOUT`; failure chuyển chuyên viên, không tự dùng web hoặc thêm attempt LLM.
+
+Candidate mới `data/chroma-rag-foundations-candidate` giữ 2.163 parent, index 2.168 child. Audit dùng E5 tokenizer thật: max 256 token tính cả `passage: ` và special tokens, 0 child quá giới hạn. Bốn parent quá dài được chia; parent nguyên văn lưu trong `parent-map.json`. Citation giữ `chunk_id` child và `parent_chunk_id`; registry/model/variant/distance/an toàn/budget kiểm tra trên bằng chứng parent.
+
+Build và audit từ kho cũ đã có, không tải hoặc phê duyệt nguồn mới:
+
+```powershell
+.\.venv\Scripts\python.exe scripts/build_rag_candidate.py --source data/chroma-quality-v4 --output data/chroma-rag-foundations-rebuild --audit-only
+.\.venv\Scripts\python.exe scripts/build_rag_candidate.py --source data/chroma-quality-v4 --output data/chroma-rag-foundations-rebuild
+```
+
+Builder từ chối output trùng/lồng source hoặc output đã có dữ liệu. Nếu build bị ngắt, chọn output mới để thử lại; không dùng index chưa có manifest/mapping hoàn chỉnh. Manifest ghi source content, model, tokenizer, child records và parent map hashes, dimension/metric/chunking version. Encoder strict từ chối passage quá 256; encoding legacy còn truncation tương thích, audit riêng chỉ ra các parent quá dài.
+
+Chạy eval với database riêng cho từng run:
+
+```powershell
+$env:DATABASE_URL='sqlite:///./.test-runs/rag-foundations-eval.db'
+$env:CHROMA_PERSIST_DIR='./data/chroma-rag-foundations-candidate'
+.\.venv\Scripts\python.exe scripts/run_agent_eval.py --offline --dataset eval/datasets/agent_acceptance_v2.jsonl --output-dir eval/results/rag-foundations/offline
+.\.venv\Scripts\python.exe scripts/check_rag_quality.py --engineering --output eval/results/rag-foundations/engineering.json
+.\.venv\Scripts\python.exe scripts/check_rag_quality.py --report eval/results/rag-foundations/offline/agent_results.json --output eval/results/rag-foundations/acceptance-gate.json
+```
+
+Engineering gate là fixture tổng hợp public, không cần KB/model local/API thật; CI upload report kể cả khi thất bại. Acceptance CLI exit 0 khi report đủ điều kiện, 1 khi chất lượng/nhãn/provenance/coverage thiếu, 2 khi input malformed. `eval/rag_gate_config.json` là ngưỡng dự án, không phải chuẩn RAGAS. Report draft hiện tại **phải fail acceptance** vì nhãn chưa approved và thiếu expected evidence IDs; Recall/Precision còn `null/unavailable`, không tạo số giả.
+
+`label-review.json` liệt kê nhãn evidence/facts cần kiểm tra. `dataset-split.json` chia ID ổn định development/holdout; bộ 90 ca đã dùng chẩn đoán nên partition này chưa thành holdout nghiệm thu độc lập. Cần bổ sung/review tập mới và đóng băng holdout trước điều chỉnh ngưỡng. Raw IDs trước/sau budget trong report hỗ trợ adapter RAGAS/judge về sau; fact/source matching deterministic không chứng minh Faithfulness ngữ nghĩa.
+
+Eval hỗ trợ `--partition development` và `--partition holdout` để chỉ chạy/aggregate nhóm được chọn; mặc định `all` giữ khả năng so sánh diagnostic hiện hữu. Report ghi partition và giới hạn độc lập. Không dùng metric nhóm holdout để chỉnh ngưỡng; tập đã xem trước cần thay bằng tập mới trước nghiệm thu.
+
+So sánh offline cùng 90 ca draft: baseline trước thay đổi grounded citation 85%; code mới + kho cũ 90%; code mới + candidate 90%. Safety recall/no-source compliance đều 100%, không ca nào đổi safety/routing/review/grounded khi chuyển kho cũ sang candidate. Candidate mean 53ms, p95 68ms (warm local offline); đây không phải benchmark tải hay SLA production.
+
+Sau khi chọn local, đặt `.env` `CHROMA_PERSIST_DIR=./data/chroma-rag-foundations-candidate` và khởi động lại backend để settings/cache dùng đường dẫn mới. Rollback đợt này về `./data/chroma-quality-v4`, khởi động lại; cả hai kho được giữ nguyên. Đây là chuyển cấu hình local, chưa có atomic alias/blue-green hoặc deployment production.
+
+Backlog: source lifecycle/freshness và thu hồi, auth/ownership/rate limiting thực, BM25/RRF/reranker benchmark, load/cost/async telemetry, cache có invalidation và rollout atomic. Chỉ thêm kỹ thuật nâng cao theo nhóm lỗi đo được.

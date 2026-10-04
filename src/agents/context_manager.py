@@ -57,15 +57,22 @@ def build_7_layer_context(state: AgentState, task_objective: str, tool_outputs: 
     )
 
 
-def token_count(text: str) -> int:
-    # Conservative UTF-8 byte budget; never undercounts a byte-level tokenizer.
+def utf8_size(text: str) -> int:
+    """Prompt storage budget in bytes, independent of provider token usage."""
     return len(text.encode("utf-8"))
 
 
-def trim_context_layers(layers: ContextLayers, max_tokens: int = 8000) -> list[BaseMessage]:
-    dynamic = {k: getattr(layers, f"{k}_context") for k in ("tool", "retrieval", "memory", "user", "task")}
+def token_count(text: str) -> int:
+    """Legacy alias: returns UTF-8 bytes, not LLM tokens."""
+    return utf8_size(text)
+
+
+def trim_context_layers(layers: ContextLayers, max_bytes: int = 8000, *, max_tokens: int | None = None) -> list[BaseMessage]:
+    if max_tokens is not None:
+        max_bytes = max_tokens  # Backward-compatible byte budget alias.
+    dynamic = {k: getattr(layers, f"{k}_context") for k in ("tool", "retrieval", "memory", "task", "user")}
     pinned = f"{layers.system_context}\n\n{layers.policy_context}"
-    if token_count(pinned) > max_tokens:
+    if utf8_size(pinned) > max_bytes:
         raise ValueError("Context budget cannot fit pinned system and policy layers")
 
     def render() -> list[BaseMessage]:
@@ -75,10 +82,12 @@ def trim_context_layers(layers: ContextLayers, max_tokens: int = 8000) -> list[B
         )
         return [SystemMessage(content=system), *([HumanMessage(content=body)] if body else [])]
 
-    for key in dynamic:
-        if sum(token_count(str(m.content)) for m in render()) <= max_tokens:
+    for key in ("tool", "memory", "task", "retrieval"):
+        if sum(utf8_size(str(m.content)) for m in render()) <= max_bytes:
             break
         dynamic[key] = ""
+    if sum(utf8_size(str(m.content)) for m in render()) > max_bytes:
+        raise ValueError("Context budget cannot fit pinned layers and user question")
     return render()
 
 

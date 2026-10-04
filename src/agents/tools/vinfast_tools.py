@@ -7,7 +7,7 @@ from src.services.rag_service import rag_service
 
 
 async def vinfast_manual_search(query: str, vehicle_model: str | None = None) -> dict:
-    """Search up to three verified official manual chunks, capped at 1,200 tokens."""
+    """Search up to three verified passages within the configured UTF-8 byte budget."""
     if not query.strip():
         return {
             "status": "INVALID_INPUT",

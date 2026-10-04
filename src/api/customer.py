@@ -202,16 +202,18 @@ async def customer_chat(
     db.add(cust_msg)
     db.flush()
 
-    # Đếm số lượt tương tác trong session này để kiểm soát clarification turn (Tối đa 2 lượt)
-    prior_turns = (
-        db.query(func.count(Message.id))
-        .filter(
-            Message.session_id == payload.session_id,
-            Message.sender_type == SenderType.CUSTOMER.value,
-        )
-        .scalar()
-        or 1
-    )
+    # Count only unanswered clarification prompts for this customer's incident.
+    prior_turns = 0
+    history = db.query(Message).filter(
+        Message.session_id == payload.session_id,
+        Message.sender_type == SenderType.AGENT.value,
+    ).order_by(Message.created_at.desc(), Message.id.desc()).all()
+    for message in history:
+        if message.case_id:
+            break
+        metadata = message.msg_metadata or {}
+        if metadata.get("response_type") == "CLARIFICATION" and metadata.get("user_id") == current_user.id:
+            prior_turns += 1
 
     # 2. KIỂM TRA HARD SAFETY RULES (Bắt buộc theo triage-and-hitl-rules.md)
     danger_keywords = ["cháy", "khói", "mất phanh", "nổ lốp", "tai nạn", "kẹt chân ga", "ngập nước đến sàn"]
@@ -546,7 +548,13 @@ async def customer_chat(
     # --------------------------------------------------------------------------
     if not is_technical_incident:
         # Gọi Chatbot Agent Core AI (Tra cứu RAG ChromaDB / Fallback KB)
-        ai_res = await process_chat_message(text)
+        ai_res = await process_chat_message(
+            text, session_id=payload.session_id, user_role="customer", owner=current_user.id,
+            client_context={
+                "vehicle_model": vehicle_model,
+                "reset_faq_context": bool(history and "citations" not in (history[0].msg_metadata or {})),
+            },
+        )
         agent_reply = ai_res.get("reply") or (
             "Dạ theo tài liệu chính thức từ VinFast, anh/chị có thể dễ dàng tra cứu thông tin chi tiết, "
             "quản lý tình trạng xe và đặt lịch dịch vụ trực tiếp trên Ứng dụng VinFast."
@@ -560,32 +568,23 @@ async def customer_chat(
             agent_reply = str(agent_reply)
         citations = []
         if ai_res.get("citations"):
+            seen_sources = set()
             for c in ai_res["citations"]:
+                if c.get("url") in seen_sources:
+                    continue
+                seen_sources.add(c.get("url"))
                 citations.append(
                     Citation(
                         source_id=c.get("source_id", "SRC-KB"),
                         title=c.get("title", "Tài liệu VinFast"),
                         url=c.get("url", "https://vinfastauto.com/vn_vi"),
-                        verified_at="2026-09-24",
-                        status_code=200,
-                        applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"],
-                        source_type="OFFICIAL_MANUAL",
-                        relevant_snippet=c.get("section", ""),
+                        verified_at=c["verified_at"],
+                        status_code=c.get("status_code", 200),
+                        applicable_models=c.get("applicable_models", []),
+                        source_type=c.get("source_type", "official_manual"),
+                        relevant_snippet=c.get("relevant_snippet", ""),
                     )
                 )
-        if not citations:
-            citations = [
-                Citation(
-                    source_id="SRC-APP-001",
-                    title="Hướng dẫn sử dụng Ứng dụng VinFast",
-                    url="https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast",
-                    verified_at="2026-09-24",
-                    status_code=200,
-                    applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"],
-                    source_type="OFFICIAL_APP_GUIDE",
-                    relevant_snippet="Khách hàng có thể theo dõi tình trạng xe, dung lượng pin và lịch dịch vụ trực tiếp trên ứng dụng VinFast.",
-                )
-            ]
         service_handoff = ServiceHandoff(
             has_app_feature=True,
             app_feature_name="Đặt lịch dịch vụ / Tra cứu",
@@ -771,7 +770,9 @@ async def customer_chat(
             sender_type=SenderType.AGENT.value,
             content=clarification_msg,
             msg_metadata={
-                "turn": prior_turns,
+                "turn": prior_turns + 1,
+                "response_type": "CLARIFICATION",
+                "user_id": current_user.id,
                 "suggested_replies": suggested_replies,
             },
         )
@@ -784,7 +785,7 @@ async def customer_chat(
                 response_type="CLARIFICATION",
                 message=clarification_msg,
                 case_id=payload.case_id,
-                clarification_turn=prior_turns,
+                clarification_turn=prior_turns + 1,
                 max_clarification_turns=2,
                 suggested_replies=suggested_replies,
             ),

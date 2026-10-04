@@ -74,7 +74,15 @@ async def structured_call(state: AgentState, prompt: str, schema: type[T]) -> T 
     from src.services.llm import get_llm
 
     try:
-        messages = trim_context_layers(build_7_layer_context(state, load_prompt(prompt)))
+        layers = build_7_layer_context(state, load_prompt(prompt))
+        try:
+            messages = trim_context_layers(layers, max_bytes=settings.agent_context_max_bytes)
+        except ValueError:
+            record_outcome(state, prompt, "context_budget_exceeded")
+            return None
+        if layers.retrieval_context and not any(layers.retrieval_context in str(m.content) for m in messages):
+            record_outcome(state, prompt, "context_budget_exceeded")
+            return None
         result = await asyncio.wait_for(
             get_llm().with_structured_output(schema, include_raw=True).ainvoke(messages), timeout=min(remaining, settings.agent_llm_timeout_s)
         )

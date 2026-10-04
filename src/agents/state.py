@@ -94,6 +94,7 @@ class AgentState(TypedDict, total=False):
     # 1. Tương thích ngược (Legacy / Boilerplate compatibility)
     # -------------------------------------------------------------
     query: str
+    resolved_query: str
     context: str
     analysis: str
     response: str
@@ -162,6 +163,7 @@ class AgentState(TypedDict, total=False):
     is_no_source: bool
     rag_distance: float | None
     retrieval_diagnostics: dict
+    retrieval_status: str
     llm_budget: dict
     fact_history: list[dict[str, Any]]
     memory_summary: str

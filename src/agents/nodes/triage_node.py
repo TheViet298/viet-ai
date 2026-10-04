@@ -67,7 +67,7 @@ def extract_fields(text: str) -> dict[str, str]:
 
 
 async def triage_node(state: AgentState) -> dict:
-    text = state.get("latest_user_message", "")
+    text = state.get("resolved_query") or state.get("latest_user_message", "")
     lower = text.lower()
     extracted = extract_fields(text)
     previous_intent = state.get("intent")

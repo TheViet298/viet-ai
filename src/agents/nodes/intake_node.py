@@ -10,6 +10,7 @@ from src.agents.nodes.triage_node import extract_fields
 from src.agents.state import AgentState
 from src.config import get_settings
 from src.services.tracer import sanitized_snapshot
+from src.services.followup_context import resolve_faq_followup
 
 
 async def intake_node(state: AgentState) -> dict:
@@ -24,6 +25,7 @@ async def intake_node(state: AgentState) -> dict:
         "llm_budget": {"deadline": time.monotonic() + get_settings().agent_turn_timeout_s, "attempts": 0},
         "retrieval_diagnostics": {},
         "query": text,
+        "resolved_query": resolve_faq_followup(text, state),
         "latest_user_message": text,
         "messages": [HumanMessage(content=text)],
         "captured_fields": facts,

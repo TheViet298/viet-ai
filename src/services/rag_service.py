@@ -12,7 +12,7 @@ from pathlib import Path
 from threading import RLock
 from urllib.parse import urlparse
 
-from src.agents.context_manager import resolve_policy_conflict, token_count
+from src.agents.context_manager import resolve_policy_conflict, utf8_size
 from src.config import get_settings
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -27,13 +27,18 @@ def words(text: str) -> set[str]:
 
 def select_supported_evidence(query: str, citations: list[dict]) -> list[dict]:
     """Preserve complete source lines and their conditions; never invent facts."""
+    from src.services.answer_evidence import answer_section
     selected = []
+    seen = set()
     for citation in citations:
         lines = citation["relevant_snippet"].splitlines()
         if not lines:
             continue
         # Chunks are bounded complete sections. Never trim required list steps.
-        excerpt = "\n".join(lines)
+        excerpt = answer_section(query, "\n".join(lines))
+        if not excerpt or excerpt in seen:
+            continue
+        seen.add(excerpt)
         selected.append({**citation, "relevant_snippet": excerpt})
     return selected
 
@@ -171,16 +176,20 @@ def valid_citation(citation: dict, model: str | None = None) -> bool:
 
 
 class RAGService:
+    @staticmethod
+    def failure(status: str, category: str) -> dict:
+        return {"status": status, "best_distance": None, "citations": [],
+                "diagnostics": {"stage": "retrieval", "category": category, "status": status.lower(), "candidates": []}}
+
     def retrieve(self, query: str, top_k: int = 3, vehicle_model: str | None = None) -> dict:
         settings = get_settings()
-        no_source = {"status": "NO_SOURCE", "best_distance": None, "citations": []}
         if not Path(settings.chroma_persist_dir, "chroma.sqlite3").is_file():
-            return no_source
+            return self.failure("UNAVAILABLE", "missing_index")
         try:
             collection = get_collection(settings.chroma_persist_dir)
             count = collection.count()
             if not count:
-                return no_source
+                return self.failure("NO_SOURCE", "empty_collection")
             candidates = 20
             source_type = requested_source_type(query)
             registry = source_registry()
@@ -215,24 +224,46 @@ class RAGService:
                 raw = collection.query(query_texts=[query], n_results=count, where=where, include=["documents", "metadatas", "distances"])
                 indices = [i for i, meta in enumerate(raw["metadatas"][0]) if model_applies(meta or {}, vehicle_model)][:candidates]
                 result = {key: [[raw[key][0][i] for i in indices]] for key in ["documents", "metadatas", "distances", "ids"]}
-            return self.filter_results(result, vehicle_model, query, min(max(1, top_k), 3))
-        except Exception:
-            return no_source
+            from src.services.rag_index import load_parent_map
+            return self.filter_results(result, vehicle_model, query, min(max(1, top_k), 3), parent_map=load_parent_map(settings.chroma_persist_dir))
+        except TimeoutError:
+            return self.failure("TIMEOUT", "timeout")
+        except Exception as error:
+            from chromadb.errors import NotFoundError
+            if isinstance(error, NotFoundError):
+                return self.failure("UNAVAILABLE", "missing_collection")
+            return self.failure("ERROR", "backend_or_schema_error")
 
     def retrieve_diagnostics(self, query: str, top_k: int = 3, vehicle_model: str | None = None) -> dict:
         return self.retrieve(query, top_k, vehicle_model)
 
-    def filter_results(self, result: dict, vehicle_model: str | None = None, query: str = "", top_k: int = 3) -> dict:
+    def filter_results(self, result: dict, vehicle_model: str | None = None, query: str = "", top_k: int = 3, *, parent_map: dict | None = None) -> dict:
         registry = source_registry()
         citations = []
         diagnostics = []
-        budget = 1200
+        initial_budget = get_settings().rag_context_max_bytes
+        budget = initial_budget
         candidates = list(zip(
             result["documents"][0], result["metadatas"][0], result["distances"][0], result["ids"][0], strict=True
         ))
         candidates = rank_candidates(query, candidates) if query else candidates
+        accepted_parents = set()
         for doc, meta, distance, chunk_id in candidates:
             meta = meta or {}
+            parent_id = meta.get("parent_chunk_id")
+            if parent_id:
+                if not parent_map or parent_id not in parent_map:
+                    raise ValueError("Missing parent evidence")
+                parent = parent_map[parent_id]
+                from src.services.rag_index import content_hash
+                child_hash = content_hash(doc)[:12]
+                if meta.get("parent_sha256") != parent.get("sha256") or not re.fullmatch(
+                    re.escape(parent_id) + r"::child:\d+:" + child_hash, chunk_id
+                ):
+                    raise ValueError("Child-parent integrity mismatch")
+                doc, meta = parent["document"], parent["metadata"]
+                if parent_id in accepted_parents:
+                    continue
             source = registry.get(meta.get("source_id"))
             approved_date = source.get("approved_urls", {}).get(meta.get("url")) if source else None
             if not source or (source["url"] != meta.get("url") and not approved_date):
@@ -248,14 +279,19 @@ class RAGService:
             if variant and source["source_type"] == "official_catalog" and variant.group().lower() not in (doc or "").lower():
                 diagnostics.append({"chunk_id": chunk_id, "reason": "variant_mismatch"})
                 continue
-            excerpt = select_supported_evidence(query, [{"relevant_snippet": doc or ""}])[0]["relevant_snippet"] if doc else ""
+            sections = select_supported_evidence(query, [{"relevant_snippet": doc or ""}])
+            if not sections:
+                reason = "procedure_goal_mismatch" if "đặt lịch" in query.casefold() and "đặt lịch" not in (doc or "").casefold() else "missing_answer_evidence"
+                diagnostics.append({"chunk_id": chunk_id, "reason": reason})
+                continue
+            excerpt = sections[0]["relevant_snippet"]
             lower_query = query.casefold()
             lower_excerpt = re.sub(r"\s*-\s*", " ", excerpt.casefold())
             subjects = [term for term in ("truyền động", "pin cao áp", "ắc quy", "lốp", "mobile service", "ngập nước", "adas") if term in lower_query]
             if any(term not in lower_excerpt for term in subjects) or (query and (not words(query) & words(excerpt) or len(words(excerpt)) < 6)):
                 diagnostics.append({"chunk_id": chunk_id, "reason": "missing_answer_subject"})
                 continue
-            procedure_requested = any(term in lower_query for term in ("cách ", "làm thế nào", "như thế nào"))
+            procedure_requested = any(term in lower_query for term in ("hướng dẫn", "cách ", "làm thế nào", "như thế nào"))
             body = "\n".join(excerpt.splitlines()[1:]).casefold()
             if procedure_requested and "đặt lịch" in lower_query and "đặt lịch" not in excerpt.splitlines()[0].casefold():
                 diagnostics.append({"chunk_id": chunk_id, "reason": "procedure_goal_mismatch"})
@@ -270,10 +306,8 @@ class RAGService:
                 if (passage_variants and not variant) or (variant and passage_variants != {variant.group().lower()}) or (requested_years and not requested_years <= years):
                     diagnostics.append({"chunk_id": chunk_id, "reason": "unresolved_applicability"})
                     continue
-            if budget < 80:
-                break
-            if token_count(excerpt) > budget:
-                diagnostics.append({"chunk_id": chunk_id, "reason": "complete_section_exceeds_budget"})
+            if utf8_size(excerpt) > budget:
+                diagnostics.append({"chunk_id": chunk_id, "reason": "context_budget_exceeded", "size_bytes": utf8_size(excerpt)})
                 continue
             snippet = excerpt
             citation = {
@@ -286,20 +320,28 @@ class RAGService:
                 "relevant_snippet": snippet,
                 "distance": distance,
             }
+            if parent_id:
+                citation["parent_chunk_id"] = parent_id
             if not valid_citation(citation, vehicle_model):
                 reason = "unsafe_content" if resolve_policy_conflict(snippet) else "distance_or_metadata"
                 diagnostics.append({"chunk_id": chunk_id, "source_id": meta["source_id"], "distance": distance, "reason": reason})
                 continue
             diagnostics.append({"chunk_id": chunk_id, "source_id": meta["source_id"], "distance": distance, "reason": "accepted"})
             citations.append(citation)
-            budget -= token_count(snippet)
+            accepted_parents.add(parent_id or chunk_id)
+            budget -= utf8_size(snippet)
             if len(citations) >= top_k or budget <= 0:
                 break
         return {
             "status": "SUCCESS" if citations else "NO_SOURCE",
             "citations": citations,
             "best_distance": min(c["distance"] for c in citations) if citations else None,
-            "diagnostics": {"candidates": diagnostics, "embedding": "collection-configured", "distance_threshold": get_settings().rag_max_distance},
+            "diagnostics": {"stage": "retrieval", "candidates": diagnostics,
+                            "candidate_parent_ids": list(dict.fromkeys((m or {}).get("parent_chunk_id", cid) for _, m, _, cid in candidates)),
+                            "selected_parent_ids": [c.get("parent_chunk_id", c["chunk_id"]) for c in citations],
+                            "embedding": "collection-configured", "distance_threshold": get_settings().rag_max_distance,
+                            "category": "success" if citations else "context_budget_exceeded" if any(d["reason"] == "context_budget_exceeded" for d in diagnostics) else "no_eligible_evidence",
+                            "context_bytes_used": initial_budget - budget, "context_bytes_remaining": budget, "context_max_bytes": initial_budget},
         }
 
 

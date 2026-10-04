@@ -55,6 +55,8 @@ async def process_chat_message(
                 for m in (conversation_history or [])
             ]
         context = sanitized_snapshot(client_context or {})
+        if context.get("reset_faq_context"):
+            state["is_rag_query"] = False
         if context.get("vehicle_model"):
             state["vehicle_model"] = context["vehicle_model"]
             state.setdefault("captured_fields", {}).setdefault("vehicle_model", context["vehicle_model"])

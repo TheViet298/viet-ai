@@ -124,7 +124,14 @@ def generate_markdown_report(metrics: dict, output_path: str | Path, mode: str =
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-async def run_evaluation_suite(output_dir: str | Path, offline: bool = False, dataset_paths: list[Path] | None = None, mode: str | None = None) -> dict:
+def partition_cases(cases: list[dict], partition: str = "all") -> list[dict]:
+    if partition not in {"all", "development", "holdout"}:
+        raise ValueError("Invalid evaluation partition")
+    return [c for c in cases if partition == "all" or
+            ("holdout" if int(sha256(c["id"].encode()).hexdigest()[:8], 16) % 5 == 0 else "development") == partition]
+
+
+async def run_evaluation_suite(output_dir: str | Path, offline: bool = False, dataset_paths: list[Path] | None = None, mode: str | None = None, partition: str = "all") -> dict:
     from src.agents.graph import agent
     from src.config import get_settings
 
@@ -142,7 +149,7 @@ async def run_evaluation_suite(output_dir: str | Path, offline: bool = False, da
         validate_acceptance_dataset(all_cases)
     labels_approved = all(c.get("label_status") == "approved" for c in all_cases)
     for path in paths:
-        cases = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        cases = partition_cases([json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()], partition)
         for case in cases:
             kind = case.get("kind") or ("triage" if "input" in case else "rag")
             text = case["input"] if kind == "triage" else case["query"]
@@ -190,6 +197,12 @@ async def run_evaluation_suite(output_dir: str | Path, offline: bool = False, da
                     else "answer",
                     grounded=grounded_answer(case, out),
                 )
+                from eval.rag_measurement import measure_evidence
+                expected_ids = case.get("expected_evidence_ids")
+                diagnostics = out.get("retrieval_diagnostics", {})
+                record["evidence_before_budget"] = measure_evidence(expected_ids, diagnostics.get("candidate_parent_ids", []), 20)
+                record["evidence_after_budget"] = measure_evidence(expected_ids, diagnostics.get("selected_parent_ids", []), 3)
+                record["label_status"] = case.get("label_status", "unavailable")
             results.append(record)
     metrics = compute_evaluation_metrics(results)
     output = Path(output_dir)
@@ -202,6 +215,8 @@ async def run_evaluation_suite(output_dir: str | Path, offline: bool = False, da
     node_events = [e for e in events if e["kind"] == "node" and e["session_id"].startswith(f"eval-{run_id}-")]
     metadata = {
         "mode": selected_mode,
+        "partition": partition,
+        "holdout_independence": "not_established: dataset previously inspected; requires fresh independently reviewed cases",
         "model": settings.model_name,
         "datasets": {str(p.relative_to(PROJECT_ROOT)) if p.is_relative_to(PROJECT_ROOT) else p.name: sha256(p.read_bytes()).hexdigest() for p in paths},
         "prompt_hashes": {p.name: sha256(p.read_bytes()).hexdigest() for p in (PROJECT_ROOT / "prompts").glob("*.md")},
@@ -217,9 +232,36 @@ async def run_evaluation_suite(output_dir: str | Path, offline: bool = False, da
         "latency_p50_s": sorted(r["latency_s"] for r in results)[len(results) // 2] if results else None,
         "latency_p95_s": sorted(r["latency_s"] for r in results)[min(len(results) - 1, int(len(results) * 0.95))] if results else None,
     }
+    from src.services.rag_index import content_hash
+    manifest = metadata["kb_version"]
+    model_dir = PROJECT_ROOT / "data/models/multilingual-e5-small"
+    model_file = model_dir / "onnx/model_quantized.onnx"
+    metadata["provenance"] = {
+        "kb": metadata["kb_content_sha256"],
+        "model": manifest.get("model_sha256") or (sha256(model_file.read_bytes()).hexdigest() if model_file.is_file() else None),
+        "prompt": content_hash(metadata["prompt_hashes"]), "dataset": content_hash(metadata["datasets"]),
+        "mapping": manifest.get("parent_map_sha256") or content_hash({"legacy_identity_mapping": metadata["kb_content_sha256"]}),
+        "config": content_hash({"rag_max_distance": settings.rag_max_distance, "rag_context_max_bytes": settings.rag_context_max_bytes,
+                                "agent_context_max_bytes": settings.agent_context_max_bytes, "mode": selected_mode,
+                                "generation_model": settings.model_name, "temperature": settings.llm_temperature}),
+    }
+    measured = [r["evidence_after_budget"] for r in results if r.get("evidence_after_budget", {}).get("status") == "measured"]
+    metrics.update(evidence_recall_at_3=sum(m["recall"] for m in measured) / len(measured) if measured else None,
+                   evidence_precision_at_3=sum(m["precision"] for m in measured) / len(measured) if measured else None,
+                   grounded_answer_rate=metrics["top_k_grounded_citation_rate"])
+    coverage = {**metrics["denominators"], "evidence_labeled": len(measured)}
     (output / "agent_results.json").write_text(
-        json.dumps({"metrics": metrics, "metadata": metadata, "cases": results}, indent=2, ensure_ascii=False), encoding="utf-8"
+        json.dumps({"report_version": 1, "gate_kind": "acceptance", "metrics": metrics, "metadata": metadata, "coverage": coverage, "cases": results}, indent=2, ensure_ascii=False), encoding="utf-8"
     )
+    review_items = [{"id": c["id"], "label_status": c.get("label_status", "unavailable"),
+                     "review_fields": ["expected_evidence_ids", "required_answer_facts", "expected_response_type"],
+                     "expected_evidence_ids": c.get("expected_evidence_ids"), "required_answer_facts": c.get("required_answer_facts")}
+                    for c in all_cases if c.get("kind") == "rag"]
+    split = {"development": [], "holdout": [], "note": "Diagnostic partition only; draft labels require independent approval. Do not tune on holdout."}
+    for case in all_cases:
+        split["holdout" if int(sha256(case["id"].encode()).hexdigest()[:8], 16) % 5 == 0 else "development"].append(case["id"])
+    (output / "label-review.json").write_text(json.dumps(review_items, ensure_ascii=False, indent=2), encoding="utf-8")
+    (output / "dataset-split.json").write_text(json.dumps(split, ensure_ascii=False, indent=2), encoding="utf-8")
     generate_markdown_report(
         metrics,
         output / "agent_report.md",
@@ -236,5 +278,6 @@ if __name__ == "__main__":
     parser.add_argument("--output-dir", default=str(PROJECT_ROOT / "eval/results/agent"))
     parser.add_argument("--mode", choices=["offline", "online", "provider_failure"])
     parser.add_argument("--dataset", action="append", type=Path)
+    parser.add_argument("--partition", choices=["all", "development", "holdout"], default="all")
     args = parser.parse_args()
-    print(json.dumps(asyncio.run(run_evaluation_suite(args.output_dir, args.offline, args.dataset, args.mode)), indent=2))
+    print(json.dumps(asyncio.run(run_evaluation_suite(args.output_dir, args.offline, args.dataset, args.mode, args.partition)), indent=2))

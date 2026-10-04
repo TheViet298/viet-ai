@@ -61,6 +61,11 @@ class MultilingualE5(EmbeddingFunction[Documents]):
     def __call__(self, input: Documents):
         return self._encode(list(input), "passage: ")
 
+    def encode_passages_strict(self, texts: list[str], audit_tokenizer):
+        if any(len(audit_tokenizer.encode("passage: " + text).ids) > 256 for text in texts):
+            raise ValueError("Passage exceeds E5 token limit")
+        return self._encode(texts, "passage: ")
+
     def embed_query(self, input: Documents):
         return self._encode(list(input), "query: ")
 
