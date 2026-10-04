@@ -1,0 +1,797 @@
+[
+  {
+    "id": "vfe34-tpms-rapid-leak",
+    "vehicle_model": "VinFast VF e34",
+    "vehicle_segment": "C-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "rapid_leak",
+    "warning_name_vi": "Cảnh báo rò rỉ áp suất lốp nhanh",
+    "warning_name_en": "Rapid Tire Pressure Leakage Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "solid",
+    "dashboard_display_text": "Cảnh báo lốp rò rỉ áp suất nhanh / Giảm áp suất đột ngột",
+    "severity": "HIGH",
+    "risk_level_explanation": "Áp suất lốp tụt dốc nhanh báo hiệu lốp bị cán đinh hoặc rách vỏ. Nếu xe đang di chuyển tốc độ cao có thể dẫn đến mất lái, lật xe hoặc hỏng mâm vành.",
+    "visual_clues": {
+      "icon_description": "Biểu tượng mặt cắt lốp xe kèm dấu chấm than ở giữa sáng màu vàng hổ phách, kèm đồ họa xe với bánh xe tương ứng chuyển sang màu vàng hoặc đỏ rực.",
+      "display_location": "Màn hình người lái 7 inch (Cluster Display) và thông báo dạng pop-up trên màn hình giải trí trung tâm 10 inch.",
+      "text_ocr_patterns": ["Rò rỉ áp suất", "Áp suất giảm nhanh", "TPMS Warning", "Tire Leakage"]
+    },
+    "immediate_actions": [
+      "Bình tĩnh giữ chắc vô lăng, nhả nhẹ bàn đạp ga, không phanh gấp hay đánh lái đột ngột.",
+      "Bật đèn báo nguy hiểm (hazard) và tấp xe an toàn vào lề đường bên phải hoặc làn dừng khẩn cấp.",
+      "Về số P, kích hoạt phanh tay điện tử và đặt tam giác phản quang cảnh báo cách đuôi xe 50-100m.",
+      "Kiểm tra lốp xe: nếu thủng hoàn toàn, sử dụng bộ keo vá lốp khẩn cấp đi kèm hoặc gọi hotline cứu hộ VinFast 1900 23 23 89."
+    ],
+    "chatbot_response_template": "⚠️ CẢNH BÁO AN TOÀN: Tôi nhận thấy cụm táp-lô hiển thị cảnh báo 'Rò rỉ áp suất lốp nhanh' trên xe VinFast VF e34 (Mức độ: HIGH - Cần xử lý khẩn trương).\n\nBạn hãy thực hiện ngay các bước sau:\n1. Giữ chắc vô lăng, nhả ga từ từ, TUYỆT ĐỐI không đạp phanh gấp.\n2. Bật đèn khẩn cấp (hazard) và tấp xe từ từ vào lề đường hoặc làn dừng khẩn cấp.\n3. Về P, kéo phanh tay, xuống xe kiểm tra lốp bị rò rỉ.\n4. Nếu lốp xẹp hẳn, không tiếp tục di chuyển để tránh hỏng vành mâm. Bạn có thể dùng bộ kit bơm vá khẩn cấp hoặc liên hệ Hotline cứu hộ VinFast 24/7: 1900 23 23 89 để được hỗ trợ.",
+    "requires_staff_review": true,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Mục 3: Cảnh báo áp suất lốp trên VF e34 - Rò rỉ áp suất",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://static-cms-prod.vinfastauto.com/ky-hieu-canh-bao-loi-ap-suat-lop-tren-vf-e34_1652457282.jpg",
+      "image_type": "dashboard_cluster_photo",
+      "source_status": "vinfast_official_cms_reference"
+    }
+  },
+  {
+    "id": "vfe34-tpms-low-pressure",
+    "vehicle_model": "VinFast VF e34",
+    "vehicle_segment": "C-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "low_pressure",
+    "warning_name_vi": "Cảnh báo áp suất lốp thấp",
+    "warning_name_en": "Low Tire Pressure Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "solid",
+    "dashboard_display_text": "Áp suất lốp thấp / Kiểm tra áp suất lốp",
+    "severity": "MEDIUM",
+    "risk_level_explanation": "Áp suất của một hoặc nhiều bánh xe thấp hơn tiêu chuẩn quy định (>20%). Xe vẫn di chuyển được nhưng tăng lực cản lăn, tốn pin, mòn lốp không đều và giảm độ bám khi vào cua.",
+    "visual_clues": {
+      "icon_description": "Biểu tượng hình vành móng ngựa có gai lốp và dấu chấm than bên trong sáng màu vàng hổ phách sáng liên tục.",
+      "display_location": "Góc trên bảng đồng hồ 7 inch và hiển thị giá trị áp suất bar/psi màu vàng tại vị trí lốp tương ứng.",
+      "text_ocr_patterns": ["Áp suất thấp", "Low Pressure", "Kiểm tra lốp"]
+    },
+    "immediate_actions": [
+      "Duy trì tốc độ vừa phải, quan sát cảm giác lái xem xe có bị nhao lái về một bên hay không.",
+      "Di chuyển đến điểm dừng chân an toàn, trạm sạc hoặc cây xăng gần nhất có trang bị máy bơm đo áp suất.",
+      "Kiểm tra áp suất thực tế 4 lốp khi lốp nguội; bơm bổ sung về áp suất khuyến nghị (ghi trên tem khung cửa B-pillar).",
+      "Nếu bơm xong và lái xe khoảng 5-10 phút mà đèn không tắt, cần kiểm tra van và bề mặt lốp xem có dị vật găm vào không."
+    ],
+    "chatbot_response_template": "Chào bạn, qua hình ảnh táp-lô VinFast VF e34, xe đang báo đèn cảnh báo 'Áp suất lốp thấp' (Mức độ: MEDIUM - Cần kiểm tra).\n\nKhuyến nghị xử lý:\n- Bạn vẫn có thể tiếp tục lái xe ở tốc độ vừa phải, tránh ôm cua gắt.\n- Tìm điểm đỗ an toàn hoặc trạm dừng/trạm dịch vụ gần nhất để đo lại áp suất 4 bánh.\n- Bơm bổ sung khí đúng theo thông số tiêu chuẩn dán tại trụ cửa lái (thường khoảng 2.3 - 2.5 bar tùy tải trọng).\n- Sau khi bơm đủ, hệ thống TPMS sẽ tự cập nhật và tắt đèn cảnh báo sau vài phút di chuyển.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Mục 3: Cảnh báo áp suất lốp trên VF e34 - Áp suất thấp",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://static-cms-prod.vinfastauto.com/ap-suat-lop-1_1652627856.png",
+      "image_type": "symbol_icon",
+      "source_status": "vinfast_official_cms_reference"
+    }
+  },
+  {
+    "id": "vfe34-tpms-over-pressure",
+    "vehicle_model": "VinFast VF e34",
+    "vehicle_segment": "C-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "over_pressure",
+    "warning_name_vi": "Cảnh báo áp suất lốp quá cao",
+    "warning_name_en": "High Tire Overpressure Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "solid",
+    "dashboard_display_text": "Áp suất lốp quá cao / Cảnh báo áp suất cao",
+    "severity": "MEDIUM",
+    "risk_level_explanation": "Áp suất lốp vượt ngưỡng khuyến nghị tối đa (thường do bơm thừa hoặc chạy đường trường liên tục trong điều kiện nhiệt độ mặt đường quá nóng). Giảm diện tích tiếp xúc mặt đường, xóc nảy, giảm hiệu quả phanh và nguy cơ nổ lốp.",
+    "visual_clues": {
+      "icon_description": "Biểu tượng đèn TPMS vàng sáng kèm giá trị số áp suất tại bánh xe trên màn hình hiển thị màu vàng cam (ví dụ > 2.8 - 3.0 bar).",
+      "display_location": "Bảng đồng hồ táp-lô và thông báo trên màn hình điều khiển trung tâm.",
+      "text_ocr_patterns": ["Áp suất quá cao", "High Pressure", "Áp suất cao"]
+    },
+    "immediate_actions": [
+      "Giảm tốc độ vận hành, hạn chế phanh gấp hoặc chở quá tải.",
+      "Đỗ xe vào khu vực có bóng râm mát để lốp hạ nhiệt và áp suất tự giảm.",
+      "TUYỆT ĐỐI KHÔNG xả van giảm áp ngay khi lốp đang rất nóng.",
+      "Khi lốp đã nguội hoàn toàn về nhiệt độ môi trường, kiểm tra lại và điều chỉnh khí về đúng mức khuyến nghị."
+    ],
+    "chatbot_response_template": "Hình ảnh táp-lô cho thấy xe VinFast VF e34 đang cảnh báo 'Áp suất lốp quá cao' (Mức độ: MEDIUM - Cần kiểm tra).\n\nNguyên nhân thường do bơm quá căng hoặc nhiệt độ mặt đường nắng nóng làm áp suất giãn nở.\nBạn nên:\n1. Giảm tốc độ, tránh phóng nhanh vượt ẩu.\n2. Đỗ xe nơi râm mát để lốp nguội tự nhiên (lưu ý: KHÔNG xả hơi khi lốp đang nóng rẫy vì sẽ làm sai lệch áp suất chuẩn).\n3. Khi lốp đã nguội, dùng đồng hồ đo và xả bớt khí về mức tiêu chuẩn ghi tại bệ cửa lái.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Mục 3: Cảnh báo áp suất lốp trên VF e34 - Áp suất quá cao",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://static-cms-prod.vinfastauto.com/ky-hieu-canh-bao-loi-ap-suat-lop-tren-vf-e34_1652457282.jpg",
+      "image_type": "dashboard_cluster_photo",
+      "source_status": "vinfast_official_cms_reference"
+    }
+  },
+  {
+    "id": "vfe34-tpms-high-temperature",
+    "vehicle_model": "VinFast VF e34",
+    "vehicle_segment": "C-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "high_temperature",
+    "warning_name_vi": "Cảnh báo nhiệt độ lốp cao",
+    "warning_name_en": "High Tire Temperature Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "solid",
+    "dashboard_display_text": "Nhiệt độ lốp cao / Cảnh báo nhiệt độ lốp vượt ngưỡng",
+    "severity": "MEDIUM",
+    "risk_level_explanation": "Nhiệt độ bên trong lốp vượt quá ngưỡng an toàn (>75°C - 80°C), thường phát sinh khi chạy tải nặng đường dài dưới trời nắng gắt hoặc lốp bị non hơi ma sát lớn. Nguy cơ biến dạng kết cấu sợi mành và nổ lốp.",
+    "visual_clues": {
+      "icon_description": "Biểu tượng cảnh báo nhiệt độ kèm thông số nhiệt độ (°C) hiển thị màu vàng cam tại bánh xe bị quá nhiệt trên giao diện màn hình.",
+      "display_location": "Màn hình đa thông tin người lái và thông báo pop-up trung tâm.",
+      "text_ocr_patterns": ["Nhiệt độ lốp cao", "High Temp", "Nhiệt độ vượt ngưỡng", "°C"]
+    },
+    "immediate_actions": [
+      "Chủ động giảm tốc độ hành trình, tìm trạm dừng nghỉ hoặc lề đường an toàn có bóng râm.",
+      "Dừng xe tắt máy khoảng 30-45 phút để lốp tự hạ nhiệt về nhiệt độ môi trường.",
+      "TUYỆT ĐỐI KHÔNG dội nước lạnh trực tiếp vào lốp (nguy cơ sốc nhiệt gây nứt vỡ cao su và cong vênh đĩa phanh).",
+      "Kiểm tra xem lốp có bị non hơi hay không trước khi tiếp tục hành trình."
+    ],
+    "chatbot_response_template": "Táp-lô xe VF e34 đang hiển thị cảnh báo 'Nhiệt độ lốp cao' (Mức độ: MEDIUM - Có nguy cơ an toàn nếu tiếp tục chạy nhanh).\n\nKhuyến cáo an toàn:\n- Hãy tìm nơi dừng đỗ an toàn có bóng mát để xe nghỉ ngơi khoảng 30-45 phút cho lốp nguội tự nhiên.\n- TUYỆT ĐỐI KHÔNG tạt nước lạnh vào lốp xe hoặc đĩa phanh vì sẽ gây sốc nhiệt làm biến dạng kim loại và rách nứt cao su lốp.\n- Khi lốp nguội, hãy kiểm tra áp suất bánh xe vì lốp non hơi là nguyên nhân chính khiến nhiệt độ tăng vọt.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Mục 3: Cảnh báo áp suất lốp trên VF e34 - Nhiệt độ lốp cao",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://static-cms-prod.vinfastauto.com/ky-hieu-canh-bao-loi-ap-suat-lop-tren-vf-e34_1652457282.jpg",
+      "image_type": "dashboard_cluster_photo",
+      "source_status": "vinfast_official_cms_reference"
+    }
+  },
+  {
+    "id": "vfe34-tpms-sensor-fault",
+    "vehicle_model": "VinFast VF e34",
+    "vehicle_segment": "C-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "sensor_fault",
+    "warning_name_vi": "Cảnh báo lỗi cảm biến áp suất lốp",
+    "warning_name_en": "Tire Pressure Sensor Communication Fault",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "blink_then_solid",
+    "dashboard_display_text": "Lỗi cảm biến áp suất lốp / Mất tín hiệu cảm biến lốp",
+    "severity": "MEDIUM",
+    "risk_level_explanation": "Đầu cảm biến tại van bánh xe bị hư hỏng cơ học, nhiễu tần số vô tuyến hoặc mất kết nối tín hiệu với bộ thu TPMS. Xe không đo được áp suất thực của bánh đó.",
+    "visual_clues": {
+      "icon_description": "Đèn TPMS màu vàng nhấp nháy trong khoảng 1 phút khi bật xe, sau đó chuyển sang sáng liên tục; trên màn hình hiển thị gạch ngang '--' hoặc icon cảm biến bị gạch chéo tại vị trí bánh xe lỗi.",
+      "display_location": "Bảng đồng hồ táp-lô và màn hình trung tâm.",
+      "text_ocr_patterns": ["Lỗi cảm biến", "Mất tín hiệu", "Sensor Error", "-- bar", "-- psi"]
+    },
+    "immediate_actions": [
+      "Xe vẫn có thể tiếp tục di chuyển an toàn nhưng không được chủ quan vì hệ thống đang mù áp suất tại bánh xe này.",
+      "Kiểm tra tình trạng vật lý của bánh xe bằng mắt thường hoặc dùng đồng hồ đo áp suất cơ cầm tay.",
+      "Lên lịch hẹn kiểm tra và thay thế/ghép nối lại cảm biến tại xưởng dịch vụ VinFast."
+    ],
+    "chatbot_response_template": "Hình ảnh táp-lô cho thấy xe VinFast VF e34 đang cảnh báo 'Lỗi cảm biến áp suất lốp' (Mức độ: MEDIUM - Cần kiểm tra).\n\nHiện tượng: Đèn cảnh báo TPMS nhấp nháy khoảng 1 phút rồi sáng liên tục, kèm giá trị hiển thị gạch ngang (--).\nKhuyến nghị:\n- Xe vẫn vận hành bình thường, nhưng bạn nên dùng đồng hồ đo cơ kiểm tra lại độ căng của lốp.\n- Bạn hãy sắp xếp thời gian đưa xe đến Xưởng dịch vụ VinFast gần nhất để kỹ thuật viên kiểm tra van cảm biến hoặc quét lại mã kết nối.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Mục 3: Cảnh báo áp suất lốp trên VF e34 - Lỗi cảm biến",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://static-cms-prod.vinfastauto.com/ap-suat-lop-5_1652627955.png",
+      "image_type": "symbol_icon",
+      "source_status": "vinfast_official_cms_reference"
+    }
+  },
+  {
+    "id": "vfe34-tpms-sensor-battery-low",
+    "vehicle_model": "VinFast VF e34",
+    "vehicle_segment": "C-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "sensor_battery_low",
+    "warning_name_vi": "Cảnh báo pin cảm biến lốp yếu",
+    "warning_name_en": "Tire Sensor Battery Low Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "solid",
+    "dashboard_display_text": "Pin cảm biến lốp thấp / Yêu cầu bảo dưỡng cảm biến",
+    "severity": "LOW",
+    "risk_level_explanation": "Pin lithium tích hợp trong đầu van cảm biến áp suất sắp cạn năng lượng (tuổi thọ thường từ 3 đến 5 năm). Chưa gây mất dữ liệu ngay nhưng sắp sửa mất tín hiệu.",
+    "visual_clues": {
+      "icon_description": "Biểu tượng pin yếu hoặc thông báo chữ hiển thị trong danh mục cài đặt thông tin lốp của màn hình trung tâm.",
+      "display_location": "Màn hình giải trí trung tâm trong mục Cài đặt xe / Áp suất lốp.",
+      "text_ocr_patterns": ["Pin cảm biến yếu", "Pin thấp", "Low Sensor Battery"]
+    },
+    "immediate_actions": [
+      "Không ảnh hưởng tức thì đến an toàn chuyến đi hiện tại.",
+      "Ghi chú lại để thông báo cho cố vấn dịch vụ trong lần bảo dưỡng định kỳ tiếp theo của xe tại VinFast."
+    ],
+    "chatbot_response_template": "Xe VinFast VF e34 đang hiển thị thông báo 'Pin cảm biến lốp thấp' (Mức độ: LOW - Thông tin bảo dưỡng).\n\nThông báo này cho biết pin trong đầu cảm biến lốp sau thời gian dài sử dụng (3-5 năm) đã yếu dần.\nBạn vẫn an tâm lái xe bình thường và có thể đăng ký thay thế cảm biến trong đợt bảo dưỡng xe sắp tới tại xưởng dịch vụ VinFast.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Mục 3: Cảnh báo áp suất lốp trên VF e34 - Pin cảm biến thấp",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://static-cms-prod.vinfastauto.com/ky-hieu-canh-bao-loi-ap-suat-lop-tren-vf-e34_1652457282.jpg",
+      "image_type": "dashboard_cluster_photo",
+      "source_status": "vinfast_official_cms_reference"
+    }
+  },
+  {
+    "id": "vfe34-tpms-system-error",
+    "vehicle_model": "VinFast VF e34",
+    "vehicle_segment": "C-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "tpms_system_error",
+    "warning_name_vi": "Cảnh báo lỗi toàn bộ hệ thống theo dõi áp suất lốp",
+    "warning_name_en": "TPMS Overall System Malfunction Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "blink_then_solid",
+    "dashboard_display_text": "Kiểm tra hệ thống TPMS / Lỗi hệ thống theo dõi áp suất lốp",
+    "severity": "MEDIUM",
+    "risk_level_explanation": "Bộ điều khiển trung tâm TPMS (ECU/BCM) gặp lỗi phần cứng, mất liên lạc mạng CAN hoặc lỗi phần mềm tổng thể. Toàn bộ 4 bánh đều không được bảo vệ.",
+    "visual_clues": {
+      "icon_description": "Đèn cảnh báo TPMS nhấp nháy liên tục 1 phút rồi sáng giữ nguyên; màn hình trung tâm hiện pop-up cảnh báo lỗi toàn bộ hệ thống theo dõi áp suất lốp.",
+      "display_location": "Bảng đồng hồ táp-lô và thông báo hệ thống trung tâm.",
+      "text_ocr_patterns": ["Kiểm tra TPMS", "Lỗi hệ thống", "TPMS System Failure", "Check TPMS"]
+    },
+    "immediate_actions": [
+      "Thử tắt máy, khóa xe, đợi khoảng 3 phút rồi khởi động lại xe xem hệ thống có tự phục hồi không.",
+      "Nếu cảnh báo tiếp tục xuất hiện, hãy tự kiểm tra định kỳ 4 lốp bằng mắt thường và đồng hồ cơ.",
+      "Đặt lịch hẹn qua ứng dụng VinFast hoặc hotline để kỹ thuật viên kiểm tra hộp điều khiển TPMS."
+    ],
+    "chatbot_response_template": "Hình ảnh cho thấy xe VinFast VF e34 gặp 'Lỗi hệ thống theo dõi áp suất lốp' (Mức độ: MEDIUM - Cần kiểm tra kỹ thuật).\n\nHệ thống giám sát lốp tạm thời không hoạt động. Bạn hãy thực hiện:\n1. Thử tắt xe, khóa cửa trong 3-5 phút rồi khởi động lại để hệ thống khởi tạo lại.\n2. Nếu đèn TPMS vẫn nhấp nháy rồi sáng liên tục, bạn nên chủ động kiểm tra bằng mắt tình trạng 4 bánh xe và đưa xe đến Xưởng dịch vụ VinFast để kỹ thuật viên dùng máy chẩn đoán quét mã lỗi chuyên sâu.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Mục 3: Cảnh báo áp suất lốp trên VF e34 - Lỗi hệ thống theo dõi áp suất",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://static-cms-prod.vinfastauto.com/ky-hieu-canh-bao-loi-ap-suat-lop-tren-vf-e34_1652457282.jpg",
+      "image_type": "dashboard_cluster_photo",
+      "source_status": "vinfast_official_cms_reference"
+    }
+  },
+  {
+    "id": "vf8-tpms-rapid-leak",
+    "vehicle_model": "VinFast VF 8",
+    "vehicle_segment": "D-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "rapid_leak",
+    "warning_name_vi": "Cảnh báo rò rỉ áp suất lốp nhanh",
+    "warning_name_en": "Rapid Tire Pressure Leakage Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "solid",
+    "dashboard_display_text": "Cảnh báo giảm áp suất lốp nhanh / Nguy cơ thủng lốp",
+    "severity": "HIGH",
+    "risk_level_explanation": "Xe điện phân khúc D tự trọng lớn (khoảng 2.6 tấn). Khi rò rỉ áp suất nhanh ở tốc độ cao, vành mâm 19-20 inch rất dễ tiếp xúc mặt đường gây hư hỏng nghiêm trọng hoặc mất kiểm soát cân bằng điện tử.",
+    "visual_clues": {
+      "icon_description": "Biểu tượng đèn TPMS vàng trên góc màn hình trung tâm 15.6 inch và màn hình HUD kính lái; đồ họa xe hiển thị bánh xe đỏ kèm cảnh báo âm thanh bíp dồn dập.",
+      "display_location": "Màn hình trung tâm 15.6 inch và màn hình hiển thị kính lái HUD.",
+      "text_ocr_patterns": ["Tire Leak", "Áp suất giảm nhanh", "Rò rỉ áp suất lốp", "TPMS"]
+    },
+    "immediate_actions": [
+      "Giữ vững tay lái hai tay, nhả chân ga từ từ, không đạp mạnh phanh.",
+      "Bật đèn báo nguy khẩn cấp (hazard) và quan sát gương để chuyển làn an toàn vào lề phải/làn khẩn cấp.",
+      "Chuyển về số P, kéo phanh tay điện tử và rời khỏi xe đến vị trí an toàn phía sau rào chắn hộ lan.",
+      "Liên hệ ngay Tổng đài cứu hộ VinFast 1900 23 23 89."
+    ],
+    "chatbot_response_template": "⚠️ CẢNH BÁO AN TOÀN CAO: Màn hình trung tâm / HUD xe VinFast VF 8 đang báo 'Rò rỉ áp suất lốp nhanh' (Mức độ: HIGH - Nguy cơ mất an toàn).\n\nXe VF 8 có trọng tải lớn, bạn cần hành động ngay:\n1. Bình tĩnh nhả ga từ từ, giữ chắc vô lăng, KHÔNG phanh gấp.\n2. Bật xi-nhan/đèn hazard tấp vào lề đường an toàn.\n3. Về P và kiểm tra bánh xe bị báo đỏ trên màn hình.\n4. Không cố di chuyển tiếp để bảo vệ mâm vành và hệ thống treo. Hãy gọi ngay Hotline cứu hộ VinFast: 1900 23 23 89.",
+    "requires_staff_review": true,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/he-thong-giam-sat-ap-suat-lop-o-to-vinfast-vf-8",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Hệ thống giám sát áp suất lốp VinFast VF 8 - Cảnh báo khẩn cấp",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://vinfastauto.com/vn_vi/he-thong-giam-sat-ap-suat-lop-o-to-vinfast-vf-8",
+      "image_type": "central_display_screenshot",
+      "source_status": "vinfast_official_portal_reference"
+    }
+  },
+  {
+    "id": "vf8-tpms-low-pressure",
+    "vehicle_model": "VinFast VF 8",
+    "vehicle_segment": "D-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "low_pressure",
+    "warning_name_vi": "Cảnh báo áp suất lốp thấp",
+    "warning_name_en": "Low Tire Pressure Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "solid",
+    "dashboard_display_text": "Áp suất lốp thấp / Áp suất lốp dưới mức tiêu chuẩn",
+    "severity": "MEDIUM",
+    "risk_level_explanation": "Áp suất lốp dưới mức khuyến nghị tiêu chuẩn (khoảng 2.6 - 2.8 bar theo thông số VF 8). Ảnh hưởng tới quãng đường chạy pin và độ mòn lốp.",
+    "visual_clues": {
+      "icon_description": "Biểu tượng TPMS vàng hổ phách hiển thị trên thanh trạng thái phía trên màn hình trung tâm 15.6 inch và thông số bar của bánh xe chuyển màu vàng.",
+      "display_location": "Thanh trạng thái và widget Trạng thái xe trên màn hình 15.6 inch.",
+      "text_ocr_patterns": ["Áp suất thấp", "Low Pressure", "Kiểm tra lốp xe"]
+    },
+    "immediate_actions": [
+      "Kiểm tra trị số áp suất từng bánh trên widget màn hình trung tâm.",
+      "Di chuyển đến điểm bơm lốp gần nhất, bơm đủ theo thông số tem B-pillar (2.6 - 2.8 bar).",
+      "Kiểm tra lại sau khi chạy vài phút để hệ thống tự hiệu chỉnh."
+    ],
+    "chatbot_response_template": "Hình ảnh màn hình VinFast VF 8 đang báo 'Áp suất lốp thấp' (Mức độ: MEDIUM - Cần kiểm tra).\n\nKhuyến nghị cho bạn:\n- Xem trực tiếp thông số áp suất (bar/psi) trên màn hình 15.6 inch để biết bánh nào đang non hơi.\n- Lái xe ở tốc độ ổn định tới điểm có máy bơm lốp.\n- Bơm bổ sung khí đúng chuẩn dán tại khung cửa ghế lái (thường là 2.6 - 2.8 bar cho VF 8).\n- Đèn cảnh báo sẽ tự động tắt sau khi bạn di chuyển một đoạn ngắn.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/he-thong-giam-sat-ap-suat-lop-o-to-vinfast-vf-8",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Hệ thống giám sát áp suất lốp VinFast VF 8 - Áp suất thấp",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://vinfastauto.com/vn_vi/he-thong-giam-sat-ap-suat-lop-o-to-vinfast-vf-8",
+      "image_type": "central_display_screenshot",
+      "source_status": "vinfast_official_portal_reference"
+    }
+  },
+  {
+    "id": "vf8-tpms-over-pressure",
+    "vehicle_model": "VinFast VF 8",
+    "vehicle_segment": "D-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "over_pressure",
+    "warning_name_vi": "Cảnh báo áp suất lốp quá cao",
+    "warning_name_en": "High Tire Overpressure Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "solid",
+    "dashboard_display_text": "Áp suất lốp quá cao / Vượt ngưỡng áp suất an toàn",
+    "severity": "MEDIUM",
+    "risk_level_explanation": "Áp suất vượt ngưỡng an toàn do nhiệt độ vận hành cao. Gây xóc cứng, giảm độ bám đường khi chạy tốc độ cao trên cao tốc.",
+    "visual_clues": {
+      "icon_description": "Biểu tượng TPMS vàng trên thanh trạng thái và thông số lốp hiển thị màu cam/vàng (> 3.2 bar).",
+      "display_location": "Màn hình trung tâm 15.6 inch.",
+      "text_ocr_patterns": ["Áp suất quá cao", "High Pressure", "Vượt ngưỡng an toàn"]
+    },
+    "immediate_actions": [
+      "Giảm tốc độ, tránh phóng nhanh vượt ẩu trên đường gồ ghề.",
+      "Đỗ xe nơi có bóng râm để lốp tự giải nhiệt.",
+      "Chờ lốp nguội hoàn toàn rồi điều chỉnh áp suất về mức chuẩn."
+    ],
+    "chatbot_response_template": "Xe VinFast VF 8 đang cảnh báo 'Áp suất lốp quá cao' (Mức độ: MEDIUM - Cần kiểm tra).\n\nBạn hãy:\n1. Duy trì tốc độ an toàn, tránh phanh gấp.\n2. Để xe nghỉ ngơi nơi râm mát khoảng 30 phút cho lốp nguội bớt.\n3. Khi lốp nguội, hãy đo lại và xả bớt khí về mức tiêu chuẩn. Lưu ý không xả khi lốp đang nóng rực.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/he-thong-giam-sat-ap-suat-lop-o-to-vinfast-vf-8",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Hệ thống giám sát áp suất lốp VinFast VF 8 - Áp suất cao",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://vinfastauto.com/vn_vi/he-thong-giam-sat-ap-suat-lop-o-to-vinfast-vf-8",
+      "image_type": "central_display_screenshot",
+      "source_status": "vinfast_official_portal_reference"
+    }
+  },
+  {
+    "id": "vf8-tpms-high-temperature",
+    "vehicle_model": "VinFast VF 8",
+    "vehicle_segment": "D-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "high_temperature",
+    "warning_name_vi": "Cảnh báo nhiệt độ lốp cao",
+    "warning_name_en": "High Tire Temperature Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "solid",
+    "dashboard_display_text": "Nhiệt độ lốp cao / Cảnh báo nhiệt độ lốp quá nhiệt",
+    "severity": "MEDIUM",
+    "risk_level_explanation": "Lốp xe VF 8 bản to chịu tải lớn, khi chạy tốc độ cao mùa nóng nhiệt độ sinh ra lớn. Quá nhiệt kéo dài có thể gây tách lớp cao su tanh lốp.",
+    "visual_clues": {
+      "icon_description": "Biểu tượng cảnh báo nhiệt độ lốp trên màn hình trung tâm kèm số đo nhiệt độ từng bánh xe màu cam đỏ.",
+      "display_location": "Tab Trạng thái lốp trên màn hình 15.6 inch.",
+      "text_ocr_patterns": ["Nhiệt độ lốp cao", "Overheat", "°C"]
+    },
+    "immediate_actions": [
+      "Giảm tốc độ xe và dừng tại trạm dừng chân an toàn.",
+      "Để lốp xe tự hạ nhiệt tự nhiên, không dội nước lạnh vào bánh xe.",
+      "Kiểm tra áp suất khi lốp nguội."
+    ],
+    "chatbot_response_template": "Màn hình VF 8 đang báo 'Nhiệt độ lốp cao' (Mức độ: MEDIUM - Cần lưu ý an toàn).\n\nKhuyến cáo an toàn:\n- Giảm tốc độ và tấp vào trạm dừng nghỉ nơi có bóng mát.\n- Để xe nghỉ 30-45 phút cho lốp tự nguội. TUYỆT ĐỐI không dội nước lạnh vào lốp để tránh sốc nhiệt làm nứt lốp hoặc cong đĩa phanh.\n- Khi lốp nguội, kiểm tra xem lốp có bị non hơi không vì lốp thiếu áp suất là nguyên nhân gây ma sát nóng lốp.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/he-thong-giam-sat-ap-suat-lop-o-to-vinfast-vf-8",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Hệ thống giám sát áp suất lốp VinFast VF 8 - Nhiệt độ lốp",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://vinfastauto.com/vn_vi/he-thong-giam-sat-ap-suat-lop-o-to-vinfast-vf-8",
+      "image_type": "central_display_screenshot",
+      "source_status": "vinfast_official_portal_reference"
+    }
+  },
+  {
+    "id": "vf8-tpms-sensor-fault",
+    "vehicle_model": "VinFast VF 8",
+    "vehicle_segment": "D-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "sensor_fault",
+    "warning_name_vi": "Cảnh báo lỗi cảm biến áp suất lốp",
+    "warning_name_en": "Tire Pressure Sensor Communication Fault",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "blink_then_solid",
+    "dashboard_display_text": "Lỗi cảm biến áp suất lốp / Không nhận diện được cảm biến lốp",
+    "severity": "MEDIUM",
+    "risk_level_explanation": "Mất tín hiệu kết nối BLE hoặc RF từ van cảm biến đến module điều khiển TPMS của xe.",
+    "visual_clues": {
+      "icon_description": "Đèn TPMS vàng trên thanh trạng thái nhấp nháy 1 phút rồi sáng đứng; bánh xe trên màn hình hiển thị dấu chấm hỏi (?) hoặc nét gạch (--).",
+      "display_location": "Thanh trạng thái và widget lốp trên màn hình 15.6 inch.",
+      "text_ocr_patterns": ["Lỗi cảm biến", "Không nhận diện", "Sensor Fault", "--"]
+    },
+    "immediate_actions": [
+      "Kiểm tra lốp bằng mắt thường và thiết bị đo áp suất cầm tay.",
+      "Đến Xưởng dịch vụ VinFast để quét lại mã ID cảm biến hoặc thay mới nếu van bị hỏng."
+    ],
+    "chatbot_response_template": "Xe VinFast VF 8 báo 'Lỗi cảm biến áp suất lốp' (Mức độ: MEDIUM - Cần kiểm tra).\n\nXe đang bị gián đoạn tín hiệu đo lốp tại bánh tương ứng.\n- Bạn vẫn có thể tiếp tục hành trình nhưng nên kiểm tra độ căng của lốp bằng mắt thường.\n- Đặt lịch hẹn qua app VinFast hoặc mang xe đến xưởng dịch vụ để kỹ thuật viên hiệu chuẩn lại cảm biến.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/he-thong-giam-sat-ap-suat-lop-o-to-vinfast-vf-8",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Hệ thống giám sát áp suất lốp VinFast VF 8 - Lỗi cảm biến",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://vinfastauto.com/vn_vi/he-thong-giam-sat-ap-suat-lop-o-to-vinfast-vf-8",
+      "image_type": "central_display_screenshot",
+      "source_status": "vinfast_official_portal_reference"
+    }
+  },
+  {
+    "id": "vf8-tpms-sensor-battery-low",
+    "vehicle_model": "VinFast VF 8",
+    "vehicle_segment": "D-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "sensor_battery_low",
+    "warning_name_vi": "Cảnh báo pin cảm biến lốp yếu",
+    "warning_name_en": "Tire Sensor Battery Low Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "solid",
+    "dashboard_display_text": "Pin cảm biến lốp yếu / Yêu cầu bảo dưỡng cảm biến TPMS",
+    "severity": "LOW",
+    "risk_level_explanation": "Pin lithium tích hợp trong van cảm biến sắp hết năng lượng. Đây là cảnh báo bảo dưỡng thông thường.",
+    "visual_clues": {
+      "icon_description": "Thông báo chữ trong trung tâm thông báo (Notification Center) của màn hình điều khiển 15.6 inch.",
+      "display_location": "Trung tâm thông báo màn hình trung tâm 15.6 inch.",
+      "text_ocr_patterns": ["Pin cảm biến yếu", "Pin yếu", "Sensor Battery Low"]
+    },
+    "immediate_actions": [
+      "Không ảnh hưởng tức thì đến an toàn lái xe.",
+      "Yêu cầu kỹ thuật viên thay thế cụm van cảm biến trong lần bảo dưỡng định kỳ tiếp theo."
+    ],
+    "chatbot_response_template": "Màn hình VF 8 thông báo 'Pin cảm biến lốp yếu' (Mức độ: LOW - Thông tin bảo dưỡng).\n\nCảm biến lốp vẫn hoạt động bình thường nhưng pin sắp cạn sau thời gian dài sử dụng.\nBạn an tâm lái xe và hãy báo cố vấn dịch vụ thay thế pin/cảm biến ở đợt bảo dưỡng xe tới nhé.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/he-thong-giam-sat-ap-suat-lop-o-to-vinfast-vf-8",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Hệ thống giám sát áp suất lốp VinFast VF 8 - Pin cảm biến",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://vinfastauto.com/vn_vi/he-thong-giam-sat-ap-suat-lop-o-to-vinfast-vf-8",
+      "image_type": "central_display_screenshot",
+      "source_status": "vinfast_official_portal_reference"
+    }
+  },
+  {
+    "id": "vf8-tpms-system-error",
+    "vehicle_model": "VinFast VF 8",
+    "vehicle_segment": "D-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "tpms_system_error",
+    "warning_name_vi": "Cảnh báo lỗi toàn bộ hệ thống theo dõi áp suất lốp",
+    "warning_name_en": "TPMS Overall System Malfunction Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "blink_then_solid",
+    "dashboard_display_text": "Lỗi hệ thống TPMS / Hệ thống giám sát lốp không khả dụng",
+    "severity": "MEDIUM",
+    "risk_level_explanation": "Module TPMS hoặc mạng CAN xe VF 8 gặp xung đột phần mềm hoặc lỗi phần cứng.",
+    "visual_clues": {
+      "icon_description": "Đèn TPMS vàng trên thanh trạng thái nhấp nháy 60 giây rồi sáng liên tục, kèm popup thông báo hệ thống trên màn hình 15.6 inch.",
+      "display_location": "Màn hình trung tâm 15.6 inch và màn hình HUD.",
+      "text_ocr_patterns": ["Lỗi hệ thống TPMS", "Không khả dụng", "TPMS Error"]
+    },
+    "immediate_actions": [
+      "Thử khởi động lại hệ thống màn hình trung tâm (soft reset màn hình) hoặc tắt nguồn xe trong vài phút.",
+      "Nếu lỗi vẫn tiếp diễn, đặt lịch đưa xe đến xưởng VinFast để kiểm tra chẩn đoán."
+    ],
+    "chatbot_response_template": "Xe VinFast VF 8 hiển thị cảnh báo 'Lỗi hệ thống TPMS' (Mức độ: MEDIUM - Cần kiểm tra kỹ thuật).\n\nHệ thống theo dõi áp suất lốp đang tạm thời mất chức năng bảo vệ.\nBạn có thể thử:\n1. Khởi động lại màn hình trung tâm hoặc tắt xe khóa cửa 5 phút rồi mở lại.\n2. Nếu đèn cảnh báo vẫn hiện, hãy liên hệ Xưởng dịch vụ VinFast để kỹ thuật viên cập nhật phần mềm hoặc kiểm tra hộp module điều khiển.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/he-thong-giam-sat-ap-suat-lop-o-to-vinfast-vf-8",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Hệ thống giám sát áp suất lốp VinFast VF 8 - Lỗi hệ thống",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://vinfastauto.com/vn_vi/he-thong-giam-sat-ap-suat-lop-o-to-vinfast-vf-8",
+      "image_type": "central_display_screenshot",
+      "source_status": "vinfast_official_portal_reference"
+    }
+  },
+  {
+    "id": "vf5-tpms-rapid-leak",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "vehicle_segment": "A-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "rapid_leak",
+    "warning_name_vi": "Cảnh báo rò rỉ áp suất lốp nhanh",
+    "warning_name_en": "Rapid Tire Pressure Leakage Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "solid",
+    "dashboard_display_text": "Cảnh báo rò rỉ lốp / Giảm áp suất đột ngột",
+    "severity": "HIGH",
+    "risk_level_explanation": "Lốp xe VF 5 Plus bị thủng hoặc rách hông khiến khí thoát ra nhanh chóng. Xe có thể bị lạng lái ngay lập tức.",
+    "visual_clues": {
+      "icon_description": "Đèn TPMS màu vàng sáng liên tục trên màn hình công-tơ-mét 7 inch và hình minh họa xe nháy cảnh báo bánh xe mất áp suất.",
+      "display_location": "Bảng đồng hồ thông tin lái 7 inch sau vô lăng.",
+      "text_ocr_patterns": ["Rò rỉ lốp", "Áp suất giảm nhanh", "TPMS"]
+    },
+    "immediate_actions": [
+      "Giữ chắc vô lăng, từ từ buông chân ga, không phanh gấp.",
+      "Bật đèn khẩn cấp hazard, chuyển làn an toàn vào lề đường.",
+      "Về P, kéo phanh tay, kiểm tra lốp bị rò rỉ và gọi cứu hộ VinFast 1900 23 23 89 nếu lốp xẹp hoàn toàn."
+    ],
+    "chatbot_response_template": "⚠️ CẢNH BÁO AN TOÀN: Bảng đồng hồ xe VinFast VF 5 Plus báo 'Rò rỉ áp suất lốp nhanh' (Mức độ: HIGH - Cần xử lý khẩn trương).\n\nBạn hãy:\n1. Bình tĩnh nhả ga từ từ, giữ chắc tay lái, KHÔNG đạp phanh gấp.\n2. Bật đèn khẩn cấp (hazard) và tấp xe an toàn vào lề đường bên phải.\n3. Về P, kéo phanh tay và xuống kiểm tra bánh xe bị báo động.\n4. Nếu lốp đã hết hơi, hãy gọi Hotline cứu hộ VinFast 1900 23 23 89 để được hỗ trợ thay lốp hoặc kéo xe an toàn.",
+    "requires_staff_review": true,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Sổ tay người dùng VF 5 Plus - Mục Cảnh báo áp suất lốp TPMS",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "image_type": "cluster_display_screenshot",
+      "source_status": "vinfast_official_portal_reference"
+    }
+  },
+  {
+    "id": "vf5-tpms-low-pressure",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "vehicle_segment": "A-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "low_pressure",
+    "warning_name_vi": "Cảnh báo áp suất lốp thấp",
+    "warning_name_en": "Low Tire Pressure Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "solid",
+    "dashboard_display_text": "Áp suất lốp thấp / Kiểm tra áp suất lốp",
+    "severity": "MEDIUM",
+    "risk_level_explanation": "Áp suất bánh xe thấp hơn tiêu chuẩn quy định (>2.2 bar trên VF 5 Plus). Làm tăng mức tiêu thụ điện và mòn gai lốp.",
+    "visual_clues": {
+      "icon_description": "Đèn biểu tượng vành lốp xe kèm dấu chấm than màu vàng sáng liên tục trên cụm đồng hồ 7 inch.",
+      "display_location": "Bảng đồng hồ thông tin lái 7 inch sau vô lăng.",
+      "text_ocr_patterns": ["Áp suất thấp", "Low Pressure", "TPMS"]
+    },
+    "immediate_actions": [
+      "Duy trì tốc độ ổn định, không phanh gấp hay ôm cua gấp.",
+      "Tìm cây xăng hoặc điểm bơm lốp gần nhất, bơm đủ theo tiêu chuẩn ghi trên khung cửa lái.",
+      "Sau khi bơm đủ, chạy xe khoảng 5 phút để hệ thống tắt đèn."
+    ],
+    "chatbot_response_template": "Hình ảnh táp-lô VinFast VF 5 Plus hiển thị đèn 'Áp suất lốp thấp' (Mức độ: MEDIUM - Cần kiểm tra).\n\nKhuyến nghị:\n- Xe vẫn di chuyển được an toàn ở tốc độ vừa phải.\n- Bạn hãy ghé điểm bơm lốp gần nhất để đo và bơm bổ sung đúng áp suất tiêu chuẩn dán ở khung cửa bên ghế lái (khoảng 2.2 - 2.4 bar).\n- Đèn cảnh báo sẽ tự động tắt sau khi xe chạy lại vài phút với đủ áp suất.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Sổ tay người dùng VF 5 Plus - Mục Cảnh báo áp suất lốp TPMS",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://static-cms-prod.vinfastauto.com/ap-suat-lop-1_1652627856.png",
+      "image_type": "symbol_icon",
+      "source_status": "vinfast_official_cms_reference"
+    }
+  },
+  {
+    "id": "vf5-tpms-over-pressure",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "vehicle_segment": "A-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "over_pressure",
+    "warning_name_vi": "Cảnh báo áp suất lốp quá cao",
+    "warning_name_en": "High Tire Overpressure Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "solid",
+    "dashboard_display_text": "Áp suất lốp quá cao / Cảnh báo áp suất vượt ngưỡng",
+    "severity": "MEDIUM",
+    "risk_level_explanation": "Áp suất lốp bơm quá căng hoặc nhiệt độ mặt đường cao làm khí nở ra vượt mức tiêu chuẩn an toàn.",
+    "visual_clues": {
+      "icon_description": "Đèn TPMS sáng kèm thông số áp suất trên màn hình chuyển màu vàng cam.",
+      "display_location": "Bảng đồng hồ 7 inch.",
+      "text_ocr_patterns": ["Áp suất quá cao", "High Pressure"]
+    },
+    "immediate_actions": [
+      "Giảm tốc độ, tránh đi qua đoạn đường xấu gồ ghề.",
+      "Đỗ xe vào chỗ râm mát để lốp nguội bớt, sau đó xả bớt khí về mức tiêu chuẩn khi lốp đã nguội."
+    ],
+    "chatbot_response_template": "Xe VF 5 Plus đang cảnh báo 'Áp suất lốp quá cao' (Mức độ: MEDIUM - Cần kiểm tra).\n\nBạn hãy:\n1. Giảm tốc độ di chuyển để tránh xóc nảy và mất độ bám đường.\n2. Đỗ xe nơi râm mát cho lốp nguội tự nhiên (lưu ý không xả hơi khi lốp đang nóng).\n3. Khi lốp nguội, dùng đồng hồ đo và xả bớt khí về mức tiêu chuẩn ghi tại bệ cửa lái.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Sổ tay người dùng VF 5 Plus - Mục Cảnh báo áp suất lốp TPMS",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "image_type": "cluster_display_screenshot",
+      "source_status": "vinfast_official_portal_reference"
+    }
+  },
+  {
+    "id": "vf5-tpms-high-temperature",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "vehicle_segment": "A-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "high_temperature",
+    "warning_name_vi": "Cảnh báo nhiệt độ lốp cao",
+    "warning_name_en": "High Tire Temperature Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "solid",
+    "dashboard_display_text": "Nhiệt độ lốp cao / Cảnh báo quá nhiệt lốp",
+    "severity": "MEDIUM",
+    "risk_level_explanation": "Nhiệt độ lốp vượt quá ngưỡng an toàn (>75°C) do tải nặng hoặc chạy đường dài nắng gắt.",
+    "visual_clues": {
+      "icon_description": "Biểu tượng cảnh báo nhiệt độ lốp kèm thông số °C chuyển màu vàng trên màn hình thông tin lái.",
+      "display_location": "Bảng đồng hồ 7 inch.",
+      "text_ocr_patterns": ["Nhiệt độ lốp cao", "Overheat", "°C"]
+    },
+    "immediate_actions": [
+      "Giảm tốc độ, tìm chỗ đỗ râm mát dừng xe nghỉ ngơi 30-40 phút.",
+      "Tuyệt đối không tạt nước lạnh vào lốp để tránh sốc nhiệt.",
+      "Kiểm tra lại áp suất lốp khi đã nguội hoàn toàn."
+    ],
+    "chatbot_response_template": "Bảng đồng hồ VF 5 Plus báo 'Nhiệt độ lốp cao' (Mức độ: MEDIUM - Cần lưu ý an toàn).\n\nKhuyến cáo an toàn:\n- Hãy tìm nơi dừng nghỉ râm mát cho lốp hạ nhiệt tự nhiên khoảng 30-45 phút.\n- TUYỆT ĐỐI không dội nước lạnh vào lốp để tránh sốc nhiệt gây nứt cao su.\n- Kiểm tra áp suất bánh xe sau khi lốp đã nguội.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Sổ tay người dùng VF 5 Plus - Mục Cảnh báo áp suất lốp TPMS",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "image_type": "cluster_display_screenshot",
+      "source_status": "vinfast_official_portal_reference"
+    }
+  },
+  {
+    "id": "vf5-tpms-sensor-fault",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "vehicle_segment": "A-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "sensor_fault",
+    "warning_name_vi": "Cảnh báo lỗi cảm biến áp suất lốp",
+    "warning_name_en": "Tire Pressure Sensor Communication Fault",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "blink_then_solid",
+    "dashboard_display_text": "Lỗi cảm biến áp suất lốp / Không nhận cảm biến",
+    "severity": "MEDIUM",
+    "risk_level_explanation": "Đèn TPMS nháy khoảng 1 phút rồi sáng liên tục, chỉ báo cảm biến van lốp bị mất kết nối hoặc hư hỏng.",
+    "visual_clues": {
+      "icon_description": "Đèn TPMS nháy vàng 1 phút rồi sáng liên tục; trị số áp suất tại bánh xe hiển thị dấu gạch ngang (--).",
+      "display_location": "Bảng đồng hồ 7 inch.",
+      "text_ocr_patterns": ["Lỗi cảm biến", "Mất tín hiệu", "--"]
+    },
+    "immediate_actions": [
+      "Kiểm tra lốp bằng mắt thường để đảm bảo không bị xẹp.",
+      "Mang xe đến Xưởng dịch vụ VinFast để kỹ thuật viên kiểm tra hoặc thay thế cảm biến."
+    ],
+    "chatbot_response_template": "Xe VinFast VF 5 Plus hiển thị 'Lỗi cảm biến áp suất lốp' (Mức độ: MEDIUM - Cần kiểm tra).\n\nĐèn TPMS nhấp nháy 1 phút rồi sáng liên tục báo hiệu mất tín hiệu từ van cảm biến.\n- Xe vẫn lái bình thường, bạn nên quan sát bằng mắt xem lốp có bị xẹp hay không.\n- Hãy đặt lịch đến xưởng dịch vụ VinFast gần nhất để kỹ thuật viên kiểm tra và ghép nối lại cảm biến nhé.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Sổ tay người dùng VF 5 Plus - Mục Cảnh báo áp suất lốp TPMS",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://static-cms-prod.vinfastauto.com/ap-suat-lop-5_1652627955.png",
+      "image_type": "symbol_icon",
+      "source_status": "vinfast_official_cms_reference"
+    }
+  },
+  {
+    "id": "vf5-tpms-sensor-battery-low",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "vehicle_segment": "A-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "sensor_battery_low",
+    "warning_name_vi": "Cảnh báo pin cảm biến lốp yếu",
+    "warning_name_en": "Tire Sensor Battery Low Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "solid",
+    "dashboard_display_text": "Pin cảm biến lốp thấp",
+    "severity": "LOW",
+    "risk_level_explanation": "Pin tích hợp trong cảm biến van lốp sắp hết hạn.",
+    "visual_clues": {
+      "icon_description": "Thông báo chữ hiển thị trên màn hình lái 7 inch trong mục menu thông tin xe.",
+      "display_location": "Bảng đồng hồ 7 inch.",
+      "text_ocr_patterns": ["Pin cảm biến thấp", "Pin yếu"]
+    },
+    "immediate_actions": [
+      "Không ảnh hưởng khẩn cấp đến an toàn.",
+      "Đăng ký thay pin/cảm biến tại xưởng VinFast trong đợt bảo dưỡng kế tiếp."
+    ],
+    "chatbot_response_template": "Xe VF 5 Plus thông báo 'Pin cảm biến lốp thấp' (Mức độ: LOW - Thông tin bảo dưỡng).\n\nPin cảm biến van lốp sắp cạn sau thời gian dài sử dụng.\nBạn có thể an tâm tiếp tục di chuyển và đăng ký thay thế tại xưởng dịch vụ VinFast trong lần bảo dưỡng tới nhé.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Sổ tay người dùng VF 5 Plus - Mục Cảnh báo áp suất lốp TPMS",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "image_type": "cluster_display_screenshot",
+      "source_status": "vinfast_official_portal_reference"
+    }
+  },
+  {
+    "id": "vf5-tpms-system-error",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "vehicle_segment": "A-SUV",
+    "warning_group": "TPMS",
+    "symptom_key": "tpms_system_error",
+    "warning_name_vi": "Cảnh báo lỗi toàn bộ hệ thống theo dõi áp suất lốp",
+    "warning_name_en": "TPMS Overall System Malfunction Warning",
+    "indicator_light_color": "amber",
+    "indicator_light_behavior": "blink_then_solid",
+    "dashboard_display_text": "Kiểm tra hệ thống TPMS / Lỗi hệ thống theo dõi áp suất lốp",
+    "severity": "MEDIUM",
+    "risk_level_explanation": "Bộ điều khiển TPMS trên xe gặp trục trặc, không thu thập được dữ liệu từ bất kỳ bánh xe nào.",
+    "visual_clues": {
+      "icon_description": "Đèn TPMS nhấp nháy 1 phút rồi sáng giữ nguyên trên màn hình công-tơ-mét 7 inch.",
+      "display_location": "Bảng đồng hồ 7 inch.",
+      "text_ocr_patterns": ["Kiểm tra TPMS", "Lỗi TPMS", "Check TPMS"]
+    },
+    "immediate_actions": [
+      "Thử tắt xe khóa cửa trong 3 phút rồi khởi động lại.",
+      "Nếu đèn vẫn sáng, tự kiểm tra lốp định kỳ và mang xe tới xưởng VinFast để quét mã lỗi."
+    ],
+    "chatbot_response_template": "Xe VinFast VF 5 Plus báo 'Lỗi hệ thống theo dõi áp suất lốp' (Mức độ: MEDIUM - Cần kiểm tra kỹ thuật).\n\nBạn hãy thử tắt xe, khóa cửa 3 phút rồi khởi động lại để hệ thống tự reset.\nNếu đèn TPMS vẫn nháy rồi sáng liên tục, bạn nên chủ động kiểm tra bằng mắt tình trạng 4 bánh và đưa xe đến Xưởng dịch vụ VinFast để kiểm tra chẩn đoán chuyên sâu.",
+    "requires_staff_review": false,
+    "emergency_escalation": false,
+    "source_reference": {
+      "article_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "portal_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "manual_section": "Sổ tay người dùng VF 5 Plus - Mục Cảnh báo áp suất lốp TPMS",
+      "verified_date": "2026-10-04"
+    },
+    "image_reference": {
+      "candidate_image_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to",
+      "image_type": "cluster_display_screenshot",
+      "source_status": "vinfast_official_portal_reference"
+    }
+  }
+]
