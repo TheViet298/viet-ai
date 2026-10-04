@@ -1,23 +1,26 @@
 # Báo Cáo Hiện Trạng & Lộ Trình Phát Triển UI/UX Frontend
-> **Dự án:** VinFast ServiceFlow AI (P-142)  
-> **Phiên bản Milestone:** Demo v1.0 — Phục vụ buổi báo cáo / demo  
-> **Cập nhật ngày:** 30/09/2026  
-> **Người phụ trách:** Frontend & UI/UX Team  
-> **Tài liệu tham chiếu:** [screen-spec.md](screen-spec.md) | [ui-flow.md](ui-flow.md)
+> **Dự án:** VinFast ServiceFlow AI (P-142)
+> **Phiên bản Milestone:** Demo v1.0 — Phục vụ buổi báo cáo / demo
+> **Cập nhật ngày:** 04/10/2026
+> **Người phụ trách:** Frontend & UI/UX Team
+> **Tài liệu tham chiếu:** [screen-spec.md](screen-spec.md) | [ui-flow.md](ui-flow.md) | [ADR-005](../decisions/ADR-005-roles-location-and-customer-confirmation.md)
 
 ---
 
 ## 1. Tổng Quan Những Gì Đã Làm (What Has Been Done)
 
-Dựa trên tiêu chuẩn của bộ kỹ năng **Senior UI/UX Orchestrator** và đặc tả màn hình (`screen-spec.md`), toàn bộ giao diện người dùng (Frontend) đã được tái cấu trúc, chuẩn hóa và khóa trạng thái ổn định phục vụ buổi Demo.
+Dựa trên tiêu chuẩn của bộ kỹ năng **Senior UI/UX Orchestrator**, đặc tả màn hình (`screen-spec.md`) và quyết định kiến trúc (`ADR-005`), toàn bộ giao diện người dùng (Frontend) đã được tái cấu trúc, chuẩn hóa và khóa trạng thái ổn định phục vụ buổi Demo.
 
 ```mermaid
 graph TD
-    A["Giao diện Khách hàng (/chat)"] -->|"Tạo sự cố kỹ thuật"| B["Case Brief AI Trích xuất"]
-    B --> C["Hàng đợi HITL Console (/console)"]
-    C -->|"Lọc & Chọn Ticket"| D["Chi tiết Hồ sơ (/console/:id)"]
-    D -->|"HITL Action"| E["Duyệt / Chuyển Xưởng Dịch Vụ"]
-    D -->|"Tra cứu tiến độ"| F["Khách hàng xem Track Case (/track-case)"]
+    A["Landing Page đa luồng (/)"] -->|"Hỏi trợ lý / Báo lỗi"| B["Giao diện Khách hàng (/chat)"]
+    B -->|"Chia sẻ vị trí (ADR-005)"| C["Bản đồ Trạm sạc / Cứu hộ (45%)"]
+    B -->|"Tạo sự cố kỹ thuật"| D["Case Brief AI Trích xuất"]
+    D --> E["Hàng đợi HITL Console (/console)"]
+    E -->|"Lọc & Chọn Ticket"| F["Chi tiết Hồ sơ (/console/:id)"]
+    F -->|"HITL Action"| G["Duyệt / Chuyển Xưởng Dịch Vụ"]
+    G -->|"Tra cứu tiến độ"| H["Khách hàng xem Track Case (/track-case)"]
+    H -->|"Xác nhận nghiệm thu"| I["Đã được hỗ trợ / Reopen"]
 ```
 
 ---
@@ -72,39 +75,61 @@ graph TD
 
 ---
 
-### 1.3. Các Phân Hệ Frontend Khác Đã Hoàn Thiện
+### 1.3. Khung Chat Khách Hàng Tinh Gọn (`/chat` — `SCR-01`, `SCR-02`)
 
-* **Khung Chat Khách Hàng (`/chat`):** Bong bóng chat chuẩn hóa, bộ 3 câu hỏi gợi ý nhanh (Quick Prompts), chip làm rõ dữ kiện kỹ thuật (Clarification Chips), banner khẩn cấp gọi hotline cứu hộ khi phát hiện lỗi nguy hiểm.
-* **Tra Cứu Hồ Sơ (`/track-case`):** Cho phép khách hàng nhập mã Case để kiểm tra tiến độ tiếp nhận theo từng bước (Step progress bar).
-* **Đăng Nhập / Phân Quyền (`/login` & `/register`):** Hỗ trợ chuyển đổi nhanh vai trò Khách hàng (Customer) và Nhân viên (Staff).
-* **Hệ Thống Design System Tokens:** Tích hợp bộ màu VinFast ServiceFlow chuẩn mực (`service.primary`, `service.mint`, `service.warning`, `service.critical`), typography Inter/SF Pro, đạt chuẩn tiếp cận WCAG 2.1 AA.
+* **Luật "Một tin nhắn chỉ một box":** Triệt tiêu hoàn toàn anti-pattern "box lồng box". Toàn bộ câu trả lời nằm trong 1 bong bóng xám nhạt (`bg-slate-100`) duy nhất, không viền; chỉ dẫn an toàn in đậm trực tiếp bên trong; trích dẫn nguồn thu gọn thành chip 1 dòng kèm nút `Xem chi tiết ▾` cho tin nhắn dài.
+* **Banner khẩn cấp Sticky 46px:** Đặt full-width dính chặt ngay dưới Navbar (`sticky top-[56px] z-40`), chỉ kích hoạt cho ca khẩn cấp cao tốc/rùa vàng/mất phanh kèm nút gọi hotline cứu hộ `1900-232389`; hoàn toàn ẩn với ca thường (CC01, bảo dưỡng).
+* **Phục hồi 70% không gian màn hình:** Header thu nhỏ gọn ~40px, gỡ bỏ 5 card tĩnh chiếm chỗ, ẩn thanh Quick Prompts ban đầu sau khi chat bắt đầu.
+* **Gợi ý nhanh (Quick Replies):** Bỏ nhãn thừa `"GỢI Ý TRẢ LỜI NHANH:"`, tự động scroll mượt với `ResizeObserver` và đệm đáy `pb-8 sm:pb-10` chống bị cắt cụt. Bổ sung chip `"Xem bản đồ trạm sạc ›"`.
+* **Mã Case ID động:** Tự động sinh `CASE-YYYYMMDD-XXX` theo ngày và số phiên thực tế, reset sạch khi làm mới phiên.
 
 ---
 
-## 2. Kịch Bản Khuyên Dùng Cho Buổi Demo Hôm Nay (Demo Walkthrough)
+### 1.4. Tích Hợp Bản Đồ Dịch Vụ & Vị Trí Tuân Thủ ADR-005 (`SCR-05.4`)
 
-Để buổi báo cáo diễn ra mạch lạc và phô diễn trọn vẹn điểm mạnh của hệ thống, hãy thực hiện theo 4 bước:
+* **Thanh Vị trí Docked:** Đưa card xin vị trí ra khỏi luồng tin nhắn, chuyển thành thanh mỏng dính sát trên ô nhập chat. Tuân thủ nghiêm ngặt 3 tùy chọn: GPS thật (timeout 8s), Nhập khu vực bằng tay, hoặc Bỏ qua.
+* **Bản đồ 45% chiều cao panel:** Giảm chiều cao OpenStreetMap xuống 45% (`min-h-[240px]`), đảm bảo thẻ điểm dịch vụ đầu tiên hiển thị trọn vẹn cả 2 nút hành động `Chỉ đường Maps` và `Gọi Hotline` mà không bao giờ bị cắt đáy.
+* **Tính khoảng cách Haversine chuẩn xác:** Tính toán từ vị trí GPS thật của xe đến 4 điểm seed chính hãng (Hà Nội, Hải Phòng, TP.HCM, Long Thành), có cảnh báo khi điểm gần nhất vượt bán kính hỗ trợ (> 50 km).
+* **Làm mờ ghim ngoài nhóm lọc:** Khi lọc nhóm (ví dụ: `⚡ Trạm sạc`), các ghim thuộc nhóm khác (như xưởng 8 km) tự động chuyển sang trạng thái mờ (`opacity-25 grayscale scale-90 pointer-events-none z-10`), điểm gần nhất trong nhóm có viền radar sáng (`ring-2 ring-[#1E40AF] animate-pulse`), xóa bỏ nhầm lẫn thị giác.
+* **Bỏ ký hiệu nội bộ:** Loại bỏ chuỗi `(ADR-005)` khỏi chân trang bản đồ.
 
-1. **Bước 1: Tiếp nhận sự cố tại `/chat`**
-   - Chọn quick prompt: *"Xe VF8 của tôi không sạc được tại trạm sạc"*.
-   - Khách trả lời bổ sung thông tin trạm và mã lỗi `CC01`.
-   - AI Agent tổng hợp dữ kiện kỹ thuật và thông báo đã tạo hồ sơ `CASE-20260924-001`.
-2. **Bước 2: Mở Bàn điều phối `/console`**
-   - Trình bày 4 thẻ KPI ca trực, nhấn mạnh số lượng ca chờ duyệt và ca khẩn cấp.
-   - Thao tác gõ vào ô tìm kiếm: gõ `VF8` hoặc `CC01` để thấy tốc độ lọc tức thì.
-   - Thử click chuyển các tab `Chờ duyệt`, `Khẩn cấp` để biểu diễn State Filtering.
-3. **Bước 3: Mở Chi tiết Hồ sơ `/console/CASE-20260924-001`**
-   - Chỉ vào thẻ **Case Brief**: AI đã tự bóc tách mã lỗi `CC01`, trụ sạc `P02`, pin `18%`.
-   - Bấm nút **"Chỉnh sửa Brief"** để sửa một câu tóm tắt, nhấn **"Lưu tóm tắt"** (thể hiện tính năng Human-in-the-loop).
-4. **Bước 4: Thực thi Phê duyệt**
-   - Nhập ghi chú xưởng: *"Đã thông báo trạm kỹ thuật Metropolis chuẩn bị cáp sạc thay thế"*.
-   - Bấm nút **"Duyệt Phương Án & Điều Phối"** $\rightarrow$ Toast xanh xuất hiện, trạng thái chuyển sang `In Progress`.
+---
+
+### 1.5. Tái Cấu Trúc Hero Trang Chủ (`/` — `SCR-05.1`)
+
+* **Tông giọng trung tính:** Đổi từ câu hỏi thiên lệch lỗi *"Xe của bạn đang gặp vấn đề gì?"* sang câu hỏi mở bao quát cả 3 nhóm khách: **"Bạn cần hỗ trợ gì về xe điện?"**.
+* **Mô tả đa nhu cầu:** *"Hỏi về sạc, bảo dưỡng, ứng dụng, hoặc báo sự cố xe. Có thể gửi kèm ảnh táp-lô để AI nhận diện sơ bộ."*
+* **Placeholder xoay vòng (3.8s):** Tự động luân phiên giữa 4 ngữ cảnh: Lỗi sạc CC01 $\rightarrow$ Lịch bảo dưỡng 12.000km $\rightarrow$ Đặt lịch sạc qua app $\rightarrow$ Biểu tượng rùa vàng.
+* **Hàng chip cân bằng 4 nhóm ý định:** ⚡ Tìm trạm sạc gần tôi (Tra cứu), 🔧 Lịch bảo dưỡng 12.000km (Bảo dưỡng), ⚠ Sạc không vào điện CC01 (Sự cố), ⚠ Táp-lô hiện rùa vàng (Sự cố), 📱 Cách dùng app VinFast (Hướng dẫn).
+* **Phân định 2 trạng thái rõ rệt:**
+  - **Khách hàng đã đăng nhập (Customer):** Lời chào cá nhân hóa, tự điền dòng xe từ profile, hiển thị banner hồ sơ đang mở `CASE-YYYYMMDD-001`.
+  - **Khách vãng lai (Guest):** Lời chào kèm link Đăng nhập, dropdown dòng xe có tùy chọn *"Chọn dòng xe (không bắt buộc)"*, quyền an toàn SOS trên cao tốc không bị chặn bởi bước đăng ký tài khoản.
+* **Đổi nút hành động:** Từ *"Gửi yêu cầu"* $\rightarrow$ *"Hỏi trợ lý"*.
+* **Section 3:** Đổi tên thành *"Chủ đề hỗ trợ thường gặp"*.
+
+---
+
+## 2. Kịch Bản Khuyên Dùng Cho Buổi Demo (Demo Walkthrough)
+
+1. **Bước 1: Tiếp nhận tại Landing Page (`/`)**
+   - Giới thiệu Hero đa luồng, chọn chip *"⚡ Tìm trạm sạc gần tôi"* hoặc *"⚠ Sạc không vào điện (CC01)"*.
+   - Minh họa dropdown xe tự điền cho Customer và cho phép để trống với Guest.
+2. **Bước 2: Trải nghiệm Khung Chat tinh gọn (`/chat`)**
+   - Minh họa nguyên tắc "Một tin nhắn chỉ một box": bong bóng xám nhạt duy nhất, chip trích dẫn nguồn 1 dòng.
+   - Thử nghiệm phân luồng an toàn: Gõ *"xe báo rùa vàng trên cao tốc"* $\rightarrow$ Sticky Banner đỏ 46px xuất hiện ngay lập tức kèm Hotline `1900-232389`.
+   - Bấm chip gợi ý *"Xem bản đồ trạm sạc ›"*, đồng ý chia sẻ vị trí $\rightarrow$ Panel bản đồ trượt ra với tỷ lệ 55/45 mượt mà.
+   - Trình bày tính năng làm mờ ghim ngoài nhóm lọc và thẻ điểm gần nhất hiển thị đủ nút `Chỉ đường` + `Gọi Hotline`.
+3. **Bước 3: Mở Bàn điều phối `/console`**
+   - Trình bày 4 thẻ KPI ca trực, thao tác tìm kiếm tức thì theo Case ID hoặc Model xe.
+4. **Bước 4: Mở Chi tiết Hồ sơ `/console/[id]` & Thực thi Quyết định HITL**
+   - Bấm chỉnh sửa Case Brief $\rightarrow$ Lưu tóm tắt.
+   - Nhập ghi chú điều phối $\rightarrow$ Nhấn **"Duyệt Phương Án & Điều Phối"**.
+5. **Bước 5: Khách hàng nghiệm thu tại `/track-case`**
+   - Mở màn hình tra cứu, xem Customer Update từ Cố vấn dịch vụ và bấm nút **"Đã được hỗ trợ"** để đóng hồ sơ theo chuẩn ADR-005.
 
 ---
 
 ## 3. Lộ Trình Phát Triển & Hoàn Thiện UI/UX Tiếp Theo (Roadmap)
-
-Sau buổi demo hôm nay, hệ thống Frontend được đề xuất nâng cấp theo 3 giai đoạn:
 
 | Giai đoạn | Mục tiêu | Các hạng mục công việc cụ thể |
 | :--- | :--- | :--- |
@@ -114,16 +139,20 @@ Sau buổi demo hôm nay, hệ thống Frontend được đề xuất nâng cấ
 
 ---
 
-## 4. Danh Sách Các File Mã Nguồn Đã Được Khóa & Kiểm Tra
+## 4. Danh Sách Các File Mã Nguồn Đã Được Khóa & Kiểm Tra (100% Pass Build)
 
-- `frontend/src/features/console/components/TicketQueueContainer.tsx` (Dashboard chính)
-- `frontend/src/features/console/components/TicketDetailContainer.tsx` (Màn hình chi tiết)
-- `frontend/src/features/console/components/TicketFilters.tsx` (Thanh công cụ lọc & tìm kiếm)
-- `frontend/src/features/console/components/TicketCard.tsx` (Thẻ hiển thị ticket)
-- `frontend/src/features/console/components/TicketTable.tsx` (Khung bao phủ 4 trạng thái)
-- `frontend/src/features/console/components/TicketSkeleton.tsx` (Component hiệu ứng shimmer loading)
-- `frontend/src/features/console/components/CaseBriefCard.tsx` (Thẻ tóm tắt sự cố & chỉnh sửa)
-- `frontend/src/features/console/components/HitlActionBar.tsx` (Thao tác phê duyệt Cố vấn dịch vụ)
-- `frontend/src/features/console/components/ConversationTimeline.tsx` (Lịch sử hội thoại)
-- `frontend/src/features/console/hooks/useTickets.ts` & `useTicketDetail.ts` (State hooks & API fallback)
-- `frontend/src/features/console/index.ts` (Export module công khai)
+- `frontend/src/features/landing/components/LandingPage.tsx` (Hero đa luồng, rotating placeholders, intent chips)
+- `frontend/src/features/chat/components/CustomerChatContainer.tsx` (Khung chat chính, sticky banner, responsive layout)
+- `frontend/src/features/chat/components/ChatMessageItem.tsx` (Nguyên tắc một tin nhắn một box, phân tầng 4 cấp)
+- `frontend/src/features/chat/components/ChatFeed.tsx` (Auto-scroll thông minh, ResizeObserver, floating button)
+- `frontend/src/features/chat/components/ClarificationChips.tsx` (Quick reply chips bo tròn, bỏ nhãn thừa)
+- `frontend/src/features/chat/components/EmergencyAlertBanner.tsx` (Banner đỏ khẩn cấp 46px, hotline cố định)
+- `frontend/src/features/chat/components/LocationConsentCard.tsx` (Thanh consent vị trí mỏng dính sát input bar)
+- `frontend/src/features/chat/components/ServiceMapPanel.tsx` (Panel bản đồ OpenStreetMap 45%, Haversine, dimming ghim)
+- `frontend/src/features/chat/utils/distance.ts` (Công thức khoảng cách Haversine & cảnh báo bán kính 50km)
+- `frontend/src/features/chat/constants.ts` (4 trạm sạc / cứu hộ seed chính hãng)
+- `frontend/src/features/chat/hooks/useChat.ts` (State hook, Case ID động, intent triggers)
+- `frontend/src/app/track-case/page.tsx` (Customer Support Center & nghiệm thu ADR-005)
+- `frontend/src/features/console/components/StaffConsoleShell.tsx` (Console layout & role gate)
+- `frontend/src/features/console/components/TicketDetailPanel.tsx` (Case detail, HITL actions, editable brief)
+- `src/api/customer.py` (FastAPI backend: sinh Case ID động, suggested replies, triage rules)

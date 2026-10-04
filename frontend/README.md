@@ -97,3 +97,7 @@ src/
         └── [id]/page.tsx            # Renders <TicketDetailContainer />
 ```
 
+
+## Agent branch integration
+
+The web app uses the develop API contracts under `/api/v1/customer` and `/api/v1/staff`, authenticated through `/api/v1/auth/login`. The stateful agent APIs on `feature/agent-long` are available under `/api/v1/agent/customer` and `/api/v1/agent/staff`; these use configured demo tokens and the agent session store. The lightweight agent chat remains at `/api/v1/chat`.

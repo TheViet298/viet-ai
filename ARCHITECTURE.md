@@ -89,19 +89,22 @@ Hệ thống phân hóa rõ ràng theo 4 nhóm intent, tránh áp đặt luồng
 - **Cảnh báo khẩn cấp:** Với các tình huống nguy hiểm (mất phanh, bốc khói, chết máy trên cao tốc), Agent cung cấp ngay hướng dẫn an toàn tiêu chuẩn và số Hotline cứu hộ chính thức; không tự xác nhận là đã điều xe cứu hộ đến nơi.
 
 ### 3.3 Database & Storage Layer
-Lưu trữ toàn diện trong SQLite/PostgreSQL:
+Lưu trữ toàn diện theo chuẩn Data Model (`cases`, `case_briefs`, `staff_audit_log`):
 - `source_channel`: `web_chat`, `zalo`, `email`, `hotline_transcript`
-- `intent`: `sales`, `charging`, `complaint`, `service_incident`, `out_of_scope`
-- `priority`: `low`, `medium`, `high`, `critical`
-- `confidence`: Điểm tự tin của LLM trong phân loại/trích xuất
-- `suggested_routing`: Bộ phận đề xuất bàn giao
-- `brief_data`: Dữ liệu JSON của Case Brief
-- `reviewer_feedback`: Ghi nhận chỉnh sửa của Reviewer (phục vụ evaluation)
-- `ticket_status`: `OPEN`, `WAITING_USER`, `PENDING_REVIEW`, `ROUTED`, `CLOSED`
+- `intent`: `Charging/Battery`, `Service/Incident`, `Sales`, `Complaint`
+- `priority`: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`
+- `confidence_score`: Điểm tự tin của LLM trong phân loại/trích xuất (0.0 - 1.0)
+- `suggested_action`: Hành động gợi ý cho nhân viên kỹ thuật / CSKH
+- `captured_fields`: Dữ liệu trích xuất có cấu trúc (mã lỗi, trụ sạc, SoC,...)
+- `reviewer_feedback` (`staff_audit_log`): Ghi nhận thao tác & đánh giá của Staff (phục vụ evaluation)
+- `status`: Vòng đời ticket thống nhất: `New` $\to$ `Needs Information` $\to$ `Staff Reviewing` $\to$ `In Progress` $\to$ `Resolved` $\to$ `Closed` (và `Reopened`)
 
 ## 4. Guardrails & Safety Thresholds
 
-1. **Safety Trigger:** Ngắt hỏi, cấp cứu khẩn cấp khi phát hiện từ khóa nguy hiểm sinh mạng/an toàn giao thông.
+1. **Safety Trigger:** Ngắt hỏi ngay lập tức, kích hoạt cảnh báo an toàn và cung cấp Hotline 1900-232389 khi phát hiện từ khóa nguy hiểm sinh mạng/an toàn giao thông; tạo Case `CRITICAL` đẩy thẳng lên đầu hàng đợi Staff (`Staff Reviewing`).
 2. **Sensitive Complaint Guardrail:** Tự động gắn cờ escalate với các khiếu nại gay gắt hoặc tranh chấp bảo hành/tài chính không chắc chắn.
-3. **Low Confidence Escalation:** Nếu confidence score của intent classification hoặc RAG retrieval < 0.75, chuyển sang Reviewer duyệt thủ công.
+3. **Confidence Thresholds & HITL Routing (theo Triage & HITL Rules):**
+   - **$\ge 0.85$ & Intent = FAQ** (kèm RAG similarity $\ge 0.70$): Tự động trả lời FAQ kèm link nguồn trích dẫn.
+   - **$0.60 \le \text{Score} < 0.85$ & Thiếu trường:** Kích hoạt Contextual Clarifier (tối đa 2 lượt kèm Quick Replies); sau 2 lượt vẫn thiếu thì tạo Case trạng thái `Needs Information`.
+   - **$\text{Score} < 0.60$ HOẶC thuộc nhóm Sự cố kỹ thuật / Sạc & Pin / Khiếu nại:** Bắt buộc 100% qua Human-in-the-Loop trên Console với trạng thái `Staff Reviewing`.
 4. **Out-of-Scope Filter:** Lịch sự từ chối các yêu cầu ngoài phạm vi xe điện và dịch vụ VinFast.
