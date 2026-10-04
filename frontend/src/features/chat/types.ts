@@ -23,6 +23,8 @@ export type ChatResponseType = "CLARIFICATION" | "FAQ_ANSWER" | "CASE_CREATED";
 export interface ChatResponseData {
   response_type: ChatResponseType;
   message: string;
+  response?: string;
+  intent?: string;
   case_id?: string | null;
   clarification_turn?: number;
   max_clarification_turns?: number;
@@ -94,6 +96,7 @@ export interface ArticleItem {
   summary: string;
   content?: string;
   source_url: string;
+  url?: string;
   verified_at: string;
   applicable_models?: string[];
 }

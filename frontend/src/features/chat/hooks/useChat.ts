@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ChatMessage, Citation, VehicleModel } from "../types";
 import { sendChatMessage } from "../api/chatApi";
+import { checkHardEmergency } from "../constants";
 
 export interface ChatUserContext {
   userName?: string;
@@ -86,6 +87,7 @@ export function useChat(context?: ChatUserContext | string) {
   const [sessionId, setSessionId] = useState(() => `sess_vf_${Math.random().toString(36).substring(2, 9)}`);
   const [currentCaseId, setCurrentCaseId] = useState<string | null>(ctx.caseId || null);
   const [criticalBanner, setCriticalBanner] = useState(false);
+  const [criticalBannerDismissed, setCriticalBannerDismissed] = useState(false);
   const [sessionHasCritical, setSessionHasCritical] = useState(false);
   const [requestLocation, setRequestLocation] = useState(false);
 
@@ -104,6 +106,7 @@ export function useChat(context?: ChatUserContext | string) {
     setLoading(false);
     setCurrentCaseId(null);
     setCriticalBanner(false);
+    setCriticalBannerDismissed(false);
     setSessionHasCritical(false);
     setRequestLocation(false);
     setSessionId(`sess_vf_${Math.random().toString(36).substring(2, 9)}`);
@@ -115,23 +118,24 @@ export function useChat(context?: ChatUserContext | string) {
     );
   };
 
+  const dismissCriticalBanner = () => {
+    setCriticalBannerDismissed(true);
+  };
+
+  const restoreCriticalBanner = () => {
+    setCriticalBannerDismissed(false);
+  };
+
   const sendMessage = async (messageText?: string, attachmentIds?: string[]) => {
     const textToSend = messageText || input.trim();
     if (!textToSend || loading) return;
 
-    // Phía client chỉ giữ danh sách rất ngắn các từ nguy hiểm cứng (cháy, khói, mất phanh)
+    // Sử dụng bộ từ khóa nguy hiểm đồng bộ 100% với Backend (guardrails.py)
     // để banner hiện tức thì trước khi backend trả lời (tránh lag giật tâm lý khách hàng).
-    const lowerText = textToSend.toLowerCase();
-    const isHardEmergency =
-      lowerText.includes("cháy") ||
-      lowerText.includes("bốc khói") ||
-      lowerText.includes("mất phanh") ||
-      lowerText.includes("liệt phanh") ||
-      lowerText.includes("lật xe") ||
-      lowerText.includes("tai nạn");
-
+    const isHardEmergency = checkHardEmergency(textToSend);
     if (isHardEmergency) {
       setCriticalBanner(true);
+      setCriticalBannerDismissed(false);
     }
 
     const userMsg: ChatMessage = {
@@ -405,6 +409,9 @@ export function useChat(context?: ChatUserContext | string) {
     currentCaseId,
     criticalBanner,
     setCriticalBanner,
+    criticalBannerDismissed,
+    dismissCriticalBanner,
+    restoreCriticalBanner,
     sessionHasCritical,
     requestLocation,
     sendMessage,

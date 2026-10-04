@@ -10,6 +10,7 @@ from src.models.db_models import (
     Case,
     CaseBrief,
     CaseUpdate,
+    Message,
     Priority,
     SenderType,
     StaffAction,
@@ -18,6 +19,16 @@ from src.models.db_models import (
     User,
     utcnow,
 )
+from datetime import UTC, datetime
+
+
+def to_iso(dt: datetime | None) -> str:
+    """Đảm bảo chuỗi ISO 8601 có timezone UTC để trình duyệt hiển thị chính xác theo giờ địa phương."""
+    if not dt:
+        return datetime.now(UTC).isoformat()
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC).isoformat()
+    return dt.isoformat()
 from src.models.schemas import (
     ApiResponse,
     AttachmentOut,
@@ -198,7 +209,7 @@ def get_ticket_queue(
                 priority=c.priority,
                 status=c.status,
                 missing_info_flag=(c.status == TicketStatus.NEEDS_INFORMATION.value),
-                created_at=c.created_at.isoformat() if c.created_at else utcnow().isoformat(),
+                created_at=to_iso(c.created_at),
                 confidence_score=round(conf_score, 2),
                 issue_summary=summary,
                 suggested_action=suggested,
@@ -270,7 +281,7 @@ def get_ticket_detail(
             longitude=case.location.longitude,
             precision=case.location.precision,
             share_with_staff=case.location.share_with_staff,
-            created_at=case.location.created_at.isoformat() if case.location.created_at else utcnow().isoformat(),
+            created_at=to_iso(case.location.created_at),
         )
 
     # Updates Data
@@ -286,22 +297,30 @@ def get_ticket_detail(
                     customer_message=u.customer_message,
                     next_step=u.next_step,
                     awaiting_customer_confirmation=u.awaiting_customer_confirmation,
-                    created_at=u.created_at.isoformat() if u.created_at else utcnow().isoformat(),
+                    created_at=to_iso(u.created_at),
                 )
             )
 
-    # Lịch sử hội thoại
+    # Lịch sử hội thoại đầy đủ của ca (bao gồm cả tin nhắn trước khi tạo case trong cùng session)
     conv_items: list[ConversationItem] = []
-    if case.messages:
-        for msg in case.messages:
-            sender_role = msg.sender_type if msg.sender_type in ("CUSTOMER", "AGENT", "STAFF", "SYSTEM") else "SYSTEM"
-            conv_items.append(
-                ConversationItem(
-                    sender=sender_role,
-                    content=msg.content,
-                    created_at=msg.created_at.isoformat() if msg.created_at else utcnow().isoformat(),
-                )
+    session_messages = (
+        db.query(Message)
+        .filter(
+            (Message.case_id == case.id)
+            | ((Message.session_id == case.session_id) & (Message.session_id.isnot(None)))
+        )
+        .order_by(Message.created_at.asc())
+        .all()
+    )
+    for msg in session_messages:
+        sender_role = msg.sender_type if msg.sender_type in ("CUSTOMER", "AGENT", "STAFF", "SYSTEM") else "SYSTEM"
+        conv_items.append(
+            ConversationItem(
+                sender=sender_role,
+                content=msg.content,
+                created_at=to_iso(msg.created_at),
             )
+        )
 
     # Danh sách ảnh đính kèm (private storage + OCR signals)
     attachment_items: list[AttachmentOut] = []
@@ -316,7 +335,7 @@ def get_ticket_detail(
                     ocr_text=att.ocr_text,
                     detected_signals=att.detected_signals,
                     vision_confidence=att.vision_confidence,
-                    created_at=att.created_at.isoformat() if att.created_at else utcnow().isoformat(),
+                    created_at=to_iso(att.created_at),
                 )
             )
 

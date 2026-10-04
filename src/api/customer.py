@@ -3,6 +3,15 @@ import re
 import uuid
 from datetime import UTC, datetime
 
+
+def to_iso(dt: datetime | None) -> str:
+    """Đảm bảo chuỗi ISO 8601 có timezone UTC để trình duyệt hiển thị chính xác theo giờ địa phương."""
+    if not dt:
+        return datetime.now(UTC).isoformat()
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC).isoformat()
+    return dt.isoformat()
+
 from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, UploadFile
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
@@ -55,6 +64,7 @@ from src.models.schemas import (
 )
 from src.services.auth import check_case_ownership, get_optional_user, require_customer
 from src.agents.chatbot_agent import process_chat_message
+from src.agents.guardrails import evaluate_hard_safety
 
 router = APIRouter(prefix="/customer", tags=["customer"])
 
@@ -236,10 +246,31 @@ async def customer_chat(
             if att.ocr_text:
                 attached_ocr_snippets.append(att.ocr_text)
 
+    # 0.5. Tìm active case của session nếu payload.case_id chưa truyền hoặc đã truyền
+    active_case: Case | None = None
+    if payload.case_id:
+        active_case = db.get(Case, payload.case_id)
+    if not active_case and payload.session_id:
+        active_case = (
+            db.query(Case)
+            .filter(
+                Case.session_id == payload.session_id,
+                Case.status.in_([
+                    TicketStatus.STAFF_REVIEWING.value,
+                    TicketStatus.NEEDS_INFORMATION.value,
+                    TicketStatus.IN_PROGRESS.value,
+                    "New",
+                ]),
+            )
+            .order_by(Case.created_at.desc())
+            .first()
+        )
+    active_case_id = active_case.id if active_case else None
+
     # 1. Lưu tin nhắn của Khách hàng vào bảng messages
     cust_msg = Message(
         id=str(uuid.uuid4()),
-        case_id=payload.case_id,
+        case_id=active_case_id or payload.case_id,
         session_id=payload.session_id,
         sender_type=SenderType.CUSTOMER.value,
         content=text,
@@ -267,17 +298,18 @@ async def customer_chat(
             prior_turns += 1
 
     # 2. KIỂM TRA HARD SAFETY RULES (Bắt buộc theo triage-and-hitl-rules.md)
-    danger_keywords = ["cháy", "khói", "mất phanh", "nổ lốp", "tai nạn", "kẹt chân ga", "ngập nước đến sàn"]
-    is_direct_danger = any(kw in lower_text for kw in danger_keywords)
-
-    # Tổ hợp 2: rùa vàng + điều kiện nguy hiểm (cao tốc, không kiểm soát, mất công suất, dừng giữa đường)
-    has_turtle = "rùa vàng" in lower_text or any(s.get("warning_icon") == "TURTLE_WARNING" for s in attached_signals)
-    dangerous_conditions = ["cao tốc", "không kiểm soát", "giảm công suất", "dừng giữa đường", "giật"]
-    is_turtle_critical = has_turtle and any(c in lower_text for c in dangerous_conditions)
+    is_guardrail_crit, crit_rule, _ = evaluate_hard_safety(text)
+    has_turtle_visual = any(s.get("warning_icon") == "TURTLE_WARNING" for s in attached_signals)
+    dangerous_conditions = [
+        "cao tốc", "mất kiểm soát", "giảm công suất", "dừng giữa đường", "giật mạnh", "mất lái",
+        "cao toc", "mat kiem soat", "giam cong suat", "dung giua duong", "giat manh", "mat lai",
+    ]
+    is_turtle_critical = (crit_rule == "TURTLE_ON_HIGHWAY") or (has_turtle_visual and any(c in lower_text for c in dangerous_conditions))
+    is_direct_danger = is_guardrail_crit and (crit_rule != "TURTLE_ON_HIGHWAY")
 
     if is_direct_danger or is_turtle_critical:
         # BỎ QUA HỎI LÀM RÕ -> TẠO CASE CRITICAL NGAY LẬP TỨC
-        new_case_id = payload.case_id or generate_case_id(db)
+        new_case_id = active_case_id or payload.case_id or generate_case_id(db)
         case = db.get(Case, new_case_id)
         if not case:
             case = Case(
@@ -293,8 +325,16 @@ async def customer_chat(
             )
             db.add(case)
             db.flush()
+        else:
+            case.priority = Priority.CRITICAL.value
+            case.status = TicketStatus.STAFF_REVIEWING.value
+            case.updated_at = datetime.now(UTC)
 
         cust_msg.case_id = case.id
+        db.query(Message).filter(
+            Message.session_id == payload.session_id,
+            (Message.case_id.is_(None)) | (Message.case_id == "")
+        ).update({"case_id": case.id}, synchronize_session=False)
 
         # Liên kết attachments với case
         if payload.attachment_ids:
@@ -379,13 +419,15 @@ async def customer_chat(
         )
         agent_msg = Message(
             id=str(uuid.uuid4()),
-            case_id=None,
+            case_id=active_case_id,
             session_id=payload.session_id,
             sender_type=SenderType.AGENT.value,
             content=reply_no_source,
             msg_metadata={"type": "OOS_REJECT"},
         )
         db.add(agent_msg)
+        if active_case:
+            active_case.updated_at = datetime.now(UTC)
         db.commit()
 
         return ApiResponse(
@@ -393,7 +435,7 @@ async def customer_chat(
             data=ChatResponseData(
                 response_type="FAQ_ANSWER",
                 message=reply_no_source,
-                case_id=None,
+                case_id=active_case_id,
                 citations=[],
             ),
             error=None,
@@ -426,6 +468,10 @@ async def customer_chat(
             db.flush()
 
         cust_msg.case_id = case.id
+        db.query(Message).filter(
+            Message.session_id == payload.session_id,
+            (Message.case_id.is_(None)) | (Message.case_id == "")
+        ).update({"case_id": case.id}, synchronize_session=False)
         summary_text = f"Ý kiến khách hàng: {text[:120]}..."
         case_brief = CaseBrief(
             id=str(uuid.uuid4()),
@@ -482,7 +528,41 @@ async def customer_chat(
         "chết máy", "nháy đỏ", "bình 12v", "ắc quy", "xì lốp", "kẹt kính", "chỉ thổi gió nóng",
         "móp", "va chạm", "cứu tôi", "hết pin", "tụt pin"
     ]
-    is_technical_incident = any(kw in lower_text for kw in incident_keywords) or bool(payload.attachment_ids)
+    has_incident_kw = any(kw in lower_text for kw in incident_keywords) or bool(payload.attachment_ids)
+
+    # Phân biệt câu hỏi giải thích kiến thức / giả định / quá khứ vs sự cố đang gặp thật
+    inquiry_patterns = [
+        "nghĩa là gì", "là gì", "ý nghĩa", "nghĩa là sao", "giải thích", "tại sao", "khi nào",
+        "như thế nào", "cách ", "cách xử lý", "cách khắc phục", "làm thế nào", "làm sao", "làm gì",
+        "bao lâu", "bao nhiêu", "chính sách", "hướng dẫn", "cho tôi hỏi", "tìm hiểu", "khác nhau",
+        "xem ở đâu", "tại sao lại", "nguyên nhân"
+    ]
+    is_inquiry = any(p in lower_text for p in inquiry_patterns)
+
+    hypothetical_patterns = [
+        "nếu ", "nếu xe", "nếu gặp", "nếu bị", "giả sử", "trường hợp xe", "lỡ như", "khi nào thì bị", "có thể bị"
+    ]
+    is_hypothetical = any(p in lower_text for p in hypothetical_patterns)
+
+    past_patterns = [
+        "tháng trước", "tuần trước", "hôm qua", "đã từng bị", "lần trước", "trước đây", "từng bị"
+    ]
+    is_past = any(p in lower_text for p in past_patterns)
+
+    current_patterns = [
+        "xe tôi đang", "xe của tôi đang", "xe đang", "đang bị", "vừa bị", "đang hiện", "vừa hiện",
+        "bây giờ", "đang ở", "đang dừng", "cứu tôi", "không rút được", "không thể di chuyển",
+        "đang cắm", "rút không ra", "xe tôi bị", "xe tôi vừa"
+    ]
+    has_current_state = any(p in lower_text for p in current_patterns)
+
+    if has_incident_kw:
+        if (is_inquiry or is_hypothetical or is_past) and not has_current_state and not payload.attachment_ids:
+            is_technical_incident = False
+        else:
+            is_technical_incident = True
+    else:
+        is_technical_incident = False
 
     # --------------------------------------------------------------------------
     # NHÓM A: CHÀO HỎI & GIAO TIẾP XÃ GIAO (GREETINGS)
@@ -521,13 +601,15 @@ async def customer_chat(
         ]
         agent_msg = Message(
             id=str(uuid.uuid4()),
-            case_id=None,
+            case_id=active_case_id,
             session_id=payload.session_id,
             sender_type=SenderType.AGENT.value,
             content=greeting_reply,
             msg_metadata={"type": "GREETING", "suggested_replies": suggested_replies},
         )
         db.add(agent_msg)
+        if active_case:
+            active_case.updated_at = datetime.now(UTC)
         db.commit()
 
         return ApiResponse(
@@ -535,9 +617,9 @@ async def customer_chat(
             data=ChatResponseData(
                 response_type="FAQ_ANSWER",
                 message=greeting_reply,
-                case_id=None,
+                case_id=active_case_id,
                 suggested_replies=suggested_replies,
-                show_emergency_banner=False,
+                show_emergency_banner=bool(active_case and active_case.priority == Priority.CRITICAL.value),
                 request_location=False,
             ),
             error=None,
@@ -581,13 +663,15 @@ async def customer_chat(
         ]
         agent_msg = Message(
             id=str(uuid.uuid4()),
-            case_id=None,
+            case_id=active_case_id,
             session_id=payload.session_id,
             sender_type=SenderType.AGENT.value,
             content=test_drive_reply,
             msg_metadata={"citations": [c.model_dump() for c in test_drive_citations]},
         )
         db.add(agent_msg)
+        if active_case:
+            active_case.updated_at = datetime.now(UTC)
         db.commit()
 
         return ApiResponse(
@@ -595,11 +679,11 @@ async def customer_chat(
             data=ChatResponseData(
                 response_type="FAQ_ANSWER",
                 message=test_drive_reply,
-                case_id=None,
+                case_id=active_case_id,
                 citations=test_drive_citations,
                 service_handoff=test_drive_handoff,
                 suggested_replies=suggested_replies,
-                show_emergency_banner=False,
+                show_emergency_banner=bool(active_case and active_case.priority == Priority.CRITICAL.value),
                 request_location=False,
             ),
             error=None,
@@ -642,13 +726,15 @@ async def customer_chat(
         ]
         agent_msg = Message(
             id=str(uuid.uuid4()),
-            case_id=None,
+            case_id=active_case_id,
             session_id=payload.session_id,
             sender_type=SenderType.AGENT.value,
             content=pricing_reply,
             msg_metadata={"citations": [c.model_dump() for c in pricing_citations]},
         )
         db.add(agent_msg)
+        if active_case:
+            active_case.updated_at = datetime.now(UTC)
         db.commit()
 
         return ApiResponse(
@@ -656,11 +742,11 @@ async def customer_chat(
             data=ChatResponseData(
                 response_type="FAQ_ANSWER",
                 message=pricing_reply,
-                case_id=None,
+                case_id=active_case_id,
                 citations=pricing_citations,
                 service_handoff=pricing_handoff,
                 suggested_replies=suggested_replies,
-                show_emergency_banner=False,
+                show_emergency_banner=bool(active_case and active_case.priority == Priority.CRITICAL.value),
                 request_location=False,
             ),
             error=None,
@@ -710,13 +796,15 @@ async def customer_chat(
 
         agent_msg = Message(
             id=str(uuid.uuid4()),
-            case_id=None,
+            case_id=active_case_id,
             session_id=payload.session_id,
             sender_type=SenderType.AGENT.value,
             content=sales_reply,
             msg_metadata={"citations": [c.model_dump() for c in sales_citations]},
         )
         db.add(agent_msg)
+        if active_case:
+            active_case.updated_at = datetime.now(UTC)
         db.commit()
 
         return ApiResponse(
@@ -724,11 +812,11 @@ async def customer_chat(
             data=ChatResponseData(
                 response_type="FAQ_ANSWER",
                 message=sales_reply,
-                case_id=None,
+                case_id=active_case_id,
                 citations=sales_citations,
                 service_handoff=sales_handoff,
                 suggested_replies=suggested_replies,
-                show_emergency_banner=False,
+                show_emergency_banner=bool(active_case and active_case.priority == Priority.CRITICAL.value),
                 request_location=False,
             ),
             error=None,
@@ -757,13 +845,15 @@ async def customer_chat(
         ]
         agent_msg = Message(
             id=str(uuid.uuid4()),
-            case_id=payload.case_id,
+            case_id=active_case_id or payload.case_id,
             session_id=payload.session_id,
             sender_type=SenderType.AGENT.value,
             content=turtle_reply,
             msg_metadata={"type": "ACTIVE_TURTLE_CHECK", "suggested_replies": suggested_replies},
         )
         db.add(agent_msg)
+        if active_case:
+            active_case.updated_at = datetime.now(UTC)
         db.commit()
 
         return ApiResponse(
@@ -771,10 +861,10 @@ async def customer_chat(
             data=ChatResponseData(
                 response_type="CLARIFICATION",
                 message=turtle_reply,
-                case_id=payload.case_id,
+                case_id=active_case_id or payload.case_id,
                 priority="HIGH",
                 suggested_replies=suggested_replies,
-                show_emergency_banner=False,
+                show_emergency_banner=bool(active_case and active_case.priority == Priority.CRITICAL.value),
                 request_location=False,
             ),
             error=None,
@@ -846,13 +936,15 @@ async def customer_chat(
 
         agent_msg = Message(
             id=str(uuid.uuid4()),
-            case_id=None,
+            case_id=active_case_id,
             session_id=payload.session_id,
             sender_type=SenderType.AGENT.value,
             content=agent_reply,
             msg_metadata={"citations": [c.model_dump() for c in citations]},
         )
         db.add(agent_msg)
+        if active_case:
+            active_case.updated_at = datetime.now(UTC)
         db.commit()
 
         return ApiResponse(
@@ -860,11 +952,11 @@ async def customer_chat(
             data=ChatResponseData(
                 response_type="FAQ_ANSWER",
                 message=agent_reply,
-                case_id=None,
+                case_id=active_case_id,
                 citations=citations,
                 service_handoff=service_handoff,
                 suggested_replies=faq_chips if faq_chips else None,
-                show_emergency_banner=False,
+                show_emergency_banner=bool(active_case and active_case.priority == Priority.CRITICAL.value),
                 request_location=needs_loc,
                 remaining_guest_messages=remaining_guest_msgs,
             ),
@@ -918,6 +1010,10 @@ async def customer_chat(
             db.flush()
 
         cust_msg.case_id = case.id
+        db.query(Message).filter(
+            Message.session_id == payload.session_id,
+            (Message.case_id.is_(None)) | (Message.case_id == "")
+        ).update({"case_id": case.id}, synchronize_session=False)
 
         if payload.attachment_ids:
             db.query(Attachment).filter(Attachment.id.in_(payload.attachment_ids)).update(
@@ -1074,6 +1170,10 @@ async def customer_chat(
         db.flush()
 
     cust_msg.case_id = case.id
+    db.query(Message).filter(
+        Message.session_id == payload.session_id,
+        (Message.case_id.is_(None)) | (Message.case_id == "")
+    ).update({"case_id": case.id}, synchronize_session=False)
 
     if payload.attachment_ids:
         db.query(Attachment).filter(Attachment.id.in_(payload.attachment_ids)).update(
@@ -1642,7 +1742,7 @@ def get_customer_case_detail(
                     customer_message=u.customer_message,
                     next_step=u.next_step,
                     awaiting_customer_confirmation=u.awaiting_customer_confirmation,
-                    created_at=u.created_at.isoformat() if u.created_at else utcnow().isoformat(),
+                    created_at=to_iso(u.created_at),
                 )
             )
 
@@ -1658,21 +1758,30 @@ def get_customer_case_detail(
                     ocr_text=att.ocr_text,
                     detected_signals=att.detected_signals,
                     vision_confidence=att.vision_confidence,
-                    created_at=att.created_at.isoformat() if att.created_at else utcnow().isoformat(),
+                    created_at=to_iso(att.created_at),
                 )
             )
 
+    # Lịch sử hội thoại đầy đủ của ca (bao gồm cả tin nhắn trước khi tạo case trong cùng session)
     conv_items: list[ConversationItem] = []
-    if case.messages:
-        for msg in case.messages:
-            sender_role = msg.sender_type if msg.sender_type in ("CUSTOMER", "AGENT", "STAFF", "SYSTEM") else "SYSTEM"
-            conv_items.append(
-                ConversationItem(
-                    sender=sender_role,
-                    content=msg.content,
-                    created_at=msg.created_at.isoformat() if msg.created_at else utcnow().isoformat(),
-                )
+    session_messages = (
+        db.query(Message)
+        .filter(
+            (Message.case_id == case.id)
+            | ((Message.session_id == case.session_id) & (Message.session_id.isnot(None)))
+        )
+        .order_by(Message.created_at.asc())
+        .all()
+    )
+    for msg in session_messages:
+        sender_role = msg.sender_type if msg.sender_type in ("CUSTOMER", "AGENT", "STAFF", "SYSTEM") else "SYSTEM"
+        conv_items.append(
+            ConversationItem(
+                sender=sender_role,
+                content=msg.content,
+                created_at=to_iso(msg.created_at),
             )
+        )
 
     case_item = CustomerCaseItem(
         id=case.id,
@@ -1682,8 +1791,8 @@ def get_customer_case_detail(
         priority=case.priority,
         status=case.status,
         summary=case.brief.summary if case.brief else None,
-        created_at=case.created_at.isoformat() if case.created_at else utcnow().isoformat(),
-        updated_at=case.updated_at.isoformat() if case.updated_at else None,
+        created_at=to_iso(case.created_at),
+        updated_at=to_iso(case.updated_at) if case.updated_at else None,
     )
 
     return ApiResponse(

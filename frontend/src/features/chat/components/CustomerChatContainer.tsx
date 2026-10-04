@@ -47,6 +47,9 @@ export function CustomerChatContainer() {
     setSelectedModel,
     currentCaseId,
     criticalBanner,
+    criticalBannerDismissed,
+    dismissCriticalBanner,
+    restoreCriticalBanner,
     requestLocation,
     sendMessage,
     resetChat,
@@ -258,48 +261,9 @@ export function CustomerChatContainer() {
     if (!text) return;
     sendMessage(text, uploadedAttachmentId ? [uploadedAttachmentId] : undefined);
 
-    // Nhận diện tự động nếu liên quan địa điểm / cứu hộ
-    const lower = text.toLowerCase();
-    const isExplanation =
-      lower.includes("nghĩa là gì") ||
-      lower.includes("là gì") ||
-      lower.includes("ý nghĩa") ||
-      lower.includes("giải thích") ||
-      lower.includes("tại sao") ||
-      lower.includes("khi nào") ||
-      lower.includes("hướng dẫn") ||
-      lower.includes("cho tôi hỏi");
-
-    // Chỉ hiển thị thẻ chia sẻ vị trí khi khách thực sự cần tìm điểm hỗ trợ hoặc đang gặp sự cố thực tế
-    if (!isExplanation) {
-      if (
-        lower.includes("tìm trạm") ||
-        lower.includes("trạm gần") ||
-        lower.includes("tìm trạm sạc") ||
-        (lower.includes("trạm sạc") && (lower.includes("ở đâu") || lower.includes("chỗ nào")))
-      ) {
-        setSuggestedCategory("CHARGING_STATION");
-        setShowLocationCard(true);
-      } else if (
-        lower.includes("tìm xưởng") ||
-        lower.includes("xưởng gần") ||
-        lower.includes("đặt lịch xưởng") ||
-        lower.includes("đến xưởng") ||
-        (lower.includes("bảo dưỡng") && lower.includes("ở đâu"))
-      ) {
-        setSuggestedCategory("SERVICE_WORKSHOP");
-        setShowLocationCard(true);
-      } else if (
-        lower.includes("cứu hộ") ||
-        lower.includes("xe tôi đang bị") ||
-        lower.includes("chết máy") ||
-        lower.includes("hết pin giữa đường") ||
-        (lower.includes("cao tốc") && !lower.includes("chính sách"))
-      ) {
-        setSuggestedCategory("EXPRESSWAY_RESCUE");
-        setShowLocationCard(true);
-      }
-    }
+    // Việc mở thẻ vị trí tuân thủ Single Source of Truth từ Backend:
+    // Backend trả về cờ request_location (hoặc sự cố CRITICAL) thì useEffect([criticalBanner, requestLocation])
+    // sẽ tự động mở thẻ chia sẻ vị trí và đặt suggestedCategory tương ứng.
 
     setImagePreview(null);
     setImageName(null);
@@ -308,8 +272,13 @@ export function CustomerChatContainer() {
 
   return (
     <div className="w-full">
-      {/* Critical Alert Banner (Sticky 46px ngay dưới Navbar, đỏ đậm tương phản cao) */}
-      <EmergencyAlertBanner visible={criticalBanner} />
+      {/* Critical Alert Banner (Sticky 46px ngay dưới Navbar, đỏ đậm tương phản cao hoặc ribbon khi đã an toàn) */}
+      <EmergencyAlertBanner
+        visible={criticalBanner}
+        isDismissed={criticalBannerDismissed}
+        onDismiss={dismissCriticalBanner}
+        onRestore={restoreCriticalBanner}
+      />
 
       <div
         className={`mx-auto px-4 py-3 sm:py-4 transition-all duration-300 ${

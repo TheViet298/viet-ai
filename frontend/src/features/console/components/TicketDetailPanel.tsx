@@ -371,51 +371,73 @@ export function TicketDetailPanel({
     // Cuộn panel về đầu mỗi khi đổi case
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
 
-    const existing = DETAILED_TICKETS_MAP[ticket.id];
-    if (existing) {
-      setTicketDetail(existing);
-      setEditedSummary(existing.case_brief.summary);
-    } else {
-      setTicketDetail({
-        case: {
-          id: ticket.id,
-          mock_customer_id: ticket.mock_customer_id,
-          vehicle_code_mock: ticket.vehicle_code_mock,
-          vehicle_model: ticket.vehicle_model,
-          intent: ticket.intent,
-          priority: ticket.priority,
-          status: ticket.status,
-        },
-        case_brief: {
-          summary: `Hồ sơ sự cố tiếp nhận cho xe ${ticket.vehicle_model}. Yêu cầu kiểm tra kỹ thuật và điều phối xưởng.`,
-          captured_fields: {
-            vehicle_model: ticket.vehicle_model,
-            station_location: "Đang cập nhật",
-            error_code: "Chưa ghi nhận mã lỗi",
-            current_soc: "Đang xác minh",
-          },
-          suggested_action: "Kiểm tra triệu chứng thực tế và liên hệ chủ xe.",
-          confidence_score: ticket.confidence_score || 0.85,
-        },
-        conversation_history: [
-          {
-            sender: "CUSTOMER",
-            content: `Yêu cầu hỗ trợ kỹ thuật cho xe ${ticket.vehicle_model}.`,
-            created_at: ticket.created_at,
-          },
-          {
-            sender: "AGENT",
-            content: `Hệ thống tiếp nhận hồ sơ ${ticket.id} và chuyển tới Cố vấn Dịch vụ.`,
-            created_at: ticket.created_at,
-          },
-        ],
-      });
-      setEditedSummary(`Hồ sơ sự cố tiếp nhận cho xe ${ticket.vehicle_model}.`);
-    }
+    let isMounted = true;
+    const fetchLiveDetail = async () => {
+      try {
+        const res = await getTicketDetail(ticket.id);
+        if (isMounted && res && res.success && res.data) {
+          setTicketDetail(res.data);
+          setEditedSummary(res.data.case_brief?.summary || "");
+          return;
+        }
+      } catch {
+        // Fallback to local map if offline
+      }
+
+      if (isMounted) {
+        const existing = DETAILED_TICKETS_MAP[ticket.id];
+        if (existing) {
+          setTicketDetail(existing);
+          setEditedSummary(existing.case_brief.summary);
+        } else {
+          setTicketDetail({
+            case: {
+              id: ticket.id,
+              mock_customer_id: ticket.mock_customer_id,
+              vehicle_code_mock: ticket.vehicle_code_mock,
+              vehicle_model: ticket.vehicle_model,
+              intent: ticket.intent,
+              priority: ticket.priority,
+              status: ticket.status,
+            },
+            case_brief: {
+              summary: ticket.issue_summary || `Hồ sơ sự cố tiếp nhận cho xe ${ticket.vehicle_model}. Yêu cầu kiểm tra kỹ thuật và điều phối xưởng.`,
+              captured_fields: {
+                vehicle_model: ticket.vehicle_model,
+                station_location: "Đang cập nhật",
+                error_code: ticket.error_code_short || "Chưa ghi nhận mã lỗi",
+                current_soc: "Đang xác minh",
+              },
+              suggested_action: ticket.suggested_action || "Kiểm tra triệu chứng thực tế và liên hệ chủ xe.",
+              confidence_score: ticket.confidence_score || 0.85,
+            },
+            conversation_history: [
+              {
+                sender: "CUSTOMER",
+                content: ticket.issue_summary || `Yêu cầu hỗ trợ kỹ thuật cho xe ${ticket.vehicle_model}.`,
+                created_at: ticket.created_at,
+              },
+              {
+                sender: "AGENT",
+                content: `Hệ thống tiếp nhận hồ sơ ${ticket.id} và chuyển tới Cố vấn Dịch vụ.`,
+                created_at: ticket.created_at,
+              },
+            ],
+          });
+          setEditedSummary(ticket.issue_summary || `Hồ sơ sự cố tiếp nhận cho xe ${ticket.vehicle_model}.`);
+        }
+      }
+    };
+
+    fetchLiveDetail();
     setIsEditingBrief(false);
     setSelectedDept(recommendedDept.name);
     setExpandedOtherDeptId(null);
-  }, [ticket.id, recommendedDept.name]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [ticket.id, ticket, recommendedDept.name]);
 
   const handleCopyId = () => {
     navigator.clipboard.writeText(ticket.id);
@@ -454,6 +476,11 @@ export function TicketDetailPanel({
         updated_status: targetStatus,
         notes: notes || undefined,
       });
+      // Làm mới dữ liệu chi tiết sau khi thao tác thành công
+      const refreshed = await getTicketDetail(ticket.id);
+      if (refreshed && refreshed.success && refreshed.data) {
+        setTicketDetail(refreshed.data);
+      }
     } catch {
       // Demo fallback
     } finally {
