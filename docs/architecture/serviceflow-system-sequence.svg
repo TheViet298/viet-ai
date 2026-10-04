@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1435" viewBox="0 0 1000 1435" xml:lang="vi" role="img" aria-labelledby="title desc">
+<title id="title">ServiceFlow · Trình tự xử lý yêu cầu dịch vụ</title><desc id="desc">Luồng FastAPI hiện tại · API dưới /api/v1 · thời gian từ trên xuống. Thời gian đi từ trên xuống; mũi tên nét đứt biểu thị phản hồi.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="#435568" stroke-width="1.5"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<text x="36" y="46" font-family="DejaVu Sans, sans-serif" font-size="26" text-anchor="start" fill="#263747" font-weight="600">ServiceFlow · Trình tự xử lý yêu cầu dịch vụ</text>
+<text x="36" y="76" font-family="DejaVu Sans, sans-serif" font-size="16" text-anchor="start" fill="#263747" font-weight="400">Luồng FastAPI hiện tại · API dưới /api/v1 · thời gian từ trên xuống</text>
+<rect x="35" y="102" width="140" height="46" rx="5" fill="#eaf2fb" stroke="#9ba9b6"/>
+<text x="105" y="131" font-family="DejaVu Sans, sans-serif" font-size="17" text-anchor="middle" fill="#263747" font-weight="600">Khách hàng</text>
+<path d="M105 148 V1387" stroke="#aab5bf" stroke-dasharray="5 6"/>
+<rect x="255" y="102" width="140" height="46" rx="5" fill="#edf1f5" stroke="#9ba9b6"/>
+<text x="325" y="131" font-family="DejaVu Sans, sans-serif" font-size="17" text-anchor="middle" fill="#263747" font-weight="600">Bộ xử lý API</text>
+<path d="M325 148 V1387" stroke="#aab5bf" stroke-dasharray="5 6"/>
+<rect x="470" y="102" width="140" height="46" rx="5" fill="#edf5ee" stroke="#9ba9b6"/>
+<text x="540" y="131" font-family="DejaVu Sans, sans-serif" font-size="17" text-anchor="middle" fill="#263747" font-weight="600">Kho tệp riêng</text>
+<path d="M540 148 V1387" stroke="#aab5bf" stroke-dasharray="5 6"/>
+<rect x="655" y="102" width="140" height="46" rx="5" fill="#edf5ee" stroke="#9ba9b6"/>
+<text x="725" y="131" font-family="DejaVu Sans, sans-serif" font-size="17" text-anchor="middle" fill="#263747" font-weight="600">Cơ sở dữ liệu</text>
+<path d="M725 148 V1387" stroke="#aab5bf" stroke-dasharray="5 6"/>
+<rect x="835" y="102" width="140" height="46" rx="5" fill="#eaf2fb" stroke="#9ba9b6"/>
+<text x="905" y="131" font-family="DejaVu Sans, sans-serif" font-size="17" text-anchor="middle" fill="#263747" font-weight="600">Nhân viên</text>
+<path d="M905 148 V1387" stroke="#aab5bf" stroke-dasharray="5 6"/>
+<rect x="30" y="166" width="940" height="32" rx="3" fill="#eef2f6"/>
+<text x="43" y="188" font-family="DejaVu Sans, sans-serif" font-size="16" text-anchor="start" fill="#263747" font-weight="600">01   Đăng nhập và tiếp nhận ảnh tùy chọn</text>
+<path d="M105 230 H325" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="215.0" y="221" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Đăng ký / đăng nhập</text>
+<path d="M325 270 H725" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="525.0" y="261" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Tạo / xác minh tài khoản</text>
+<path d="M325 310 H105" fill="none" stroke="#435568" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="215.0" y="301" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Token + hồ sơ</text>
+<path d="M36 330 H964" stroke="#c8d1d9" stroke-dasharray="3 4"/>
+<text x="44" y="352" font-family="DejaVu Sans, sans-serif" font-size="14" text-anchor="start" fill="#263747" font-weight="600">opt  [có ảnh; khách hàng đã xác thực]</text>
+<path d="M105 385 H325" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="215.0" y="376" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Tải ảnh lên</text>
+<path d="M325 425 H540" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="432.5" y="416" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Ghi tệp</text>
+<path d="M325 465 H725" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="525.0" y="456" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Lưu ảnh + tín hiệu mô phỏng</text>
+<path d="M325 505 H105" fill="none" stroke="#435568" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="215.0" y="496" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">ID ảnh + tín hiệu</text>
+<rect x="30" y="527" width="940" height="32" rx="3" fill="#eef2f6"/>
+<text x="43" y="549" font-family="DejaVu Sans, sans-serif" font-size="16" text-anchor="start" fill="#263747" font-weight="600">02   Hội thoại · trả về tại nhánh phù hợp đầu tiên</text>
+<path d="M105 591 H325" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="215.0" y="582" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Tin nhắn + ID ảnh</text>
+<path d="M325 631 H725" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="525.0" y="622" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Đọc tín hiệu; lưu tin nhắn; đếm lượt</text>
+<path d="M36 651 H964" stroke="#c8d1d9" stroke-dasharray="3 4"/>
+<text x="44" y="673" font-family="DejaVu Sans, sans-serif" font-size="14" text-anchor="start" fill="#263747" font-weight="600">alt  [kích hoạt quy tắc an toàn khẩn cấp]</text>
+<path d="M325 706 H725" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="525.0" y="697" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Lưu hồ sơ CRITICAL + tóm tắt + phản hồi</text>
+<path d="M325 746 H105" fill="none" stroke="#435568" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="215.0" y="737" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">ID hồ sơ + chỉ dẫn an toàn</text>
+<path d="M36 766 H964" stroke="#c8d1d9" stroke-dasharray="3 4"/>
+<text x="44" y="788" font-family="DejaVu Sans, sans-serif" font-size="14" text-anchor="start" fill="#263747" font-weight="600">else  [khớp FAQ; không có từ khóa sự cố]</text>
+<path d="M325 821 H725" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="525.0" y="812" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Lưu đáp án FAQ cố định + trích dẫn</text>
+<path d="M325 861 H105" fill="none" stroke="#435568" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="215.0" y="852" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Đáp án FAQ + hướng dẫn</text>
+<path d="M36 881 H964" stroke="#c8d1d9" stroke-dasharray="3 4"/>
+<text x="44" y="903" font-family="DejaVu Sans, sans-serif" font-size="14" text-anchor="start" fill="#263747" font-weight="600">else  [đủ dữ kiện sạc hoặc đạt giới hạn hỏi bổ sung]</text>
+<path d="M325 936 H725" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="525.0" y="927" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Lưu hồ sơ + tóm tắt + phản hồi</text>
+<path d="M325 976 H105" fill="none" stroke="#435568" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="215.0" y="967" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">ID hồ sơ + trạng thái</text>
+<path d="M36 996 H964" stroke="#c8d1d9" stroke-dasharray="3 4"/>
+<text x="44" y="1018" font-family="DejaVu Sans, sans-serif" font-size="14" text-anchor="start" fill="#263747" font-weight="600">else  [thiếu dữ kiện; số lượt khách hàng &lt; 2]</text>
+<path d="M325 1051 H725" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="525.0" y="1042" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Lưu câu hỏi bổ sung</text>
+<path d="M325 1091 H105" fill="none" stroke="#435568" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="215.0" y="1082" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Câu hỏi + đáp án gợi ý</text>
+<rect x="30" y="1113" width="940" height="32" rx="3" fill="#eef2f6"/>
+<text x="43" y="1135" font-family="DejaVu Sans, sans-serif" font-size="16" text-anchor="start" fill="#263747" font-weight="600">03   Nhân viên duyệt và khách hàng theo dõi · khi đã có hồ sơ</text>
+<path d="M905 1177 H325" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="615.0" y="1168" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Xem hàng đợi / chi tiết; gửi thao tác</text>
+<path d="M325 1217 H725" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="525.0" y="1208" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Đọc / cập nhật hồ sơ + nhật ký kiểm toán</text>
+<path d="M325 1257 H905" fill="none" stroke="#435568" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="615.0" y="1248" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Dữ liệu hồ sơ / kết quả thao tác</text>
+<path d="M105 1297 H325" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="215.0" y="1288" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Tra cứu / mở lại / đánh giá</text>
+<path d="M325 1337 H725" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="525.0" y="1328" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Kiểm tra chủ sở hữu; đọc / lưu</text>
+<path d="M325 1380 H105" fill="none" stroke="#435568" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="215.0" y="1371" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Trạng thái / kết quả thao tác</text>
+<rect x="30" y="330" width="940" height="185" fill="none" stroke="#aab5bf" stroke-width="1"/>
+<rect x="30" y="651" width="940" height="453" fill="none" stroke="#aab5bf" stroke-width="1"/>
+</svg>

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1050" viewBox="0 0 1000 1050" xml:lang="vi" role="img" aria-labelledby="title desc">
+<title id="title">ServiceFlow · Trình tự hội thoại RAG</title><desc id="desc">Luồng riêng /api/v1/chat · trả về cờ yêu cầu nhân viên duyệt. Thời gian đi từ trên xuống; mũi tên nét đứt biểu thị phản hồi.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="#435568" stroke-width="1.5"/></marker></defs>
+<rect width="100%" height="100%" fill="white"/>
+<text x="36" y="46" font-family="DejaVu Sans, sans-serif" font-size="26" text-anchor="start" fill="#263747" font-weight="600">ServiceFlow · Trình tự hội thoại RAG</text>
+<text x="36" y="76" font-family="DejaVu Sans, sans-serif" font-size="16" text-anchor="start" fill="#263747" font-weight="400">Luồng riêng /api/v1/chat · trả về cờ yêu cầu nhân viên duyệt</text>
+<rect x="30" y="102" width="140" height="46" rx="5" fill="#eaf2fb" stroke="#9ba9b6"/>
+<text x="100" y="131" font-family="DejaVu Sans, sans-serif" font-size="17" text-anchor="middle" fill="#263747" font-weight="600">Bên gọi</text>
+<path d="M100 148 V1002" stroke="#aab5bf" stroke-dasharray="5 6"/>
+<rect x="230" y="102" width="140" height="46" rx="5" fill="#edf1f5" stroke="#9ba9b6"/>
+<text x="300" y="131" font-family="DejaVu Sans, sans-serif" font-size="17" text-anchor="middle" fill="#263747" font-weight="600">API hội thoại</text>
+<path d="M300 148 V1002" stroke="#aab5bf" stroke-dasharray="5 6"/>
+<rect x="430" y="102" width="140" height="46" rx="5" fill="#f0ecf7" stroke="#9ba9b6"/>
+<text x="500" y="131" font-family="DejaVu Sans, sans-serif" font-size="17" text-anchor="middle" fill="#263747" font-weight="600">Tác tử chatbot</text>
+<path d="M500 148 V1002" stroke="#aab5bf" stroke-dasharray="5 6"/>
+<rect x="630" y="102" width="140" height="46" rx="5" fill="#f0ecf7" stroke="#9ba9b6"/>
+<text x="700" y="131" font-family="DejaVu Sans, sans-serif" font-size="17" text-anchor="middle" fill="#263747" font-weight="600">Dịch vụ RAG</text>
+<path d="M700 148 V1002" stroke="#aab5bf" stroke-dasharray="5 6"/>
+<rect x="830" y="102" width="140" height="46" rx="5" fill="#edf5ee" stroke="#9ba9b6"/>
+<text x="900" y="131" font-family="DejaVu Sans, sans-serif" font-size="17" text-anchor="middle" fill="#263747" font-weight="600">ChromaDB</text>
+<path d="M900 148 V1002" stroke="#aab5bf" stroke-dasharray="5 6"/>
+<rect x="30" y="166" width="940" height="32" rx="3" fill="#eef2f6"/>
+<text x="43" y="188" font-family="DejaVu Sans, sans-serif" font-size="16" text-anchor="start" fill="#263747" font-weight="600">01   Kiểm tra an toàn trước khi truy xuất</text>
+<path d="M100 230 H300" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="200.0" y="221" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Tin nhắn</text>
+<path d="M300 280 H500" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="400.0" y="271" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">process_chat_message</text>
+<path d="M500 325 h42 v22 h-42" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="550" y="341" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="start" fill="#263747" font-weight="400">Ẩn PII; kiểm tra an toàn</text>
+<path d="M36 370 H964" stroke="#c8d1d9" stroke-dasharray="3 4"/>
+<text x="44" y="392" font-family="DejaVu Sans, sans-serif" font-size="14" text-anchor="start" fill="#263747" font-weight="600">alt  [nguy cơ khẩn cấp hoặc ngoài phạm vi]</text>
+<path d="M500 425 H300" fill="none" stroke="#435568" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="400.0" y="416" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Phản hồi + cờ cần duyệt</text>
+<path d="M300 470 H100" fill="none" stroke="#435568" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="200.0" y="461" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Phản hồi hội thoại</text>
+<path d="M36 495 H964" stroke="#c8d1d9" stroke-dasharray="3 4"/>
+<text x="44" y="517" font-family="DejaVu Sans, sans-serif" font-size="14" text-anchor="start" fill="#263747" font-weight="600">else  [trong phạm vi; không khẩn cấp]</text>
+<path d="M500 550 H700" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="600.0" y="541" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Truy xuất 2 kết quả</text>
+<path d="M700 595 H900" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="800.0" y="586" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Truy vấn collection</text>
+<path d="M900 640 H700" fill="none" stroke="#435568" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="800.0" y="631" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Tài liệu + khoảng cách</text>
+<path d="M700 685 H500" fill="none" stroke="#435568" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="600.0" y="676" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Ngữ cảnh + trích dẫn / NO_SOURCE</text>
+<rect x="30" y="715" width="940" height="32" rx="3" fill="#eef2f6"/>
+<text x="43" y="737" font-family="DejaVu Sans, sans-serif" font-size="16" text-anchor="start" fill="#263747" font-weight="600">02   Trả lời có căn cứ hoặc yêu cầu nhân viên duyệt</text>
+<path d="M36 760 H964" stroke="#c8d1d9" stroke-dasharray="3 4"/>
+<text x="44" y="782" font-family="DejaVu Sans, sans-serif" font-size="14" text-anchor="start" fill="#263747" font-weight="600">alt  [NO_SOURCE] → phản hồi kèm cờ cần duyệt</text>
+<path d="M36 802 H964" stroke="#c8d1d9" stroke-dasharray="3 4"/>
+<text x="44" y="824" font-family="DejaVu Sans, sans-serif" font-size="14" text-anchor="start" fill="#263747" font-weight="600">else  [có nguồn] → gọi Gemini nếu đã cấu hình; nếu không, trích xuất tài liệu</text>
+<path d="M500 850 h42 v22 h-42" fill="none" stroke="#435568" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="550" y="866" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="start" fill="#263747" font-weight="400">Tạo câu trả lời; xét cờ duyệt</text>
+<path d="M500 920 H300" fill="none" stroke="#435568" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="400.0" y="911" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Trả lời + trích dẫn + cờ</text>
+<path d="M300 975 H100" fill="none" stroke="#435568" stroke-width="1.4" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="200.0" y="966" font-family="DejaVu Sans, sans-serif" font-size="15" text-anchor="middle" fill="#263747" font-weight="400">Phản hồi hội thoại</text>
+<rect x="30" y="370" width="940" height="331" fill="none" stroke="#aab5bf" stroke-width="1"/>
+<rect x="30" y="760" width="940" height="131" fill="none" stroke="#aab5bf" stroke-width="1"/>
+</svg>
