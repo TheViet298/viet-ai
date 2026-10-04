@@ -10,6 +10,7 @@ from src.agents.guardrails import evaluate_hard_safety
 from src.agents.routing import decide_routing
 from src.agents.state import AgentState, IntentType, PriorityLevel
 from src.services.agent_llm import structured_call
+from src.services.followup_context import FAQ_FOLLOWUPS
 from src.services.tracer import sanitized_snapshot
 
 
@@ -42,12 +43,12 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
     has_current_failure = bool(
         re.search(
             r"(?:xe\s*(?:tôi\s*)?(?:đang|bị|vừa|báo|hiện)|bây giờ|đang\s*(?:ở|bị|kẹt|dừng|chạy))|"
-            r"(?:không\s+(?:nhận\s*sạc|sạc được|khởi động|đi được|chạy nổi|vào điện|lên nguồn|mở (?:cửa|khóa) được))|"
+            r"(?:không\s+(?:nhận\s*sạc|sạc được|khởi động|đi được|chạy nổi|vào điện|lên nguồn|mở (?:cửa|khóa) được|mở được (?:cửa|khóa)))|"
             r"(?:bị|đang|báo)\s+(?:hỏng|kẹt|gãy|vỡ|lỗi|đơ|đen|mờ đen)|"
             r"(?:xe tôi|vừa bị|đang bị|xe đang|đang hiện)\s+.*rùa|"
             r"(?:chết máy|nháy đỏ|nhấp nháy|sập nguồn|mất lái|chảy dầu|xì lốp)|"
             r"(?:chân phanh|phanh|chân ga|ắc quy|pin).{0,25}(?:hỏng|kẹt|hẫng|chai|tụt nhanh|không ăn)|"
-            r"cứu tôi|cứu hộ|không chạy nổi|không thể tăng tốc|lỗi\s+(?:[a-z]*\d+|0x)",
+            r"cứu tôi|cần cứu hộ|gọi cứu hộ|^cứu hộ[.!? ]*$|không chạy nổi|không thể tăng tốc|lỗi\s+(?:[a-z]*\d+|0x)",
             lower,
         )
     )
@@ -161,7 +162,7 @@ async def triage_node(state: AgentState) -> dict:
         k in lower
         for k in ["hỏng", "lỗi", "rùa", "phanh", "lốp", "không khởi động", "sự cố", "điều hòa", "kêu", "đèn cảnh báo"]
     )
-    incident = incident or request_kind == "incident" or any(k in lower for k in ["smart key", "chìa khóa", "bảo dưỡng"])
+    incident = incident or request_kind == "incident" or any(k in lower for k in ["smart key", "chìa khóa", "bảo dưỡng", "hết pin", "tụt pin"])
     faq = request_kind == "faq"
     scoped = any(k in lower for k in ["vinfast", "xe", "vf", "showroom", "bảo dưỡng", "bảo hành"])
     continuation = bool(
@@ -189,14 +190,14 @@ async def triage_node(state: AgentState) -> dict:
             extracted["showroom_dealer"] = dealer.group(1)
     elif continuation:
         intent = previous_intent
-    elif rule_name == "TURTLE_DEFINITION" or (faq and not is_crit):
+    elif rule_name == "TURTLE_DEFINITION":
         intent = "Sales/General Info"
         faq = True
     elif charging:
         intent = "Charging/Battery"
     elif incident:
         intent = "Service/Incident"
-    elif scoped:
+    elif scoped or faq:
         intent = "Sales/General Info"
         faq = True
     else:
@@ -211,7 +212,24 @@ async def triage_node(state: AgentState) -> dict:
         else "MEDIUM"
     )
     confidence = 0.90 if (is_crit or charging or complaint or incident or faq or continuation) else 0.55
-    llm = await structured_call(state, "triage", TriageResult) if confidence < 0.60 and not foreign_domain and not is_crit else None
+    # Ordinary conversation needs no official evidence; product commitments,
+    # technical details and repair requests still use the existing grounded flow.
+    specialist = any(term in lower for term in [
+        "bảo hành", "chính sách", "thông số", "dung lượng", "điện áp", "cell", "bms",
+        "chu kỳ", "kwh", "bao nhiêu", "bao lâu", "quãng đường", "giá", "phí",
+        "khuyến mãi", "ưu đãi", "đổi gói", "chuyển gói", "đặt lịch", "điều kiện",
+        "bí mật", "nội bộ", "không công khai", "chưa công khai", "tháng sau",
+        "sửa chữa", "tháo", "đấu dây", "chẩn đoán", "hiệu chỉnh", "đo kiểm",
+        "cứu hộ",
+    ])
+    general = (
+        not is_crit and not foreign_domain and not complaint and request_kind != "incident"
+        and not incident and not specialist
+        and not continuation
+        and (scoped or charging or state.get("is_general_query")
+             or lower.strip(" .!?") in ["xin chào", "chào", "hello", "cảm ơn"])
+    )
+    llm = await structured_call(state, "triage", TriageResult) if confidence < 0.60 and not foreign_domain and not is_crit and not general else None
     if llm and not foreign_domain and not is_crit:
         intent, priority, confidence, faq = llm.intent, llm.priority, llm.confidence_score, llm.is_faq
         # Only accept known slots; keep explicitly extracted facts authoritative.
@@ -251,6 +269,12 @@ async def triage_node(state: AgentState) -> dict:
             intent = "Service/Incident"
         if priority == "LOW":
             priority = "MEDIUM"
+    if general:
+        faq, priority, confidence = False, "LOW", 0.90
+        if intent == "Out_of_Scope":
+            intent = "Sales/General Info"
+    elif specialist and not is_crit and not actual_failure and not complaint and not foreign_domain:
+        faq = True
     # Contract changes and personalized totals require staff confirmation,
     # even when phrased as an informational question.
     if any(term in lower for term in ["đổi gói thuê", "chuyển gói thuê", "giá lăn bánh", "tạm tính", "sau khi trừ ưu đãi"]):
@@ -263,6 +287,9 @@ async def triage_node(state: AgentState) -> dict:
         priority = "HIGH"
     elif "rùa" in lower and actual_failure:
         priority = "HIGH"
+    if lower.strip(" .?!") in FAQ_FOLLOWUPS:
+        # A short reference without a resolved topic needs clarification first.
+        intent, faq, general, confidence = "Sales/General Info", False, False, 0.90
     facts = dict(state.get("captured_fields", {}))
     history = state.get("fact_history", [])
     for field, value in extracted.items():
@@ -283,6 +310,7 @@ async def triage_node(state: AgentState) -> dict:
         "captured_fields": facts,
         "fact_history": history,
         "is_rag_query": faq,
+        "is_general_query": general,
         "guardrails": flags,
         **(
             {"response_type": "OUT_OF_SCOPE", "response": reply, "final_response": reply}

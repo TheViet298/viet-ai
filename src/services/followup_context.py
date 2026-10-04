@@ -1,15 +1,16 @@
 """Resolve bounded FAQ references without changing the user's original text."""
 import re
 
+FAQ_FOLLOWUPS = {
+    "điều kiện là gì", "điều kiện gì", "điều kiện thế nào", "điều kiện là gì vậy",
+    "ở đâu", "làm ở đâu", "đặt ở đâu", "cần gì", "cần những gì", "làm thế nào",
+}
+
 
 def resolve_faq_followup(text: str, state: dict) -> str:
     normalized = text.casefold().strip(" .?!")
     # Explicit new topics, incidents and unsafe requests never match this list.
-    followups = {
-        "điều kiện là gì", "điều kiện gì", "điều kiện thế nào", "điều kiện là gì vậy",
-        "ở đâu", "làm ở đâu", "đặt ở đâu", "cần gì", "cần những gì", "làm thế nào",
-    }
-    if normalized not in followups or not state.get("is_rag_query") or state.get("response_type") != "FAQ_ANSWER":
+    if normalized not in FAQ_FOLLOWUPS or not state.get("is_rag_query") or state.get("response_type") != "FAQ_ANSWER":
         return text
     prior_human = next((str(message.content) for message in reversed(state.get("messages", [])) if getattr(message, "type", "") == "human"), "")
     previous = state.get("resolved_query") or prior_human or state.get("latest_user_message") or ""

@@ -7,6 +7,7 @@ from weakref import WeakValueDictionary
 from langchain_core.messages import AIMessage, HumanMessage
 from pydantic import BaseModel, Field
 
+from src.agents.cardd_evidence import make_cardd_signal
 from src.agents.context_manager import token_count
 from src.agents.graph import agent
 from src.agents.guardrails import evaluate_hard_safety, sanitize_pii
@@ -32,6 +33,7 @@ async def process_chat_message(
     user_role: str = "guest",
     owner: str | None = None,
     client_context: dict | None = None,
+    damage_evidence: dict | None = None,
 ) -> dict:
     if user_role not in {"guest", "customer", "staff"}:
         raise ValueError("Invalid role")
@@ -61,6 +63,8 @@ async def process_chat_message(
             state["vehicle_model"] = context["vehicle_model"]
             state.setdefault("captured_fields", {}).setdefault("vehicle_model", context["vehicle_model"])
         state.update(query=sanitize_pii(user_message)[0], latest_user_message=sanitize_pii(user_message)[0])
+        # Server-side AI evidence only; never read this from arbitrary client_context.
+        state['pending_cardd_signal'] = make_cardd_signal(damage_evidence,state.get('turn',0)+1) if damage_evidence is not None else None
         result = await agent.ainvoke(
             state,
             config={
@@ -98,6 +102,7 @@ async def process_chat_message(
             "citations": saved.get("rag_citations", []),
             "suggested_replies": saved.get("suggested_replies", []),
             "case_brief": saved.get("case_brief"),
+            'visual_evidence':saved.get('cardd_evidence'),
             "case_id": saved.get("case_id"),
             "ticket_status": saved.get("ticket_status"),
             "response_type": saved.get("response_type"),

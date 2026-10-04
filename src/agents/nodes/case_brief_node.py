@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from src.agents.guardrails import STANDARD_SAFE_GUIDANCE, check_missing_fields, sanitize_pii
+from src.agents.cardd_evidence import evidence_for_turn, evidence_summary, missing_fields_for_state
+from src.agents.guardrails import STANDARD_SAFE_GUIDANCE, sanitize_pii
 from src.agents.routing import decide_routing
 from src.agents.state import AgentState
 
@@ -23,6 +24,9 @@ async def case_brief_node(state: AgentState) -> dict:
     intent = state.get("intent") or "Service/Incident"
     routing = decide_routing(state).target
     summary = state.get("latest_user_message", "")
+    visual = evidence_for_turn(state) if intent == 'Service/Incident' else None
+    if visual and visual['status']!='not_requested':
+        summary += '\n' + evidence_summary(visual)
     # Factual template brief keeps the only foreground model call for uncertain
     # classification or grounded answering, and never delays emergency output.
     brief = {
@@ -38,7 +42,9 @@ async def case_brief_node(state: AgentState) -> dict:
         "is_edited_by_staff": False,
     }
     brief["summary"] = sanitize_pii(brief["summary"])[0]
-    missing = check_missing_fields(intent, facts)
+    if visual:
+        brief['visual_evidence'] = visual
+    missing = missing_fields_for_state({**state,'intent':intent})
     status = "Needs Information" if missing and state.get("clarification_turn", 0) >= 2 else "Staff Reviewing"
     guest = state.get("user_role", "guest") != "customer"
     # Only the bridge can claim successful case creation after its DB transaction.
@@ -61,7 +67,7 @@ async def case_brief_node(state: AgentState) -> dict:
         "routing": routing,
         "login_required": guest,
         "response_type": "FAQ_ANSWER"
-        if state.get("is_rag_query")
+        if state.get("is_rag_query") and not state.get("is_no_source")
         else state["response_type"]
         if state.get("is_critical") or state.get("policy_blocked")
         else "LOGIN_REQUIRED"

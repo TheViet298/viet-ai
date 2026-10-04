@@ -1,6 +1,32 @@
 import io
 
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from src.db import get_db
+from src.main import app
+
+
+@pytest.fixture(autouse=True)
+def isolated_demo_database(tmp_path, monkeypatch):
+    """Run demo scenarios on a fresh seeded DB, never the workspace database."""
+    from src import seed
+
+    demo_engine = create_engine(f"sqlite:///{tmp_path / 'demo.db'}", connect_args={"check_same_thread": False})
+    demo_sessions = sessionmaker(bind=demo_engine, autoflush=False)
+    monkeypatch.setattr(seed, "engine", demo_engine)
+    monkeypatch.setattr(seed, "SessionLocal", demo_sessions)
+    seed.seed_database()
+
+    def demo_db():
+        with demo_sessions() as db:
+            yield db
+
+    app.dependency_overrides[get_db] = demo_db
+    yield
+    app.dependency_overrides.pop(get_db, None)
+    demo_engine.dispose()
 
 
 # Helper hàm đăng nhập để lấy token xác thực trong test
@@ -75,7 +101,7 @@ async def test_rbac_restrictions(client):
 
 @pytest.mark.asyncio
 async def test_customer_attachment_upload(client):
-    """Kiểm tra Upload ảnh riêng tư và trích xuất OCR sơ bộ (api-contract.md 1.1 & ADR-004)."""
+    """Invalid bytes cannot become fake OCR evidence based on the filename."""
     token = await get_auth_token(client, "customer@vinfast.vn", "customer123")
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -83,15 +109,7 @@ async def test_customer_attachment_upload(client):
     files = {"file": ("screen_error_cc01.jpg", io.BytesIO(file_content), "image/jpeg")}
 
     res = await client.post("/api/v1/customer/attachments", files=files, headers=headers)
-    assert res.status_code == 200
-    body = res.json()
-    assert body["success"] is True
-    data = body["data"]
-    assert data["attachment_id"].startswith("ATT-")
-    assert data["analysis_status"] == "ANALYZED"
-    assert "CC01" in data["ocr_text"]
-    assert data["detected_signals"]["error_code_candidate"] == "CC01"
-    assert data["vision_confidence"] is not None
+    assert res.status_code == 400
 
 
 @pytest.mark.asyncio
@@ -127,8 +145,8 @@ async def test_customer_chat_critical_safety(client):
 async def test_customer_chat_faq(client, monkeypatch):
     """Kiểm tra khách hàng hỏi thông tin sạc (FAQ answer kèm citation và service handoff)."""
     # API mapping is verified against grounded evidence, independent of a local KB.
-    from src.services.rag_service import source_registry
     import src.api.customer as api
+    from src.services.rag_service import source_registry
     async def grounded_faq(*args, **kwargs):
         source = source_registry()["SRC-003"]
         return {"reply": "Theo biểu phí đã xác thực.", "citations": [{**source, "source_id": "SRC-003", "relevant_snippet": "Biểu phí sạc.", "applicable_models": ["ALL"]}]}

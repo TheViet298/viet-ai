@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from src.agents.cardd_evidence import missing_fields_for_state
 from src.agents.context_manager import load_prompt
-from src.agents.guardrails import check_missing_fields
 from src.agents.state import AgentState
 
 FIELD_SPECIFIC_QUESTIONS: dict[str, str] = {
@@ -36,7 +36,7 @@ SUGGESTED_BY_FIELD: dict[str, list[str]] = {
 
 async def clarify_node(state: AgentState) -> dict:
     load_prompt("clarify")
-    missing = check_missing_fields(state.get("intent"), state.get("captured_fields", {}))
+    missing = missing_fields_for_state(state)
     turn = state.get("clarification_turn", 0)
     flags = dict(state.get("guardrails", {}))
     if turn >= 2:

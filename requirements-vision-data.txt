@@ -1,0 +1,3 @@
+# Data audit/conversion only; no training framework is installed.
+Pillow>=10,<13
+requests>=2.31,<3

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from src.db import Base, get_db
 from src.main import app
 from src.models.db_models import User
-from src.services.auth import require_customer
+from src.services.auth import get_optional_user, require_customer
 
 
 @pytest.fixture
@@ -24,6 +24,7 @@ def chat_client_db(tmp_path):
         db.commit()
         app.dependency_overrides[get_db] = lambda: db
         app.dependency_overrides[require_customer] = lambda: user
+        app.dependency_overrides[get_optional_user] = lambda: user
         yield db
     app.dependency_overrides.clear()
     engine.dispose()

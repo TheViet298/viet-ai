@@ -5,6 +5,7 @@ pydantic>=2.10.0
 pydantic-settings>=2.7.0
 python-dotenv>=1.0.0
 python-multipart>=0.0.18
+Pillow>=11,<13
 
 # AI / LangChain
 langchain>=0.3.0

@@ -1,0 +1,243 @@
+{
+  "$defs": {
+    "Candidate": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        }
+      },
+      "required": [
+        "label",
+        "confidence"
+      ],
+      "title": "Candidate",
+      "type": "object"
+    },
+    "DamageDetection": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "enum": [
+            "dent",
+            "scratch",
+            "crack",
+            "glass shatter",
+            "lamp broken",
+            "tire flat"
+          ],
+          "title": "Label",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "bbox_xyxy": {
+          "maxItems": 4,
+          "minItems": 4,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Bbox Xyxy",
+          "type": "array"
+        }
+      },
+      "required": [
+        "label",
+        "confidence",
+        "bbox_xyxy"
+      ],
+      "title": "DamageDetection",
+      "type": "object"
+    },
+    "DamageResult": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "default": "not_requested",
+          "enum": [
+            "detected",
+            "not_detected",
+            "unavailable",
+            "not_requested"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "detections": {
+          "items": {
+            "$ref": "#/$defs/DamageDetection"
+          },
+          "title": "Detections",
+          "type": "array"
+        },
+        "model_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Version"
+        },
+        "threshold": {
+          "default": 0.25,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "bbox_format": {
+          "const": "xyxy_normalized",
+          "default": "xyxy_normalized",
+          "title": "Bbox Format",
+          "type": "string"
+        }
+      },
+      "title": "DamageResult",
+      "type": "object"
+    },
+    "VehicleResult": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "default": "not_requested",
+          "enum": [
+            "candidate",
+            "unknown",
+            "unavailable",
+            "not_requested"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "model_label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Label"
+        },
+        "candidates": {
+          "items": {
+            "$ref": "#/$defs/Candidate"
+          },
+          "title": "Candidates",
+          "type": "array"
+        },
+        "model_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Version"
+        },
+        "threshold": {
+          "default": 0.7,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "requires_user_confirmation": {
+          "const": true,
+          "default": true,
+          "title": "Requires User Confirmation",
+          "type": "boolean"
+        }
+      },
+      "title": "VehicleResult",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "image_id": {
+      "minLength": 1,
+      "title": "Image Id",
+      "type": "string"
+    },
+    "vehicle": {
+      "$ref": "#/$defs/VehicleResult"
+    },
+    "damage": {
+      "$ref": "#/$defs/DamageResult"
+    },
+    "ocr": {
+      "const": "deferred_to_ocr",
+      "default": "deferred_to_ocr",
+      "title": "Ocr",
+      "type": "string"
+    }
+  },
+  "required": [
+    "image_id"
+  ],
+  "title": "VisionEvidence",
+  "type": "object"
+}

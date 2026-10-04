@@ -99,7 +99,7 @@ class SessionStore:
             row = db.execute("SELECT * FROM agent_sessions WHERE id=?", (session_id,)).fetchone()
             if not row or row["owner"] != owner or row["version"] != version:
                 raise SessionConflictError("Session changed during processing; retry the turn")
-            if data.get("case_brief") and data.get("needs_staff_review") and row["role"] == "customer" and not data.get("is_rag_query"):
+            if data.get("case_brief") and data.get("needs_staff_review") and row["role"] == "customer" and (not data.get("is_rag_query") or data.get("is_no_source")):
                 cid = data.get("case_id")
                 existing = db.execute("SELECT * FROM cases WHERE id=?", (cid,)).fetchone() if cid else None
                 if existing and existing["customer_id"] != owner:

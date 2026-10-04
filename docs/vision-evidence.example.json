@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "image_id": "example-only-not-a-real-prediction",
+  "vehicle": {
+    "status": "candidate",
+    "model_label": "vf3",
+    "candidates": [
+      {
+        "label": "vf3",
+        "confidence": 0.81
+      },
+      {
+        "label": "vf5",
+        "confidence": 0.12
+      }
+    ],
+    "model_version": "example-checkpoint",
+    "threshold": 0.7,
+    "reason": null,
+    "requires_user_confirmation": true
+  },
+  "damage": {
+    "status": "detected",
+    "detections": [
+      {
+        "label": "scratch",
+        "confidence": 0.76,
+        "bbox_xyxy": [
+          0.2,
+          0.3,
+          0.6,
+          0.7
+        ]
+      }
+    ],
+    "model_version": "example-checkpoint",
+    "threshold": 0.25,
+    "reason": null,
+    "bbox_format": "xyxy_normalized"
+  },
+  "ocr": "deferred_to_ocr"
+}

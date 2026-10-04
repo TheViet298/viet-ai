@@ -1,7 +1,7 @@
 import os
 import re
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 
 def to_iso(dt: datetime | None) -> str:
@@ -16,6 +16,8 @@ from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, Uplo
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
+from src.agents.chatbot_agent import process_chat_message
+from src.agents.nodes.triage_node import classify_request_kind
 from src.db import get_db
 from src.models.db_models import (
     Attachment,
@@ -63,8 +65,9 @@ from src.models.schemas import (
     ServicePointsData,
 )
 from src.services.auth import check_case_ownership, get_optional_user, require_customer
-from src.agents.chatbot_agent import process_chat_message
 from src.agents.guardrails import evaluate_hard_safety
+from src.services.dashboard_vision_service import analyze_dashboard_image, prepare_image
+from src.services.dashboard_warning_service import ALIASES, lookup_dashboard_warning, merge_dashboard_clarification
 
 router = APIRouter(prefix="/customer", tags=["customer"])
 
@@ -106,48 +109,30 @@ async def upload_attachment(
     Lưu trữ file tại đường dẫn riêng tư (private storage), trích xuất tín hiệu sơ bộ qua OCR/Vision.
     Cảnh báo: Khách hàng không tải VIN, biển số xe, khuôn mặt hoặc giấy tờ cá nhân.
     """
-    att_id = generate_attachment_id(db)
-    filename = file.filename or "attachment.jpg"
-    safe_filename = re.sub(r"[^a-zA-Z0-9_.-]", "_", filename)
-    storage_path = f"data/attachments/{att_id}_{safe_filename}"
-
-    file_bytes = await file.read()
+    att_id = f"ATT-{uuid.uuid4().hex}"
+    storage_path = f"data/attachments/{att_id}.png"
+    file_bytes = await file.read(5 * 1024 * 1024 + 1)
+    if len(file_bytes) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Ảnh tối đa 5 MB.")
+    try:
+        clean_bytes, mime_type = prepare_image(file_bytes)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Ảnh JPEG, PNG hoặc WebP không hợp lệ.") from exc
     with open(storage_path, "wb") as f:
-        f.write(file_bytes)
-
-    # Phân tích OCR / Vision nhận diện dấu hiệu sơ bộ (Không chẩn đoán nguyên nhân)
-    filename_lower = filename.lower()
-    ocr_text: str | None = None
-    detected_signals: dict | None = None
-    vision_confidence: float | None = None
-
-    if any(k in filename_lower for k in ["cc01", "sac", "tru", "charger", "p02"]):
-        ocr_text = "Mã lỗi CC01 - Trụ sạc VN-CS-HN042-P02 đèn báo nháy đỏ"
-        detected_signals = {
-            "error_code_candidate": "CC01",
-            "charger_lamp": "RED",
-            "warning_type": "CHARGING_COMMUNICATION_ERROR",
-        }
-        vision_confidence = 0.92
-    elif any(k in filename_lower for k in ["rua", "turtle", "cao_toc", "speed"]):
-        ocr_text = "Đèn cảnh báo rùa vàng bật sáng trên màn hình ODO điều khiển"
-        detected_signals = {
-            "warning_icon": "TURTLE_WARNING",
-            "power_reduction": True,
-        }
-        vision_confidence = 0.95
-    else:
-        ocr_text = "Ảnh táp-lô / màn hình điều khiển ghi nhận đèn cảnh báo hệ thống"
-        detected_signals = {"general_warning_detected": True}
-        vision_confidence = 0.85
+        f.write(clean_bytes)
+    detected_signals = await analyze_dashboard_image(clean_bytes, mime_type)
+    detected_signals["owner_user_id"] = current_user.id
+    ocr_text = detected_signals.get("ocr_text")
+    vision_confidence = detected_signals.get("confidence")
 
     attachment = Attachment(
         id=att_id,
         case_id=None,
         message_id=None,
         storage_key=storage_path,
-        mime_type=file.content_type or "image/jpeg",
-        analysis_status=AttachmentStatus.ANALYZED.value,
+        mime_type=mime_type,
+        analysis_status=(AttachmentStatus.FAILED.value if detected_signals.get("analysis_error")
+                         else AttachmentStatus.ANALYZED.value),
         ocr_text=ocr_text,
         detected_signals=detected_signals,
         vision_confidence=vision_confidence,
@@ -239,8 +224,16 @@ async def customer_chat(
     attached_signals: list[dict] = []
     attached_ocr_snippets: list[str] = []
     if payload.attachment_ids:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để sử dụng ảnh đính kèm.")
         atts = db.query(Attachment).filter(Attachment.id.in_(payload.attachment_ids)).all()
+        if len(atts) != len(set(payload.attachment_ids)):
+            raise HTTPException(status_code=404, detail="Không tìm thấy ảnh đính kèm.")
         for att in atts:
+            owner_id = (att.detected_signals or {}).get("owner_user_id")
+            legacy_case = db.get(Case, att.case_id) if owner_id is None and att.case_id else None
+            if owner_id != current_user.id and not (legacy_case and legacy_case.user_id == current_user.id):
+                raise HTTPException(status_code=403, detail="Ảnh đính kèm không thuộc khách hàng này.")
             if att.detected_signals:
                 attached_signals.append(att.detected_signals)
             if att.ocr_text:
@@ -290,6 +283,13 @@ async def customer_chat(
         Message.session_id == payload.session_id,
         Message.sender_type == SenderType.AGENT.value,
     ).order_by(Message.created_at.desc(), Message.id.desc()).all()
+    reply_created_at = datetime.now(UTC)
+    if history:
+        previous_reply_at = history[0].created_at
+        if previous_reply_at.tzinfo is None:
+            previous_reply_at = previous_reply_at.replace(tzinfo=UTC)
+        # UUIDs do not preserve turn order when the system clock returns a tie.
+        reply_created_at = max(reply_created_at, previous_reply_at + timedelta(microseconds=1))
     for message in history:
         if message.case_id:
             break
@@ -300,6 +300,7 @@ async def customer_chat(
     # 2. KIỂM TRA HARD SAFETY RULES (Bắt buộc theo triage-and-hitl-rules.md)
     is_guardrail_crit, crit_rule, _ = evaluate_hard_safety(text)
     has_turtle_visual = any(s.get("warning_icon") == "TURTLE_WARNING" for s in attached_signals)
+    has_turtle = has_turtle_visual or crit_rule in {"TURTLE_ON_HIGHWAY", "TURTLE_NORMAL", "TURTLE_DEFINITION"}
     dangerous_conditions = [
         "cao tốc", "mất kiểm soát", "giảm công suất", "dừng giữa đường", "giật mạnh", "mất lái",
         "cao toc", "mat kiem soat", "giam cong suat", "dung giua duong", "giat manh", "mat lai",
@@ -403,6 +404,142 @@ async def customer_chat(
             ),
             error=None,
         )
+
+    # Dataset lookup accepts validated image symptom keys, never raw OCR instructions.
+    dashboard_text = text
+    dashboard_report = text
+    image_evidence = [s for s in attached_signals if s.get("evidence_type") == "GEMINI_VISION"]
+    image_symptoms = {key for s in image_evidence for key in s.get("symptom_keys", []) if key in ALIASES}
+    if image_evidence:
+        dashboard_text += "\nTáp-lô\n" + "\n".join(ALIASES[key][0] for key in sorted(image_symptoms))
+        dashboard_report += "\nOCR ảnh: " + " | ".join(s.get("ocr_text", "") for s in image_evidence)
+    dashboard_context_model = ctx.vehicle_model if ctx and "vehicle_model" in ctx.model_fields_set else None
+    if history:
+        pending = history[0].msg_metadata or {}
+        if (pending.get("response_type") == "CLARIFICATION"
+                and pending.get("user_id") == current_user.id
+                and pending.get("dashboard_text")):
+            dashboard_text = merge_dashboard_clarification(pending["dashboard_text"], dashboard_text)
+            dashboard_report = pending.get("dashboard_report", pending["dashboard_text"]) + "\n" + dashboard_report
+            dashboard_context_model = dashboard_context_model or pending.get("dashboard_context_model")
+    is_dashboard, dashboard_model, dashboard_records, reported_risk = lookup_dashboard_warning(
+        dashboard_text, dashboard_context_model,
+    )
+    # Keep develop's definition and active-turtle flows ahead of dataset lookup.
+    if is_dashboard and not (crit_rule in {"TURTLE_DEFINITION", "TURTLE_NORMAL"} and not image_evidence):
+        warning = dashboard_records[0] if dashboard_records else None
+        citations = []
+        if warning:
+            guidance = warning["action_summary"]
+            if warning["symptom_key"] == "low_pressure":
+                guidance = (
+                    "Kiểm tra áp suất lốp khi lốp nguội và đối chiếu với tem áp suất "
+                    "trên khung cửa lái hoặc sổ tay đúng phiên bản xe. "
+                    "Nếu lốp xẹp hoặc xe vận hành bất thường, dừng tại nơi an toàn và liên hệ hỗ trợ."
+                )
+            priority = warning["severity"] if warning["severity"] != "INFO" else None
+            reply = (
+                f"Theo dữ kiện cung cấp, {warning['vehicle_model']} có dấu hiệu "
+                f"{warning['warning_name_vi']} (mức {warning['severity']}).\n\n"
+                f"{guidance}\n\nĐây là đối chiếu mô tả, chưa phải chẩn đoán kỹ thuật."
+            )
+            citations = [Citation(
+                source_id=warning["id"], title=warning["warning_name_vi"],
+                url=warning["source_url"], verified_at=None, status_code=None,
+                source_type="DATASET_REFERENCE", applicable_models=[dashboard_model],
+                relevant_snippet=guidance,
+            )]
+        else:
+            priority = reported_risk
+            guidance = "Nếu xe có dấu hiệu nguy hiểm, hãy dừng tại nơi an toàn và liên hệ cứu hộ."
+            reply = (
+                "Chưa đủ căn cứ đối chiếu cảnh báo táp-lô cho mẫu xe này. "
+                "Anh/chị vui lòng cho biết mẫu xe, nội dung chữ, biểu tượng và màu đèn; "
+                "đèn sáng liên tục hay nhấp nháy?"
+            )
+
+        if image_evidence:
+            visible_text = " | ".join(s.get("ocr_text", "") for s in image_evidence if s.get("ocr_text"))
+            positions = {"rear_right": "sau bên phải", "rear_left": "sau bên trái",
+                         "front_right": "trước bên phải", "front_left": "trước bên trái"}
+            wheels = {positions[s["wheel_position"]] for s in image_evidence
+                      if s.get("confidence", 0) >= 0.8 and s.get("wheel_position") in positions}
+            if visible_text:
+                reply += f"\nChữ đọc sơ bộ từ ảnh: {visible_text}"
+            if wheels:
+                reply += "\nVị trí bánh được đánh dấu: " + ", ".join(sorted(wheels)) + "."
+            if any(s.get("analysis_error") or s.get("needs_clarification") for s in image_evidence):
+                reply += "\nẢnh chưa đọc được chắc chắn; vui lòng gửi ảnh rõ hơn hoặc mô tả cảnh báo."
+
+        create_case = (
+            bool(warning and (warning.get("requires_staff_review")
+                              or priority in {"HIGH", "CRITICAL"}))
+            or (not warning and (prior_turns >= 2 or priority in {"HIGH", "CRITICAL"}))
+        )
+        case = None
+        if create_case:
+            case = db.get(Case, payload.case_id) if payload.case_id else None
+            if case:
+                check_case_ownership(case, current_user)
+                ranks = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
+                if ranks[priority] > ranks.get(case.priority, -1):
+                    case.priority = priority
+                case.status = TicketStatus.STAFF_REVIEWING.value
+            else:
+                case = Case(
+                    id=generate_case_id(db), user_id=current_user.id,
+                    session_id=payload.session_id, mock_customer_id=mock_cust_id,
+                    vehicle_code_mock=vehicle_code, vehicle_model=dashboard_model,
+                    intent=Intent.SERVICE_INCIDENT.value, priority=priority,
+                    status=TicketStatus.STAFF_REVIEWING.value,
+                )
+                db.add(case)
+                db.flush()
+            cust_msg.case_id = case.id
+            if payload.attachment_ids:
+                db.query(Attachment).filter(Attachment.id.in_(payload.attachment_ids)).update(
+                    {"case_id": case.id, "message_id": cust_msg.id}, synchronize_session=False,
+                )
+            brief = db.query(CaseBrief).filter(CaseBrief.case_id == case.id).first()
+            if brief is None:
+                brief = CaseBrief(id=str(uuid.uuid4()), case_id=case.id, is_edited_by_staff=False)
+                db.add(brief)
+            if not brief.is_edited_by_staff:
+                brief.summary = f"Cảnh báo táp-lô {dashboard_model}: {dashboard_report}"
+                brief.captured_fields = {
+                    "vehicle_model": dashboard_model, "raw_inquiry": dashboard_report,
+                    "dashboard_warning_ids": [item["id"] for item in dashboard_records],
+                    "risk_level": warning["severity"] if warning else "UNKNOWN",
+                    "reported_priority": reported_risk,
+                    "evidence_type": "GEMINI_VISION" if image_evidence else "USER_REPORTED_TEXT",
+                    "visual_signals": image_evidence,
+                }
+                brief.suggested_action = guidance
+            reply += f"\nHồ sơ {case.id} đã được chuyển cho nhân viên hỗ trợ."
+
+        response_type = "CASE_CREATED" if case else "FAQ_ANSWER" if warning else "CLARIFICATION"
+        db.add(Message(
+            id=str(uuid.uuid4()), case_id=case.id if case else None,
+            session_id=payload.session_id, sender_type=SenderType.AGENT.value,
+            created_at=reply_created_at,
+            content=reply, msg_metadata={
+                "response_type": response_type, "user_id": current_user.id,
+                "dashboard_warning_ids": [item["id"] for item in dashboard_records],
+                "citations": [citation.model_dump() for citation in citations],
+                "dashboard_text": dashboard_text,
+                "dashboard_report": dashboard_report,
+                "dashboard_context_model": dashboard_context_model,
+            },
+        ))
+        db.commit()
+        return ApiResponse(success=True, data=ChatResponseData(
+            response_type=response_type, message=reply,
+            case_id=case.id if case else None, status=case.status if case else None,
+            priority=case.priority if case else priority if warning else None,
+            safe_guidance=guidance, citations=citations,
+            clarification_turn=prior_turns + 1 if response_type == "CLARIFICATION" else None,
+            max_clarification_turns=2 if response_type == "CLARIFICATION" else None,
+        ), error=None)
 
     # 3. KIỂM TRA CÂU HỎI NGOÀI PHẠM VI (RULE 2.4 - OUT OF SCOPE / ADVERSARIAL)
     oos_keywords = [
@@ -554,7 +691,9 @@ async def customer_chat(
         "bây giờ", "đang ở", "đang dừng", "cứu tôi", "không rút được", "không thể di chuyển",
         "đang cắm", "rút không ra", "xe tôi bị", "xe tôi vừa"
     ]
-    has_current_state = any(p in lower_text for p in current_patterns)
+    has_current_state = any(p in lower_text for p in current_patterns) or (
+        classify_request_kind(text) == "incident" and not is_hypothetical and not is_past
+    )
 
     if has_incident_kw:
         if (is_inquiry or is_hypothetical or is_past) and not has_current_state and not payload.attachment_ids:
@@ -876,7 +1015,9 @@ async def customer_chat(
     if not is_technical_incident:
         # Gọi Chatbot Agent Core AI (Tra cứu RAG ChromaDB / Fallback KB)
         ai_res = await process_chat_message(
-            text, session_id=payload.session_id, user_role="customer", owner=current_user.id,
+            text, session_id=payload.session_id,
+            user_role="customer" if current_user else "guest",
+            owner=user_id or f"guest:{payload.guest_session_id}",
             client_context={
                 "vehicle_model": vehicle_model,
                 "reset_faq_context": bool(history and "citations" not in (history[0].msg_metadata or {})),

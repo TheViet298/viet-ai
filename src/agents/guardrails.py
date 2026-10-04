@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from typing import Any
 
 from src.agents.state import PriorityLevel
@@ -67,8 +68,8 @@ def strip_accents(s: str) -> str:
 
 CRITICAL_STANDALONE_RULES: dict[str, str] = {
     "SMOKE_OR_FIRE": (
-        r"\b(cháy|cháy xe|xe bốc lửa|bốc lửa|bốc khói|mùi khét|lửa|xì khói|chập điện|"
-        r"chay|chay xe|xe boc lua|boc lua|boc khoi|mui khet|chap dien)\b"
+        r"\b(cháy|cháy xe|xe bốc lửa|bốc lửa|khói|bốc khói|mùi khét|lửa|xì khói|chập điện|"
+        r"chay|chay xe|xe boc lua|boc lua|khoi|boc khoi|mui khet|chap dien)\b"
     ),
     "BRAKE_FAILURE": (
         r"\b(mất phanh|liệt phanh|phanh không ăn|không phanh được|không ăn phanh|"
@@ -105,7 +106,14 @@ def evaluate_hard_safety(text: str) -> tuple[bool, str | None, PriorityLevel]:
     has_emergency_presence = bool(re.search(r"\b(xe tôi|xe của tôi|đang bị|vừa bị|đang|vừa|thấy|bốc|khét|cứu)\b", text_lower))
 
     for rule_name, pattern in CRITICAL_STANDALONE_RULES.items():
-        if re.search(pattern, text_lower) or re.search(pattern, text_unaccented):
+        rule_text = text_lower
+        normalized_text = text_unaccented
+        if rule_name == "SMOKE_OR_FIRE":
+            # Do not turn accented "chạy" (driving) into "cháy" (fire).
+            # For unaccented input, only suppress the explicit driving phrase.
+            rule_text = re.sub(r"\b(?:đang|vẫn|dang|van)\s+(?:chạy|chay)\b", "di chuyển", text_lower)
+            normalized_text = rule_text
+        if re.search(pattern, rule_text) or re.search(pattern, normalized_text):
             if is_pure_inquiry and not has_emergency_presence and rule_name == "SMOKE_OR_FIRE":
                 continue
             return True, rule_name, "CRITICAL"

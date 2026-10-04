@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from src.db import Base, get_db
 from src.main import app
 from src.models.db_models import User
-from src.services.auth import require_customer
+from src.services.auth import get_optional_user, require_customer
 
 
 @pytest.fixture
@@ -18,6 +18,7 @@ def customer_db(tmp_path):
         db.commit()
         app.dependency_overrides[get_db] = lambda: db
         app.dependency_overrides[require_customer] = lambda: user
+        app.dependency_overrides[get_optional_user] = lambda: user
         yield db
     app.dependency_overrides.clear()
     engine.dispose()
@@ -63,4 +64,22 @@ async def test_faq_preserves_context_and_deduplicates_verified_sources(client, c
     assert len(citations) == 1
     assert citations[0]["verified_at"] == source["verified_at"]
     assert citations[0]["relevant_snippet"] == source["relevant_snippet"]
+
+
+@pytest.mark.asyncio
+async def test_battery_topic_uses_conversation_without_case(client, customer_db, monkeypatch):
+    from src.agents.nodes import general_node
+
+    async def answer(state, prompt, schema):
+        return schema(answer="Anh muốn hỏi về cách sạc hay tuổi thọ pin ạ?")
+
+    monkeypatch.setattr(general_node, "structured_call", answer)
+    response = await client.post("/api/v1/customer/chat", json={
+        "session_id": "battery-conversation", "message": "tôi đang muốn hỏi về pin xe",
+        "client_context": {"vehicle_model": "VF8"},
+    })
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["message"] == "Anh muốn hỏi về cách sạc hay tuổi thọ pin ạ?"
+    assert data["case_id"] is None
 

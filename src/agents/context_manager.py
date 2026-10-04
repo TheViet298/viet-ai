@@ -9,6 +9,7 @@ from typing import Any
 
 from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 
+from src.agents.cardd_evidence import confirmed_cardd_context
 from src.agents.state import AgentState
 
 PROMPT_DIR = Path(__file__).resolve().parents[2] / "prompts"
@@ -53,7 +54,7 @@ def build_7_layer_context(state: AgentState, task_objective: str, tool_outputs: 
         retrieval_context="\n".join(
             f"[{c['source_id']}] {c.get('relevant_snippet', '')}" for c in state.get("rag_citations", [])
         ),
-        tool_context=tool_outputs,
+        tool_context='\n'.join(value for value in (tool_outputs,confirmed_cardd_context(state)) if value),
     )
 
 

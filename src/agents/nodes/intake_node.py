@@ -4,13 +4,14 @@ import time
 
 from langchain_core.messages import HumanMessage
 
+from src.agents.cardd_evidence import consume_cardd_signal
 from src.agents.context_manager import apply_fact_recency_and_invalidation
 from src.agents.guardrails import sanitize_pii
 from src.agents.nodes.triage_node import extract_fields
 from src.agents.state import AgentState
 from src.config import get_settings
-from src.services.tracer import sanitized_snapshot
 from src.services.followup_context import resolve_faq_followup
+from src.services.tracer import sanitized_snapshot
 
 
 async def intake_node(state: AgentState) -> dict:
@@ -22,6 +23,7 @@ async def intake_node(state: AgentState) -> dict:
             facts, history, field, value, f"user:turn:{state.get('turn', 0) + 1}"
         )
     return {
+        **consume_cardd_signal(state, state.get('turn',0)+1, text),
         "llm_budget": {"deadline": time.monotonic() + get_settings().agent_turn_timeout_s, "attempts": 0},
         "retrieval_diagnostics": {},
         "query": text,

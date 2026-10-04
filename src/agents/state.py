@@ -68,6 +68,7 @@ class CaseBriefData(TypedDict, total=False):
     suggested_action: str
     confidence_score: float
     is_edited_by_staff: bool
+    visual_evidence: dict[str, Any]
 
 
 class GuardrailAuditFlags(TypedDict, total=False):
@@ -138,6 +139,7 @@ class AgentState(TypedDict, total=False):
     # 6. RAG & Knowledge Grounding
     # -------------------------------------------------------------
     is_rag_query: bool
+    is_general_query: bool
     rag_context: list[str]
     rag_citations: list[CitationSource]
     rag_similarity_score: float
@@ -170,6 +172,11 @@ class AgentState(TypedDict, total=False):
     location: dict[str, Any]
     service_points: list[dict[str, Any]]
     attachment_signals: dict[str, Any]
+    pending_cardd_signal: dict[str, Any] | None
+    cardd_evidence: dict[str, Any] | None
+    cardd_new_input: bool
+    cardd_confirmation_changed: bool
+    cardd_review_action: str
     policy_blocked: bool
     login_required: bool
     remaining_guest_messages: int
