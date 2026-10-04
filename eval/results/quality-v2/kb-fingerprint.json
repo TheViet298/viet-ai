@@ -1,0 +1,22 @@
+{
+  "observed_after_final_runs": true,
+  "count": 2163,
+  "embedding": "Xenova/multilingual-e5-small@761b726",
+  "metric": "squared L2 normalized vectors",
+  "source_sections": "complete lines; original raw snapshots retained",
+  "supplement": "docs/data-evidence/2026-10-03-source-002-table.json",
+  "direct_refresh": "HTTP 403; no new HTTP 200 claimed",
+  "kb_content_sha256": "100028ac31524ff40942ab004a9b8e085cda4dad3242522c0a9a972309c8d24a",
+  "raw_source_hashes": {
+    "SRC-001.txt": "ebf63a6f53a3aabb89502d58aab00a0b22a3130edd7e34d4761d33a2f1c40e0b",
+    "SRC-002.txt": "27a84e0c7d638c273545faa04f672d0cd1ba47fa0e97e398542598ce0396eae4",
+    "SRC-003.txt": "e86ba244ec6d36e9d169a9fd90d556bea56d04b6aae7e9195644b1a941a6f2ae",
+    "SRC-004.txt": "eac629dd43c27a21c6eeafb5d2fdaea32ffd18536c7636e69e1227e7d0d2ac5d",
+    "SRC-005.txt": "2c36cd2ea07a85ee5a283edc7a10d80a09d9b4e29efeed14698d0c88ee9acc94",
+    "SRC-006.txt": "02ca6bb7977c06b660d85a8f92b81e561093f591d1cba5633bbf22d01f10abe4",
+    "SRC-007.txt": "20b504e6868d2dff27af7f82ebff65e0105d920e1b1a091a0dd8461391e6287a",
+    "SRC-008.txt": "04013af7b52ebd1a253accbdbe5e57d578d4b5493b0c22cd776ebf113d08c413"
+  },
+  "model_onnx_sha256": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193",
+  "tokenizer_sha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39"
+}

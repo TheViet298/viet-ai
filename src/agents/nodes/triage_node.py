@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import re
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.agents.context_manager import apply_fact_recency_and_invalidation
+from src.agents.routing import decide_routing
 from src.agents.state import AgentState, IntentType, PriorityLevel
 from src.services.agent_llm import structured_call
 from src.services.tracer import sanitized_snapshot
@@ -17,6 +19,25 @@ class TriageResult(BaseModel):
     confidence_score: float = Field(ge=0, le=1)
     captured_fields: dict[str, str] = Field(default_factory=dict)
     is_faq: bool = False
+
+
+def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", "oos", "uncertain"]:
+    lower = text.lower()
+    if any(k in lower for k in ["bí mật", "nội bộ", "không công khai", "tháng sau"]):
+        return "faq"
+    if any(k in lower for k in ["khiếu nại", "bức xúc", "thái độ", "không hài lòng", "phản ánh", "hoàn tiền", "thu sai", "khen ngợi", "crash", "bị văng"]):
+        return "complaint"
+    if re.search(
+        r"(?:bị|đang|báo)\s+(?:hỏng|kẹt|gãy|vỡ|lỗi|rùa|đơ|đen|mờ đen)|không mở được (?:cửa|khóa)|"
+        r"không\s+(?:nhận\s*sạc|sạc được|khởi động|đi được|vào điện|lên nguồn|mở (?:cửa|khóa) được)|"
+        r"bật nguồn không lên|màn hình tối|rùa vàng|nháy đỏ|nhấp nháy|va chạm|"
+        r"(?:pin|phanh|lốp|điều hòa|xe).{0,30}(?:hỏng|kẹt|xì|rò|rung|kêu)|"
+        r"(?:chìa khóa|smart key).{0,20}hết pin|lỗi\s+(?:[a-z]*\d+|0x)", lower
+    ):
+        return "incident"
+    if any(k in lower for k in ["bao lâu", "bao nhiêu", "chính sách", "bảo hành", "thông số", "giá xe", "đặt lịch", "cách ", "làm thế nào", "như thế nào", "hình thức", "tính năng", "khác nhau", "xem ở đâu", "có bị", "mốc nào", "quãng đường", "dung lượng", "chu kỳ", "khuyến mãi"]):
+        return "faq"
+    return "uncertain"
 
 
 def extract_fields(text: str) -> dict[str, str]:
@@ -50,6 +71,7 @@ async def triage_node(state: AgentState) -> dict:
     lower = text.lower()
     extracted = extract_fields(text)
     previous_intent = state.get("intent")
+    request_kind = classify_request_kind(text)
     faq = any(
         k in lower
         for k in [
@@ -68,11 +90,14 @@ async def triage_node(state: AgentState) -> dict:
         k in lower
         for k in ["khiếu nại", "bức xúc", "thái độ", "không hài lòng", "phản ánh", "hoàn tiền", "thu sai", "khen ngợi"]
     )
-    charging = any(k in lower for k in ["sạc", "pin", "trụ", "súng"])
+    complaint = complaint or request_kind == "complaint"
+    charging = any(k in lower for k in ["sạc", "pin", "trụ", "súng"]) and not any(k in lower for k in ["chìa khóa", "smart key"])
     incident = any(
         k in lower
         for k in ["hỏng", "lỗi", "rùa", "phanh", "lốp", "không khởi động", "sự cố", "điều hòa", "kêu", "đèn cảnh báo"]
     )
+    incident = incident or request_kind == "incident" or any(k in lower for k in ["smart key", "chìa khóa", "bảo dưỡng"])
+    faq = request_kind == "faq"
     scoped = any(k in lower for k in ["vinfast", "xe", "vf", "showroom", "bảo dưỡng", "bảo hành"])
     continuation = bool(
         previous_intent
@@ -112,7 +137,7 @@ async def triage_node(state: AgentState) -> dict:
         else "MEDIUM"
     )
     confidence = 0.90 if (charging or complaint or incident or faq or continuation) else 0.55
-    llm = await structured_call(state, "triage", TriageResult)
+    llm = await structured_call(state, "triage", TriageResult) if confidence < 0.60 and not foreign_domain else None
     if llm and not foreign_domain:
         intent, priority, confidence, faq = llm.intent, llm.priority, llm.confidence_score, llm.is_faq
         # Only accept known slots; keep explicitly extracted facts authoritative.
@@ -130,7 +155,7 @@ async def triage_node(state: AgentState) -> dict:
         extracted = {**{k: v for k, v in sanitized_snapshot(llm.captured_fields).items() if k in allowed}, **extracted}
     if complaint and not foreign_domain:
         intent, faq, priority = "Complaint/Feedback", False, "HIGH"
-    actual_failure = bool(
+    actual_failure = request_kind == "incident" or bool(
         re.search(
             r"không\s+(?:nhận\s*sạc|sạc được|khởi động|đi được|vào điện)|"
             r"(?:bị|báo|đang)\s+(?:hỏng|kẹt|lỗi|rùa)|lỗi\s+(?:[a-z]*\d+|0x)|"
@@ -145,7 +170,15 @@ async def triage_node(state: AgentState) -> dict:
             intent = "Service/Incident"
         if priority == "LOW":
             priority = "MEDIUM"
+    # Contract changes and personalized totals require staff confirmation,
+    # even when phrased as an informational question.
+    if any(term in lower for term in ["đổi gói thuê", "chuyển gói thuê", "giá lăn bánh", "tạm tính", "sau khi trừ ưu đãi"]):
+        faq = False
+        if priority == "LOW":
+            priority = "MEDIUM"
     if state.get("priority") == "HIGH":
+        priority = "HIGH"
+    if "rùa" in lower and actual_failure:
         priority = "HIGH"
     facts = dict(state.get("captured_fields", {}))
     history = state.get("fact_history", [])
@@ -162,13 +195,7 @@ async def triage_node(state: AgentState) -> dict:
         "intent": intent,
         "priority": priority,
         "confidence_score": confidence,
-        "routing": {
-            "Charging/Battery": "charging_support",
-            "Service/Incident": "service_center",
-            "Complaint/Feedback": "customer_relations",
-            "Sales/General Info": "sales_support",
-            "Out_of_Scope": "customer_relations",
-        }[intent],
+        "routing": decide_routing({**state, "intent": intent, "is_rag_query": faq}).target,
         "vehicle_model": facts.get("vehicle_model", state.get("vehicle_model")),
         "captured_fields": facts,
         "fact_history": history,

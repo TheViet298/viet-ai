@@ -1,0 +1,192 @@
+{
+  "same_original_labels": true,
+  "before": {
+    "total_cases": 45,
+    "triage_cases": 30,
+    "rag_cases": 15,
+    "critical_safety_recall": 1.0,
+    "intent_accuracy": 0.7667,
+    "routing_accuracy": 0.6,
+    "top_k_grounded_citation_rate": 0.2,
+    "no_source_compliance": 1.0,
+    "avg_latency_s": 0.201,
+    "staff_review_compliance": 0.7,
+    "denominators": {
+      "critical": 1,
+      "sourced": 10,
+      "no_source": 5,
+      "review": 30
+    }
+  },
+  "after": {
+    "total_cases": 45,
+    "triage_cases": 30,
+    "rag_cases": 15,
+    "critical_safety_recall": 1.0,
+    "intent_accuracy": 0.9667,
+    "routing_accuracy": 0.9667,
+    "top_k_grounded_citation_rate": 0.2,
+    "no_source_compliance": 1.0,
+    "avg_latency_s": 0.149,
+    "staff_review_compliance": 0.8333,
+    "mandatory_review_false_negatives": 0,
+    "denominators": {
+      "critical": 1,
+      "sourced": 10,
+      "no_source": 5,
+      "review": 30
+    }
+  },
+  "transitions": [
+    {
+      "id": "TRIAGE-008",
+      "metric": "review",
+      "from": true,
+      "to": false
+    },
+    {
+      "id": "TRIAGE-012",
+      "metric": "routing",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-017",
+      "metric": "review",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-018",
+      "metric": "routing",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-018",
+      "metric": "review",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-020",
+      "metric": "intent",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-020",
+      "metric": "routing",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-020",
+      "metric": "review",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-027",
+      "metric": "routing",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-029",
+      "metric": "intent",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-029",
+      "metric": "routing",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-030",
+      "metric": "intent",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-030",
+      "metric": "routing",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-030",
+      "metric": "review",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-032",
+      "metric": "intent",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-032",
+      "metric": "routing",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-033",
+      "metric": "intent",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-033",
+      "metric": "routing",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-044",
+      "metric": "intent",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-044",
+      "metric": "routing",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-044",
+      "metric": "review",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-050",
+      "metric": "routing",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "TRIAGE-051",
+      "metric": "routing",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "RAG-002",
+      "metric": "grounded",
+      "from": false,
+      "to": true
+    },
+    {
+      "id": "RAG-003",
+      "metric": "grounded",
+      "from": true,
+      "to": false
+    }
+  ]
+}

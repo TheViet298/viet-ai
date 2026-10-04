@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from hashlib import sha256
 from uuid import uuid4
 
@@ -42,6 +43,7 @@ def route_after_triage(state: AgentState) -> str:
 
 def traced(name, node):
     async def wrapped(state: AgentState):
+        started = time.perf_counter()
         output = await node(state)
         if name == "intake":
             output.setdefault("session_id", state.get("session_id") or f"ephemeral-{uuid4().hex}")
@@ -64,6 +66,7 @@ def traced(name, node):
                     "input": sanitized_snapshot(state),
                     "output": sanitized_snapshot(output),
                     "tool_call": "vinfast_manual_search" if name == "rag" else None,
+                    "latency_s": time.perf_counter() - started,
                     "prompt_versions": {p.name: sha256(p.read_bytes()).hexdigest() for p in PROMPT_DIR.glob("*.md")},
                 },
             )

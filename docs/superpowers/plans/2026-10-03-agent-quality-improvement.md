@@ -221,3 +221,17 @@ Các task có thể tạo commit riêng khi bước tích hợp được yêu c�
 - [x] Không tự triển khai thay đổi mã sản phẩm trong bước lập kế hoạch.
 
 **Tài liệu đối chiếu:** Báo cáo tiếng Việt `eval/results/bao-cao-danh-gia-agent-2026-10-03.md`; dữ liệu baseline `eval/results/agent/agent_results.json` và `eval/results/agent-online/agent_results.json`.
+
+## 11. Trạng thái thực thi ngày 04/10/2026
+
+Mã cải thiện Task 1–4 và công cụ chẩn đoán Task 5 đã triển khai local theo yêu cầu “triển khai”. Chi tiết quyết định, RED/GREEN và review ở `2026-10-03-agent-quality-progress.md`; hướng dẫn vận hành ở `docs/agent-quality-v2.md`; báo cáo đo thực ở `eval/results/quality-v2/bao-cao-cai-thien-agent-2026-10-04.md`.
+
+- [x] Triage/routing, guard RAG, multilingual candidate riêng, budget/circuit/cache và metadata/audit.
+- [x] 142 tests, Ruff, diff check; 10 bridge/API scenarios báo cáo riêng.
+- [x] Bộ draft 60 triage + 30 RAG; ba mode cùng dataset/KB, giữ baseline và nhãn v1.
+- [x] Báo cáo tiếng Việt, so sánh v1 và audit tám RAG failures, fingerprint nội dung/vector/model.
+- [ ] Duyệt độc lập nhãn/chính sách và ngữ nghĩa câu trả lời; chuẩn bị holdout chưa dùng phát triển.
+- [ ] Nguồn catalog/manual đủ và RAG v1 đạt yêu cầu; HTTP refresh hiện 403, không tạo bằng chứng xác minh giả.
+- [ ] Online đủ phản hồi model hợp lệ và bảy KPI đạt trên tập đã review. Run cuối gặp quota 429, 0 parsed.
+
+Các checkbox nghiệp vụ trong phần Task giữ vai trò tiêu chí kế hoạch; bảng trên và ledger ghi phạm vi đã thực hiện. Chưa tuyên bố nghiệm thu toàn hệ thống hoặc triển khai hạ tầng.

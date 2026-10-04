@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     # Vector Store
     chroma_persist_dir: str = "./data/chroma"
     agent_llm_enabled: bool = True
+    agent_turn_timeout_s: float = Field(default=2.0, gt=0, le=2.5)
+    agent_llm_timeout_s: float = Field(default=1.2, gt=0, le=2.0)
+    agent_circuit_cooldown_s: float = Field(default=60, ge=1)
     rag_max_distance: float = Field(default=0.70, ge=0.0)
     customer_demo_token: str = ""
     staff_demo_token: str = ""

@@ -89,7 +89,7 @@ def resolve_policy_conflict(user_query: str) -> bool:
         re.search(
             r"(?:tháo|mở|đấu|can thiệp).{0,40}(?:pin cao áp|pin cao thế|dây cao áp)|"
             r"(?:tắt|vô hiệu|bỏ).{0,20}(?:phanh|bảo vệ pin)|"
-            r"(?:bỏ qua|ignore|jailbreak).{0,60}(?:quy định|quy tắc|an toàn|instructions)|"
+            r"(?:bỏ qua|ignore|jailbreak).{0,60}(?:quy định|quy tắc|chỉ dẫn|an toàn|instructions)|"
             r"(?:hack|phá khóa|bẻ khóa|mở khóa giới hạn)",
             user_query.lower(),
         )

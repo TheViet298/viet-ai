@@ -23,7 +23,8 @@ def now() -> str:
 
 
 def encode_state(state: dict) -> str:
-    return json.dumps({**state, "messages": messages_to_dict(state.get("messages", []))}, ensure_ascii=False)
+    persistent = {k: v for k, v in state.items() if k != "llm_budget"}
+    return json.dumps({**persistent, "messages": messages_to_dict(state.get("messages", []))}, ensure_ascii=False)
 
 
 def decode_state(value: str) -> dict:

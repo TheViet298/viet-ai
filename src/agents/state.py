@@ -161,6 +161,8 @@ class AgentState(TypedDict, total=False):
     routing: str
     is_no_source: bool
     rag_distance: float | None
+    retrieval_diagnostics: dict
+    llm_budget: dict
     fact_history: list[dict[str, Any]]
     memory_summary: str
     location: dict[str, Any]

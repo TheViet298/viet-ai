@@ -1,14 +1,118 @@
 from __future__ import annotations
 
+import json
+import math
 import re
+import unicodedata
+from collections import Counter
 from datetime import date
+from functools import lru_cache
+from hashlib import sha256
 from pathlib import Path
+from threading import RLock
 from urllib.parse import urlparse
 
 from src.agents.context_manager import resolve_policy_conflict, token_count
 from src.config import get_settings
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_cache_lock = RLock()
+
+
+def words(text: str) -> set[str]:
+    normalized = unicodedata.normalize("NFKC", text).casefold()
+    normalized = re.sub(r"vf\s*(e34|[356789])", r"vf\1", normalized)
+    return set(re.findall(r"\w+", normalized)) - {"xe", "vinfast", "là", "của", "có", "bao", "nhiêu", "những", "nào", "được", "ô", "tô", "điện", "cho", "và", "thì", "để", "cách"}
+
+
+def select_supported_evidence(query: str, citations: list[dict]) -> list[dict]:
+    """Preserve complete source lines and their conditions; never invent facts."""
+    selected = []
+    for citation in citations:
+        lines = citation["relevant_snippet"].splitlines()
+        if not lines:
+            continue
+        # Chunks are bounded complete sections. Never trim required list steps.
+        excerpt = "\n".join(lines)
+        selected.append({**citation, "relevant_snippet": excerpt})
+    return selected
+
+
+@lru_cache(maxsize=4)
+def _collection(path: str):
+    import chromadb
+    from chromadb.config import Settings as ChromaSettings
+
+    # Register the optional function before Chroma deserializes its saved config.
+    from src.services import multilingual_embeddings  # noqa: F401
+    client = chromadb.PersistentClient(path=path, settings=ChromaSettings(anonymized_telemetry=False))
+    return client.get_collection("vinfast_knowledge_base")
+
+
+def get_collection(path: str):
+    with _cache_lock:
+        return _collection(path)
+
+
+@lru_cache(maxsize=4)
+def _corpus(path: str, count: int, revision: tuple):
+    return get_collection(path).get(include=["documents", "metadatas", "embeddings"])
+
+
+def get_corpus(path: str, count: int):
+    # A same-count upsert changes SQLite/WAL state and invalidates this snapshot.
+    revision = tuple((p.name, p.stat().st_size, p.stat().st_mtime_ns) for p in (Path(path) / "chroma.sqlite3", Path(path) / "chroma.sqlite3-wal") if p.is_file())
+    with _cache_lock:
+        return _corpus(path, count, revision)
+
+
+def knowledge_fingerprint(path: str) -> str:
+    """Hash logical content and vectors; SQLite housekeeping is excluded."""
+    import numpy as np
+    collection = get_collection(path)
+    corpus = get_corpus(path, collection.count())
+    digest = sha256()
+    for i in sorted(range(len(corpus['ids'])), key=lambda j: corpus['ids'][j]):
+        digest.update(json.dumps([corpus['ids'][i], corpus['documents'][i], corpus['metadatas'][i]], ensure_ascii=False, sort_keys=True).encode('utf-8'))
+        digest.update(np.asarray(corpus['embeddings'][i], dtype='<f4').tobytes())
+    return digest.hexdigest()
+
+
+def model_applies(meta: dict, model: str | None) -> bool:
+    if not model:
+        return True
+    models = meta.get("applicable_models", "")
+    models = models.split(",") if isinstance(models, str) else models
+    normalized = {re.sub(r"\s+", "", str(m)).upper() for m in models}
+    return "ALL" in normalized or re.sub(r"\s+", "", model).upper() in normalized
+
+
+def rank_candidates(query: str, rows: list[tuple]) -> list[tuple]:
+    terms = words(query)
+    document_words = [words(row[0] or "") for row in rows]
+    frequencies = Counter(term for terms_in_doc in document_words for term in terms_in_doc)
+    total = max(1, len(rows))
+    def score(pair):
+        row, terms_in_doc = pair
+        overlap = sum(math.log(1 + total / frequencies[t]) for t in terms & terms_in_doc)
+        total_weight = sum(math.log(1 + total / max(1, frequencies[t])) for t in terms) or 1
+        lexical = overlap / total_weight
+        semantic = max(0, 1 - float(row[2]) / 2)
+        return (0.35 * lexical + 0.65 * semantic, -float(row[2]))
+    return [row for row, _ in sorted(zip(rows, document_words, strict=True), key=score, reverse=True)]
+
+
+def requested_source_type(query: str) -> str | None:
+    lower = query.lower()
+    if "bảo hành" in lower:
+        return "official_policy"
+    if any(k in lower for k in ["dung lượng", "nedc", "quãng đường", "eco", "plus", "thông số"]):
+        return "official_catalog"
+    if any(k in lower for k in ["adas", "ngập nước", "sổ tay"]):
+        return "official_manual"
+    if any(k in lower for k in ["ứng dụng", "app", "đặt lịch", "từ xa"]):
+        return "official_guide"
+    return None
 
 
 def source_registry() -> dict[str, dict]:
@@ -31,16 +135,27 @@ def source_registry() -> dict[str, dict]:
                 "status_code": 200,
                 "verified_at": cells[5],
             }
+    verification = PROJECT_ROOT / "docs/data-source-url-verification.json"
+    if verification.is_file():
+        for item in json.loads(verification.read_text(encoding="utf-8")):
+            if item["source_id"] in registry and item["status_code"] == 200:
+                date.fromisoformat(item["verified_at"])
+                registry[item["source_id"]].setdefault("approved_urls", {})[item["url"]] = item["verified_at"]
     return registry
 
 
 def valid_citation(citation: dict, model: str | None = None) -> bool:
     source = source_registry().get(citation.get("source_id"))
-    if not source or source["url"] != citation.get("url"):
+    if not source:
+        return False
+    expected_date = source.get("approved_urls", {}).get(citation.get("url"))
+    if expected_date is None and source["url"] == citation.get("url"):
+        expected_date = source["verified_at"]
+    if expected_date is None:
         return False
     if urlparse(citation["url"]).hostname not in {"vinfastauto.com", "om.vinfastauto.com"}:
         return False
-    if citation.get("status_code") != 200 or citation.get("verified_at") != source["verified_at"]:
+    if citation.get("status_code") != 200 or citation.get("verified_at") != expected_date:
         return False
     normalized = {re.sub(r"\s+", "", str(m)).upper() for m in citation.get("applicable_models", [])}
     if model and "ALL" not in normalized and model.upper() not in normalized:
@@ -62,41 +177,109 @@ class RAGService:
         if not Path(settings.chroma_persist_dir, "chroma.sqlite3").is_file():
             return no_source
         try:
-            import chromadb
-            from chromadb.config import Settings as ChromaSettings
-
-            client = chromadb.PersistentClient(
-                path=settings.chroma_persist_dir, settings=ChromaSettings(anonymized_telemetry=False)
-            )
-            collection = client.get_collection("vinfast_knowledge_base")
+            collection = get_collection(settings.chroma_persist_dir)
             count = collection.count()
             if not count:
                 return no_source
-            result = collection.query(
-                query_texts=[query],
-                n_results=min(max(1, top_k), 3, count),
-                include=["documents", "metadatas", "distances"],
-            )
-            return self.filter_results(result, vehicle_model)
+            candidates = 20
+            source_type = requested_source_type(query)
+            registry = source_registry()
+            allowed = [source_id for source_id, meta in registry.items() if meta["source_type"] == source_type] if source_type else []
+            if not allowed:
+                # Source title relevance narrows service queries without benchmark IDs.
+                scores = {source_id: len(words(query) & words(meta["title"])) for source_id, meta in registry.items()}
+                peak = max(scores.values(), default=0)
+                allowed = [source_id for source_id, score in scores.items() if peak >= 2 and score == peak]
+            where = {"source_id": {"$in": allowed}} if allowed else None
+            configuration = collection.configuration
+            if configuration.get("hnsw", {}).get("space") == "l2" and configuration.get("embedding_function"):
+                # Full lexical candidate selection keeps Vietnamese terms that a
+                # vector-only shortlist misses. Distances remain the actual stored
+                # embedding's squared L2, with the same conservative threshold.
+                import numpy as np
+                corpus = get_corpus(settings.chroma_persist_dir, count)
+                function = configuration["embedding_function"]
+                query_embedding = function.embed_query(input=[query])[0] if hasattr(function, "embed_query") else function(input=[query])[0]
+                distances = np.sum((np.asarray(corpus["embeddings"]) - query_embedding) ** 2, axis=1)
+                rows = [(doc, meta, float(distance), chunk_id) for doc, meta, distance, chunk_id in zip(
+                    corpus["documents"], corpus["metadatas"], distances, corpus["ids"], strict=True
+                ) if (not allowed or meta.get("source_id") in allowed) and model_applies(meta or {}, vehicle_model)]
+                ranked = rank_candidates(query, rows)
+                # Do not lose supported candidates behind high-distance lexical hits.
+                shortlist = [row for row in ranked if row[2] <= settings.rag_max_distance][:candidates]
+                shortlist += [row for row in ranked if row[2] > settings.rag_max_distance][:max(0, candidates - len(shortlist))]
+                result = {"documents": [[r[0] for r in shortlist]], "metadatas": [[r[1] for r in shortlist]], "distances": [[r[2] for r in shortlist]], "ids": [[r[3] for r in shortlist]]}
+            else:
+                # Chroma stores comma-separated model applicability; fetch the
+                # source subset first and normalize before the bounded shortlist.
+                raw = collection.query(query_texts=[query], n_results=count, where=where, include=["documents", "metadatas", "distances"])
+                indices = [i for i, meta in enumerate(raw["metadatas"][0]) if model_applies(meta or {}, vehicle_model)][:candidates]
+                result = {key: [[raw[key][0][i] for i in indices]] for key in ["documents", "metadatas", "distances", "ids"]}
+            return self.filter_results(result, vehicle_model, query, min(max(1, top_k), 3))
         except Exception:
             return no_source
 
-    def filter_results(self, result: dict, vehicle_model: str | None = None) -> dict:
+    def retrieve_diagnostics(self, query: str, top_k: int = 3, vehicle_model: str | None = None) -> dict:
+        return self.retrieve(query, top_k, vehicle_model)
+
+    def filter_results(self, result: dict, vehicle_model: str | None = None, query: str = "", top_k: int = 3) -> dict:
         registry = source_registry()
         citations = []
+        diagnostics = []
         budget = 1200
-        for doc, meta, distance, chunk_id in zip(
+        candidates = list(zip(
             result["documents"][0], result["metadatas"][0], result["distances"][0], result["ids"][0], strict=True
-        ):
+        ))
+        candidates = rank_candidates(query, candidates) if query else candidates
+        for doc, meta, distance, chunk_id in candidates:
             meta = meta or {}
             source = registry.get(meta.get("source_id"))
-            if not source or source["url"] != meta.get("url"):
+            approved_date = source.get("approved_urls", {}).get(meta.get("url")) if source else None
+            if not source or (source["url"] != meta.get("url") and not approved_date):
+                diagnostics.append({"chunk_id": chunk_id, "reason": "registry_mismatch"})
                 continue
             models = meta.get("applicable_models", "")
             models = models.split(",") if isinstance(models, str) else models
-            snippet = (doc or "").encode("utf-8")[:budget].decode("utf-8", errors="ignore")
+            models = [re.sub(r"\s+", "", str(m)).upper() for m in models]
+            if vehicle_model and "ALL" not in models and re.sub(r"\s+", "", vehicle_model).upper() not in models:
+                diagnostics.append({"chunk_id": chunk_id, "reason": "model_mismatch"})
+                continue
+            variant = re.search(r"\b(plus|eco)\b", query, re.I)
+            if variant and source["source_type"] == "official_catalog" and variant.group().lower() not in (doc or "").lower():
+                diagnostics.append({"chunk_id": chunk_id, "reason": "variant_mismatch"})
+                continue
+            excerpt = select_supported_evidence(query, [{"relevant_snippet": doc or ""}])[0]["relevant_snippet"] if doc else ""
+            lower_query = query.casefold()
+            lower_excerpt = re.sub(r"\s*-\s*", " ", excerpt.casefold())
+            subjects = [term for term in ("truyền động", "pin cao áp", "ắc quy", "lốp", "mobile service", "ngập nước", "adas") if term in lower_query]
+            if any(term not in lower_excerpt for term in subjects) or (query and (not words(query) & words(excerpt) or len(words(excerpt)) < 6)):
+                diagnostics.append({"chunk_id": chunk_id, "reason": "missing_answer_subject"})
+                continue
+            procedure_requested = any(term in lower_query for term in ("cách ", "làm thế nào", "như thế nào"))
+            body = "\n".join(excerpt.splitlines()[1:]).casefold()
+            if procedure_requested and "đặt lịch" in lower_query and "đặt lịch" not in excerpt.splitlines()[0].casefold():
+                diagnostics.append({"chunk_id": chunk_id, "reason": "procedure_goal_mismatch"})
+                continue
+            if procedure_requested and not any(term in body for term in ("bước ", "bấm ", "chọn ", "nhập ", "truy cập ", "thực hiện ", "kiểm tra ", "xác nhận ", "bật ", "tắt ")):
+                diagnostics.append({"chunk_id": chunk_id, "reason": "missing_procedure"})
+                continue
+            if source["source_type"] == "official_catalog":
+                passage_variants = set(re.findall(r"\b(?:eco|plus)\b", excerpt.lower()))
+                years = set(re.findall(r"\b20\d{2}\b", excerpt))
+                requested_years = set(re.findall(r"\b20\d{2}\b", query))
+                if (passage_variants and not variant) or (variant and passage_variants != {variant.group().lower()}) or (requested_years and not requested_years <= years):
+                    diagnostics.append({"chunk_id": chunk_id, "reason": "unresolved_applicability"})
+                    continue
+            if budget < 80:
+                break
+            if token_count(excerpt) > budget:
+                diagnostics.append({"chunk_id": chunk_id, "reason": "complete_section_exceeds_budget"})
+                continue
+            snippet = excerpt
             citation = {
                 **source,
+                "url": meta["url"],
+                "verified_at": approved_date or source["verified_at"],
                 "source_id": meta["source_id"],
                 "chunk_id": chunk_id,
                 "applicable_models": models,
@@ -104,15 +287,19 @@ class RAGService:
                 "distance": distance,
             }
             if not valid_citation(citation, vehicle_model):
+                reason = "unsafe_content" if resolve_policy_conflict(snippet) else "distance_or_metadata"
+                diagnostics.append({"chunk_id": chunk_id, "source_id": meta["source_id"], "distance": distance, "reason": reason})
                 continue
+            diagnostics.append({"chunk_id": chunk_id, "source_id": meta["source_id"], "distance": distance, "reason": "accepted"})
             citations.append(citation)
             budget -= token_count(snippet)
-            if len(citations) >= 3 or budget <= 0:
+            if len(citations) >= top_k or budget <= 0:
                 break
         return {
             "status": "SUCCESS" if citations else "NO_SOURCE",
             "citations": citations,
             "best_distance": min(c["distance"] for c in citations) if citations else None,
+            "diagnostics": {"candidates": diagnostics, "embedding": "collection-configured", "distance_threshold": get_settings().rag_max_distance},
         }
 
 

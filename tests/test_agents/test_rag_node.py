@@ -24,11 +24,17 @@ def test_reject_bad_distance(distance):
 
 def test_valid_source_uses_registry_metadata_and_bounded_text():
     meta = {**source_registry()["SRC-002"], "source_id": "SRC-002", "applicable_models": "ALL"}
-    result = RAGService().filter_results(results(meta, 0.7, "Thông tin chính thức. " * 400), "VF8")
+    result = RAGService().filter_results(results(meta, 0.7, "Thông tin chính thức."), "VF8")
     assert result["status"] == "SUCCESS"
     citation = result["citations"][0]
     assert citation["verified_at"] == source_registry()["SRC-002"]["verified_at"]
     assert len(citation["relevant_snippet"].encode("utf-8")) <= 1200
+
+
+def test_oversized_section_is_not_cut_mid_condition():
+    meta = {**source_registry()["SRC-002"], "source_id": "SRC-002", "applicable_models": "ALL"}
+    result = RAGService().filter_results(results(meta, 0.7, "Thông tin chính thức. " * 400), "VF8")
+    assert result["status"] == "NO_SOURCE"
 
 
 def test_retrieved_instruction_is_not_executed_or_returned():

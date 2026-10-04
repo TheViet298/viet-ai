@@ -3,8 +3,8 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 from src.agents.guardrails import STANDARD_SAFE_GUIDANCE, check_missing_fields, sanitize_pii
+from src.agents.routing import decide_routing
 from src.agents.state import AgentState
-from src.services.agent_llm import structured_call
 
 ROUTING_TARGETS = {
     "Charging/Battery": "charging_support",
@@ -21,12 +21,10 @@ class BriefSummary(BaseModel):
 async def case_brief_node(state: AgentState) -> dict:
     facts = state.get("captured_fields", {})
     intent = state.get("intent") or "Service/Incident"
-    routing = "emergency_rescue" if state.get("is_critical") else ROUTING_TARGETS.get(intent, "customer_relations")
+    routing = decide_routing(state).target
     summary = state.get("latest_user_message", "")
-    if not state.get("is_critical") and not state.get("policy_blocked"):
-        generated = await structured_call(state, "case_brief", BriefSummary)
-        if generated:
-            summary = generated.summary
+    # Factual template brief keeps the only foreground model call for uncertain
+    # classification or grounded answering, and never delays emergency output.
     brief = {
         "summary": summary,
         "vehicle_model": facts.get("vehicle_model", state.get("vehicle_model")),
