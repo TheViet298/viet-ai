@@ -15,12 +15,12 @@ def utcnow() -> datetime:
 
 
 # ==============================================================================
-# ENUMS — Nguồn chân lý: docs/architecture/data-model.md & triage-and-hitl-rules.md
+# ENUMS — Nguồn chân lý: docs/architecture/data-model.md & ADR-005
 # ==============================================================================
 
 
 class UserRole(StrEnum):
-    """Vai trò người dùng trong hệ thống (RBAC theo auth-and-rbac.md)."""
+    """Vai trò người dùng trong hệ thống (RBAC theo auth-and-rbac.md & ADR-005)."""
 
     GUEST = "GUEST"
     CUSTOMER = "CUSTOMER"
@@ -33,6 +33,44 @@ class AttachmentStatus(StrEnum):
     UPLOADED = "UPLOADED"
     ANALYZED = "ANALYZED"
     FAILED = "FAILED"
+
+
+class LocationStatus(StrEnum):
+    """Trạng thái chia sẻ vị trí của khách hàng (ADR-005)."""
+
+    CONSENTED = "CONSENTED"
+    MANUAL = "MANUAL"
+    NOT_SHARED = "NOT_SHARED"
+    UNKNOWN = "UNKNOWN"
+
+
+class LocationSource(StrEnum):
+    """Nguồn thu thập vị trí."""
+
+    BROWSER_GPS = "BROWSER_GPS"
+    USER_TEXT = "USER_TEXT"
+    MAP_PICKER = "MAP_PICKER"
+
+
+class LocationPrecision(StrEnum):
+    """Độ chính xác của vị trí."""
+
+    APPROXIMATE = "APPROXIMATE"
+    EXACT = "EXACT"
+
+
+class AuthorType(StrEnum):
+    """Tác giả của bản cập nhật CaseUpdate."""
+
+    STAFF = "STAFF"
+    SYSTEM = "SYSTEM"
+
+
+class ConfirmationChoice(StrEnum):
+    """Lựa chọn xác nhận của khách hàng khi case Resolved."""
+
+    RESOLVED_CONFIRMED = "RESOLVED_CONFIRMED"
+    STILL_UNRESOLVED = "STILL_UNRESOLVED"
 
 
 class TicketStatus(StrEnum):
@@ -172,6 +210,14 @@ class Case(Base):
     feedback: Mapped[list["CustomerFeedback"]] = relationship(
         back_populates="case", cascade="all, delete-orphan", order_by="CustomerFeedback.created_at.desc()"
     )
+    # Quan hệ 1-1 với case_locations (ADR-005)
+    location: Mapped["CaseLocation | None"] = relationship(
+        back_populates="case", cascade="all, delete-orphan", uselist=False
+    )
+    # Quan hệ 1-N với case_updates (ADR-005)
+    updates: Mapped[list["CaseUpdate"]] = relationship(
+        back_populates="case", cascade="all, delete-orphan", order_by="CaseUpdate.created_at.asc()"
+    )
 
 
 class Message(Base):
@@ -272,3 +318,44 @@ class CustomerFeedback(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     case: Mapped["Case"] = relationship(back_populates="feedback")
+
+
+class CaseLocation(Base):
+    """
+    Bảng case_locations: Lưu vị trí sự cố khi khách hàng đồng ý (consent) hoặc tự nhập (ADR-005).
+    Tuyệt đối không tự động đọc vị trí từ EXIF ảnh.
+    """
+
+    __tablename__ = "case_locations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    case_id: Mapped[str] = mapped_column(String(32), ForeignKey("cases.id"), unique=True, nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default=LocationStatus.NOT_SHARED.value)
+    source: Mapped[str] = mapped_column(String(20), nullable=False, default=LocationSource.USER_TEXT.value)
+    location_label: Mapped[str] = mapped_column(String(255), nullable=False)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    precision: Mapped[str] = mapped_column(String(20), nullable=False, default=LocationPrecision.APPROXIMATE.value)
+    share_with_staff: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    case: Mapped["Case"] = relationship(back_populates="location")
+
+
+class CaseUpdate(Base):
+    """
+    Bảng case_updates: Lưu các cập nhật tiến độ an toàn gửi tới Customer (ADR-005).
+    """
+
+    __tablename__ = "case_updates"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    case_id: Mapped[str] = mapped_column(String(32), ForeignKey("cases.id"), nullable=False, index=True)
+    author_type: Mapped[str] = mapped_column(String(20), nullable=False, default=AuthorType.STAFF.value)
+    status_after_update: Mapped[str] = mapped_column(String(30), nullable=False)
+    customer_message: Mapped[str] = mapped_column(Text, nullable=False)
+    next_step: Mapped[str | None] = mapped_column(Text, nullable=True)
+    awaiting_customer_confirmation: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    case: Mapped["Case"] = relationship(back_populates="updates")
