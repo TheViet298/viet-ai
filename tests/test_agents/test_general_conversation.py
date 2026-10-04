@@ -34,7 +34,9 @@ async def test_general_question_uses_model_without_creating_case(monkeypatch, te
 
     monkeypatch.setattr(llm, 'get_llm', Model)
     result = await process_chat_message(text, user_role='customer', owner='c1')
-    assert result['reply'] == 'Anh muốn tìm hiểu cách sạc hay tuổi thọ pin ạ?'
+    assert result['reply'].startswith('Anh muốn tìm hiểu cách sạc hay tuổi thọ pin ạ?')
+    if text == 'Pin xe điện hoạt động như thế nào?':
+        assert 'kiến thức chung' in result['reply']
     assert calls
     assert result['case_id'] is None
     assert not result['needs_staff_review']

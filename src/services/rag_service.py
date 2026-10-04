@@ -109,6 +109,8 @@ def rank_candidates(query: str, rows: list[tuple]) -> list[tuple]:
 
 def requested_source_type(query: str) -> str | None:
     lower = query.lower()
+    if "các dòng xe" in lower:
+        return "official_catalog"
     if "bảo hành" in lower:
         return "official_policy"
     if any(k in lower for k in ["dung lượng", "nedc", "quãng đường", "eco", "plus", "thông số"]):

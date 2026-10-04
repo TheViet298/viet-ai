@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { CheckCircle2, ChevronRight, PhoneCall, ShieldAlert } from "lucide-react";
 

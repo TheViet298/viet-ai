@@ -12,6 +12,7 @@ from src.agents.state import AgentState, IntentType, PriorityLevel
 from src.services.agent_llm import structured_call
 from src.services.followup_context import FAQ_FOLLOWUPS
 from src.services.tracer import sanitized_snapshot
+from src.services.vehicle_knowledge import is_general_vehicle_question
 
 
 class TriageResult(BaseModel):
@@ -54,6 +55,9 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
     )
     if has_current_failure:
         return "incident"
+
+    if is_general_vehicle_question(text):
+        return "faq"
 
     # 3. Câu hỏi kiến thức / cẩm nang / giải thích thuần túy (FAQ)
     is_explanation_query = any(
@@ -229,6 +233,9 @@ async def triage_node(state: AgentState) -> dict:
         and (scoped or charging or state.get("is_general_query")
              or lower.strip(" .!?") in ["xin chào", "chào", "hello", "cảm ơn"])
     )
+    common_knowledge = (is_general_vehicle_question(text) and request_kind == "faq"
+                        and not is_crit and not foreign_domain and not complaint)
+    general = general or common_knowledge
     llm = await structured_call(state, "triage", TriageResult) if confidence < 0.60 and not foreign_domain and not is_crit and not general else None
     if llm and not foreign_domain and not is_crit:
         intent, priority, confidence, faq = llm.intent, llm.priority, llm.confidence_score, llm.is_faq

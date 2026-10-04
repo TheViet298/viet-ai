@@ -72,7 +72,18 @@ export function ChatMessageItem({
           }`}
       >
         {isCustomer ? (
-          <div className="whitespace-pre-wrap leading-relaxed">{message.content}</div>
+          <div className="space-y-2">
+            {message.image && (
+              // Local preview belongs to this message and survives clearing the input.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={message.image.src}
+                alt={`Ảnh đã gửi: ${message.image.name}`}
+                className="block max-h-[360px] w-auto max-w-full rounded-xl object-contain"
+              />
+            )}
+            {message.content && <div className="whitespace-pre-wrap leading-relaxed">{message.content}</div>}
+          </div>
         ) : (
           <div className="chat-markdown-body text-[13px] leading-relaxed text-slate-800">
             <ReactMarkdown

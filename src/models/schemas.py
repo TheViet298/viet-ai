@@ -191,6 +191,7 @@ class ServiceHandoff(BaseModel):
 
 
 class ChatResponseData(BaseModel):
+    visual_evidence: dict[str, Any] | None = None
     response_type: Literal["CLARIFICATION", "FAQ_ANSWER", "CASE_CREATED"]
     message: str
     case_id: str | None = None

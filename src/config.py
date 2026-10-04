@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     dashboard_vision_enabled: bool = True
     dashboard_vision_model: str = "gemini-3.5-flash"
     dashboard_vision_timeout_s: float = Field(default=25, gt=0, le=60)
+    image_routing_timeout_s: float = Field(default=12, gt=0, le=30)
+    image_routing_min_confidence: float = Field(default=.8, ge=0, le=1)
+    cardd_python_executable: str = ""
+    cardd_inference_timeout_s: float = Field(default=45, gt=0, le=60)
     llm_temperature: float = Field(default=0.7, ge=0.0, le=2.0)
 
     # Database
@@ -34,8 +38,9 @@ class Settings(BaseSettings):
     # Vector Store
     chroma_persist_dir: str = "./data/chroma"
     agent_llm_enabled: bool = True
-    agent_turn_timeout_s: float = Field(default=2.0, gt=0, le=2.5)
-    agent_llm_timeout_s: float = Field(default=1.2, gt=0, le=2.0)
+    agent_turn_timeout_s: float = Field(default=20, gt=0, le=60)
+    agent_llm_timeout_s: float = Field(default=12, gt=0, le=30)
+    rag_retrieval_timeout_s: float = Field(default=5, gt=0, le=20)
     agent_circuit_cooldown_s: float = Field(default=60, ge=1)
     rag_max_distance: float = Field(default=0.70, ge=0.0)
     rag_context_max_bytes: int = Field(default=6000, gt=0)

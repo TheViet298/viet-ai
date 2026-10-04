@@ -1,5 +1,15 @@
 """Select complete answer sections and reject descriptions posing as procedures."""
 import re
+import unicodedata
+
+
+def normalized(text: str) -> str:
+    return " ".join("".join(c for c in unicodedata.normalize("NFD", text.casefold().replace("đ", "d"))
+                            if not unicodedata.combining(c)).split())
+
+
+def is_turtle_question(query: str) -> bool:
+    return any(term in normalized(query) for term in ("con rua", "rua vang", "turtle"))
 
 
 def clean_section(text: str) -> str:
@@ -15,6 +25,29 @@ def clean_section(text: str) -> str:
 
 def answer_section(query: str, text: str) -> str:
     lower = query.casefold()
+    subject = normalized(query)
+    body = normalized(text)
+    if any(term in subject for term in ("lai thu", "chay thu")) and not any(term in body for term in ("lai thu", "chay thu")):
+        return ""
+    if any(term in subject for term in ("gia xe", "gia lan banh", "chi phi lan banh")):
+        if not any(term in body for term in ("gia", "lan banh", "chi phi")):
+            return ""
+    if "cac dong xe" in subject and not any(term in body for term in ("vf3", "vf 3", "vf5", "vf 5", "vf6", "vf 6", "vf7", "vf 7", "vf8", "vf 8", "vf9", "vf 9")):
+        return ""
+    if is_turtle_question(query):
+        subjects = ("rua", "turtle", "gioi han cong suat", "han che cong suat", "limited driving power")
+        lines = text.splitlines()
+        start = next((i for i, line in enumerate(lines) if any(term in normalized(line) for term in subjects)), None)
+        if start is None:
+            return ""
+        end = next((i for i in range(start + 1, len(lines))
+                    if normalized(lines[i]).startswith(("chi bao ", "den bao "))
+                    and not any(term in normalized(lines[i]) for term in subjects)), len(lines))
+        section = "\n".join(lines[start:end]).strip()
+        # An indicator list is not an explanation of its meaning.
+        if not any(term in normalized(section) for term in ("khi ", "la ", "giam", "han che")):
+            return ""
+        return section
     if "bảo hành" in lower and "điều kiện" in lower and not any(term in lower for term in ("bao lâu", "thời hạn")):
         # A duration's 'whichever comes first' clause does not explain eligibility.
         body = text.casefold()

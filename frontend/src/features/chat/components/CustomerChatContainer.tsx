@@ -13,7 +13,7 @@ import {
   Map,
   Compass,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { VehicleModel, UserLocationState } from "../types";
 import { useChat } from "../hooks/useChat";
@@ -63,6 +63,11 @@ export function CustomerChatContainer() {
   const [imageName, setImageName] = useState<string | null>(null);
   const [uploadedAttachmentId, setUploadedAttachmentId] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
+  const [imageKind, setImageKind] = useState<"auto" | "dashboard" | "exterior">("auto");
+  const [resolvedImageKind, setResolvedImageKind] = useState<"dashboard" | "charger" | "exterior" | null>(null);
+  const selectedImageFile = useRef<File | null>(null);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const uploadRequestId = useRef(0);
   const [aiStatus, setAiStatus] = useState<string>("Trợ lý VF Serv • Hỗ trợ dịch vụ xe điện VinFast");
 
   // ===========================================================================
@@ -94,6 +99,11 @@ export function CustomerChatContainer() {
   }, [criticalBanner, requestLocation]);
 
   const handleResetAll = () => {
+    selectedImageFile.current = null;
+    setResolvedImageKind(null);
+    uploadRequestId.current += 1;
+    setIsUploadingImage(false);
+    setImageUploadError(null);
     resetChat();
     setImagePreview(null);
     setImageName(null);
@@ -232,34 +242,55 @@ export function CustomerChatContainer() {
     });
   };
 
-  const selectImage = async (file: File) => {
+  const selectImage = async (file: File, requestedKind: "auto" | "dashboard" | "exterior" = imageKind) => {
+    selectedImageFile.current = file;
+    setResolvedImageKind(null);
+    const requestId = ++uploadRequestId.current;
+    setUploadedAttachmentId(null);
+    setImageUploadError(null);
     setImageName(file.name);
     const reader = new FileReader();
-    reader.onload = () => setImagePreview(String(reader.result));
+    reader.onload = () => {
+      if (requestId === uploadRequestId.current) setImagePreview(String(reader.result));
+    };
     reader.readAsDataURL(file);
 
     // Upload lên máy chủ backend để OCR/Vision phân tích sơ bộ
     setIsUploadingImage(true);
     try {
-      const res = await uploadAttachment(file);
+      const res = await uploadAttachment(file, requestedKind);
+      if (requestId !== uploadRequestId.current) return;
       if (res?.success && res.data?.attachment_id) {
-        setUploadedAttachmentId(res.data.attachment_id);
-      }
+        const kind = res.data.detected_signals?.image_kind;
+        if (kind === "unknown") {
+          setImageUploadError("Chưa xác định chắc loại ảnh. Hãy chọn Táp-lô / trụ sạc hoặc Ngoại thất xe bên dưới; ảnh sẽ được phân tích lại.");
+        } else {
+          setResolvedImageKind(kind === "exterior" ? "exterior" : kind === "charger" ? "charger" : "dashboard");
+          setUploadedAttachmentId(res.data.attachment_id);
+        }
+      } else { throw new Error("Upload failed"); }
     } catch {
-      // Offline fallback: keep local image preview
+      if (requestId === uploadRequestId.current) setImageUploadError("Chưa tải được ảnh lên máy chủ. Vui lòng chọn lại ảnh hoặc gửi mô tả bằng chữ.");
     } finally {
-      setIsUploadingImage(false);
+      if (requestId === uploadRequestId.current) setIsUploadingImage(false);
     }
   };
 
   const submit = () => {
+    if (loading || isUploadingImage || (imagePreview && !uploadedAttachmentId)) return;
     const text =
       input.trim() ||
       (imagePreview
-        ? "Tôi gửi ảnh cảnh báo táp-lô/trụ sạc. Nhờ Trợ lý AI nhận diện triệu chứng sơ bộ."
+        ? resolvedImageKind === "exterior"
+          ? "Tôi gửi ảnh ngoại thất xe. Nhờ Trợ lý AI kiểm tra dấu hiệu hư hại."
+          : "Tôi gửi ảnh cảnh báo táp-lô/trụ sạc. Nhờ Trợ lý AI nhận diện triệu chứng sơ bộ."
         : "");
     if (!text) return;
-    sendMessage(text, uploadedAttachmentId ? [uploadedAttachmentId] : undefined);
+    sendMessage(
+      text,
+      uploadedAttachmentId ? [uploadedAttachmentId] : undefined,
+      imagePreview ? { src: imagePreview, name: imageName || "Ảnh đã gửi", caption: input.trim() } : undefined,
+    );
 
     // Việc mở thẻ vị trí tuân thủ Single Source of Truth từ Backend:
     // Backend trả về cờ request_location (hoặc sự cố CRITICAL) thì useEffect([criticalBanner, requestLocation])
@@ -268,6 +299,8 @@ export function CustomerChatContainer() {
     setImagePreview(null);
     setImageName(null);
     setUploadedAttachmentId(null);
+    setResolvedImageKind(null);
+    selectedImageFile.current = null;
   };
 
   return (
@@ -448,16 +481,42 @@ export function CustomerChatContainer() {
           )}
 
           {/* Input Bar */}
+          <div className="px-3 py-2 border-t border-slate-200 text-xs text-slate-600">
+            <label className="flex items-center gap-2">
+              Loại ảnh
+              <select aria-label="Loại ảnh" value={imageKind}
+                disabled={loading || isUploadingImage}
+                onChange={(event) => {
+                  const nextKind = event.target.value as "auto" | "dashboard" | "exterior";
+                  setImageKind(nextKind);
+                  if (selectedImageFile.current) void selectImage(selectedImageFile.current, nextKind);
+                }}
+                className="rounded-lg border border-slate-200 bg-white px-2 py-1">
+                <option value="auto">Tự nhận diện loại ảnh</option>
+                <option value="dashboard">Táp-lô / trụ sạc</option>
+                <option value="exterior">Ngoại thất xe — kiểm tra hư hại</option>
+              </select>
+            </label>
+            {isUploadingImage && <p role="status" className="mt-1">Đang tải và phân tích ảnh…</p>}
+            {resolvedImageKind && <p role="status" className="mt-1">{imageKind === "auto" ? "Đã tự nhận diện: " : "Đang dùng: "}{resolvedImageKind === "exterior" ? "Ngoại thất xe — CarDD" : resolvedImageKind === "charger" ? "Trụ sạc — OCR/Vision" : "Táp-lô — OCR/Vision"}</p>}
+            {imageUploadError && <p role="alert" className="mt-1 text-red-700">{imageUploadError}</p>}
+          </div>
           <ChatInputBar
             input={input}
             onChangeInput={setInput}
             onSend={submit}
-            disabled={loading || isUploadingImage}
+            disabled={loading || isUploadingImage || (!!imagePreview && !uploadedAttachmentId)}
             vehicleModel={selectedModel}
             imagePreview={imagePreview}
             imageName={imageName}
+            imageKind={imageKind}
             onSelectImage={selectImage}
             onClearImage={() => {
+              selectedImageFile.current = null;
+              setResolvedImageKind(null);
+              uploadRequestId.current += 1;
+              setIsUploadingImage(false);
+              setImageUploadError(null);
               setImagePreview(null);
               setImageName(null);
               setUploadedAttachmentId(null);

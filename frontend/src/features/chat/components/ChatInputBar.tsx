@@ -8,6 +8,7 @@ interface ChatInputBarProps {
   vehicleModel: string;
   imagePreview?: string | null;
   imageName?: string | null;
+  imageKind?: "auto" | "dashboard" | "exterior";
   onSelectImage?: (file: File) => void;
   onClearImage?: () => void;
 }
@@ -20,6 +21,7 @@ export function ChatInputBar({
   vehicleModel,
   imagePreview,
   imageName,
+  imageKind = "auto",
   onSelectImage,
   onClearImage,
 }: ChatInputBarProps) {
@@ -30,7 +32,7 @@ export function ChatInputBar({
         <div className="mb-2.5 flex items-center gap-2.5 rounded-xl border border-blue-200 bg-blue-50/50 p-2 animate-fadeIn">
           <img
             src={imagePreview}
-            alt="Ảnh cảnh báo đã chọn"
+            alt={imageKind === "auto" ? "Ảnh xe cần phân tích" : imageKind === "exterior" ? "Ảnh ngoại thất đã chọn" : "Ảnh cảnh báo đã chọn"}
             className="h-10 w-14 rounded-lg object-cover border border-blue-200"
           />
           <div className="min-w-0 flex-1">
@@ -57,11 +59,12 @@ export function ChatInputBar({
       <div className="flex items-center gap-2">
         <label
           className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-500 hover:text-[#1E40AF] transition shadow-2xs"
-          title="Tải ảnh cảnh báo táp-lô hoặc trụ sạc"
+          title={imageKind === "auto" ? "Tải ảnh xe — tự nhận diện loại ảnh" : imageKind === "exterior" ? "Tải ảnh ngoại thất xe" : "Tải ảnh cảnh báo táp-lô hoặc trụ sạc"}
         >
           <ImagePlus className="h-4 w-4" />
           <input
             type="file"
+            disabled={disabled}
             accept="image/*"
             className="sr-only"
             onChange={(event) => {

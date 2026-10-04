@@ -16,7 +16,7 @@ def _client(model: str, key: str, temperature: float, transport_timeout: float) 
         temperature=temperature,
         max_retries=0,
         # Provider rejects transport deadlines below ten seconds. The caller's
-        # asyncio deadline still cancels foreground work within its 1.2s budget.
+        # asyncio deadline still enforces the configured foreground budget.
         timeout=transport_timeout,
     )
 

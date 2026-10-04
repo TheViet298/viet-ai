@@ -37,10 +37,11 @@ export async function getCustomerAuthHeaders(): Promise<Record<string, string>> 
 /**
  * Tải ảnh táp-lô hoặc trụ sạc lên máy chủ để phân tích sơ bộ qua OCR/Vision (ADR-004)
  */
-export async function uploadAttachment(file: File): Promise<ApiResponse<AttachmentOut>> {
+export async function uploadAttachment(file: File, imageKind: "auto" | "dashboard" | "exterior" = "auto"): Promise<ApiResponse<AttachmentOut>> {
   const authHeaders = await getCustomerAuthHeaders();
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("image_kind", imageKind);
 
   const res = await fetch(`${BASE_URL}/api/v1/customer/attachments`, {
     method: "POST",

@@ -58,6 +58,7 @@ export interface ChatMessage {
   case_id?: string | null;
   priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   attachment_ids?: string[];
+  image?: { src: string; name: string };
 }
 
 export interface QuickPrompt {

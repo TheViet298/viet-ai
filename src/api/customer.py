@@ -2,6 +2,7 @@ import os
 import re
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Literal
 
 
 def to_iso(dt: datetime | None) -> str:
@@ -12,11 +13,12 @@ def to_iso(dt: datetime | None) -> str:
         return dt.replace(tzinfo=UTC).isoformat()
     return dt.isoformat()
 
-from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from src.agents.chatbot_agent import process_chat_message
+from src.agents.guardrails import evaluate_hard_safety
 from src.agents.nodes.triage_node import classify_request_kind
 from src.db import get_db
 from src.models.db_models import (
@@ -65,9 +67,12 @@ from src.models.schemas import (
     ServicePointsData,
 )
 from src.services.auth import check_case_ownership, get_optional_user, require_customer
-from src.agents.guardrails import evaluate_hard_safety
 from src.services.dashboard_vision_service import analyze_dashboard_image, prepare_image
 from src.services.dashboard_warning_service import ALIASES, lookup_dashboard_warning, merge_dashboard_clarification
+from src.services.image_routing import classify_vehicle_image
+from src.services.knowledge_questions import answer_sales_question, explicit_models, sales_parts
+from src.services.vehicle_knowledge import is_general_vehicle_question
+from src.services.vision.cardd_runtime import analyze_exterior_image
 
 router = APIRouter(prefix="/customer", tags=["customer"])
 
@@ -101,6 +106,7 @@ def generate_attachment_id(db: Session) -> str:
 @router.post("/attachments", response_model=ApiResponse[AttachmentOut])
 async def upload_attachment(
     file: UploadFile = File(...),
+    image_kind: Literal["auto", "dashboard", "exterior"] = Form("dashboard"),
     current_user: User = Depends(require_customer),
     db: Session = Depends(get_db),
 ):
@@ -120,7 +126,21 @@ async def upload_attachment(
         raise HTTPException(status_code=400, detail="Ảnh JPEG, PNG hoặc WebP không hợp lệ.") from exc
     with open(storage_path, "wb") as f:
         f.write(clean_bytes)
-    detected_signals = await analyze_dashboard_image(clean_bytes, mime_type)
+    routing = await classify_vehicle_image(clean_bytes, mime_type) if image_kind == "auto" else None
+    resolved_kind = routing["image_kind"] if routing else image_kind
+    if resolved_kind == "exterior":
+        evidence = await analyze_exterior_image(storage_path, att_id)
+        detected_signals = {"evidence_type": "CARDD", "image_kind": resolved_kind, "vision_evidence": evidence}
+        if evidence["damage"]["status"] == "unavailable":
+            detected_signals["analysis_error"] = evidence["damage"]["reason"]
+    elif resolved_kind in {"dashboard", "charger"}:
+        detected_signals = await analyze_dashboard_image(clean_bytes, mime_type)
+        detected_signals["image_kind"] = resolved_kind
+    else:
+        detected_signals = {"evidence_type": "IMAGE_ROUTING", "image_kind": "unknown",
+                            "needs_clarification": True, "analysis_error": "image_kind_uncertain"}
+    if routing:
+        detected_signals["image_routing"] = routing
     detected_signals["owner_user_id"] = current_user.id
     ocr_text = detected_signals.get("ocr_text")
     vision_confidence = detected_signals.get("confidence")
@@ -405,6 +425,91 @@ async def customer_chat(
             error=None,
         )
 
+    if any(s.get("evidence_type") == "IMAGE_ROUTING" for s in attached_signals):
+        if active_case and current_user:
+            check_case_ownership(active_case, current_user)
+        reply = "Tôi chưa xác định chắc loại ảnh. Anh/chị vui lòng chọn loại ảnh táp-lô/trụ sạc hoặc ngoại thất xe rồi tải lại, hoặc gửi ảnh rõ hơn."
+        db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
+                       sender_type=SenderType.AGENT.value, created_at=reply_created_at,
+                       content=reply, msg_metadata={"response_type": "CLARIFICATION", "image_kind": "unknown"}))
+        db.commit()
+        return ApiResponse(success=True, data=ChatResponseData(response_type="CLARIFICATION", message=reply,
+            case_id=active_case_id, show_emergency_banner=bool(active_case and active_case.priority == "CRITICAL")), error=None)
+    exterior_signals = [s for s in attached_signals if s.get("evidence_type") == "CARDD"]
+    prior_cardd = (history[0].msg_metadata or {}) if history else {}
+    continue_cardd = prior_cardd.get("cardd_flow") and prior_cardd.get("user_id") == user_id and not attached_signals
+    if exterior_signals or continue_cardd:
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để phân tích ảnh ngoại thất.")
+        if len(exterior_signals) > 1:
+            raise HTTPException(status_code=422, detail="Vui lòng gửi từng ảnh ngoại thất để xác nhận kết quả.")
+        if active_case:
+            check_case_ownership(active_case, current_user)
+        ai_res = await process_chat_message(
+            text, session_id=f"cardd:{user_id}:{payload.session_id}", user_role="customer", owner=user_id,
+            clarification_turn=prior_turns,
+            client_context={"vehicle_model": ctx.vehicle_model} if ctx and ctx.vehicle_model else {},
+            damage_evidence=exterior_signals[0].get("vision_evidence") if exterior_signals else None,
+        )
+        visual = ai_res.get("visual_evidence")
+        brief_data = ai_res.get("case_brief")
+        case = active_case
+        if brief_data and ai_res.get("needs_staff_review"):
+            if not case:
+                case = Case(
+                    id=generate_case_id(db), user_id=user_id, session_id=payload.session_id,
+                    mock_customer_id=mock_cust_id, vehicle_code_mock=vehicle_code,
+                    vehicle_model=brief_data.get("vehicle_model"), intent=ai_res.get("intent") or "Service/Incident",
+                    priority=ai_res.get("priority", "MEDIUM"),
+                    status=ai_res.get("ticket_status") or TicketStatus.STAFF_REVIEWING.value,
+                )
+                db.add(case)
+                db.flush()
+            ranks = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
+            if ranks.get(ai_res.get("priority"), 0) > ranks.get(case.priority, 0):
+                case.priority = ai_res["priority"]
+            brief = db.query(CaseBrief).filter_by(case_id=case.id).first()
+            if not brief:
+                brief = CaseBrief(id=str(uuid.uuid4()), case_id=case.id, is_edited_by_staff=False)
+                db.add(brief)
+            if not brief.is_edited_by_staff:
+                brief.summary = brief_data["summary"]
+                brief.captured_fields = {**brief_data.get("captured_fields", {}), "visual_evidence": visual}
+                brief.suggested_action = brief_data.get("suggested_action")
+                brief.confidence_score = ai_res.get("confidence_score", 0)
+        attachment_ids = payload.attachment_ids or prior_cardd.get("cardd_attachment_ids", [])
+        reply = ai_res.get("reply", "")
+        if case:
+            cust_msg.case_id = case.id
+            db.query(Message).filter(
+                Message.session_id == payload.session_id, Message.case_id.is_(None),
+            ).update({"case_id": case.id}, synchronize_session=False)
+            if attachment_ids:
+                # IDs came from owned attachments or this owner's previous reply.
+                db.query(Attachment).filter(Attachment.id.in_(attachment_ids)).update(
+                    {"case_id": case.id}, synchronize_session=False,
+                )
+            if ai_res.get("case_id"):
+                reply = reply.replace(ai_res["case_id"], case.id)
+        response_type = ai_res.get("response_type")
+        if response_type not in {"CLARIFICATION", "CASE_CREATED", "FAQ_ANSWER"}:
+            response_type = "CASE_CREATED" if brief_data else "FAQ_ANSWER"
+        db.add(Message(
+            id=str(uuid.uuid4()), case_id=case.id if case else None, session_id=payload.session_id,
+            sender_type=SenderType.AGENT.value, content=reply, created_at=reply_created_at,
+            msg_metadata={"response_type": response_type, "user_id": user_id,
+                          "cardd_flow": bool(visual and ai_res.get("intent") == "Service/Incident"),
+                          "cardd_attachment_ids": attachment_ids, "visual_evidence": visual},
+        ))
+        db.commit()
+        return ApiResponse(success=True, data=ChatResponseData(
+            response_type=response_type, message=reply, case_id=case.id if case else None,
+            status=case.status if case else None, priority=case.priority if case else ai_res.get("priority"),
+            clarification_turn=ai_res.get("clarification_turn"), max_clarification_turns=2,
+            suggested_replies=ai_res.get("suggested_replies"), visual_evidence=visual,
+            show_emergency_banner=bool(case and case.priority == "CRITICAL"), request_location=False,
+        ), error=None)
+
     # Dataset lookup accepts validated image symptom keys, never raw OCR instructions.
     dashboard_text = text
     dashboard_report = text
@@ -426,7 +531,9 @@ async def customer_chat(
         dashboard_text, dashboard_context_model,
     )
     # Keep develop's definition and active-turtle flows ahead of dataset lookup.
-    if is_dashboard and not (crit_rule in {"TURTLE_DEFINITION", "TURTLE_NORMAL"} and not image_evidence):
+    if is_dashboard and not ((crit_rule in {"TURTLE_DEFINITION", "TURTLE_NORMAL"}
+                              or (is_general_vehicle_question(text) and classify_request_kind(text) == "faq"))
+                             and not image_evidence):
         warning = dashboard_records[0] if dashboard_records else None
         citations = []
         if warning:
@@ -767,199 +874,7 @@ async def customer_chat(
     # --------------------------------------------------------------------------
     # NHÓM B: TƯ VẤN BÁN HÀNG, LÁI THỬ & GIÁ XE (SALES & SERVICES)
     # --------------------------------------------------------------------------
-    # B1. Đăng ký lái thử xe
-    is_test_drive = any(kw in lower_text for kw in ["lái thử", "đăng ký lái thử", "chạy thử", "trải nghiệm xe"]) and not is_technical_incident
-    if is_test_drive:
-        test_drive_reply = (
-            "Dạ anh/chị có thể đăng ký lái thử xe điện VinFast hoàn toàn miễn phí theo các bước rất thuận tiện sau:\n\n"
-            "1. **Chọn hình thức lái thử**: Trải nghiệm tại Showroom/Nhà phân phối gần nhất hoặc đăng ký lái thử tận nhà (tùy khu vực hỗ trợ).\n"
-            "2. **Điều kiện cần chuẩn bị**: Giấy phép lái xe (bằng B1 hoặc B2 trở lên) còn hiệu lực và CCCD.\n"
-            "3. **Đăng ký nhanh**: Đặt lịch trực tiếp qua Ứng dụng VinFast, trên website chính thức, hoặc liên hệ Tổng đài CSKH 1900-232389 để chuyên viên xếp lịch trong ngày.\n\n"
-            f"Anh/chị đang muốn trải nghiệm lái thử dòng xe nào (như chiếc {vehicle_model}, VF 7 hay VF 9) và ở khu vực nào để em hỗ trợ kết nối Showroom gần nhất ạ?"
-        )
-        test_drive_citations = [
-            Citation(
-                source_id="SRC-DRIVE-01",
-                title="Cổng Đăng ký Lái thử Xe điện VinFast Toàn quốc",
-                url="https://vinfastauto.com/vn_vi/dang-ky-lai-thu",
-                verified_at="2026-09-24",
-                status_code=200,
-                applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9"],
-                source_type="OFFICIAL_MANUAL",
-                relevant_snippet="Khách hàng có bằng lái B1/B2 hợp lệ có thể đăng ký lái thử miễn phí các dòng xe điện VinFast tại hệ thống showroom toàn quốc.",
-            )
-        ]
-        test_drive_handoff = ServiceHandoff(
-            has_app_feature=True,
-            app_feature_name="Đăng ký Lái thử Trực tuyến",
-            guide_url="https://vinfastauto.com/vn_vi/dang-ky-lai-thu",
-        )
-        suggested_replies = [
-            f"Lái thử xe {vehicle_model}",
-            "Lái thử xe VF 7",
-            "Tìm showroom gần nhất",
-            "Hotline tư vấn 1900-232389",
-        ]
-        agent_msg = Message(
-            id=str(uuid.uuid4()),
-            case_id=active_case_id,
-            session_id=payload.session_id,
-            sender_type=SenderType.AGENT.value,
-            content=test_drive_reply,
-            msg_metadata={"citations": [c.model_dump() for c in test_drive_citations]},
-        )
-        db.add(agent_msg)
-        if active_case:
-            active_case.updated_at = datetime.now(UTC)
-        db.commit()
-
-        return ApiResponse(
-            success=True,
-            data=ChatResponseData(
-                response_type="FAQ_ANSWER",
-                message=test_drive_reply,
-                case_id=active_case_id,
-                citations=test_drive_citations,
-                service_handoff=test_drive_handoff,
-                suggested_replies=suggested_replies,
-                show_emergency_banner=bool(active_case and active_case.priority == Priority.CRITICAL.value),
-                request_location=False,
-            ),
-            error=None,
-        )
-
-    # B2. Bảng giá xe & Giá lăn bánh & Trả góp
-    is_pricing_inquiry = any(
-        kw in lower_text for kw in ["bảng giá", "giá lăn bánh", "chi phí lăn bánh", "giá xe", "trả góp", "ưu đãi", "đặt cọc"]
-    ) and not is_technical_incident
-    if is_pricing_inquiry:
-        pricing_reply = (
-            "Dạ về chính sách giá và chi phí lăn bánh ô tô điện VinFast hiện có những ưu thế vượt trội:\n\n"
-            "- **Ưu đãi lệ phí trước bạ**: Ô tô điện chạy pin được hưởng chính sách ưu đãi miễn 100% lệ phí trước bạ theo quy định của Chính phủ, giúp tiết kiệm từ vài chục đến hàng trăm triệu đồng chi phí lăn bánh.\n"
-            "- **Tùy chọn linh hoạt**: Khách hàng có thể lựa chọn mua bao gồm pin hoặc thuê pin hàng tháng để tối ưu ngân sách ban đầu.\n"
-            "- **Chính sách trả góp**: Hỗ trợ vay vốn ngân hàng lên đến 70-80% giá trị xe với lãi suất ưu đãi, thời hạn vay lên đến 8 năm.\n\n"
-            f"Anh/chị đang quan tâm giá lăn bánh cụ thể của xe {vehicle_model} hay dòng xe nào khác để em gửi thông tin chi tiết ạ?"
-        )
-        pricing_citations = [
-            Citation(
-                source_id="SRC-PRICE-01",
-                title="Bảng giá Ô tô điện VinFast và Chính sách Ưu đãi Mới nhất",
-                url="https://vinfastauto.com/vn_vi/bang-gia-xe-o-to-vinfast",
-                verified_at="2026-09-24",
-                status_code=200,
-                applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9"],
-                source_type="OFFICIAL_MANUAL",
-                relevant_snippet="Bảng giá niêm yết, chính sách thuê/mua pin và các chương trình ưu đãi lăn bánh cho dòng xe điện VinFast.",
-            )
-        ]
-        pricing_handoff = ServiceHandoff(
-            has_app_feature=True,
-            app_feature_name="Tra cứu Giá & Đặt cọc Xe",
-            guide_url="https://vinfastauto.com/vn_vi/bang-gia-xe-o-to-vinfast",
-        )
-        suggested_replies = [
-            f"Giá lăn bánh {vehicle_model}",
-            "Giá xe VF 3 & VF 5",
-            "Chính sách thuê pin",
-            "Đăng ký lái thử miễn phí",
-        ]
-        agent_msg = Message(
-            id=str(uuid.uuid4()),
-            case_id=active_case_id,
-            session_id=payload.session_id,
-            sender_type=SenderType.AGENT.value,
-            content=pricing_reply,
-            msg_metadata={"citations": [c.model_dump() for c in pricing_citations]},
-        )
-        db.add(agent_msg)
-        if active_case:
-            active_case.updated_at = datetime.now(UTC)
-        db.commit()
-
-        return ApiResponse(
-            success=True,
-            data=ChatResponseData(
-                response_type="FAQ_ANSWER",
-                message=pricing_reply,
-                case_id=active_case_id,
-                citations=pricing_citations,
-                service_handoff=pricing_handoff,
-                suggested_replies=suggested_replies,
-                show_emergency_banner=bool(active_case and active_case.priority == Priority.CRITICAL.value),
-                request_location=False,
-            ),
-            error=None,
-        )
-
-    # B3. Tư vấn tổng quan các dòng xe
-    sales_keywords = [
-        "mua xe", "mua ô tô", "bán xe", "tư vấn mua", "tư vấn xe", "dòng xe nào", "xe 7 chỗ",
-        "xe 5 chỗ", "mua vf", "tư vấn", "các dòng xe"
-    ]
-    is_sales_inquiry = any(kw in lower_text for kw in sales_keywords) and not is_technical_incident
-
-    if is_sales_inquiry:
-        sales_reply = (
-            "VinFast hiện có dải xe điện phủ đầy đủ các phân khúc từ đô thị đến cao cấp:\n\n"
-            "- **VF 3**: mini SUV đô thị nhỏ gọn, thiết kế vuông vức cá tính, tối ưu di chuyển hàng ngày\n"
-            "- **VF 5 Plus**: A-SUV trẻ trung, chi phí vận hành cực kỳ tiết kiệm cho cá nhân và gia đình\n"
-            "- **VF 6**: B-SUV thời thượng, trang bị nhiều công nghệ thông minh và tính năng an toàn\n"
-            "- **VF 7**: C-SUV phong cách thể thao tương lai, có 2 phiên bản Eco và Plus dẫn động AWD\n"
-            "- **VF 8**: D-SUV sang trọng, hệ thống hỗ trợ lái nâng cao ADAS cấp độ 2 và trợ lý ảo thông minh\n"
-            "- **VF 9**: E-SUV 7 chỗ đẳng cấp thương gia, ghế cơ trưởng massage, tiện nghi hàng đầu\n\n"
-            "Anh/chị đang cân nhắc dòng xe nào phù hợp với nhu cầu, hoặc cần em hỗ trợ đăng ký lái thử trải nghiệm thực tế ạ?"
-        )
-        sales_citations = [
-            Citation(
-                source_id="SRC-006",
-                title="Danh mục Sản phẩm và Chính sách Bán hàng Ô tô điện VinFast",
-                url="https://vinfastauto.com/vn_vi/cac-dong-xe-o-to",
-                verified_at="2026-09-24",
-                status_code=200,
-                applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9"],
-                source_type="OFFICIAL_MANUAL",
-                relevant_snippet="VinFast cung cấp dải sản phẩm ô tô điện toàn diện phủ khắp các phân khúc từ VF 3 đến VF 9.",
-            )
-        ]
-        sales_handoff = ServiceHandoff(
-            has_app_feature=True,
-            app_feature_name="Xem Chi tiết Dòng xe",
-            guide_url="https://vinfastauto.com/vn_vi/cac-dong-xe-o-to",
-        )
-        suggested_replies = [
-            "Đăng ký lái thử miễn phí",
-            "Bảng giá xe mới nhất",
-            "Tư vấn xe VF 7 & VF 8",
-            "Chính sách thuê/mua pin",
-        ]
-
-        agent_msg = Message(
-            id=str(uuid.uuid4()),
-            case_id=active_case_id,
-            session_id=payload.session_id,
-            sender_type=SenderType.AGENT.value,
-            content=sales_reply,
-            msg_metadata={"citations": [c.model_dump() for c in sales_citations]},
-        )
-        db.add(agent_msg)
-        if active_case:
-            active_case.updated_at = datetime.now(UTC)
-        db.commit()
-
-        return ApiResponse(
-            success=True,
-            data=ChatResponseData(
-                response_type="FAQ_ANSWER",
-                message=sales_reply,
-                case_id=active_case_id,
-                citations=sales_citations,
-                service_handoff=sales_handoff,
-                suggested_replies=suggested_replies,
-                show_emergency_banner=bool(active_case and active_case.priority == Priority.CRITICAL.value),
-                request_location=False,
-            ),
-            error=None,
-        )
+    knowledge_parts = sales_parts(text, ctx.vehicle_model if ctx else None) if not is_technical_incident else []
 
     # --------------------------------------------------------------------------
     # NHÓM B2: BIỂU TƯỢNG RÙA VÀNG TRÊN XE HIỆN TẠI (ACTIVE TURTLE ON VEHICLE)
@@ -1014,15 +929,22 @@ async def customer_chat(
     # --------------------------------------------------------------------------
     if not is_technical_incident:
         # Gọi Chatbot Agent Core AI (Tra cứu RAG ChromaDB / Fallback KB)
-        ai_res = await process_chat_message(
-            text, session_id=payload.session_id,
-            user_role="customer" if current_user else "guest",
-            owner=user_id or f"guest:{payload.guest_session_id}",
-            client_context={
-                "vehicle_model": vehicle_model,
-                "reset_faq_context": bool(history and "citations" not in (history[0].msg_metadata or {})),
-            },
+        models_in_question = explicit_models(text)
+        knowledge_model = models_in_question[0] if len(models_in_question) == 1 else (
+            None if len(models_in_question) > 1 else (ctx.vehicle_model if ctx else None)
         )
+        if knowledge_parts:
+            ai_res = await answer_sales_question(text, knowledge_model, payload.session_id)
+        else:
+            ai_res = await process_chat_message(
+                text, session_id=payload.session_id,
+                user_role="customer" if current_user else "guest",
+                owner=user_id or f"guest:{payload.guest_session_id}",
+                client_context={
+                    "vehicle_model": knowledge_model,
+                    "reset_faq_context": bool(history and "citations" not in (history[0].msg_metadata or {})),
+                },
+            )
         agent_reply = ai_res.get("reply") or (
             "Theo tài liệu chính thức từ VinFast, anh/chị có thể tra cứu thông tin chi tiết, "
             "quản lý tình trạng xe và đặt lịch dịch vụ trực tiếp trên Ứng dụng VinFast.\n\n"

@@ -11,6 +11,7 @@ from src.agents.state import AgentState
 from src.agents.tools.vinfast_tools import vinfast_manual_search
 from src.config import get_settings
 from src.services.agent_llm import structured_call
+from src.services.answer_evidence import is_turtle_question
 from src.services.rag_service import RAGService, select_supported_evidence, valid_citation
 
 
@@ -27,7 +28,9 @@ async def rag_node(state: AgentState) -> dict:
     retrieval = RAGService.failure("NO_SOURCE", "unsupported_request") if unsupported else RAGService.failure("TIMEOUT", "deadline_exhausted")
     if not unsupported and remaining > 0:
         try:
-            retrieval = await asyncio.wait_for(vinfast_manual_search(query, vehicle_model=state.get("vehicle_model")), timeout=remaining)
+            search_query = query + " chỉ báo giới hạn công suất" if is_turtle_question(query) else query
+            retrieval = await asyncio.wait_for(vinfast_manual_search(search_query, vehicle_model=state.get("vehicle_model")),
+                                               timeout=min(remaining, get_settings().rag_retrieval_timeout_s))
         except TimeoutError:
             retrieval = RAGService.failure("TIMEOUT", "timeout")
         except Exception:
@@ -55,16 +58,29 @@ async def rag_node(state: AgentState) -> dict:
     generated = None
     if citations and state.get("confidence_score", 0) >= 0.60:
         generated = await structured_call({**state, "rag_citations": citations}, "rag_qa", GroundedAnswer)
+        if generated is None and get_settings().agent_llm_enabled:
+            citations = []
+            reply = "Tôi chưa hoàn tất được việc tạo câu trả lời từ tài liệu đã tìm thấy. Anh/chị vui lòng thử lại; tôi không thể xác nhận nội dung lúc này."
+            retrieval = {**retrieval, "status": "ERROR", "diagnostics": {
+                **retrieval.get("diagnostics", {}), "stage": "generation", "category": "generation_unavailable"}}
         if generated and (
             not generated.supported
+            or not generated.answer.strip()
             or not generated.source_ids
             or not set(generated.source_ids).issubset({c["source_id"] for c in citations})
             or resolve_policy_conflict(generated.answer)
         ):
             citations = []
+            retrieval = {**retrieval, "status": "NO_SOURCE", "diagnostics": {
+                **retrieval.get("diagnostics", {}), "stage": "generation", "category": "unsupported_answer"}}
     else:
         citations = []
     if not citations:
+        if retrieval.get("status") == "SUCCESS":
+            retrieval = {**retrieval, "status": "NO_SOURCE", "diagnostics": {
+                **retrieval.get("diagnostics", {}), "category": "missing_answer_evidence"}}
+        if is_turtle_question(query) and retrieval.get("status") == "NO_SOURCE":
+            reply = "Tôi chưa tìm được đoạn tài liệu xác thực giải thích biểu tượng con rùa vàng cho mẫu xe này. Anh/chị vui lòng cho biết mẫu xe, đời xe hoặc gửi ảnh biểu tượng để đối chiếu đúng cảnh báo."
         return {
             "is_no_source": True,
             "retrieval_status": retrieval.get("status", "NO_SOURCE"),
@@ -78,6 +94,8 @@ async def rag_node(state: AgentState) -> dict:
             "final_response": reply,
             "guardrails": {**state.get("guardrails", {}), "low_confidence_escalated": True},
         }
+    if generated:
+        citations = [c for c in citations if c["source_id"] in generated.source_ids]
     for citation in citations:
         citation["relevant_snippet"] = sanitize_pii(citation["relevant_snippet"])[0]
     answer = sanitize_pii(generated.answer if generated else "\n\n".join(c["relevant_snippet"] for c in citations))[0]

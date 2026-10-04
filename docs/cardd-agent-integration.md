@@ -21,7 +21,30 @@ result = await process_chat_message(
 )
 ```
 
-`damage_evidence` là tham số nội bộ do tầng tích hợp truyền sau inference. Không lấy từ `client_context` hoặc JSON tùy ý do client tự khai báo. Việc xác thực ảnh/session, API upload và phân phối job vẫn thuộc backend; thay đổi này không thêm endpoint.
+`damage_evidence` là tham số nội bộ do tầng tích hợp truyền sau inference. Không lấy từ `client_context` hoặc JSON tùy ý do client tự khai báo.
+
+## Thử từ UI
+
+Trong chat, **Loại ảnh → Tự nhận diện loại ảnh** là mặc định. Server phân loại nội dung bằng Vision trước khi chọn công cụ:
+
+- Táp-lô hoặc trụ sạc → luồng OCR hiện có.
+- Ngoại thất xe → CarDD, không đọc biển báo trong nền thành cảnh báo táp-lô.
+- Chưa chắc chắn hoặc Vision lỗi → yêu cầu chọn loại ảnh/chụp lại; không tự chạy OCR thay thế.
+
+UI hiển thị loại ảnh nhận được. Có thể chọn thủ công **Táp-lô / trụ sạc** hoặc **Ngoại thất xe — kiểm tra hư hại** để phân tích lại ảnh đang chọn.
+API upload nhận multipart `image_kind=auto|dashboard|exterior`. UI gửi `auto`; client cũ không gửi trường này vẫn giữ mặc định `dashboard` để tương thích.
+Phân loại tự động sử dụng dịch vụ Vision bên ngoài; CarDD chạy cục bộ. Ngưỡng `IMAGE_ROUTING_MIN_CONFIDENCE=0.8` là cấu hình ban đầu, chưa được hiệu chỉnh trên tập kiểm định. `IMAGE_ROUTING_TIMEOUT_S=12` giới hạn thời gian chờ.
+Ảnh ngoại thất chạy CLI CarDD trên CPU, lưu `CARDD/vision_evidence` cùng owner của attachment.
+Chat chỉ đọc evidence do server lưu sau khi kiểm tra quyền sở hữu, xử lý an toàn trước,
+rồi gọi Agent và lưu Case Brief vào database backend khi cần nhân viên tiếp nhận.
+Các lượt xác nhận dùng session CarDD riêng theo owner; không lấy kết quả dự đoán từ client.
+
+Runtime mặc định dùng `data/vision/runtime-env/Scripts/python.exe` trên Windows
+(hoặc `bin/python` trên Linux), nếu không có thì dùng Python của backend.
+Có thể đặt `CARDD_PYTHON_EXECUTABLE` trỏ đến môi trường đã cài requirements vision.
+`CARDD_INFERENCE_TIMEOUT_S` mặc định 45 giây; timeout hoặc lỗi runtime trả `unavailable`,
+không chuyển sang OCR và không khẳng định xe nguyên vẹn. Mỗi upload chạy một process CPU riêng.
+Vehicles vẫn chưa chạy inference trên UI.
 
 Đường đi: intake chuẩn hóa tín hiệu → safety → review ảnh mới → hỏi xác nhận/ảnh bổ sung → intake thông tin khách → Case Brief. Safety khẩn cấp và chặn hướng dẫn nguy hiểm luôn được xử lý trước; FAQ/complaint/ngoài phạm vi tiếp tục theo luồng văn bản.
 
