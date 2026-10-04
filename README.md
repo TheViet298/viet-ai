@@ -149,6 +149,13 @@ bằng bất kỳ markdown viewer nào.
 
 ## Tech stack
 
+### Gate 2 — Manual evaluation evidence
+
+[Báo cáo kiểm thử Gate 2](docs/eval-evidence.md) ghi kết quả 5 tình huống
+kiểm tra qua API trên nhánh `feature/agent-long`, kèm input, output thực tế,
+file JSON minh chứng và trace LLM. Báo cáo nêu rõ các lỗi còn lại và phạm vi
+chưa kiểm tra trên giao diện.
+
 | Lớp | Công nghệ |
 |---|---|
 | Agent | LangGraph + LangChain 0.3 |

@@ -1,0 +1,1932 @@
+{
+  "case_id_label": "TC05",
+  "mode": "operator-directed manual HTTP requests to real local backend; no mocks",
+  "base_url": "http://127.0.0.1:8013",
+  "commit": "3da9eccdedc92bd751b9675f7892951d8394b599",
+  "branch": "feature/agent-long",
+  "configured_model": "gemini-3.8-flash",
+  "requests": [
+    {
+      "captured_at": "2026-10-04T23:23:51.845339+07:00",
+      "method": "POST",
+      "path": "/api/v1/customer/chat",
+      "role": "CUSTOMER",
+      "request_body": {
+        "session_id": "gate2-manual-TC05",
+        "message": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+        "case_id": null
+      },
+      "http_status": 200,
+      "elapsed_seconds": 0.141,
+      "response_body": {
+        "success": true,
+        "data": {
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "Biểu tượng con rùa (Turtle Mode) thường báo xe đang giới hạn công suất, nên khả năng tăng tốc có thể giảm. Đây là cơ chế bảo vệ; pin yếu, nhiệt độ bất thường hoặc lỗi hệ thống có thể là những nguyên nhân, nhưng chỉ biểu tượng này chưa đủ để xác định nguyên nhân của xe cụ thể.\n\nĐây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán.",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": [
+            "Xe tôi đang hiện biểu tượng này",
+            "Khi nào xe tự giới hạn công suất?",
+            "Tìm trạm sạc gần tôi"
+          ],
+          "citations": [],
+          "service_handoff": {
+            "has_app_feature": true,
+            "app_feature_name": "Đặt lịch dịch vụ / Tra cứu",
+            "guide_url": "https://vinfastauto.com/vn_vi"
+          },
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        },
+        "error": null,
+        "meta": {
+          "timestamp": "2026-10-04T16:23:51.845339+00:00"
+        }
+      }
+    },
+    {
+      "captured_at": "2026-10-04T23:24:11.356341+07:00",
+      "method": "POST",
+      "path": "/api/v1/customer/chat",
+      "role": "CUSTOMER",
+      "request_body": {
+        "session_id": "gate2-manual-TC05",
+        "message": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+        "case_id": null
+      },
+      "http_status": 200,
+      "elapsed_seconds": 5.219,
+      "response_body": {
+        "success": true,
+        "data": {
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Tôi sẽ chuyển chuyên viên kiểm tra.\n\nHệ thống đã ghi nhận câu hỏi để chuyên viên dịch vụ kiểm tra và phản hồi sớm nhất đến anh/chị.\n\nMã hồ sơ: CASE-20261004-001.",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": null,
+          "citations": [],
+          "service_handoff": {
+            "has_app_feature": true,
+            "app_feature_name": "Đặt lịch dịch vụ / Tra cứu",
+            "guide_url": "https://vinfastauto.com/vn_vi"
+          },
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        },
+        "error": null,
+        "meta": {
+          "timestamp": "2026-10-04T16:24:11.356341+00:00"
+        }
+      }
+    },
+    {
+      "captured_at": "2026-10-04T23:24:56.355420+07:00",
+      "method": "POST",
+      "path": "/api/v1/customer/chat",
+      "role": "CUSTOMER",
+      "request_body": {
+        "session_id": "gate2-manual-TC05",
+        "message": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+        "case_id": null
+      },
+      "http_status": 200,
+      "elapsed_seconds": 4.125,
+      "response_body": {
+        "success": true,
+        "data": {
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "Theo tài liệu VinFast:\n\nThời hạn bảo hành xe VinFast VF 8 theo điều kiện sử dụng tiêu chuẩn là 10 năm hoặc 200.000 km, tùy điều kiện nào đến trước.",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": null,
+          "citations": [
+            {
+              "source_id": "SRC-002",
+              "title": "Chính sách bảo hành xe ô tô VinFast",
+              "url": "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto",
+              "verified_at": "2026-09-30",
+              "status_code": 200,
+              "applicable_models": [
+                "ALL"
+              ],
+              "source_type": "official_policy",
+              "relevant_snippet": "Thời hạn bảo hành Ô tô — điều kiện sử dụng tiêu chuẩn. Fadil, Lux A 2.0, Lux SA 2.0, President, VF 8, VF 9, Lạc Hồng 900LX: 10 năm hoặc 200.000 km, tùy điều kiện nào đến trước."
+            }
+          ],
+          "service_handoff": {
+            "has_app_feature": true,
+            "app_feature_name": "Đặt lịch dịch vụ / Tra cứu",
+            "guide_url": "https://vinfastauto.com/vn_vi"
+          },
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        },
+        "error": null,
+        "meta": {
+          "timestamp": "2026-10-04T16:24:56.355420+00:00"
+        }
+      }
+    }
+  ],
+  "agent_trace": [
+    {
+      "timestamp_ms": 1791131031781,
+      "session_id": "gate2-manual-TC05",
+      "turn": 1,
+      "kind": "node",
+      "node": "intake",
+      "gate_decision": "intake",
+      "tokens_in": null,
+      "tokens_out": null,
+      "cost": null,
+      "metadata": {
+        "input": {
+          "query": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+          "session_id": "gate2-manual-TC05",
+          "vehicle_model": "VF8",
+          "messages": [],
+          "latest_user_message": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+          "clarification_turn": 0,
+          "captured_fields": {
+            "vehicle_model": "VF8"
+          },
+          "user_role": "customer",
+          "guest_turn_count": 0,
+          "pending_cardd_signal": null
+        },
+        "output": {
+          "pending_cardd_signal": null,
+          "cardd_evidence": null,
+          "cardd_new_input": false,
+          "cardd_confirmation_changed": false,
+          "llm_budget": {
+            "deadline": 31282.609,
+            "attempts": 0
+          },
+          "retrieval_diagnostics": {},
+          "query": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+          "resolved_query": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+          "latest_user_message": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+          "messages": [
+            {
+              "type": "human",
+              "content": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?"
+            }
+          ],
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "vehicle_model": "VF8",
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "memory_summary": "",
+          "turn": 1,
+          "clarification_turn": 0,
+          "max_clarification_turns": 2,
+          "suggested_replies": [],
+          "case_brief": null,
+          "response": "",
+          "final_response": "",
+          "is_no_source": false,
+          "rag_citations": [],
+          "rag_context": [],
+          "is_rag_query": false,
+          "policy_blocked": false,
+          "login_required": false,
+          "needs_staff_review": false,
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": []
+          },
+          "user_role": "customer",
+          "remaining_guest_messages": 5,
+          "session_id": "gate2-manual-TC05"
+        },
+        "tool_call": null,
+        "latency_s": 0.001779099999112077,
+        "prompt_versions": {
+          "case_brief_prompt.md": "f8f6d548f63f9a328483747a784c7239c1ccd888b848d6833a482165778d9c82",
+          "clarify_prompt.md": "a14f477d3048ac9efe81f2e74cb3dcf7f8a17b6707facbcf2fdf067e63ffcc9f",
+          "general_prompt.md": "2b44f76ace37ce902c566200bbb1c62b157329c9a8e8445d4adb806b2a1ab9f4",
+          "memory_prompt.md": "8a1630fccdb2baa8f8dfe4b661752fad1319031243123f6f7427434eebe05e87",
+          "policy_prompt.md": "c11305fb5be20d26bdbb99408f96800dd5113f2de166639ca48ec62627814478",
+          "rag_qa_prompt.md": "c5ddeae2bcda9e44fdf468702ade6ff64cb7565aac43a250bd03500788b87f27",
+          "system_prompt.md": "6241000bc78ab4355019ef83010d882420a3c30f51a1e1817f0014816e800d74",
+          "triage_prompt.md": "e87af5417125768109f4eb63b9708a51122ab5dbf948cadc0670fa6a57dc0638"
+        }
+      }
+    },
+    {
+      "timestamp_ms": 1791131031793,
+      "session_id": "gate2-manual-TC05",
+      "turn": 1,
+      "kind": "node",
+      "node": "safety",
+      "gate_decision": "safety",
+      "tokens_in": null,
+      "tokens_out": null,
+      "cost": null,
+      "metadata": {
+        "input": {
+          "query": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+          "resolved_query": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+          "response": "",
+          "session_id": "gate2-manual-TC05",
+          "vehicle_model": "VF8",
+          "messages": [
+            {
+              "type": "human",
+              "content": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?"
+            }
+          ],
+          "latest_user_message": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+          "clarification_turn": 0,
+          "max_clarification_turns": 2,
+          "suggested_replies": [],
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "is_rag_query": false,
+          "rag_context": [],
+          "rag_citations": [],
+          "case_brief": null,
+          "final_response": "",
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": []
+          },
+          "user_role": "customer",
+          "guest_turn_count": 0,
+          "turn": 1,
+          "needs_staff_review": false,
+          "is_no_source": false,
+          "retrieval_diagnostics": {},
+          "llm_budget": {
+            "deadline": 31282.609,
+            "attempts": 0
+          },
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "memory_summary": "",
+          "pending_cardd_signal": null,
+          "cardd_evidence": null,
+          "cardd_new_input": false,
+          "cardd_confirmation_changed": false,
+          "policy_blocked": false,
+          "login_required": false,
+          "remaining_guest_messages": 5
+        },
+        "output": {
+          "is_critical": false,
+          "safety_trigger": "TURTLE_DEFINITION",
+          "priority": "LOW",
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": []
+          }
+        },
+        "tool_call": null,
+        "latency_s": 0.00019040000188397244,
+        "prompt_versions": {
+          "case_brief_prompt.md": "f8f6d548f63f9a328483747a784c7239c1ccd888b848d6833a482165778d9c82",
+          "clarify_prompt.md": "a14f477d3048ac9efe81f2e74cb3dcf7f8a17b6707facbcf2fdf067e63ffcc9f",
+          "general_prompt.md": "2b44f76ace37ce902c566200bbb1c62b157329c9a8e8445d4adb806b2a1ab9f4",
+          "memory_prompt.md": "8a1630fccdb2baa8f8dfe4b661752fad1319031243123f6f7427434eebe05e87",
+          "policy_prompt.md": "c11305fb5be20d26bdbb99408f96800dd5113f2de166639ca48ec62627814478",
+          "rag_qa_prompt.md": "c5ddeae2bcda9e44fdf468702ade6ff64cb7565aac43a250bd03500788b87f27",
+          "system_prompt.md": "6241000bc78ab4355019ef83010d882420a3c30f51a1e1817f0014816e800d74",
+          "triage_prompt.md": "e87af5417125768109f4eb63b9708a51122ab5dbf948cadc0670fa6a57dc0638"
+        }
+      }
+    },
+    {
+      "timestamp_ms": 1791131031808,
+      "session_id": "gate2-manual-TC05",
+      "turn": 1,
+      "kind": "node",
+      "node": "triage",
+      "gate_decision": "triage",
+      "tokens_in": null,
+      "tokens_out": null,
+      "cost": null,
+      "metadata": {
+        "input": {
+          "query": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+          "resolved_query": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+          "response": "",
+          "session_id": "gate2-manual-TC05",
+          "vehicle_model": "VF8",
+          "messages": [
+            {
+              "type": "human",
+              "content": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?"
+            }
+          ],
+          "latest_user_message": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+          "clarification_turn": 0,
+          "max_clarification_turns": 2,
+          "suggested_replies": [],
+          "priority": "LOW",
+          "is_critical": false,
+          "safety_trigger": "TURTLE_DEFINITION",
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "is_rag_query": false,
+          "rag_context": [],
+          "rag_citations": [],
+          "case_brief": null,
+          "final_response": "",
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": []
+          },
+          "user_role": "customer",
+          "guest_turn_count": 0,
+          "turn": 1,
+          "needs_staff_review": false,
+          "is_no_source": false,
+          "retrieval_diagnostics": {},
+          "llm_budget": {
+            "deadline": 31282.609,
+            "attempts": 0
+          },
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "memory_summary": "",
+          "pending_cardd_signal": null,
+          "cardd_evidence": null,
+          "cardd_new_input": false,
+          "cardd_confirmation_changed": false,
+          "policy_blocked": false,
+          "login_required": false,
+          "remaining_guest_messages": 5
+        },
+        "output": {
+          "intent": "Sales/General Info",
+          "priority": "LOW",
+          "confidence_score": 0.9,
+          "routing": "sales_support",
+          "vehicle_model": "VF8",
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "is_rag_query": false,
+          "is_general_query": true,
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": [],
+            "out_of_scope_detected": false,
+            "sentiment_sensitive_escalated": false
+          }
+        },
+        "tool_call": null,
+        "latency_s": 0.0008190999978978653,
+        "prompt_versions": {
+          "case_brief_prompt.md": "f8f6d548f63f9a328483747a784c7239c1ccd888b848d6833a482165778d9c82",
+          "clarify_prompt.md": "a14f477d3048ac9efe81f2e74cb3dcf7f8a17b6707facbcf2fdf067e63ffcc9f",
+          "general_prompt.md": "2b44f76ace37ce902c566200bbb1c62b157329c9a8e8445d4adb806b2a1ab9f4",
+          "memory_prompt.md": "8a1630fccdb2baa8f8dfe4b661752fad1319031243123f6f7427434eebe05e87",
+          "policy_prompt.md": "c11305fb5be20d26bdbb99408f96800dd5113f2de166639ca48ec62627814478",
+          "rag_qa_prompt.md": "c5ddeae2bcda9e44fdf468702ade6ff64cb7565aac43a250bd03500788b87f27",
+          "system_prompt.md": "6241000bc78ab4355019ef83010d882420a3c30f51a1e1817f0014816e800d74",
+          "triage_prompt.md": "e87af5417125768109f4eb63b9708a51122ab5dbf948cadc0670fa6a57dc0638"
+        }
+      }
+    },
+    {
+      "timestamp_ms": 1791131031822,
+      "session_id": "gate2-manual-TC05",
+      "turn": 1,
+      "kind": "node",
+      "node": "general",
+      "gate_decision": "FAQ_ANSWER",
+      "tokens_in": null,
+      "tokens_out": null,
+      "cost": null,
+      "metadata": {
+        "input": {
+          "query": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+          "resolved_query": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+          "response": "",
+          "session_id": "gate2-manual-TC05",
+          "vehicle_model": "VF8",
+          "messages": [
+            {
+              "type": "human",
+              "content": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?"
+            }
+          ],
+          "latest_user_message": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+          "clarification_turn": 0,
+          "max_clarification_turns": 2,
+          "suggested_replies": [],
+          "intent": "Sales/General Info",
+          "priority": "LOW",
+          "confidence_score": 0.9,
+          "is_critical": false,
+          "safety_trigger": "TURTLE_DEFINITION",
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "is_rag_query": false,
+          "is_general_query": true,
+          "rag_context": [],
+          "rag_citations": [],
+          "case_brief": null,
+          "final_response": "",
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": [],
+            "out_of_scope_detected": false,
+            "sentiment_sensitive_escalated": false
+          },
+          "user_role": "customer",
+          "guest_turn_count": 0,
+          "turn": 1,
+          "needs_staff_review": false,
+          "routing": "sales_support",
+          "is_no_source": false,
+          "retrieval_diagnostics": {},
+          "llm_budget": {
+            "deadline": 31282.609,
+            "attempts": 0
+          },
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "memory_summary": "",
+          "pending_cardd_signal": null,
+          "cardd_evidence": null,
+          "cardd_new_input": false,
+          "cardd_confirmation_changed": false,
+          "policy_blocked": false,
+          "login_required": false,
+          "remaining_guest_messages": 5
+        },
+        "output": {
+          "response": "Biểu tượng con rùa (Turtle Mode) thường báo xe đang giới hạn công suất, nên khả năng tăng tốc có thể giảm. Đây là cơ chế bảo vệ; pin yếu, nhiệt độ bất thường hoặc lỗi hệ thống có thể là những nguyên nhân, nhưng chỉ biểu tượng này chưa đủ để xác định nguyên nhân của xe cụ thể.\n\nĐây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán.",
+          "final_response": "Biểu tượng con rùa (Turtle Mode) thường báo xe đang giới hạn công suất, nên khả năng tăng tốc có thể giảm. Đây là cơ chế bảo vệ; pin yếu, nhiệt độ bất thường hoặc lỗi hệ thống có thể là những nguyên nhân, nhưng chỉ biểu tượng này chưa đủ để xác định nguyên nhân của xe cụ thể.\n\nĐây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán.",
+          "response_type": "FAQ_ANSWER",
+          "needs_staff_review": false,
+          "is_no_source": false,
+          "is_rag_query": false,
+          "rag_citations": [],
+          "rag_context": [],
+          "case_brief": null,
+          "suggested_replies": []
+        },
+        "tool_call": null,
+        "latency_s": 0.0014828000021225307,
+        "prompt_versions": {
+          "case_brief_prompt.md": "f8f6d548f63f9a328483747a784c7239c1ccd888b848d6833a482165778d9c82",
+          "clarify_prompt.md": "a14f477d3048ac9efe81f2e74cb3dcf7f8a17b6707facbcf2fdf067e63ffcc9f",
+          "general_prompt.md": "2b44f76ace37ce902c566200bbb1c62b157329c9a8e8445d4adb806b2a1ab9f4",
+          "memory_prompt.md": "8a1630fccdb2baa8f8dfe4b661752fad1319031243123f6f7427434eebe05e87",
+          "policy_prompt.md": "c11305fb5be20d26bdbb99408f96800dd5113f2de166639ca48ec62627814478",
+          "rag_qa_prompt.md": "c5ddeae2bcda9e44fdf468702ade6ff64cb7565aac43a250bd03500788b87f27",
+          "system_prompt.md": "6241000bc78ab4355019ef83010d882420a3c30f51a1e1817f0014816e800d74",
+          "triage_prompt.md": "e87af5417125768109f4eb63b9708a51122ab5dbf948cadc0670fa6a57dc0638"
+        }
+      }
+    },
+    {
+      "timestamp_ms": 1791131046137,
+      "session_id": "gate2-manual-TC05",
+      "turn": 2,
+      "kind": "node",
+      "node": "intake",
+      "gate_decision": "FAQ_ANSWER",
+      "tokens_in": null,
+      "tokens_out": null,
+      "cost": null,
+      "metadata": {
+        "input": {
+          "query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "resolved_query": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?",
+          "response": "Biểu tượng con rùa (Turtle Mode) thường báo xe đang giới hạn công suất, nên khả năng tăng tốc có thể giảm. Đây là cơ chế bảo vệ; pin yếu, nhiệt độ bất thường hoặc lỗi hệ thống có thể là những nguyên nhân, nhưng chỉ biểu tượng này chưa đủ để xác định nguyên nhân của xe cụ thể.\n\nĐây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán.",
+          "session_id": "gate2-manual-TC05",
+          "vehicle_model": "VF8",
+          "messages": [
+            {
+              "type": "human",
+              "content": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?"
+            },
+            {
+              "type": "ai",
+              "content": "Biểu tượng con rùa (Turtle Mode) thường báo xe đang giới hạn công suất, nên khả năng tăng tốc có thể giảm. Đây là cơ chế bảo vệ; pin yếu, nhiệt độ bất thường hoặc lỗi hệ thống có thể là những nguyên nhân, nhưng chỉ biểu tượng này chưa đủ để xác định nguyên nhân của xe cụ thể.\n\nĐây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán."
+            }
+          ],
+          "latest_user_message": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "clarification_turn": 0,
+          "max_clarification_turns": 2,
+          "suggested_replies": [],
+          "intent": "Sales/General Info",
+          "priority": "LOW",
+          "confidence_score": 0.9,
+          "is_critical": false,
+          "safety_trigger": "TURTLE_DEFINITION",
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "is_rag_query": false,
+          "is_general_query": true,
+          "rag_context": [],
+          "rag_citations": [],
+          "case_brief": null,
+          "response_type": "FAQ_ANSWER",
+          "final_response": "Biểu tượng con rùa (Turtle Mode) thường báo xe đang giới hạn công suất, nên khả năng tăng tốc có thể giảm. Đây là cơ chế bảo vệ; pin yếu, nhiệt độ bất thường hoặc lỗi hệ thống có thể là những nguyên nhân, nhưng chỉ biểu tượng này chưa đủ để xác định nguyên nhân của xe cụ thể.\n\nĐây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán.",
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": [],
+            "out_of_scope_detected": false,
+            "sentiment_sensitive_escalated": false
+          },
+          "user_role": "customer",
+          "guest_turn_count": 0,
+          "turn": 1,
+          "needs_staff_review": false,
+          "routing": "sales_support",
+          "is_no_source": false,
+          "retrieval_diagnostics": {},
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "memory_summary": "",
+          "pending_cardd_signal": null,
+          "cardd_evidence": null,
+          "cardd_new_input": false,
+          "cardd_confirmation_changed": false,
+          "policy_blocked": false,
+          "login_required": false,
+          "remaining_guest_messages": 5
+        },
+        "output": {
+          "pending_cardd_signal": null,
+          "cardd_evidence": null,
+          "cardd_new_input": false,
+          "cardd_confirmation_changed": false,
+          "llm_budget": {
+            "deadline": 31296.968,
+            "attempts": 0
+          },
+          "retrieval_diagnostics": {},
+          "query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "resolved_query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "latest_user_message": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "messages": [
+            {
+              "type": "human",
+              "content": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?"
+            }
+          ],
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "vehicle_model": "VF8",
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "memory_summary": "",
+          "turn": 2,
+          "clarification_turn": 0,
+          "max_clarification_turns": 2,
+          "suggested_replies": [],
+          "case_brief": null,
+          "response": "",
+          "final_response": "",
+          "is_no_source": false,
+          "rag_citations": [],
+          "rag_context": [],
+          "is_rag_query": false,
+          "policy_blocked": false,
+          "login_required": false,
+          "needs_staff_review": false,
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": []
+          },
+          "user_role": "customer",
+          "remaining_guest_messages": 5,
+          "session_id": "gate2-manual-TC05"
+        },
+        "tool_call": null,
+        "latency_s": 0.00025520000053802505,
+        "prompt_versions": {
+          "case_brief_prompt.md": "f8f6d548f63f9a328483747a784c7239c1ccd888b848d6833a482165778d9c82",
+          "clarify_prompt.md": "a14f477d3048ac9efe81f2e74cb3dcf7f8a17b6707facbcf2fdf067e63ffcc9f",
+          "general_prompt.md": "2b44f76ace37ce902c566200bbb1c62b157329c9a8e8445d4adb806b2a1ab9f4",
+          "memory_prompt.md": "8a1630fccdb2baa8f8dfe4b661752fad1319031243123f6f7427434eebe05e87",
+          "policy_prompt.md": "c11305fb5be20d26bdbb99408f96800dd5113f2de166639ca48ec62627814478",
+          "rag_qa_prompt.md": "c5ddeae2bcda9e44fdf468702ade6ff64cb7565aac43a250bd03500788b87f27",
+          "system_prompt.md": "6241000bc78ab4355019ef83010d882420a3c30f51a1e1817f0014816e800d74",
+          "triage_prompt.md": "e87af5417125768109f4eb63b9708a51122ab5dbf948cadc0670fa6a57dc0638"
+        }
+      }
+    },
+    {
+      "timestamp_ms": 1791131046149,
+      "session_id": "gate2-manual-TC05",
+      "turn": 2,
+      "kind": "node",
+      "node": "safety",
+      "gate_decision": "FAQ_ANSWER",
+      "tokens_in": null,
+      "tokens_out": null,
+      "cost": null,
+      "metadata": {
+        "input": {
+          "query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "resolved_query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "response": "",
+          "session_id": "gate2-manual-TC05",
+          "vehicle_model": "VF8",
+          "messages": [
+            {
+              "type": "human",
+              "content": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?"
+            },
+            {
+              "type": "ai",
+              "content": "Biểu tượng con rùa (Turtle Mode) thường báo xe đang giới hạn công suất, nên khả năng tăng tốc có thể giảm. Đây là cơ chế bảo vệ; pin yếu, nhiệt độ bất thường hoặc lỗi hệ thống có thể là những nguyên nhân, nhưng chỉ biểu tượng này chưa đủ để xác định nguyên nhân của xe cụ thể.\n\nĐây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán."
+            },
+            {
+              "type": "human",
+              "content": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?"
+            }
+          ],
+          "latest_user_message": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "clarification_turn": 0,
+          "max_clarification_turns": 2,
+          "suggested_replies": [],
+          "intent": "Sales/General Info",
+          "priority": "LOW",
+          "confidence_score": 0.9,
+          "is_critical": false,
+          "safety_trigger": "TURTLE_DEFINITION",
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "is_rag_query": false,
+          "is_general_query": true,
+          "rag_context": [],
+          "rag_citations": [],
+          "case_brief": null,
+          "response_type": "FAQ_ANSWER",
+          "final_response": "",
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": []
+          },
+          "user_role": "customer",
+          "guest_turn_count": 0,
+          "turn": 2,
+          "needs_staff_review": false,
+          "routing": "sales_support",
+          "is_no_source": false,
+          "retrieval_diagnostics": {},
+          "llm_budget": {
+            "deadline": 31296.968,
+            "attempts": 0
+          },
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "memory_summary": "",
+          "pending_cardd_signal": null,
+          "cardd_evidence": null,
+          "cardd_new_input": false,
+          "cardd_confirmation_changed": false,
+          "policy_blocked": false,
+          "login_required": false,
+          "remaining_guest_messages": 5
+        },
+        "output": {
+          "is_critical": false,
+          "safety_trigger": null,
+          "priority": "MEDIUM",
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": []
+          }
+        },
+        "tool_call": null,
+        "latency_s": 0.0001841000012063887,
+        "prompt_versions": {
+          "case_brief_prompt.md": "f8f6d548f63f9a328483747a784c7239c1ccd888b848d6833a482165778d9c82",
+          "clarify_prompt.md": "a14f477d3048ac9efe81f2e74cb3dcf7f8a17b6707facbcf2fdf067e63ffcc9f",
+          "general_prompt.md": "2b44f76ace37ce902c566200bbb1c62b157329c9a8e8445d4adb806b2a1ab9f4",
+          "memory_prompt.md": "8a1630fccdb2baa8f8dfe4b661752fad1319031243123f6f7427434eebe05e87",
+          "policy_prompt.md": "c11305fb5be20d26bdbb99408f96800dd5113f2de166639ca48ec62627814478",
+          "rag_qa_prompt.md": "c5ddeae2bcda9e44fdf468702ade6ff64cb7565aac43a250bd03500788b87f27",
+          "system_prompt.md": "6241000bc78ab4355019ef83010d882420a3c30f51a1e1817f0014816e800d74",
+          "triage_prompt.md": "e87af5417125768109f4eb63b9708a51122ab5dbf948cadc0670fa6a57dc0638"
+        }
+      }
+    },
+    {
+      "timestamp_ms": 1791131046155,
+      "session_id": "gate2-manual-TC05",
+      "turn": 2,
+      "kind": "node",
+      "node": "triage",
+      "gate_decision": "FAQ_ANSWER",
+      "tokens_in": null,
+      "tokens_out": null,
+      "cost": null,
+      "metadata": {
+        "input": {
+          "query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "resolved_query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "response": "",
+          "session_id": "gate2-manual-TC05",
+          "vehicle_model": "VF8",
+          "messages": [
+            {
+              "type": "human",
+              "content": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?"
+            },
+            {
+              "type": "ai",
+              "content": "Biểu tượng con rùa (Turtle Mode) thường báo xe đang giới hạn công suất, nên khả năng tăng tốc có thể giảm. Đây là cơ chế bảo vệ; pin yếu, nhiệt độ bất thường hoặc lỗi hệ thống có thể là những nguyên nhân, nhưng chỉ biểu tượng này chưa đủ để xác định nguyên nhân của xe cụ thể.\n\nĐây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán."
+            },
+            {
+              "type": "human",
+              "content": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?"
+            }
+          ],
+          "latest_user_message": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "clarification_turn": 0,
+          "max_clarification_turns": 2,
+          "suggested_replies": [],
+          "intent": "Sales/General Info",
+          "priority": "MEDIUM",
+          "confidence_score": 0.9,
+          "is_critical": false,
+          "safety_trigger": null,
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "is_rag_query": false,
+          "is_general_query": true,
+          "rag_context": [],
+          "rag_citations": [],
+          "case_brief": null,
+          "response_type": "FAQ_ANSWER",
+          "final_response": "",
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": []
+          },
+          "user_role": "customer",
+          "guest_turn_count": 0,
+          "turn": 2,
+          "needs_staff_review": false,
+          "routing": "sales_support",
+          "is_no_source": false,
+          "retrieval_diagnostics": {},
+          "llm_budget": {
+            "deadline": 31296.968,
+            "attempts": 0
+          },
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "memory_summary": "",
+          "pending_cardd_signal": null,
+          "cardd_evidence": null,
+          "cardd_new_input": false,
+          "cardd_confirmation_changed": false,
+          "policy_blocked": false,
+          "login_required": false,
+          "remaining_guest_messages": 5
+        },
+        "output": {
+          "intent": "Sales/General Info",
+          "priority": "LOW",
+          "confidence_score": 0.9,
+          "routing": "sales_support",
+          "vehicle_model": "VF8",
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "is_rag_query": true,
+          "is_general_query": false,
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": [],
+            "out_of_scope_detected": false,
+            "sentiment_sensitive_escalated": false
+          }
+        },
+        "tool_call": null,
+        "latency_s": 0.0003262999998696614,
+        "prompt_versions": {
+          "case_brief_prompt.md": "f8f6d548f63f9a328483747a784c7239c1ccd888b848d6833a482165778d9c82",
+          "clarify_prompt.md": "a14f477d3048ac9efe81f2e74cb3dcf7f8a17b6707facbcf2fdf067e63ffcc9f",
+          "general_prompt.md": "2b44f76ace37ce902c566200bbb1c62b157329c9a8e8445d4adb806b2a1ab9f4",
+          "memory_prompt.md": "8a1630fccdb2baa8f8dfe4b661752fad1319031243123f6f7427434eebe05e87",
+          "policy_prompt.md": "c11305fb5be20d26bdbb99408f96800dd5113f2de166639ca48ec62627814478",
+          "rag_qa_prompt.md": "c5ddeae2bcda9e44fdf468702ade6ff64cb7565aac43a250bd03500788b87f27",
+          "system_prompt.md": "6241000bc78ab4355019ef83010d882420a3c30f51a1e1817f0014816e800d74",
+          "triage_prompt.md": "e87af5417125768109f4eb63b9708a51122ab5dbf948cadc0670fa6a57dc0638"
+        }
+      }
+    },
+    {
+      "timestamp_ms": 1791131051164,
+      "session_id": "gate2-manual-TC05",
+      "turn": 2,
+      "kind": "node",
+      "node": "rag",
+      "gate_decision": "FAQ_ANSWER",
+      "tokens_in": null,
+      "tokens_out": null,
+      "cost": null,
+      "metadata": {
+        "input": {
+          "query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "resolved_query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "response": "",
+          "session_id": "gate2-manual-TC05",
+          "vehicle_model": "VF8",
+          "messages": [
+            {
+              "type": "human",
+              "content": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?"
+            },
+            {
+              "type": "ai",
+              "content": "Biểu tượng con rùa (Turtle Mode) thường báo xe đang giới hạn công suất, nên khả năng tăng tốc có thể giảm. Đây là cơ chế bảo vệ; pin yếu, nhiệt độ bất thường hoặc lỗi hệ thống có thể là những nguyên nhân, nhưng chỉ biểu tượng này chưa đủ để xác định nguyên nhân của xe cụ thể.\n\nĐây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán."
+            },
+            {
+              "type": "human",
+              "content": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?"
+            }
+          ],
+          "latest_user_message": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "clarification_turn": 0,
+          "max_clarification_turns": 2,
+          "suggested_replies": [],
+          "intent": "Sales/General Info",
+          "priority": "LOW",
+          "confidence_score": 0.9,
+          "is_critical": false,
+          "safety_trigger": null,
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "is_rag_query": true,
+          "is_general_query": false,
+          "rag_context": [],
+          "rag_citations": [],
+          "case_brief": null,
+          "response_type": "FAQ_ANSWER",
+          "final_response": "",
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": [],
+            "out_of_scope_detected": false,
+            "sentiment_sensitive_escalated": false
+          },
+          "user_role": "customer",
+          "guest_turn_count": 0,
+          "turn": 2,
+          "needs_staff_review": false,
+          "routing": "sales_support",
+          "is_no_source": false,
+          "retrieval_diagnostics": {},
+          "llm_budget": {
+            "deadline": 31296.968,
+            "attempts": 0
+          },
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "memory_summary": "",
+          "pending_cardd_signal": null,
+          "cardd_evidence": null,
+          "cardd_new_input": false,
+          "cardd_confirmation_changed": false,
+          "policy_blocked": false,
+          "login_required": false,
+          "remaining_guest_messages": 5
+        },
+        "output": {
+          "is_no_source": true,
+          "retrieval_status": "TIMEOUT",
+          "retrieval_diagnostics": {
+            "stage": "retrieval",
+            "category": "timeout",
+            "status": "timeout",
+            "candidates": []
+          },
+          "rag_citations": [],
+          "rag_context": [],
+          "is_rag_query": true,
+          "needs_staff_review": true,
+          "rag_distance": null,
+          "response": "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Tôi sẽ chuyển chuyên viên kiểm tra.",
+          "final_response": "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Tôi sẽ chuyển chuyên viên kiểm tra.",
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": [],
+            "out_of_scope_detected": false,
+            "sentiment_sensitive_escalated": false,
+            "low_confidence_escalated": true
+          }
+        },
+        "tool_call": "vinfast_manual_search",
+        "latency_s": 5.0041338999981235,
+        "prompt_versions": {
+          "case_brief_prompt.md": "f8f6d548f63f9a328483747a784c7239c1ccd888b848d6833a482165778d9c82",
+          "clarify_prompt.md": "a14f477d3048ac9efe81f2e74cb3dcf7f8a17b6707facbcf2fdf067e63ffcc9f",
+          "general_prompt.md": "2b44f76ace37ce902c566200bbb1c62b157329c9a8e8445d4adb806b2a1ab9f4",
+          "memory_prompt.md": "8a1630fccdb2baa8f8dfe4b661752fad1319031243123f6f7427434eebe05e87",
+          "policy_prompt.md": "c11305fb5be20d26bdbb99408f96800dd5113f2de166639ca48ec62627814478",
+          "rag_qa_prompt.md": "c5ddeae2bcda9e44fdf468702ade6ff64cb7565aac43a250bd03500788b87f27",
+          "system_prompt.md": "6241000bc78ab4355019ef83010d882420a3c30f51a1e1817f0014816e800d74",
+          "triage_prompt.md": "e87af5417125768109f4eb63b9708a51122ab5dbf948cadc0670fa6a57dc0638"
+        }
+      }
+    },
+    {
+      "timestamp_ms": 1791131051330,
+      "session_id": "gate2-manual-TC05",
+      "turn": 2,
+      "kind": "node",
+      "node": "case_brief",
+      "gate_decision": "CASE_CREATED",
+      "tokens_in": null,
+      "tokens_out": null,
+      "cost": null,
+      "metadata": {
+        "input": {
+          "query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "resolved_query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "response": "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Tôi sẽ chuyển chuyên viên kiểm tra.",
+          "session_id": "gate2-manual-TC05",
+          "vehicle_model": "VF8",
+          "messages": [
+            {
+              "type": "human",
+              "content": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?"
+            },
+            {
+              "type": "ai",
+              "content": "Biểu tượng con rùa (Turtle Mode) thường báo xe đang giới hạn công suất, nên khả năng tăng tốc có thể giảm. Đây là cơ chế bảo vệ; pin yếu, nhiệt độ bất thường hoặc lỗi hệ thống có thể là những nguyên nhân, nhưng chỉ biểu tượng này chưa đủ để xác định nguyên nhân của xe cụ thể.\n\nĐây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán."
+            },
+            {
+              "type": "human",
+              "content": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?"
+            }
+          ],
+          "latest_user_message": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "clarification_turn": 0,
+          "max_clarification_turns": 2,
+          "suggested_replies": [],
+          "intent": "Sales/General Info",
+          "priority": "LOW",
+          "confidence_score": 0.9,
+          "is_critical": false,
+          "safety_trigger": null,
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "is_rag_query": true,
+          "is_general_query": false,
+          "rag_context": [],
+          "rag_citations": [],
+          "case_brief": null,
+          "response_type": "FAQ_ANSWER",
+          "final_response": "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Tôi sẽ chuyển chuyên viên kiểm tra.",
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": [],
+            "out_of_scope_detected": false,
+            "sentiment_sensitive_escalated": false,
+            "low_confidence_escalated": true
+          },
+          "user_role": "customer",
+          "guest_turn_count": 0,
+          "turn": 2,
+          "needs_staff_review": true,
+          "routing": "sales_support",
+          "is_no_source": true,
+          "rag_distance": null,
+          "retrieval_diagnostics": {
+            "stage": "retrieval",
+            "category": "timeout",
+            "status": "timeout",
+            "candidates": []
+          },
+          "retrieval_status": "TIMEOUT",
+          "llm_budget": {
+            "deadline": 31296.968,
+            "attempts": 0
+          },
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "memory_summary": "",
+          "pending_cardd_signal": null,
+          "cardd_evidence": null,
+          "cardd_new_input": false,
+          "cardd_confirmation_changed": false,
+          "policy_blocked": false,
+          "login_required": false,
+          "remaining_guest_messages": 5
+        },
+        "output": {
+          "case_brief": {
+            "summary": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+            "vehicle_model": "VF8",
+            "station_location": null,
+            "charger_id": null,
+            "error_code": null,
+            "warning_symbol": "con rùa",
+            "captured_fields": {
+              "vehicle_model": "VF8",
+              "warning_symbol": "con rùa"
+            },
+            "suggested_action": "Nhân viên kiểm tra và tiếp nhận tại sales_support.",
+            "confidence_score": 0.9,
+            "is_edited_by_staff": false
+          },
+          "ticket_status": "Staff Reviewing",
+          "needs_staff_review": true,
+          "routing": "sales_support",
+          "login_required": false,
+          "response_type": "CASE_CREATED",
+          "response": "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Tôi sẽ chuyển chuyên viên kiểm tra.\n\nHệ thống đã ghi nhận câu hỏi để chuyên viên dịch vụ kiểm tra và phản hồi sớm nhất đến anh/chị.",
+          "final_response": "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Tôi sẽ chuyển chuyên viên kiểm tra.\n\nHệ thống đã ghi nhận câu hỏi để chuyên viên dịch vụ kiểm tra và phản hồi sớm nhất đến anh/chị.",
+          "safe_guidance": null
+        },
+        "tool_call": null,
+        "latency_s": 0.00025299999833805487,
+        "prompt_versions": {
+          "case_brief_prompt.md": "f8f6d548f63f9a328483747a784c7239c1ccd888b848d6833a482165778d9c82",
+          "clarify_prompt.md": "a14f477d3048ac9efe81f2e74cb3dcf7f8a17b6707facbcf2fdf067e63ffcc9f",
+          "general_prompt.md": "2b44f76ace37ce902c566200bbb1c62b157329c9a8e8445d4adb806b2a1ab9f4",
+          "memory_prompt.md": "8a1630fccdb2baa8f8dfe4b661752fad1319031243123f6f7427434eebe05e87",
+          "policy_prompt.md": "c11305fb5be20d26bdbb99408f96800dd5113f2de166639ca48ec62627814478",
+          "rag_qa_prompt.md": "c5ddeae2bcda9e44fdf468702ade6ff64cb7565aac43a250bd03500788b87f27",
+          "system_prompt.md": "6241000bc78ab4355019ef83010d882420a3c30f51a1e1817f0014816e800d74",
+          "triage_prompt.md": "e87af5417125768109f4eb63b9708a51122ab5dbf948cadc0670fa6a57dc0638"
+        }
+      }
+    },
+    {
+      "timestamp_ms": 1791131092272,
+      "session_id": "gate2-manual-TC05",
+      "turn": 3,
+      "kind": "node",
+      "node": "intake",
+      "gate_decision": "CASE_CREATED",
+      "tokens_in": null,
+      "tokens_out": null,
+      "cost": null,
+      "metadata": {
+        "input": {
+          "query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "resolved_query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "response": "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Tôi sẽ chuyển chuyên viên kiểm tra.\n\nHệ thống đã ghi nhận câu hỏi để chuyên viên dịch vụ kiểm tra và phản hồi sớm nhất đến anh/chị.",
+          "session_id": "gate2-manual-TC05",
+          "case_id": "CASE-[REDACTED_LICENSE_PLATE]-001",
+          "vehicle_model": "VF8",
+          "messages": [
+            {
+              "type": "human",
+              "content": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?"
+            },
+            {
+              "type": "ai",
+              "content": "Biểu tượng con rùa (Turtle Mode) thường báo xe đang giới hạn công suất, nên khả năng tăng tốc có thể giảm. Đây là cơ chế bảo vệ; pin yếu, nhiệt độ bất thường hoặc lỗi hệ thống có thể là những nguyên nhân, nhưng chỉ biểu tượng này chưa đủ để xác định nguyên nhân của xe cụ thể.\n\nĐây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán."
+            },
+            {
+              "type": "human",
+              "content": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?"
+            },
+            {
+              "type": "ai",
+              "content": "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Tôi sẽ chuyển chuyên viên kiểm tra.\n\nHệ thống đã ghi nhận câu hỏi để chuyên viên dịch vụ kiểm tra và phản hồi sớm nhất đến anh/chị."
+            }
+          ],
+          "latest_user_message": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "clarification_turn": 0,
+          "max_clarification_turns": 2,
+          "suggested_replies": [],
+          "intent": "Sales/General Info",
+          "priority": "LOW",
+          "confidence_score": 0.9,
+          "is_critical": false,
+          "safety_trigger": null,
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "is_rag_query": true,
+          "is_general_query": false,
+          "rag_context": [],
+          "rag_citations": [],
+          "case_brief": {
+            "summary": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+            "vehicle_model": "VF8",
+            "station_location": null,
+            "charger_id": null,
+            "error_code": null,
+            "warning_symbol": "con rùa",
+            "captured_fields": {
+              "vehicle_model": "VF8",
+              "warning_symbol": "con rùa"
+            },
+            "suggested_action": "Nhân viên kiểm tra và tiếp nhận tại sales_support.",
+            "confidence_score": 0.9,
+            "is_edited_by_staff": false
+          },
+          "ticket_status": "Staff Reviewing",
+          "response_type": "CASE_CREATED",
+          "final_response": "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Tôi sẽ chuyển chuyên viên kiểm tra.\n\nHệ thống đã ghi nhận câu hỏi để chuyên viên dịch vụ kiểm tra và phản hồi sớm nhất đến anh/chị.",
+          "safe_guidance": null,
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": [],
+            "out_of_scope_detected": false,
+            "sentiment_sensitive_escalated": false,
+            "low_confidence_escalated": true
+          },
+          "user_role": "customer",
+          "guest_turn_count": 0,
+          "turn": 2,
+          "needs_staff_review": true,
+          "routing": "sales_support",
+          "is_no_source": true,
+          "rag_distance": null,
+          "retrieval_diagnostics": {
+            "stage": "retrieval",
+            "category": "timeout",
+            "status": "timeout",
+            "candidates": []
+          },
+          "retrieval_status": "TIMEOUT",
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "memory_summary": "",
+          "pending_cardd_signal": null,
+          "cardd_evidence": null,
+          "cardd_new_input": false,
+          "cardd_confirmation_changed": false,
+          "policy_blocked": false,
+          "login_required": false,
+          "remaining_guest_messages": 5
+        },
+        "output": {
+          "pending_cardd_signal": null,
+          "cardd_evidence": null,
+          "cardd_new_input": false,
+          "cardd_confirmation_changed": false,
+          "llm_budget": {
+            "deadline": 31343.109,
+            "attempts": 0
+          },
+          "retrieval_diagnostics": {},
+          "query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "resolved_query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "latest_user_message": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "messages": [
+            {
+              "type": "human",
+              "content": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?"
+            }
+          ],
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "vehicle_model": "VF8",
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "memory_summary": "",
+          "turn": 3,
+          "clarification_turn": 0,
+          "max_clarification_turns": 2,
+          "suggested_replies": [],
+          "case_brief": null,
+          "response": "",
+          "final_response": "",
+          "is_no_source": false,
+          "rag_citations": [],
+          "rag_context": [],
+          "is_rag_query": false,
+          "policy_blocked": false,
+          "login_required": false,
+          "needs_staff_review": false,
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": []
+          },
+          "user_role": "customer",
+          "remaining_guest_messages": 5,
+          "session_id": "gate2-manual-TC05"
+        },
+        "tool_call": null,
+        "latency_s": 0.0009587999993527774,
+        "prompt_versions": {
+          "case_brief_prompt.md": "f8f6d548f63f9a328483747a784c7239c1ccd888b848d6833a482165778d9c82",
+          "clarify_prompt.md": "a14f477d3048ac9efe81f2e74cb3dcf7f8a17b6707facbcf2fdf067e63ffcc9f",
+          "general_prompt.md": "2b44f76ace37ce902c566200bbb1c62b157329c9a8e8445d4adb806b2a1ab9f4",
+          "memory_prompt.md": "8a1630fccdb2baa8f8dfe4b661752fad1319031243123f6f7427434eebe05e87",
+          "policy_prompt.md": "c11305fb5be20d26bdbb99408f96800dd5113f2de166639ca48ec62627814478",
+          "rag_qa_prompt.md": "c5ddeae2bcda9e44fdf468702ade6ff64cb7565aac43a250bd03500788b87f27",
+          "system_prompt.md": "6241000bc78ab4355019ef83010d882420a3c30f51a1e1817f0014816e800d74",
+          "triage_prompt.md": "e87af5417125768109f4eb63b9708a51122ab5dbf948cadc0670fa6a57dc0638"
+        }
+      }
+    },
+    {
+      "timestamp_ms": 1791131092288,
+      "session_id": "gate2-manual-TC05",
+      "turn": 3,
+      "kind": "node",
+      "node": "safety",
+      "gate_decision": "CASE_CREATED",
+      "tokens_in": null,
+      "tokens_out": null,
+      "cost": null,
+      "metadata": {
+        "input": {
+          "query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "resolved_query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "response": "",
+          "session_id": "gate2-manual-TC05",
+          "case_id": "CASE-[REDACTED_LICENSE_PLATE]-001",
+          "vehicle_model": "VF8",
+          "messages": [
+            {
+              "type": "human",
+              "content": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?"
+            },
+            {
+              "type": "ai",
+              "content": "Biểu tượng con rùa (Turtle Mode) thường báo xe đang giới hạn công suất, nên khả năng tăng tốc có thể giảm. Đây là cơ chế bảo vệ; pin yếu, nhiệt độ bất thường hoặc lỗi hệ thống có thể là những nguyên nhân, nhưng chỉ biểu tượng này chưa đủ để xác định nguyên nhân của xe cụ thể.\n\nĐây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán."
+            },
+            {
+              "type": "human",
+              "content": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?"
+            },
+            {
+              "type": "ai",
+              "content": "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Tôi sẽ chuyển chuyên viên kiểm tra.\n\nHệ thống đã ghi nhận câu hỏi để chuyên viên dịch vụ kiểm tra và phản hồi sớm nhất đến anh/chị."
+            },
+            {
+              "type": "human",
+              "content": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?"
+            }
+          ],
+          "latest_user_message": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "clarification_turn": 0,
+          "max_clarification_turns": 2,
+          "suggested_replies": [],
+          "intent": "Sales/General Info",
+          "priority": "LOW",
+          "confidence_score": 0.9,
+          "is_critical": false,
+          "safety_trigger": null,
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "is_rag_query": false,
+          "is_general_query": false,
+          "rag_context": [],
+          "rag_citations": [],
+          "case_brief": null,
+          "ticket_status": "Staff Reviewing",
+          "response_type": "CASE_CREATED",
+          "final_response": "",
+          "safe_guidance": null,
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": []
+          },
+          "user_role": "customer",
+          "guest_turn_count": 0,
+          "turn": 3,
+          "needs_staff_review": false,
+          "routing": "sales_support",
+          "is_no_source": false,
+          "rag_distance": null,
+          "retrieval_diagnostics": {},
+          "retrieval_status": "TIMEOUT",
+          "llm_budget": {
+            "deadline": 31343.109,
+            "attempts": 0
+          },
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "memory_summary": "",
+          "pending_cardd_signal": null,
+          "cardd_evidence": null,
+          "cardd_new_input": false,
+          "cardd_confirmation_changed": false,
+          "policy_blocked": false,
+          "login_required": false,
+          "remaining_guest_messages": 5
+        },
+        "output": {
+          "is_critical": false,
+          "safety_trigger": null,
+          "priority": "MEDIUM",
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": []
+          }
+        },
+        "tool_call": null,
+        "latency_s": 0.000519599998369813,
+        "prompt_versions": {
+          "case_brief_prompt.md": "f8f6d548f63f9a328483747a784c7239c1ccd888b848d6833a482165778d9c82",
+          "clarify_prompt.md": "a14f477d3048ac9efe81f2e74cb3dcf7f8a17b6707facbcf2fdf067e63ffcc9f",
+          "general_prompt.md": "2b44f76ace37ce902c566200bbb1c62b157329c9a8e8445d4adb806b2a1ab9f4",
+          "memory_prompt.md": "8a1630fccdb2baa8f8dfe4b661752fad1319031243123f6f7427434eebe05e87",
+          "policy_prompt.md": "c11305fb5be20d26bdbb99408f96800dd5113f2de166639ca48ec62627814478",
+          "rag_qa_prompt.md": "c5ddeae2bcda9e44fdf468702ade6ff64cb7565aac43a250bd03500788b87f27",
+          "system_prompt.md": "6241000bc78ab4355019ef83010d882420a3c30f51a1e1817f0014816e800d74",
+          "triage_prompt.md": "e87af5417125768109f4eb63b9708a51122ab5dbf948cadc0670fa6a57dc0638"
+        }
+      }
+    },
+    {
+      "timestamp_ms": 1791131092302,
+      "session_id": "gate2-manual-TC05",
+      "turn": 3,
+      "kind": "node",
+      "node": "triage",
+      "gate_decision": "CASE_CREATED",
+      "tokens_in": null,
+      "tokens_out": null,
+      "cost": null,
+      "metadata": {
+        "input": {
+          "query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "resolved_query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "response": "",
+          "session_id": "gate2-manual-TC05",
+          "case_id": "CASE-[REDACTED_LICENSE_PLATE]-001",
+          "vehicle_model": "VF8",
+          "messages": [
+            {
+              "type": "human",
+              "content": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?"
+            },
+            {
+              "type": "ai",
+              "content": "Biểu tượng con rùa (Turtle Mode) thường báo xe đang giới hạn công suất, nên khả năng tăng tốc có thể giảm. Đây là cơ chế bảo vệ; pin yếu, nhiệt độ bất thường hoặc lỗi hệ thống có thể là những nguyên nhân, nhưng chỉ biểu tượng này chưa đủ để xác định nguyên nhân của xe cụ thể.\n\nĐây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán."
+            },
+            {
+              "type": "human",
+              "content": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?"
+            },
+            {
+              "type": "ai",
+              "content": "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Tôi sẽ chuyển chuyên viên kiểm tra.\n\nHệ thống đã ghi nhận câu hỏi để chuyên viên dịch vụ kiểm tra và phản hồi sớm nhất đến anh/chị."
+            },
+            {
+              "type": "human",
+              "content": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?"
+            }
+          ],
+          "latest_user_message": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "clarification_turn": 0,
+          "max_clarification_turns": 2,
+          "suggested_replies": [],
+          "intent": "Sales/General Info",
+          "priority": "MEDIUM",
+          "confidence_score": 0.9,
+          "is_critical": false,
+          "safety_trigger": null,
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "is_rag_query": false,
+          "is_general_query": false,
+          "rag_context": [],
+          "rag_citations": [],
+          "case_brief": null,
+          "ticket_status": "Staff Reviewing",
+          "response_type": "CASE_CREATED",
+          "final_response": "",
+          "safe_guidance": null,
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": []
+          },
+          "user_role": "customer",
+          "guest_turn_count": 0,
+          "turn": 3,
+          "needs_staff_review": false,
+          "routing": "sales_support",
+          "is_no_source": false,
+          "rag_distance": null,
+          "retrieval_diagnostics": {},
+          "retrieval_status": "TIMEOUT",
+          "llm_budget": {
+            "deadline": 31343.109,
+            "attempts": 0
+          },
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "memory_summary": "",
+          "pending_cardd_signal": null,
+          "cardd_evidence": null,
+          "cardd_new_input": false,
+          "cardd_confirmation_changed": false,
+          "policy_blocked": false,
+          "login_required": false,
+          "remaining_guest_messages": 5
+        },
+        "output": {
+          "intent": "Sales/General Info",
+          "priority": "LOW",
+          "confidence_score": 0.9,
+          "routing": "sales_support",
+          "vehicle_model": "VF8",
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "is_rag_query": true,
+          "is_general_query": false,
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": [],
+            "out_of_scope_detected": false,
+            "sentiment_sensitive_escalated": false
+          }
+        },
+        "tool_call": null,
+        "latency_s": 0.0005277999989630189,
+        "prompt_versions": {
+          "case_brief_prompt.md": "f8f6d548f63f9a328483747a784c7239c1ccd888b848d6833a482165778d9c82",
+          "clarify_prompt.md": "a14f477d3048ac9efe81f2e74cb3dcf7f8a17b6707facbcf2fdf067e63ffcc9f",
+          "general_prompt.md": "2b44f76ace37ce902c566200bbb1c62b157329c9a8e8445d4adb806b2a1ab9f4",
+          "memory_prompt.md": "8a1630fccdb2baa8f8dfe4b661752fad1319031243123f6f7427434eebe05e87",
+          "policy_prompt.md": "c11305fb5be20d26bdbb99408f96800dd5113f2de166639ca48ec62627814478",
+          "rag_qa_prompt.md": "c5ddeae2bcda9e44fdf468702ade6ff64cb7565aac43a250bd03500788b87f27",
+          "system_prompt.md": "6241000bc78ab4355019ef83010d882420a3c30f51a1e1817f0014816e800d74",
+          "triage_prompt.md": "e87af5417125768109f4eb63b9708a51122ab5dbf948cadc0670fa6a57dc0638"
+        }
+      }
+    },
+    {
+      "timestamp_ms": 1791131096320,
+      "session_id": "gate2-manual-TC05",
+      "turn": 3,
+      "kind": "llm",
+      "node": "rag_qa",
+      "gate_decision": "parsed",
+      "tokens_in": 697,
+      "tokens_out": 310,
+      "cost": null,
+      "metadata": {
+        "model": "gemini-3.8-flash",
+        "output": {
+          "answer": "Thời hạn bảo hành xe VinFast VF 8 theo điều kiện sử dụng tiêu chuẩn là 10 năm hoặc 200.000 km, tùy điều kiện nào đến trước.",
+          "source_ids": [
+            "SRC-002"
+          ],
+          "supported": true
+        }
+      }
+    },
+    {
+      "timestamp_ms": 1791131096327,
+      "session_id": "gate2-manual-TC05",
+      "turn": 3,
+      "kind": "node",
+      "node": "rag",
+      "gate_decision": "FAQ_ANSWER",
+      "tokens_in": null,
+      "tokens_out": null,
+      "cost": null,
+      "metadata": {
+        "input": {
+          "query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "resolved_query": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "response": "",
+          "session_id": "gate2-manual-TC05",
+          "case_id": "CASE-[REDACTED_LICENSE_PLATE]-001",
+          "vehicle_model": "VF8",
+          "messages": [
+            {
+              "type": "human",
+              "content": "Biểu tượng con rùa trên xe VF8 nghĩa là gì?"
+            },
+            {
+              "type": "ai",
+              "content": "Biểu tượng con rùa (Turtle Mode) thường báo xe đang giới hạn công suất, nên khả năng tăng tốc có thể giảm. Đây là cơ chế bảo vệ; pin yếu, nhiệt độ bất thường hoặc lỗi hệ thống có thể là những nguyên nhân, nhưng chỉ biểu tượng này chưa đủ để xác định nguyên nhân của xe cụ thể.\n\nĐây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán."
+            },
+            {
+              "type": "human",
+              "content": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?"
+            },
+            {
+              "type": "ai",
+              "content": "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Tôi sẽ chuyển chuyên viên kiểm tra.\n\nHệ thống đã ghi nhận câu hỏi để chuyên viên dịch vụ kiểm tra và phản hồi sớm nhất đến anh/chị."
+            },
+            {
+              "type": "human",
+              "content": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?"
+            }
+          ],
+          "latest_user_message": "Thời hạn bảo hành xe VinFast VF8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+          "clarification_turn": 0,
+          "max_clarification_turns": 2,
+          "suggested_replies": [],
+          "intent": "Sales/General Info",
+          "priority": "LOW",
+          "confidence_score": 0.9,
+          "is_critical": false,
+          "safety_trigger": null,
+          "captured_fields": {
+            "vehicle_model": "VF8",
+            "warning_symbol": "con rùa"
+          },
+          "is_rag_query": true,
+          "is_general_query": false,
+          "rag_context": [],
+          "rag_citations": [],
+          "case_brief": null,
+          "ticket_status": "Staff Reviewing",
+          "response_type": "CASE_CREATED",
+          "final_response": "",
+          "safe_guidance": null,
+          "guardrails": {
+            "pii_detected_and_masked": false,
+            "masked_pii_types": [],
+            "out_of_scope_detected": false,
+            "sentiment_sensitive_escalated": false
+          },
+          "user_role": "customer",
+          "guest_turn_count": 0,
+          "turn": 3,
+          "needs_staff_review": false,
+          "routing": "sales_support",
+          "is_no_source": false,
+          "rag_distance": null,
+          "retrieval_diagnostics": {},
+          "retrieval_status": "TIMEOUT",
+          "llm_budget": {
+            "deadline": 31343.109,
+            "attempts": 1
+          },
+          "fact_history": [
+            {
+              "field": "warning_symbol",
+              "value": "con rùa",
+              "provenance": "user:turn:1",
+              "status": "valid",
+              "valid_from": "2026-10-04T16:23:51.777295+00:00",
+              "valid_to": null
+            }
+          ],
+          "memory_summary": "",
+          "pending_cardd_signal": null,
+          "cardd_evidence": null,
+          "cardd_new_input": false,
+          "cardd_confirmation_changed": false,
+          "policy_blocked": false,
+          "login_required": false,
+          "remaining_guest_messages": 5
+        },
+        "output": {
+          "is_no_source": false,
+          "retrieval_status": "SUCCESS",
+          "retrieval_diagnostics": {
+            "stage": "retrieval",
+            "candidates": [
+              {
+                "chunk_id": "SRC-002-sections-1::child:0:31a891fdfb0e",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-0::child:0:d71f4978503d",
+                "source_id": "SRC-002",
+                "distance": 0.23039634772320247,
+                "reason": "accepted"
+              },
+              {
+                "chunk_id": "SRC-002-sections-12::child:0:505691b4e979",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-7::child:0:ec45b6d17782",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-10::child:0:f9f9adffc8ec",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-18::child:0:7e3d8fca229d",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-2::child:0:38f1344b27dc",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-9::child:0:3cc8873d9032",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-5::child:0:745f7e18b577",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-11::child:0:1bcf091976f8",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-17::child:0:87a2949281d8",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-16::child:0:e8249baef1a5",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-19::child:0:ede7f6ab16c1",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-24::child:0:344502383a61",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-14::child:0:6f910ed61f23",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-25::child:0:7fdafd1b655b",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-8::child:0:141e4a7a4bb5",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-13::child:0:5571fd8365f0",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-15::child:0:b53fa6b9a5eb",
+                "reason": "missing_answer_evidence"
+              },
+              {
+                "chunk_id": "SRC-002-sections-3::child:0:caecdeed2e13",
+                "reason": "missing_answer_evidence"
+              }
+            ],
+            "candidate_parent_ids": [
+              "SRC-002-sections-1",
+              "SRC-002-sections-0",
+              "SRC-002-sections-12",
+              "SRC-002-sections-7",
+              "SRC-002-sections-10",
+              "SRC-002-sections-18",
+              "SRC-002-sections-2",
+              "SRC-002-sections-9",
+              "SRC-002-sections-5",
+              "SRC-002-sections-11",
+              "SRC-002-sections-17",
+              "SRC-002-sections-16",
+              "SRC-002-sections-19",
+              "SRC-002-sections-24",
+              "SRC-002-sections-14",
+              "SRC-002-sections-25",
+              "SRC-002-sections-8",
+              "SRC-002-sections-13",
+              "SRC-002-sections-15",
+              "SRC-002-sections-3"
+            ],
+            "selected_parent_ids": [
+              "SRC-002-sections-0"
+            ],
+            "embedding": "collection-configured",
+            "distance_threshold": 0.7,
+            "category": "success",
+            "context_bytes_used": 219,
+            "context_bytes_remaining": 5781,
+            "context_max_bytes": 6000
+          },
+          "is_rag_query": true,
+          "rag_citations": [
+            {
+              "title": "Chính sách bảo hành xe ô tô VinFast",
+              "url": "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto",
+              "source_type": "official_policy",
+              "status_code": 200,
+              "verified_at": "2026-09-30",
+              "source_id": "SRC-002",
+              "chunk_id": "SRC-002-sections-0::child:0:d71f4978503d",
+              "applicable_models": [
+                "ALL"
+              ],
+              "relevant_snippet": "Thời hạn bảo hành Ô tô — điều kiện sử dụng tiêu chuẩn. Fadil, Lux A 2.0, Lux SA 2.0, President, VF 8, VF 9, Lạc Hồng 900LX: 10 năm hoặc 200.000 km, tùy điều kiện nào đến trước.",
+              "distance": 0.23039634772320247,
+              "parent_chunk_id": "SRC-002-sections-0"
+            }
+          ],
+          "rag_context": [
+            "Thời hạn bảo hành Ô tô — điều kiện sử dụng tiêu chuẩn. Fadil, Lux A 2.0, Lux SA 2.0, President, VF 8, VF 9, Lạc Hồng 900LX: 10 năm hoặc 200.000 km, tùy điều kiện nào đến trước."
+          ],
+          "rag_distance": 0.23039634772320247,
+          "needs_staff_review": false,
+          "response_type": "FAQ_ANSWER",
+          "response": "Theo tài liệu VinFast:\n\nThời hạn bảo hành xe VinFast VF 8 theo điều kiện sử dụng tiêu chuẩn là 10 năm hoặc 200.000 km, tùy điều kiện nào đến trước.",
+          "final_response": "Theo tài liệu VinFast:\n\nThời hạn bảo hành xe VinFast VF 8 theo điều kiện sử dụng tiêu chuẩn là 10 năm hoặc 200.000 km, tùy điều kiện nào đến trước."
+        },
+        "tool_call": "vinfast_manual_search",
+        "latency_s": 4.013563900000008,
+        "prompt_versions": {
+          "case_brief_prompt.md": "f8f6d548f63f9a328483747a784c7239c1ccd888b848d6833a482165778d9c82",
+          "clarify_prompt.md": "a14f477d3048ac9efe81f2e74cb3dcf7f8a17b6707facbcf2fdf067e63ffcc9f",
+          "general_prompt.md": "2b44f76ace37ce902c566200bbb1c62b157329c9a8e8445d4adb806b2a1ab9f4",
+          "memory_prompt.md": "8a1630fccdb2baa8f8dfe4b661752fad1319031243123f6f7427434eebe05e87",
+          "policy_prompt.md": "c11305fb5be20d26bdbb99408f96800dd5113f2de166639ca48ec62627814478",
+          "rag_qa_prompt.md": "c5ddeae2bcda9e44fdf468702ade6ff64cb7565aac43a250bd03500788b87f27",
+          "system_prompt.md": "6241000bc78ab4355019ef83010d882420a3c30f51a1e1817f0014816e800d74",
+          "triage_prompt.md": "e87af5417125768109f4eb63b9708a51122ab5dbf948cadc0670fa6a57dc0638"
+        }
+      }
+    }
+  ]
+}

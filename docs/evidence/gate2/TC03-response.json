@@ -1,0 +1,103 @@
+{
+  "case_id_label": "TC03",
+  "mode": "operator-directed manual HTTP requests to real local backend; no mocks",
+  "base_url": "http://127.0.0.1:8013",
+  "commit": "3da9eccdedc92bd751b9675f7892951d8394b599",
+  "branch": "feature/agent-long",
+  "configured_model": "gemini-3.8-flash",
+  "requests": [
+    {
+      "captured_at": "2026-10-04T23:23:33.859680+07:00",
+      "method": "POST",
+      "path": "/api/v1/customer/chat",
+      "role": "CUSTOMER",
+      "request_body": {
+        "session_id": "gate2-manual-TC03",
+        "message": "Xe VF8 của tôi đang bốc khói và có mùi khét ở khu vực pin khi sạc tại bãi xe demo A.",
+        "case_id": null
+      },
+      "http_status": 200,
+      "elapsed_seconds": 0.0,
+      "response_body": {
+        "success": true,
+        "data": {
+          "visual_evidence": null,
+          "response_type": "CASE_CREATED",
+          "message": "Dạ VinFast đã ghi nhận tình trạng khẩn cấp của xe VF8. Hệ thống đã tự động tạo hồ sơ khẩn cấp (Mã: CASE-20261004-003) và kích hoạt đường dây nóng tới kỹ thuật viên.\n\n⚠️ HƯỚNG DẪN AN TOÀN NGAY LẬP TỨC: Anh/chị vui lòng bật đèn khẩn cấp (Hazard), từ từ tấp xe vào làn dừng khẩn cấp an toàn và gọi hotline cứu hộ 1900-232389.",
+          "case_id": "CASE-20261004-003",
+          "status": "Staff Reviewing",
+          "priority": "CRITICAL",
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": null,
+          "citations": null,
+          "service_handoff": null,
+          "safe_guidance": "Anh/chị vui lòng bật đèn khẩn cấp (Hazard), từ từ tấp xe vào làn dừng khẩn cấp an toàn và gọi hotline cứu hộ 1900-232389.",
+          "show_emergency_banner": true,
+          "request_location": true,
+          "remaining_guest_messages": null
+        },
+        "error": null,
+        "meta": {
+          "timestamp": "2026-10-04T16:23:33.859680+00:00"
+        }
+      }
+    },
+    {
+      "captured_at": "2026-10-04T23:23:51.660802+07:00",
+      "method": "GET",
+      "path": "/api/v1/staff/tickets/CASE-20261004-003",
+      "role": "STAFF",
+      "request_body": null,
+      "http_status": 200,
+      "elapsed_seconds": 0.016,
+      "response_body": {
+        "success": true,
+        "data": {
+          "case": {
+            "id": "CASE-20261004-003",
+            "mock_customer_id": "G2_DEMO",
+            "vehicle_code_mock": "VF-SF-00231",
+            "vehicle_model": "VF8",
+            "intent": "Service/Incident",
+            "priority": "CRITICAL",
+            "status": "Staff Reviewing"
+          },
+          "case_brief": {
+            "summary": "SỰ CỐ NGUY HIỂM KHẨN CẤP: Xe VF8 gặp tình huống sự cố nghiêm trọng đe dọa an toàn.",
+            "captured_fields": {
+              "vehicle_model": "VF8",
+              "incident_type": "CRITICAL_SAFETY_HAZARD",
+              "risk_level": "CRITICAL",
+              "immediate_action_required": true,
+              "visual_signals": []
+            },
+            "suggested_action": "Kích hoạt điều phối cứu hộ cao tốc ngay lập tức; chuyên viên gọi trực tiếp cho khách hàng.",
+            "confidence_score": 0.99,
+            "is_edited_by_staff": false
+          },
+          "conversation_history": [
+            {
+              "sender": "CUSTOMER",
+              "content": "Xe VF8 của tôi đang bốc khói và có mùi khét ở khu vực pin khi sạc tại bãi xe demo A.",
+              "created_at": "2026-10-04T16:23:33.852553+00:00"
+            },
+            {
+              "sender": "AGENT",
+              "content": "Dạ VinFast đã ghi nhận tình trạng khẩn cấp của xe VF8. Hệ thống đã tự động tạo hồ sơ khẩn cấp (Mã: CASE-20261004-003) và kích hoạt đường dây nóng tới kỹ thuật viên.\n\n⚠️ HƯỚNG DẪN AN TOÀN NGAY LẬP TỨC: Anh/chị vui lòng bật đèn khẩn cấp (Hazard), từ từ tấp xe vào làn dừng khẩn cấp an toàn và gọi hotline cứu hộ 1900-232389.",
+              "created_at": "2026-10-04T16:23:33.856767+00:00"
+            }
+          ],
+          "attachments": [],
+          "location": null,
+          "updates": []
+        },
+        "error": null,
+        "meta": {
+          "timestamp": "2026-10-04T16:23:51.659802+00:00"
+        }
+      }
+    }
+  ],
+  "agent_trace": []
+}
