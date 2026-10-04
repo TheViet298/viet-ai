@@ -158,8 +158,10 @@ class CustomerCaseStatusData(BaseModel):
     case_id: str
     status: str
     status_description: str | None = None
+    customer_message: str | None = None
     created_at: str
     updated_at: str | None = None
+
 
 
 class CustomerCaseItem(BaseModel):
@@ -257,6 +259,20 @@ class CustomerConfirmationResponseData(BaseModel):
     case_id: str
     status: str
     message: str
+
+
+class CustomerActionPayload(BaseModel):
+    action: Literal["CONFIRM_RESOLUTION", "REOPEN"]
+    reason: str | None = None
+    feedback_note: str | None = None
+
+
+class CustomerActionResponseData(BaseModel):
+    case_id: str
+    status: str
+    updated_at: str | None = None
+    customer_message: str | None = None
+
 
 
 class CaseUpdateOut(BaseModel):

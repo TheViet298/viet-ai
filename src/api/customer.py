@@ -3,7 +3,7 @@ import re
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, Header, HTTPException, Query, UploadFile
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
@@ -37,6 +37,8 @@ from src.models.schemas import (
     ChatResponseData,
     Citation,
     ConversationItem,
+    CustomerActionPayload,
+    CustomerActionResponseData,
     CustomerCaseDetailData,
     CustomerCaseItem,
     CustomerCaseListData,
@@ -896,9 +898,126 @@ def confirm_customer_case_resolution(
         )
 
 
+@router.post("/cases/{case_id}/actions", response_model=ApiResponse[CustomerActionResponseData])
+def handle_customer_action(
+    case_id: str,
+    payload: CustomerActionPayload,
+    current_user: User | None = Depends(get_optional_user),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    db: Session = Depends(get_db),
+):
+    """
+    Thực hiện hành động của khách hàng đối với Case (Gate G2 Proposal & ADR-005):
+    - CONFIRM_RESOLUTION: Xác nhận hài lòng -> Chuyển trạng thái 'Closed'
+    - REOPEN: Yêu cầu mở lại vì chưa giải quyết xong -> Chuyển trạng thái 'Reopened'
+    Hỗ trợ xác thực qua Token đăng nhập hoặc Header X-Session-Id.
+    """
+    case = db.get(Case, case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
+    check_case_ownership(case, current_user, session_id=x_session_id)
+
+    actor_id = current_user.id if current_user else f"SESSION_{x_session_id or 'GUEST'}"
+
+    # Tắt cờ awaiting_customer_confirmation ở các CaseUpdate trước đó
+    db.query(CaseUpdate).filter(
+        CaseUpdate.case_id == case.id,
+        CaseUpdate.awaiting_customer_confirmation.is_(True),
+    ).update({"awaiting_customer_confirmation": False}, synchronize_session=False)
+
+    if payload.action == "CONFIRM_RESOLUTION":
+        prev_status = case.status
+        case.status = TicketStatus.CLOSED.value
+        case.updated_at = utcnow()
+
+        audit = StaffAuditLog(
+            id=str(uuid.uuid4()),
+            case_id=case.id,
+            staff_id=f"CUSTOMER_{actor_id}",
+            action=StaffAction.CLOSE.value,
+            previous_state={"status": prev_status},
+            new_state={"status": TicketStatus.CLOSED.value},
+            notes=f"Khách hàng xác nhận giải quyết: {payload.feedback_note or payload.reason or ''}".strip(),
+            created_at=utcnow(),
+        )
+        db.add(audit)
+
+        msg = "Cảm ơn quý khách đã xác nhận. Hồ sơ sự cố đã được đóng thành công."
+        update = CaseUpdate(
+            id=str(uuid.uuid4()),
+            case_id=case.id,
+            author_type=AuthorType.SYSTEM.value,
+            status_after_update=TicketStatus.CLOSED.value,
+            customer_message=msg,
+            next_step="Cảm ơn quý khách đã tin tưởng và đồng hành cùng VinFast.",
+            awaiting_customer_confirmation=False,
+            created_at=utcnow(),
+        )
+        db.add(update)
+        db.commit()
+
+        return ApiResponse(
+            success=True,
+            data=CustomerActionResponseData(
+                case_id=case.id,
+                status=TicketStatus.CLOSED.value,
+                updated_at=case.updated_at.isoformat(),
+                customer_message=msg,
+            ),
+            error=None,
+        )
+    elif payload.action == "REOPEN":
+        prev_status = case.status
+        case.status = TicketStatus.REOPENED.value
+        case.updated_at = utcnow()
+
+        audit = StaffAuditLog(
+            id=str(uuid.uuid4()),
+            case_id=case.id,
+            staff_id=f"CUSTOMER_{actor_id}",
+            action=StaffAction.REOPEN.value,
+            previous_state={"status": prev_status},
+            new_state={"status": TicketStatus.REOPENED.value},
+            notes=f"Khách hàng yêu cầu mở lại hồ sơ: {payload.reason or payload.feedback_note or ''}".strip(),
+            created_at=utcnow(),
+        )
+        db.add(audit)
+
+        msg = "Hệ thống ghi nhận sự cố chưa được khắc phục hoàn toàn và đã chuyển lại hồ sơ sang hàng đợi chuyên viên kỹ thuật."
+        update = CaseUpdate(
+            id=str(uuid.uuid4()),
+            case_id=case.id,
+            author_type=AuthorType.SYSTEM.value,
+            status_after_update=TicketStatus.REOPENED.value,
+            customer_message=msg,
+            next_step="Chuyên viên dịch vụ sẽ liên hệ lại quý khách trong thời gian sớm nhất.",
+            awaiting_customer_confirmation=False,
+            created_at=utcnow(),
+        )
+        db.add(update)
+        db.commit()
+
+        return ApiResponse(
+            success=True,
+            data=CustomerActionResponseData(
+                case_id=case.id,
+                status=TicketStatus.REOPENED.value,
+                updated_at=case.updated_at.isoformat(),
+                customer_message=msg,
+            ),
+            error=None,
+        )
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Hành động '{payload.action}' không hợp lệ. Chỉ chấp nhận 'CONFIRM_RESOLUTION' hoặc 'REOPEN'.",
+        )
+
+
 # ==============================================================================
 # 5. CUSTOMER CASE MANAGEMENT APIs — Nguồn: api-contract.md Mục 2.2 & 2.3
 # ==============================================================================
+
 
 
 @router.get("/cases", response_model=ApiResponse[CustomerCaseListData])
@@ -1084,18 +1203,19 @@ def get_customer_case_detail(
 @router.get("/cases/{case_id}/status", response_model=ApiResponse[CustomerCaseStatusData])
 def get_customer_case_status(
     case_id: str,
-    current_user: User = Depends(require_customer),
+    current_user: User | None = Depends(get_optional_user),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
     db: Session = Depends(get_db),
 ):
     """
-    Tra cứu trạng thái hồ sơ của khách hàng theo api-contract.md Mục 2.2.
-    RBAC: Customer chỉ được xem trạng thái hồ sơ của chính mình.
+    Tra cứu trạng thái hồ sơ của khách hàng theo api-contract.md Mục 2.2 & gate-g2-proposal.md.
+    Hỗ trợ kiểm tra quyền qua Token đăng nhập hoặc Header X-Session-Id.
     """
     case = db.get(Case, case_id)
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
 
-    check_case_ownership(case, current_user)
+    check_case_ownership(case, current_user, session_id=x_session_id)
 
     status_descriptions = {
         TicketStatus.NEW.value: "Hệ thống đã tiếp nhận hồ sơ và đang đưa vào hàng đợi phân loại.",
@@ -1109,10 +1229,20 @@ def get_customer_case_status(
 
     status_desc = status_descriptions.get(case.status, f"Hồ sơ đang ở trạng thái {case.status}.")
 
+    # Lấy thông điệp khách hàng từ CaseUpdate mới nhất nếu có
+    latest_update = (
+        db.query(CaseUpdate)
+        .filter(CaseUpdate.case_id == case.id)
+        .order_by(CaseUpdate.created_at.desc())
+        .first()
+    )
+    cust_msg = latest_update.customer_message if latest_update else status_desc
+
     data = CustomerCaseStatusData(
         case_id=case.id,
         status=case.status,
         status_description=status_desc,
+        customer_message=cust_msg,
         created_at=case.created_at.isoformat() if case.created_at else utcnow().isoformat(),
         updated_at=case.updated_at.isoformat() if case.updated_at else None,
     )
@@ -1122,6 +1252,7 @@ def get_customer_case_status(
         data=data,
         error=None,
     )
+
 
 
 @router.post("/cases/{case_id}/reopen", response_model=ApiResponse[ReopenCaseResponseData])

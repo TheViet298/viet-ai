@@ -413,3 +413,49 @@ async def test_staff_dashboard_and_routing_directory(client):
     dept_names = [d["name"] for d in routing_body["data"]["departments"]]
     assert "Charging Operations" in dept_names
     assert "Emergency Support Demo" in dept_names
+
+
+@pytest.mark.asyncio
+async def test_customer_actions_proposal_and_session_status(client):
+    """Kiểm tra POST /customer/cases/{id}/actions và GET /status với X-Session-Id (Gate G2 Proposal)."""
+    # 1. Truy vấn trạng thái qua Header X-Session-Id mà không cần login
+    res_status = await client.get(
+        "/api/v1/customer/cases/CASE-20260924-001/status",
+        headers={"X-Session-Id": "sess_vf_98234"},
+    )
+    assert res_status.status_code == 200
+    status_body = res_status.json()
+    assert status_body["success"] is True
+    assert status_body["data"]["case_id"] == "CASE-20260924-001"
+    assert status_body["data"]["customer_message"] is not None
+
+    # 2. Sai session và không login -> 403
+    res_forbidden = await client.get(
+        "/api/v1/customer/cases/CASE-20260924-001/status",
+        headers={"X-Session-Id": "wrong_session"},
+    )
+    assert res_forbidden.status_code == 403
+
+    # 3. Customer thực hiện action CONFIRM_RESOLUTION qua /actions
+    token = await get_auth_token(client, "customer@vinfast.vn", "customer123")
+    res_action = await client.post(
+        "/api/v1/customer/cases/CASE-20260924-001/actions",
+        json={"action": "CONFIRM_RESOLUTION", "reason": "Xe đã sạc bình thường"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert res_action.status_code == 200
+    action_body = res_action.json()
+    assert action_body["success"] is True
+    assert action_body["data"]["status"] == "Closed"
+
+    # 4. Customer thực hiện action REOPEN qua /actions
+    res_reopen = await client.post(
+        "/api/v1/customer/cases/CASE-20260924-001/actions",
+        json={"action": "REOPEN", "reason": "Trụ lại báo đỏ"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert res_reopen.status_code == 200
+    reopen_body = res_reopen.json()
+    assert reopen_body["success"] is True
+    assert reopen_body["data"]["status"] == "Reopened"
+

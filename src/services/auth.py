@@ -134,15 +134,18 @@ def require_staff(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
-def check_case_ownership(case: Case, user: User) -> None:
-    """Kiểm tra quyền sở hữu Case: Customer chỉ được xem case của mình, Staff được xem tất cả."""
-    if user.role == UserRole.STAFF.value:
+def check_case_ownership(case: Case, user: User | None = None, session_id: str | None = None) -> None:
+    """Kiểm tra quyền sở hữu Case: Customer sở hữu theo user_id, mock_customer_id hoặc session_id; Staff được xem tất cả."""
+    if user and user.role == UserRole.STAFF.value:
         return
-    # Customer ownership: match user_id or mock_customer_id
+    # Customer ownership: match user_id, mock_customer_id hoặc session_id
     is_owner = False
-    if case.user_id and case.user_id == user.id:
-        is_owner = True
-    elif user.mock_customer_id and case.mock_customer_id == user.mock_customer_id:
+    if user:
+        if case.user_id and case.user_id == user.id:
+            is_owner = True
+        elif user.mock_customer_id and case.mock_customer_id == user.mock_customer_id:
+            is_owner = True
+    if not is_owner and session_id and case.session_id == session_id:
         is_owner = True
 
     if not is_owner:
@@ -150,3 +153,4 @@ def check_case_ownership(case: Case, user: User) -> None:
             status_code=403,
             detail="Bạn không có quyền truy cập vào hồ sơ này.",
         )
+
