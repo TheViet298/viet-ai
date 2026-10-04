@@ -16,7 +16,9 @@ Agent hoạt động theo quy trình tuần tự có kiểm soát chặt chẽ:
 
 ```mermaid
 stateDiagram-v2
-    [*] --> IntakeState: Khách gửi tin nhắn
+    [*] --> IntakeState: Khách gửi text và/hoặc ảnh
+    IntakeState --> ImageAnalysisState: Có ảnh đính kèm
+    ImageAnalysisState --> SafetyCheckState: OCR/Vision tạo tín hiệu sơ bộ
     
     IntakeState --> SafetyCheckState: Kiểm tra Hard Safety Rules (Code/Regex)
     
@@ -49,6 +51,8 @@ stateDiagram-v2
 
 ### Bước 1: Intake (Tiếp nhận & Làm sạch)
 * Chuẩn hóa văn bản đầu vào: loại bỏ ký tự rác, tách ngữ cảnh hội thoại gần nhất ($N=5$ tin nhắn gần nhất).
+* Nếu có ảnh: lưu attachment riêng tư, chạy OCR/Vision để lấy `ocr_text`, `detected_signals`, `vision_confidence`, `image_type`. Kết quả là `visual_evidence` đầu vào cho Triage, dùng được cho sự cố hoặc câu hỏi sản phẩm/chính sách.
+* Nếu ảnh mờ hoặc `vision_confidence` thấp: Agent yêu cầu ảnh rõ hơn hoặc chuyển Staff Review; không tự suy đoán lỗi xe.
 * Tuyệt đối không yêu cầu hoặc lưu trữ PII cá nhân thật (Họ tên, SĐT thật, CCCD, Biển số thật).
 
 ### Bước 2: Hard Safety Rules & Triage
@@ -58,6 +62,9 @@ stateDiagram-v2
 * **LLM Triage Classification:**
   * Phân loại 1 trong 4 intent: `Charging/Battery`, `Service/Incident`, `Sales/General Info`, `Complaint/Feedback`.
   * Tính điểm tin cậy `confidence_score` $\in [0.0, 1.0]$.
+* **Location routing:** Khi Intent là `Charging/Battery`, `Service/Incident`, hoặc Sales có nhu cầu tìm showroom, Agent hiển thị card xin consent: `Dùng vị trí hiện tại / Nhập khu vực / Bỏ qua`. Không tự lấy GPS nền hoặc GPS từ EXIF ảnh.
+  * Critical: tạo Case Brief tối thiểu và đẩy Staff Queue **trước**; vị trí là dữ kiện bổ sung không chặn cảnh báo/case.
+  * High/Normal: vị trí là một dữ kiện có thể gom trong tối đa 2 lượt clarification.
 
 ### Bước 3: Clarification & RAG Routing
 * Nếu là **FAQ/Thông tin:** Truy vấn Vector Store với các tài liệu đã kiểm chứng. Bắt buộc có metadata nguồn (`url`, `title`, `verified_date`). Nếu không có nguồn uy tín, chuyển sang tạo Case hỗ trợ.
@@ -77,3 +84,5 @@ stateDiagram-v2
 * Ghi dữ liệu vào bảng `cases` với trạng thái: `Staff Reviewing` (hoặc `Needs Information`).
 * Gửi sự kiện cập nhật thời gian thực sang Staff Queue.
 * Trả về cho Customer: `case_id`, `status: "Staff Reviewing"`, hướng dẫn an toàn chuẩn mực.
+* Khi Staff `Resolve`: gửi Customer Update gồm kết quả an toàn, next step, điểm hỗ trợ gợi ý (nếu có) và nút `Đã được hỗ trợ / Vẫn chưa giải quyết`. Customer xác nhận sẽ `Closed`; phản ánh lại sẽ `Reopened`.
+* Agent không sử dụng case raw của Customer khác để trả lời. Nội dung “Tình huống thường gặp” chỉ truy xuất từ RAG/FAQ hoặc bài viết đã được Staff duyệt và ẩn danh.

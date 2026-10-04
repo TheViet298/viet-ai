@@ -42,6 +42,12 @@
 
 ## 3. Ngưỡng Tự tin (Confidence Threshold) & Điều kiện bắt buộc HITL
 
+### Quy tắc Image/Vision
+* OCR/Vision chỉ đọc chữ cảnh báo, mã lỗi hoặc nhận diện dấu hiệu phổ biến từ ảnh táp-lô.
+* Kết quả ảnh là **evidence sơ bộ**, không được dùng một mình để chẩn đoán nguyên nhân, auto-resolve hoặc đóng case.
+* `vision_confidence` thấp / ảnh không rõ: hỏi khách gửi ảnh rõ hơn hoặc chuyển Staff Review.
+* Tín hiệu nguy hiểm nhìn thấy từ ảnh phải được Staff xác nhận hoặc hỏi lại context an toàn; Hard Safety Rule vẫn ưu tiên tín hiệu text/context đã xác nhận.
+
 Hệ thống tính toán `confidence_score` $\in [0.0, 1.0]$ cho việc phân loại Intent và trích xuất dữ liệu:
 
 ```mermaid
@@ -56,6 +62,14 @@ graph LR
 2. Mọi trường hợp có cờ `CRITICAL` hoặc `HIGH`.
 3. Câu hỏi tra cứu thông tin (FAQ) nhưng điểm tương đồng vector RAG $< 0.70$ hoặc không có tài liệu trích dẫn.
 4. Mọi yêu cầu liên quan đến cam kết tài chính, bồi thường, khiếu nại chất lượng dịch vụ.
+
+## 3.1. Location Consent & Service Suggestion
+
+* Agent chỉ mở luồng location sau khi nhận diện nhu cầu Charging/Service hoặc Sales cần showroom.
+* UI luôn cho 3 lựa chọn: `Dùng vị trí hiện tại`, `Nhập khu vực`, `Bỏ qua`.
+* Không có consent: `location_status = NOT_SHARED`; vẫn được tạo case và Staff xử lý bình thường.
+* Critical: hiển thị hotline/cảnh báo và tạo case trước; chỉ sau đó mới hỏi vị trí nếu Customer có thể phản hồi an toàn.
+* Map chỉ gợi ý điểm hỗ trợ. Không được khẳng định đã cử cứu hộ/đặt lịch/điều phối thật.
 
 ---
 

@@ -1,23 +1,26 @@
 # Architecture Diagram — VinFast ServiceFlow AI (VFO2O-18)
 
-## 1. System Overview (Omnichannel Intake & Service Flow)
+## 1. System Overview (Web Support Hub & Service Flow)
 
 ```mermaid
 graph TB
-    subgraph ClientLayer[Kênh tiếp nhận đa kênh]
-        WC[Web Chat Client]
-        ZL[Zalo Channel Simulator]
-        EM[Email Ingestion Simulator]
-        HL[Hotline Transcript Simulator]
+    subgraph ClientLayer[Web Support Hub]
+        Guest[Guest: Landing / FAQ / Policy]
+        WC[Customer: Web Chat text + ảnh / My Cases]
+        Staff[Staff: Queue + Ticket Detail]
     end
 
     subgraph APILayer[FastAPI Backend Gateway]
         Router[API Router /api/v1/cases]
-        Auth[Session & Channel Ingestion Manager]
+        Auth[Authentication + RBAC]
+        Upload[Attachment Upload / Private Storage]
+        Location[Location Consent + Service Point API]
     end
 
     subgraph AgentLayer[LangGraph AI Core]
-        IntakeNode[intake_node: Chuẩn hóa nội dung & context]
+        IntakeNode[intake_node: Chuẩn hóa text, ảnh & context]
+        VisionNode[image_analysis_node: OCR/Vision tín hiệu sơ bộ]
+        MapNode[service_location_node: Gợi ý điểm hỗ trợ]
         TriageNode[triage_node: Intent + Priority + Confidence]
         SafetyCheck{Safety trigger, sensitive case<br/>hoặc confidence thấp?}
         IntentRoute{Intent Router}
@@ -37,7 +40,7 @@ graph TB
     end
 
     subgraph DataLayer[Data & Knowledge Base]
-        DB[(Ticket DB: channel, intent, priority, confidence, brief, feedback)]
+        DB[(Ticket DB: user, case, message, attachment, brief)]
         VDB[(ChromaDB: Cẩm nang VF, FAQ, Bảo hành chính hãng)]
     end
 
@@ -47,9 +50,17 @@ graph TB
         Dispatch[Dispatching tới Sales, Service, Charging hoặc CSKH]
     end
 
+    Guest --> Auth
+    WC --> Upload
+    Upload --> VisionNode
+    WC --> Location
+    Location --> MapNode
     ClientLayer --> Router
     Router --> Auth
     Auth --> IntakeNode
+    VisionNode --> IntakeNode
+    TriageNode --> MapNode
+    MapNode --> DB
     IntakeNode --> TriageNode
     
     TriageNode --> SafetyCheck
@@ -62,7 +73,7 @@ graph TB
     IntentRoute -- Service/Incident --> SlotCheck
     
     SlotCheck -- Chưa đủ dữ kiện --> ClarifyNode
-    ClarifyNode -.->|Gửi câu hỏi làm rõ| ClientLayer
+    ClarifyNode -.->|Gửi câu hỏi làm rõ| WC
     
     SlotCheck -- Đã đủ dữ kiện --> ServiceRAG
     ServiceRAG <--> VDB
@@ -75,6 +86,7 @@ graph TB
     
     CaseBriefGen --> DB
     CaseBriefGen --> Console
+    Staff --> Console
     Console --> ReviewerAction
     ReviewerAction --> Dispatch
 ```
@@ -85,11 +97,18 @@ graph TB
 
 ```mermaid
 graph TD
-    START([Input từ Web Chat hoặc kênh mô phỏng]) --> intake[intake_node: Chuẩn hóa nội dung và context]
-    intake --> triage[triage_node: Intent + Priority + Confidence]
+    START([Input text và/hoặc ảnh từ Web]) --> intake[intake_node: Chuẩn hóa nội dung và context]
+    intake --> image{Có ảnh?}
+    image -->|Có| vision[image_analysis_node: OCR/Vision, evidence sơ bộ]
+    image -->|Không| triage
+    vision --> triage[triage_node: Intent + Priority + Confidence]
 
     triage --> safety{Safety trigger, sensitive case hoặc confidence thấp?}
-    safety -- Yes --> hitl[HITL: Escalate reviewer hoặc nhân viên phù hợp]
+    safety -- Yes --> critical_brief[Case Brief tối thiểu + Staff Reviewing]
+    critical_brief --> location_consent{Customer consent vị trí?}
+    location_consent -->|Có| map[Map: điểm hỗ trợ gần]
+    location_consent -->|Bỏ qua| hitl[HITL: Escalate reviewer hoặc nhân viên phù hợp]
+    map --> hitl
 
     safety -- No --> route{Intent router}
 
@@ -124,5 +143,14 @@ graph TD
 | **Vector DB** | ChromaDB / FAISS | Lưu trữ tài liệu chính hãng, FAQ xe điện, chính sách bảo hành, cẩm nang hướng dẫn sử dụng xe VinFast |
 | **LLM Inference** | LLM API hỗ trợ Structured Output | Cấu hình linh hoạt theo môi trường (`gpt-4o-mini`, `gpt-4o`, `gemini-1.5-flash`, v.v.) phục vụ phân loại intent, trích xuất slot, tóm tắt brief |
 | **Guardrails & Safety** | Rule Engine + Sentiment + Guard Prompts | Bổ sung **confidence threshold**, bắt **complaint sensitive case**, **safety emergency trigger** và chính sách từ chối yêu cầu ngoài phạm vi |
-| **Database** | SQLite (MVP) / PostgreSQL | Lưu trữ đầy đủ: `source_channel`, `intent`, `priority`, `confidence_score`, `suggested_action`, `captured_fields`, `reviewer_feedback`, `status` |
+| **Attachment / Vision** | Private storage + OCR/Vision API | Lưu ảnh táp-lô; trích xuất tín hiệu sơ bộ để hỏi context, không chẩn đoán kỹ thuật |
+| **Location / Map** | Consent API + điểm dịch vụ seed | Customer chia sẻ vị trí/nhập khu vực; gợi ý điểm hỗ trợ, không điều phối cứu hộ thật |
+| **Database** | SQLite (MVP) / PostgreSQL | Lưu user/role, case, message, attachment, intent, priority, brief, audit log, ticket status |
 | **Console (HITL)** | React / Next.js / Tailwind UI | Service Agent Console — **Reviewer là người quyết định cuối cùng** với escalation, chỉnh sửa brief và routing trước khi dispatch |
+
+
+<!-- update info from feature/ai-khoi branch -->
+
+### Các trường database đề xuất từ feature/ai-khoi
+
+| **Database** | SQLite (MVP) / PostgreSQL | Lưu trữ đầy đủ: `source_channel`, `intent`, `priority`, `confidence_score`, `suggested_action`, `captured_fields`, `reviewer_feedback`, `status` |

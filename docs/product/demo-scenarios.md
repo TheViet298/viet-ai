@@ -25,9 +25,10 @@
 ### Các bước thực hiện:
 
 1. **Bước 1 (Customer Intake):**
-   * *User nhập:* `"Tôi đang ở trạm sạc Vincom Metropolis, cắm súng sạc DC vào xe VF8 nhưng đèn báo trên trụ nháy đỏ và xe không nhận sạc."`
+   * *User gửi:* ảnh màn hình/táp-lô hoặc trụ sạc kèm: `"Em không biết lỗi gì, xe không nhận sạc."`
+   * *Vision/OCR:* trích xuất tín hiệu sơ bộ (nếu ảnh rõ), ví dụ mã `CC01` hoặc đèn đỏ; nếu không đọc được thì Agent hỏi ảnh rõ hơn/mô tả hiện tượng.
 2. **Bước 2 (AI Triage & Clarify - Lượt 1):**
-   * *AI nhận diện:* Intent `Charging/Battery`, Priority `HIGH`.
+   * *AI nhận diện sơ bộ:* Intent `Charging/Battery`, Priority `HIGH`.
    * *AI phân tích thiếu:* Mã cổng sạc và mã lỗi cụ thể hiển thị trên màn hình xe.
    * *AI phản hồi (kèm gợi ý):* *"Dạ em ghi nhận xe VF8 đang gặp sự cố sạc tại Vincom Metropolis. Màn hình xe có hiển thị mã lỗi (ví dụ: CC01, BMS_012) hoặc mã trụ sạc không ạ?"*
    * *Gợi ý Quick Replies:* `["Mã lỗi CC01, trụ P02", "Đèn đỏ, không hiện mã", "Không thấy mã lỗi"]`
@@ -54,7 +55,7 @@
 ### Các bước thực hiện:
 
 1. **Bước 1 (Customer Intake):**
-   * *User nhập:* `"Xe VF9 của tôi đang chạy trên cao tốc thì hiện biểu tượng rùa vàng và xe bị giật, đạp ga không lên quá 30km/h."`
+   * *User gửi:* ảnh táp-lô kèm: `"Xe VF9 đang chạy trên cao tốc thì hiện biểu tượng rùa vàng và xe bị giảm công suất."`
 2. **Bước 2 (AI Safety Check & Triage):**
    * *Hệ thống kích hoạt Hard Safety Rule:* Phát hiện tổ hợp `"rùa vàng"` + `"trên cao tốc"` (Nguy cơ an toàn giao thông nghiêm trọng).
    * *Priority:* `CRITICAL`.
@@ -62,10 +63,11 @@
    * *AI phản hồi ngay lập tức (bỏ qua hỏi làm rõ):*
      * Hướng dẫn an toàn: *"Anh/chị vui lòng bật đèn khẩn cấp (Hazard), từ từ tấp xe vào làn dừng khẩn cấp an toàn."*
      * Hotline cứu hộ: **1900-232389**.
-     * Tự động tạo Case khẩn cấp: `CASE-20260924-002` (Trạng thái: `Staff Reviewing`, Priority: `CRITICAL`).
+     * Tự động tạo Case khẩn cấp tối thiểu: `CASE-20260924-002` (Trạng thái: `Staff Reviewing`, Priority: `CRITICAL`).
+     * Sau khi case đã tạo, hỏi: `Dùng vị trí hiện tại / Nhập khu vực / Bỏ qua`. Nếu đồng ý, hiển thị map và các điểm hỗ trợ seed gần nhất.
 4. **Bước 4 (Staff Console):**
    * Ticket xuất hiện trên cùng hàng đợi với nhãn đỏ nổi bật **[CRITICAL]**.
-   * Staff nhấn `Reroute` chuyển thẳng Đội Cứu hộ Cao tốc Khu vực lân cận.
+   * Staff xem Case Brief, visual evidence, location consent/source và map preview; nhấn `Reroute` tới nhóm `Emergency Support Demo`. Đây là bàn giao demo, không phải điều cứu hộ thật.
 
 ---
 

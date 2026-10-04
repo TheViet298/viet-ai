@@ -1,0 +1,152 @@
+{
+  "case_id_label": "TC01",
+  "mode": "operator-directed manual HTTP requests to real local backend; no mocks",
+  "base_url": "http://127.0.0.1:8013",
+  "commit": "3da9eccdedc92bd751b9675f7892951d8394b599",
+  "branch": "feature/agent-long",
+  "configured_model": "gemini-3.8-flash",
+  "requests": [
+    {
+      "captured_at": "2026-10-04T23:23:05.880712+07:00",
+      "method": "POST",
+      "path": "/api/v1/customer/chat",
+      "role": "CUSTOMER",
+      "request_body": {
+        "session_id": "gate2-manual-TC01",
+        "message": "Xe VF8 của tôi không nhận sạc tại trụ P01, mã lỗi CC01, pin còn 25%, xe đang đỗ tại trạm demo A.",
+        "case_id": null
+      },
+      "http_status": 200,
+      "elapsed_seconds": 0.062,
+      "response_body": {
+        "success": true,
+        "data": {
+          "visual_evidence": null,
+          "response_type": "CASE_CREATED",
+          "message": "Dạ VinFast đã ghi nhận sự cố sạc của xe VF8:\n📍 **Vị trí trạm:** Trạm sạc VinFast công cộng\n🔌 **Trụ sạc:** TRỤ P01\n⚠️ **Mã lỗi:** CC01\n\nHệ thống đã tự động tạo hồ sơ hỗ trợ (Mã: CASE-20261004-001) và chuyển dữ liệu trực tiếp tới Chuyên viên Kỹ thuật trạm sạc. Anh/chị vui lòng theo dõi cập nhật tiến độ giải quyết trực tiếp trên màn hình này ạ.",
+          "case_id": "CASE-20261004-001",
+          "status": "Staff Reviewing",
+          "priority": "HIGH",
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": null,
+          "citations": null,
+          "service_handoff": null,
+          "safe_guidance": "Anh/chị vui lòng giữ xe ở vị trí đỗ an toàn và theo dõi cập nhật trên giao diện này.",
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        },
+        "error": null,
+        "meta": {
+          "timestamp": "2026-10-04T16:23:05.879642+00:00"
+        }
+      }
+    },
+    {
+      "captured_at": "2026-10-04T23:23:33.627212+07:00",
+      "method": "GET",
+      "path": "/api/v1/staff/tickets/CASE-20261004-001",
+      "role": "STAFF",
+      "request_body": null,
+      "http_status": 200,
+      "elapsed_seconds": 0.047,
+      "response_body": {
+        "success": true,
+        "data": {
+          "case": {
+            "id": "CASE-20261004-001",
+            "mock_customer_id": "G2_DEMO",
+            "vehicle_code_mock": "VF-SF-00231",
+            "vehicle_model": "VF8",
+            "intent": "Charging/Battery",
+            "priority": "HIGH",
+            "status": "Staff Reviewing"
+          },
+          "case_brief": {
+            "summary": "Xe VF8 gặp sự cố sạc: báo lỗi CC01 tại Trạm sạc VinFast công cộng (TRỤ P01).",
+            "captured_fields": {
+              "vehicle_model": "VF8",
+              "station_location": "Trạm sạc VinFast công cộng",
+              "charger_id": "TRỤ P01",
+              "error_code": "CC01",
+              "current_soc": "25%",
+              "visual_signals": []
+            },
+            "suggested_action": "Kiểm tra tín hiệu handshake giao tiếp trụ sạc từ xa hoặc cử kỹ thuật viên trạm cắm lại cáp.",
+            "confidence_score": 0.95,
+            "is_edited_by_staff": false
+          },
+          "conversation_history": [
+            {
+              "sender": "CUSTOMER",
+              "content": "Xe VF8 của tôi không nhận sạc tại trụ P01, mã lỗi CC01, pin còn 25%, xe đang đỗ tại trạm demo A.",
+              "created_at": "2026-10-04T16:23:05.868217+00:00"
+            },
+            {
+              "sender": "AGENT",
+              "content": "Dạ VinFast đã ghi nhận sự cố sạc của xe VF8:\n📍 **Vị trí trạm:** Trạm sạc VinFast công cộng\n🔌 **Trụ sạc:** TRỤ P01\n⚠️ **Mã lỗi:** CC01\n\nHệ thống đã tự động tạo hồ sơ hỗ trợ (Mã: CASE-20261004-001) và chuyển dữ liệu trực tiếp tới Chuyên viên Kỹ thuật trạm sạc. Anh/chị vui lòng theo dõi cập nhật tiến độ giải quyết trực tiếp trên màn hình này ạ.",
+              "created_at": "2026-10-04T16:23:05.874974+00:00"
+            }
+          ],
+          "attachments": [],
+          "location": null,
+          "updates": []
+        },
+        "error": null,
+        "meta": {
+          "timestamp": "2026-10-04T16:23:33.626215+00:00"
+        }
+      }
+    },
+    {
+      "captured_at": "2026-10-04T23:23:33.683766+07:00",
+      "method": "POST",
+      "path": "/api/v1/staff/tickets/CASE-20261004-001/actions",
+      "role": "STAFF",
+      "request_body": {
+        "action": "APPROVE",
+        "staff_id": "G2_STAFF",
+        "notes": "Manual Gate 2: duyệt hồ sơ demo."
+      },
+      "http_status": 200,
+      "elapsed_seconds": 0.047,
+      "response_body": {
+        "success": true,
+        "data": {
+          "success": true,
+          "case_id": "CASE-20261004-001"
+        },
+        "error": null,
+        "meta": {
+          "timestamp": "2026-10-04T16:23:33.680565+00:00"
+        }
+      }
+    },
+    {
+      "captured_at": "2026-10-04T23:23:33.760792+07:00",
+      "method": "GET",
+      "path": "/api/v1/customer/cases/CASE-20261004-001/status",
+      "role": "CUSTOMER",
+      "request_body": null,
+      "http_status": 200,
+      "elapsed_seconds": 0.031,
+      "response_body": {
+        "success": true,
+        "data": {
+          "case_id": "CASE-20261004-001",
+          "status": "In Progress",
+          "status_description": "Chuyên viên kỹ thuật đang kiểm tra và tiến hành xử lý sự cố.",
+          "customer_message": "Manual Gate 2: duyệt hồ sơ demo.",
+          "created_at": "2026-10-04T16:23:05.874974",
+          "updated_at": "2026-10-04T16:23:33.664554"
+        },
+        "error": null,
+        "meta": {
+          "timestamp": "2026-10-04T16:23:33.758790+00:00"
+        }
+      }
+    }
+  ],
+  "agent_trace": []
+}

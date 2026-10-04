@@ -69,3 +69,12 @@
 > 
 > * **Hành vi bắt buộc:** Phản hồi khách hàng: *"Hiện tại hệ thống chưa có dữ liệu chính thức đã kiểm chứng về vấn đề này. Em đã ghi nhận và tạo hồ sơ để chuyên viên VinFast kiểm tra trực tiếp cho anh/chị."*
 > * Chuyển đổi yêu cầu thành Ticket và đẩy vào Staff Queue (`Staff Reviewing`).
+
+---
+
+## 5. Knowledge Hub Public
+
+* Landing/FAQ/Policy chỉ hiển thị nội dung hoặc link từ nguồn VinFast đã kiểm chứng.
+* Knowledge Hub không phải CMS và không tự crawl/cập nhật trong MVP.
+* Nội dung public không mặc định được đưa hết vào Vector DB; chỉ index nguồn đã được Data/RAG kiểm duyệt.
+* Không index raw ticket, chat history, ảnh hoặc location của Customer vào Knowledge Hub/RAG public. Nếu dùng insight từ case demo, phải biên soạn lại thành bài viết ẩn danh và được Staff duyệt.

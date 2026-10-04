@@ -4,6 +4,7 @@ export interface ClientContext {
   mock_customer_id?: string;
   vehicle_model?: VehicleModel | string;
   vehicle_code_mock?: string;
+  customer_name?: string;
 }
 
 export interface Citation {
@@ -22,6 +23,8 @@ export type ChatResponseType = "CLARIFICATION" | "FAQ_ANSWER" | "CASE_CREATED";
 export interface ChatResponseData {
   response_type: ChatResponseType;
   message: string;
+  response?: string;
+  intent?: string;
   case_id?: string | null;
   clarification_turn?: number;
   max_clarification_turns?: number;
@@ -30,6 +33,8 @@ export interface ChatResponseData {
   safe_guidance?: string;
   priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   status?: string;
+  show_emergency_banner?: boolean;
+  request_location?: boolean;
 }
 
 export interface ApiResponse<T> {
@@ -52,10 +57,64 @@ export interface ChatMessage {
   safe_guidance?: string;
   case_id?: string | null;
   priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  attachment_ids?: string[];
+  image?: { src: string; name: string };
 }
 
 export interface QuickPrompt {
   label: string;
   model: VehicleModel;
   text: string;
+}
+
+export interface AttachmentOut {
+  attachment_id: string;
+  storage_key: string;
+  mime_type: string;
+  analysis_status: string;
+  ocr_text?: string | null;
+  detected_signals?: Record<string, any> | null;
+  vision_confidence?: number | null;
+  created_at: string;
+}
+
+export interface CustomerCaseItem {
+  id: string;
+  vehicle_model: string;
+  vehicle_code_mock?: string;
+  intent: string;
+  priority: string;
+  status: string;
+  summary?: string | null;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export interface ArticleItem {
+  id: string;
+  title: string;
+  category: string;
+  summary: string;
+  content?: string;
+  source_url: string;
+  url?: string;
+  verified_at: string;
+  applicable_models?: string[];
+}
+
+export interface ServicePointSeed {
+  id: string;
+  name: string;
+  type: "SERVICE_WORKSHOP" | "CHARGING_STATION" | "EXPRESSWAY_RESCUE";
+  address: string;
+  distance?: string;
+  hotline: string;
+  coords: { lat: number; lng: number };
+}
+
+export interface UserLocationState {
+  status: "CONSENTED" | "MANUAL" | "NOT_SHARED" | "PENDING";
+  source: "BROWSER_GPS" | "USER_TEXT" | "MAP_PICKER";
+  label: string;
+  coords?: { lat: number; lng: number };
 }

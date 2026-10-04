@@ -8,7 +8,7 @@ interface PageProps {
 
 export function generateMetadata({ params }: PageProps) {
   return {
-    title: `Chi tiết Hồ sơ ${params.id} — VinFast ServiceFlow AI`,
+    title: `Chi tiết Hồ sơ ${params.id} — VF Serv`,
     description: `Xem xét Case Brief và thực hiện phê duyệt điều phối cho hồ sơ ${params.id}.`,
   };
 }

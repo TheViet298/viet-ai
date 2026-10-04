@@ -8,14 +8,28 @@
 
 ## 1. Customer User Flow
 
+**Access flow:** Guest xem Landing/FAQ/Policy và được chat tối đa 5 lượt/phiên. Khi cần tạo/theo dõi case hoặc hết limit, hệ thống yêu cầu Login/Register Customer bằng SĐT + OTP demo. Customer chỉ xem case của mình; Staff dùng tài khoản seed/invite.
+
 ```mermaid
 flowchart TD
-    Start([Khách truy cập Chat]) --> Intake[Nhập nội dung vấn đề / câu hỏi]
+    Start([Guest xem Landing / FAQ / Policy]) --> GuestChat[Chat FAQ/tư vấn: tối đa 5 lượt]
+    GuestChat --> NeedCase{Cần tạo/theo dõi case hoặc hết limit?}
+    NeedCase -->|Có| Login[Login / Register Customer: SĐT + OTP demo]
+    NeedCase -->|Không| Intake
+    Login --> Intake[Nhập text và/hoặc upload ảnh]
+    Intake --> Image{Có ảnh?}
+    Image -->|Có| Vision[OCR/Vision nhận diện dấu hiệu sơ bộ]
+    Image -->|Không| CheckSafety
+    Vision --> CheckSafety
     Intake --> CheckSafety{Phát hiện rủi ro an toàn khẩn cấp?}
     
     %% Emergency Path
-    CheckSafety -->|Có: Cháy / Mất phanh / Rùa vàng trên cao tốc| EmergencyFlow[Cảnh báo an toàn ngay + Hotline 1900-232389]
-    EmergencyFlow --> CreateCritCase[Tạo Ticket CRITICAL & Chuyển đỉnh Queue Staff]
+    CheckSafety -->|Có: Cháy / Mất phanh / Rùa vàng trên cao tốc| EmergencyFlow[Cảnh báo an toàn ngay + Hotline]
+    EmergencyFlow --> CreateCritCase[Tạo Ticket CRITICAL tối thiểu & Chuyển đỉnh Queue Staff]
+    CreateCritCase --> LocationConsent{Chia sẻ vị trí?}
+    LocationConsent -->|Dùng vị trí / Nhập khu vực| ServiceMap[Hiển thị map & điểm hỗ trợ gần]
+    LocationConsent -->|Bỏ qua| TrackStatus
+    ServiceMap --> TrackStatus
     CreateCritCase --> TrackStatus[Theo dõi tiến độ từ Staff]
     
     %% Normal Path
@@ -47,7 +61,16 @@ flowchart TD
     
     %% Case Creation Path
     CreateCase --> ShowCaseView
+    CreateCase --> LocationNeed{Intent cần địa điểm?}
+    LocationNeed -->|Có| LocationCard[Card: Dùng vị trí / Nhập khu vực / Bỏ qua]
+    LocationCard --> ServiceMap
+    LocationNeed -->|Không| ShowCaseView
     ShowCaseView --> TrackStatus
+    TrackStatus --> SupportCenter[Customer Support Center: tìm kiếm case của tôi / timeline / lịch sử chat]
+    SupportCenter --> CaseDetail[Xem Customer Update + visual evidence + service point nếu có]
+    CaseDetail --> ResolutionChoice{Case Resolved?}
+    ResolutionChoice -->|Đã được hỗ trợ| CloseByCustomer[Customer xác nhận → Closed + Feedback]
+    ResolutionChoice -->|Vẫn chưa giải quyết| ReopenByCustomer[Customer Reopen → Staff Queue]
 ```
 
 ---
@@ -56,7 +79,8 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    StaffLogin([Nhân viên Dịch vụ mở Dashboard]) --> ViewQueue[Xem Ticket Queue: Filter theo Priority / Status / Intent]
+    StaffLogin([Nhân viên Dịch vụ đăng nhập Dashboard]) --> Dashboard[Dashboard Summary: Critical / Reviewing / Needs Info / Resolved]
+    Dashboard --> ViewQueue[Xem Ticket Queue: Filter theo Priority / Status / Intent]
     ViewQueue --> SelectTicket[Chọn Ticket để xử lý]
     SelectTicket --> ViewDetail[Xem Ticket Detail: Case Brief + Lịch sử Chat + AI Đề xuất]
     
@@ -73,10 +97,45 @@ flowchart TD
     AskCustomer --> AwaitingCust[Chuyển trạng thái: Needs Information]
     
     InProgress --> ResolveTicket[Hoàn tất xử lý kỹ thuật $\rightarrow$ Trạng thái: Resolved]
-    ResolveTicket --> ConfirmCustomer{Khách xác nhận hài lòng / Hết hạn quy định}
+    ResolveTicket --> ConfirmCustomer{Customer xác nhận kết quả?}
     ConfirmCustomer -->|Xác nhận| CloseTicket[Trạng thái: Closed]
     ConfirmCustomer -->|Vẫn còn lỗi| ReopenTicket[Trạng thái: Reopened $\rightarrow$ Quay lại Queue]
+
+    ViewQueue --> CaseHistory[Lịch sử case: Resolved / Closed / Reopened]
+    CaseHistory --> ViewDetail
+    ViewDetail --> RoutingDirectory[Chọn Routing Directory demo]
+    RoutingDirectory --> Reroute
 ```
+
+---
+
+## 3. Customer Support Center & Privacy Flow
+
+```mermaid
+flowchart LR
+    Customer[Customer đăng nhập] --> Mine[Tab: Yêu cầu của tôi]
+    Mine --> Search[Tìm theo Case ID / từ khóa / trạng thái]
+    Search --> Detail[Case Detail: timeline, Customer Update, chat history]
+    Customer --> Library[Tab: Tình huống thường gặp]
+    Library --> Curated[FAQ/bài viết đã biên soạn + citation]
+    Curated --> Agent[Hỏi Agent / tạo case mới]
+```
+
+* Customer chỉ truy cập case mà `customer_id` sở hữu.
+* Tab `Tình huống thường gặp` không hiển thị raw case, ảnh, vị trí, Case ID, chat history hoặc kết quả xử lý của Customer khác.
+
+## 4. Staff Console Navigation
+
+```text
+Tổng quan → Hàng đợi xử lý → Ticket Detail → Customer Update
+                ↓
+          Lịch sử case
+
+Knowledge Hub / Customer Preview
+```
+
+* `Knowledge Hub`: Staff xem nguồn/citation và thư viện tình huống thường gặp.
+* `Customer Preview`: Staff thử giao diện public/chat bằng session demo, không truy cập Customer Chat của khách thật.
 
 ---
 

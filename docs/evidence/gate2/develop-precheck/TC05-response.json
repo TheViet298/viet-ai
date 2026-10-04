@@ -1,0 +1,26 @@
+{
+  "case_id_label": "TC05",
+  "mode": "operator-directed manual HTTP requests to real local backend; no mocks",
+  "base_url": "http://127.0.0.1:8012",
+  "commit": "39e671597ce51eda6009dae400e5b3943d26cc33",
+  "configured_model": "gemini-3.8-flash",
+  "requests": [
+    {
+      "captured_at": "2026-10-04T23:19:24.344866+07:00",
+      "method": "POST",
+      "path": "/api/v1/customer/chat",
+      "role": "CUSTOMER",
+      "request_body": {
+        "session_id": "gate2-manual-TC05",
+        "message": "Xe VF5 của tôi không nhận sạc ở trụ DEMO-02, pin còn 20%, báo lỗi kết nối, xe vẫn chạy được, không có khói hay mùi khét.",
+        "case_id": null
+      },
+      "http_status": 500,
+      "elapsed_seconds": 0.047,
+      "response_body": {
+        "raw_text": "Internal Server Error"
+      }
+    }
+  ],
+  "agent_trace": []
+}

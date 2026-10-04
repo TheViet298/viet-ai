@@ -57,4 +57,32 @@ out/
 
 # AI logs — tracked structure, ignored content
 .ai-log/*.jsonl
+.test-runs/
 .ai-log/archive/
+
+# Superpowers specs & plans
+docs/superpowers/
+
+# Non-essential vision requirements
+requirements-vision-data.txt
+requirements-vision-runtime.txt
+
+# Development plans & working drafts
+docs/agent-quality-v2.md
+docs/cardd-agent-integration.md
+docs/cardd-baseline-training-review.md
+docs/cardd-inference.md
+docs/create_api_contract.md
+docs/dashboard-chat-integration.md
+docs/data-workplan-mvp.md
+docs/eval-evidence.md
+docs/kich_ban_trinh_bay_mentor.md
+docs/knowledge-answering.md
+docs/vehicle-vision-ai-plan.md
+docs/vision-cloud-baseline.md
+docs/vision-data-audit-2026-10-04.md
+docs/vision-evidence.example.json
+docs/vision-evidence.schema.json
+
+# Local database migration config
+alembic.ini

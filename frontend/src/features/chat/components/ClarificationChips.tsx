@@ -1,3 +1,5 @@
+import React from "react";
+
 interface ClarificationChipsProps {
   chips?: string[];
   onSelectChip: (chip: string) => void;
@@ -10,14 +12,15 @@ export function ClarificationChips({
   if (!chips || chips.length === 0) return null;
 
   return (
-    <div className="mt-2 flex flex-wrap gap-1.5 max-w-[85%]">
+    <div className="mt-2.5 pb-2 flex flex-wrap gap-1.5 max-w-full pl-0.5 animate-fadeIn">
       {chips.map((chip, idx) => (
         <button
           key={idx}
+          type="button"
           onClick={() => onSelectChip(chip)}
-          className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-300 rounded-full px-3 py-1 font-medium transition-colors"
+          className="inline-flex items-center text-[12px] bg-white hover:bg-blue-50/90 text-slate-700 hover:text-[#1E40AF] border border-slate-200/90 hover:border-blue-300 rounded-xl px-3 py-1.5 font-medium transition-all shadow-2xs active:scale-[0.98]"
         >
-          {chip}
+          <span>{chip}</span>
         </button>
       ))}
     </div>

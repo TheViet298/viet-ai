@@ -1,0 +1,43 @@
+{
+  "prepared_on_local_date": "2026-10-04",
+  "timezone": "Asia/Saigon",
+  "commit": "39e671597ce51eda6009dae400e5b3943d26cc33",
+  "scope": "Live LLM connectivity preflight only; not one of the five manual application cases",
+  "provider": "Google Gemini via ChatGoogleGenerativeAI",
+  "configured_model": "gemini-3.8-flash",
+  "agent_llm_enabled": true,
+  "api_key_configured": true,
+  "input": "Reply with OK only.",
+  "timeout_seconds": 15,
+  "observed_result": {
+    "probe": "failed",
+    "category": "provider_error",
+    "exception_type": "GoogleAPIError"
+  },
+  "llm_output": null,
+  "follow_up_diagnostics": {
+    "sdk_default_transport_timeout_seconds": 10,
+    "sdk_error_http_status": 504,
+    "sdk_error_status": "DEADLINE_EXCEEDED",
+    "sdk_error_message": "Deadline expired before operation could complete.",
+    "direct_rest_probe": {
+      "http_status": 200,
+      "text": "OK",
+      "total_tokens": 60
+    },
+    "sdk_timeout_override_probe": {
+      "timeout_seconds": 30,
+      "result": "success",
+      "elapsed_seconds": 15.61,
+      "text": "OK",
+      "input_tokens": 6,
+      "output_tokens": 82,
+      "total_tokens": 88
+    },
+    "application_llm_wait_timeout_seconds": 1.2,
+    "application_turn_timeout_seconds": 2.0,
+    "application_code_or_config_changed": false
+  },
+  "root_cause": "The SDK probe exceeded its 10-second transport deadline; the same SDK call succeeded with a per-request 30-second timeout in 15.61 seconds. These probes do not establish successful LLM use in the application flow.",
+  "manual_cases_executed": 0
+}

@@ -1,0 +1,61 @@
+[
+  {
+    "image_id": "img_vfe34_tpms_cluster_01",
+    "vehicle_model": "UNKNOWN",
+    "source_context_model": "VinFast VF e34",
+    "model_verification_status": "unverified_image_has_fuel_gauge_and_tachometer",
+    "image_type": "cluster_display_real_photo",
+    "title_vi": "Ảnh cụm đồng hồ cảnh báo kiểm tra lốp sau bên phải; mẫu xe chưa xác minh",
+    "source_url": "https://static-cms-prod.vinfastauto.com/ky-hieu-canh-bao-loi-ap-suat-lop-tren-vf-e34_1652457282.jpg",
+    "article_reference": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
+    "format": "JPG",
+    "visual_elements": {
+      "symbols_detected": ["tpms_icon_amber", "car_silhouette_top_view", "rear_right_wheel_red"],
+      "text_detected": ["Kiểm tra lốp bên phải phía sau"],
+      "quality_assessment": "Suitable for OCR and wheel localization; no pressure reading or specific TPMS fault visible"
+    },
+    "associated_symptom_keys": [],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+  },
+  {
+    "image_id": "img_vfe34_tpms_icon_low_pressure",
+    "vehicle_model": "VinFast VF e34",
+    "image_type": "cluster_display_illustration",
+    "model_verification_status": "article_context_only",
+    "title_vi": "Màn hình minh họa cảnh báo Tire pressure low",
+    "source_url": "https://static-cms-prod.vinfastauto.com/ap-suat-lop-1_1652627856.png",
+    "article_reference": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": ["car_silhouette_top_view", "rear_right_wheel_red"],
+      "text_detected": ["Tire pressure low", "OK to Dismiss"],
+      "quality_assessment": "Full display illustration; suitable for warning OCR, not an isolated TPMS icon"
+    },
+    "associated_symptom_keys": [
+      "low_pressure"
+    ],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+  },
+  {
+    "image_id": "img_vfe34_tpms_icon_sensor_fault",
+    "vehicle_model": "VinFast VF e34",
+    "image_type": "cluster_display_illustration",
+    "model_verification_status": "article_context_only",
+    "title_vi": "Màn hình minh họa cảnh báo Tire pressure sensor fault",
+    "source_url": "https://static-cms-prod.vinfastauto.com/ap-suat-lop-5_1652627955.png",
+    "article_reference": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": ["car_silhouette_top_view", "front_left_wheel_red"],
+      "text_detected": ["Tire pressure sensor fault", "--kPa", "--°C", "Hold OK to Dismiss"],
+      "quality_assessment": "Full display illustration; suitable for sensor-fault warning OCR"
+    },
+    "associated_symptom_keys": [
+      "sensor_fault"
+    ],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+  }
+]

@@ -8,8 +8,9 @@ $HookFile = '.git/hooks/pre-push'
 # Git for Windows runs hooks via its POSIX shell.
 $HookBody = @'
 #!/bin/sh
-# Pre-push: sweep recent Antigravity / Gemini prompts, then submit AI logs.
+# Pre-push: sweep recent Antigravity / Gemini / Codex prompts, then submit AI logs.
 scripts/_pyrun.cmd scripts/log_antigravity.py --auto || true
+scripts/_pyrun.cmd scripts/log_codex.py --auto || true
 scripts/_pyrun.cmd scripts/submit_log.py || true
 exit 0
 '@
