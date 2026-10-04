@@ -242,4 +242,7 @@ def get_store() -> SessionStore:
     url = get_settings().database_url
     if not url.startswith("sqlite:///"):
         raise ValueError("Agent store requires sqlite:/// database URL")
-    return SessionStore(url.removeprefix("sqlite:///"))
+    # Backend ORM tables use a different schema for cases/messages.
+    backend_path = Path(url.removeprefix("sqlite:///"))
+    agent_path = backend_path.with_name(f"{backend_path.stem}.agent{backend_path.suffix}")
+    return SessionStore(agent_path)
