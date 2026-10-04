@@ -98,6 +98,10 @@ def evaluate_hard_safety(text: str) -> tuple[bool, str | None, PriorityLevel]:
         has_danger_context = bool(re.search(TURTLE_DANGER_CONDITIONS, text_lower))
         if has_danger_context:
             return True, "TURTLE_ON_HIGHWAY", "CRITICAL"
+        is_inquiry = bool(re.search(r"\b(nghĩa là gì|là gì|ý nghĩa|nghĩa là sao|tại sao lại có|giải thích|tìm hiểu)\b", text_lower))
+        has_current_state = bool(re.search(r"\b(xe tôi|xe của tôi|đang bị|đang hiện|vừa bị|bị hiện|xe đang|vừa hiện)\b", text_lower))
+        if is_inquiry and not has_current_state:
+            return False, "TURTLE_DEFINITION", "LOW"
         # Rùa vàng ở điều kiện bình thường (bãi xe, ngõ nhà) -> HIGH, không gắn CRITICAL
         return False, "TURTLE_NORMAL", "HIGH"
 

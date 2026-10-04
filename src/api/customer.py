@@ -357,6 +357,8 @@ async def customer_chat(
                 priority=Priority.CRITICAL.value,
                 message=agent_reply,
                 safe_guidance=safe_guidance,
+                show_emergency_banner=True,
+                request_location=True,
                 remaining_guest_messages=remaining_guest_msgs,
             ),
             error=None,
@@ -490,10 +492,27 @@ async def customer_chat(
 
     if is_greeting:
         customer_name = payload.client_context.customer_name if payload.client_context else None
-        target = f"anh/chị {customer_name}" if customer_name else "anh/chị"
-        greeting_reply = (
-            f"Chào {target}! Em là Trợ lý VF Serv, hỗ trợ dịch vụ xe điện VinFast 24/7. Em có thể hỗ trợ được gì cho {target} hôm nay ạ?"
-        )
+        short_name = customer_name.strip().split()[-1] if (customer_name and customer_name.strip()) else None
+
+        if short_name:
+            full_lower = customer_name.lower()
+            is_female = "thị" in full_lower or any(
+                short_name.lower() == fn
+                for fn in ["hoa", "lan", "mai", "hương", "trang", "linh", "ngọc", "thảo", "hằng", "nhung", "yến", "my", "vy"]
+            )
+            is_male = "văn" in full_lower or any(
+                short_name.lower() == mn
+                for mn in ["an", "bình", "cường", "dũng", "hùng", "long", "minh", "nam", "phúc", "quân", "tuấn", "việt"]
+            )
+            title = "chị" if is_female else "anh" if is_male else None
+
+            if title:
+                greeting_reply = f"Chào {title} {short_name}! Em giúp gì được cho {title} về chiếc {vehicle_model} hôm nay ạ?"
+            else:
+                greeting_reply = f"Chào {short_name}! Em giúp gì được cho bạn về chiếc {vehicle_model} hôm nay ạ?"
+        else:
+            greeting_reply = "Chào bạn! Em là Trợ lý VF Serv. Em có thể hỗ trợ gì cho bạn hôm nay ạ?"
+
         suggested_replies = [
             "Tư vấn xe",
             "Trạm sạc & ứng dụng",
@@ -518,30 +537,152 @@ async def customer_chat(
                 message=greeting_reply,
                 case_id=None,
                 suggested_replies=suggested_replies,
+                show_emergency_banner=False,
+                request_location=False,
             ),
             error=None,
         )
 
     # --------------------------------------------------------------------------
-    # NHÓM B: TƯ VẤN BÁN HÀNG & MUA XE (SALES_GENERAL_INFO)
+    # NHÓM B: TƯ VẤN BÁN HÀNG, LÁI THỬ & GIÁ XE (SALES & SERVICES)
     # --------------------------------------------------------------------------
+    # B1. Đăng ký lái thử xe
+    is_test_drive = any(kw in lower_text for kw in ["lái thử", "đăng ký lái thử", "chạy thử", "trải nghiệm xe"]) and not is_technical_incident
+    if is_test_drive:
+        test_drive_reply = (
+            "Dạ anh/chị có thể đăng ký lái thử xe điện VinFast hoàn toàn miễn phí theo các bước rất thuận tiện sau:\n\n"
+            "1. **Chọn hình thức lái thử**: Trải nghiệm tại Showroom/Nhà phân phối gần nhất hoặc đăng ký lái thử tận nhà (tùy khu vực hỗ trợ).\n"
+            "2. **Điều kiện cần chuẩn bị**: Giấy phép lái xe (bằng B1 hoặc B2 trở lên) còn hiệu lực và CCCD.\n"
+            "3. **Đăng ký nhanh**: Đặt lịch trực tiếp qua Ứng dụng VinFast, trên website chính thức, hoặc liên hệ Tổng đài CSKH 1900-232389 để chuyên viên xếp lịch trong ngày.\n\n"
+            f"Anh/chị đang muốn trải nghiệm lái thử dòng xe nào (như chiếc {vehicle_model}, VF 7 hay VF 9) và ở khu vực nào để em hỗ trợ kết nối Showroom gần nhất ạ?"
+        )
+        test_drive_citations = [
+            Citation(
+                source_id="SRC-DRIVE-01",
+                title="Cổng Đăng ký Lái thử Xe điện VinFast Toàn quốc",
+                url="https://vinfastauto.com/vn_vi/dang-ky-lai-thu",
+                verified_at="2026-09-24",
+                status_code=200,
+                applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9"],
+                source_type="OFFICIAL_MANUAL",
+                relevant_snippet="Khách hàng có bằng lái B1/B2 hợp lệ có thể đăng ký lái thử miễn phí các dòng xe điện VinFast tại hệ thống showroom toàn quốc.",
+            )
+        ]
+        test_drive_handoff = ServiceHandoff(
+            has_app_feature=True,
+            app_feature_name="Đăng ký Lái thử Trực tuyến",
+            guide_url="https://vinfastauto.com/vn_vi/dang-ky-lai-thu",
+        )
+        suggested_replies = [
+            f"Lái thử xe {vehicle_model}",
+            "Lái thử xe VF 7",
+            "Tìm showroom gần nhất",
+            "Hotline tư vấn 1900-232389",
+        ]
+        agent_msg = Message(
+            id=str(uuid.uuid4()),
+            case_id=None,
+            session_id=payload.session_id,
+            sender_type=SenderType.AGENT.value,
+            content=test_drive_reply,
+            msg_metadata={"citations": [c.model_dump() for c in test_drive_citations]},
+        )
+        db.add(agent_msg)
+        db.commit()
+
+        return ApiResponse(
+            success=True,
+            data=ChatResponseData(
+                response_type="FAQ_ANSWER",
+                message=test_drive_reply,
+                case_id=None,
+                citations=test_drive_citations,
+                service_handoff=test_drive_handoff,
+                suggested_replies=suggested_replies,
+                show_emergency_banner=False,
+                request_location=False,
+            ),
+            error=None,
+        )
+
+    # B2. Bảng giá xe & Giá lăn bánh & Trả góp
+    is_pricing_inquiry = any(
+        kw in lower_text for kw in ["bảng giá", "giá lăn bánh", "chi phí lăn bánh", "giá xe", "trả góp", "ưu đãi", "đặt cọc"]
+    ) and not is_technical_incident
+    if is_pricing_inquiry:
+        pricing_reply = (
+            "Dạ về chính sách giá và chi phí lăn bánh ô tô điện VinFast hiện có những ưu thế vượt trội:\n\n"
+            "- **Ưu đãi lệ phí trước bạ**: Ô tô điện chạy pin được hưởng chính sách ưu đãi miễn 100% lệ phí trước bạ theo quy định của Chính phủ, giúp tiết kiệm từ vài chục đến hàng trăm triệu đồng chi phí lăn bánh.\n"
+            "- **Tùy chọn linh hoạt**: Khách hàng có thể lựa chọn mua bao gồm pin hoặc thuê pin hàng tháng để tối ưu ngân sách ban đầu.\n"
+            "- **Chính sách trả góp**: Hỗ trợ vay vốn ngân hàng lên đến 70-80% giá trị xe với lãi suất ưu đãi, thời hạn vay lên đến 8 năm.\n\n"
+            f"Anh/chị đang quan tâm giá lăn bánh cụ thể của xe {vehicle_model} hay dòng xe nào khác để em gửi thông tin chi tiết ạ?"
+        )
+        pricing_citations = [
+            Citation(
+                source_id="SRC-PRICE-01",
+                title="Bảng giá Ô tô điện VinFast và Chính sách Ưu đãi Mới nhất",
+                url="https://vinfastauto.com/vn_vi/bang-gia-xe-o-to-vinfast",
+                verified_at="2026-09-24",
+                status_code=200,
+                applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9"],
+                source_type="OFFICIAL_MANUAL",
+                relevant_snippet="Bảng giá niêm yết, chính sách thuê/mua pin và các chương trình ưu đãi lăn bánh cho dòng xe điện VinFast.",
+            )
+        ]
+        pricing_handoff = ServiceHandoff(
+            has_app_feature=True,
+            app_feature_name="Tra cứu Giá & Đặt cọc Xe",
+            guide_url="https://vinfastauto.com/vn_vi/bang-gia-xe-o-to-vinfast",
+        )
+        suggested_replies = [
+            f"Giá lăn bánh {vehicle_model}",
+            "Giá xe VF 3 & VF 5",
+            "Chính sách thuê pin",
+            "Đăng ký lái thử miễn phí",
+        ]
+        agent_msg = Message(
+            id=str(uuid.uuid4()),
+            case_id=None,
+            session_id=payload.session_id,
+            sender_type=SenderType.AGENT.value,
+            content=pricing_reply,
+            msg_metadata={"citations": [c.model_dump() for c in pricing_citations]},
+        )
+        db.add(agent_msg)
+        db.commit()
+
+        return ApiResponse(
+            success=True,
+            data=ChatResponseData(
+                response_type="FAQ_ANSWER",
+                message=pricing_reply,
+                case_id=None,
+                citations=pricing_citations,
+                service_handoff=pricing_handoff,
+                suggested_replies=suggested_replies,
+                show_emergency_banner=False,
+                request_location=False,
+            ),
+            error=None,
+        )
+
+    # B3. Tư vấn tổng quan các dòng xe
     sales_keywords = [
-        "mua xe", "mua ô tô", "bán xe", "tư vấn mua", "tư vấn xe", "đặt cọc", "lái thử",
-        "trả góp", "bảng giá xe", "giá lăn bánh", "ưu đãi", "dòng xe nào", "xe 7 chỗ",
-        "xe 5 chỗ", "mua vf", "tư vấn"
+        "mua xe", "mua ô tô", "bán xe", "tư vấn mua", "tư vấn xe", "dòng xe nào", "xe 7 chỗ",
+        "xe 5 chỗ", "mua vf", "tư vấn", "các dòng xe"
     ]
     is_sales_inquiry = any(kw in lower_text for kw in sales_keywords) and not is_technical_incident
 
     if is_sales_inquiry:
         sales_reply = (
-            "VinFast hiện có dải xe điện phủ nhiều phân khúc:\n\n"
-            "- **VF 3**: mini SUV đô thị nhỏ gọn, thiết kế vuông vức, di chuyển linh hoạt\n"
-            "- **VF 5 Plus**: A-SUV trẻ trung, tối ưu chi phí vận hành cho gia đình và đô thị\n"
-            "- **VF 6**: B-SUV thời thượng, nhiều công nghệ thông minh và an toàn\n"
-            "- **VF 7**: C-SUV phong cách thể thao, có 2 phiên bản Eco và Plus\n"
-            "- **VF 8**: D-SUV sang trọng, có hệ thống hỗ trợ lái nâng cao (ADAS) và trợ lý ảo\n"
-            "- **VF 9**: E-SUV 7 chỗ đẳng cấp thương gia, tiện nghi hàng đầu\n\n"
-            "Anh/chị đang quan tâm dòng nào, hoặc cần em tư vấn thêm về tầm giá, chính sách thuê/mua pin, đặt lịch lái thử?"
+            "VinFast hiện có dải xe điện phủ đầy đủ các phân khúc từ đô thị đến cao cấp:\n\n"
+            "- **VF 3**: mini SUV đô thị nhỏ gọn, thiết kế vuông vức cá tính, tối ưu di chuyển hàng ngày\n"
+            "- **VF 5 Plus**: A-SUV trẻ trung, chi phí vận hành cực kỳ tiết kiệm cho cá nhân và gia đình\n"
+            "- **VF 6**: B-SUV thời thượng, trang bị nhiều công nghệ thông minh và tính năng an toàn\n"
+            "- **VF 7**: C-SUV phong cách thể thao tương lai, có 2 phiên bản Eco và Plus dẫn động AWD\n"
+            "- **VF 8**: D-SUV sang trọng, hệ thống hỗ trợ lái nâng cao ADAS cấp độ 2 và trợ lý ảo thông minh\n"
+            "- **VF 9**: E-SUV 7 chỗ đẳng cấp thương gia, ghế cơ trưởng massage, tiện nghi hàng đầu\n\n"
+            "Anh/chị đang cân nhắc dòng xe nào phù hợp với nhu cầu, hoặc cần em hỗ trợ đăng ký lái thử trải nghiệm thực tế ạ?"
         )
         sales_citations = [
             Citation(
@@ -557,14 +698,14 @@ async def customer_chat(
         ]
         sales_handoff = ServiceHandoff(
             has_app_feature=True,
-            app_feature_name="Đăng ký Lái thử / Đặt cọc xe",
+            app_feature_name="Xem Chi tiết Dòng xe",
             guide_url="https://vinfastauto.com/vn_vi/cac-dong-xe-o-to",
         )
         suggested_replies = [
-            "Tư vấn xe VF 3 & VF 5",
-            "Tư vấn xe VF 7 & VF 8",
-            "Bảng giá xe mới nhất",
             "Đăng ký lái thử miễn phí",
+            "Bảng giá xe mới nhất",
+            "Tư vấn xe VF 7 & VF 8",
+            "Chính sách thuê/mua pin",
         ]
 
         agent_msg = Message(
@@ -587,6 +728,54 @@ async def customer_chat(
                 citations=sales_citations,
                 service_handoff=sales_handoff,
                 suggested_replies=suggested_replies,
+                show_emergency_banner=False,
+                request_location=False,
+            ),
+            error=None,
+        )
+
+    # --------------------------------------------------------------------------
+    # NHÓM B2: BIỂU TƯỢNG RÙA VÀNG TRÊN XE HIỆN TẠI (ACTIVE TURTLE ON VEHICLE)
+    # Khách báo xe đang hiện rùa nhưng không ở trên cao tốc / chưa khẩn cấp
+    # --------------------------------------------------------------------------
+    is_active_turtle = has_turtle and any(
+        kw in lower_text for kw in ["xe tôi", "xe của tôi", "đang hiện", "vừa hiện", "bị hiện", "đang bị", "bây giờ"]
+    )
+    if is_active_turtle and not is_turtle_critical:
+        turtle_reply = (
+            f"Biểu tượng con rùa màu vàng (Turtle Mode) là chế độ bảo vệ an toàn của xe {vehicle_model}, "
+            "tự động kích hoạt khi hệ thống nhận thấy pin cao áp quá thấp (thường < 5%), "
+            "nhiệt độ bộ pin/động cơ tăng cao hoặc có giới hạn công suất để bảo vệ hệ truyền động.\n\n"
+            "Hiện tại xe của anh/chị có còn di chuyển bình thường ở tốc độ chậm được không, "
+            "và trên màn hình táp-lô có báo thêm mã lỗi nào (như CC01 hay biểu tượng màu đỏ) không ạ?"
+        )
+        suggested_replies = [
+            "Xe vẫn đi chậm được",
+            "Xe không di chuyển được",
+            "Hiện kèm mã lỗi khác",
+            "Cách khắc phục tạm thời",
+        ]
+        agent_msg = Message(
+            id=str(uuid.uuid4()),
+            case_id=payload.case_id,
+            session_id=payload.session_id,
+            sender_type=SenderType.AGENT.value,
+            content=turtle_reply,
+            msg_metadata={"type": "ACTIVE_TURTLE_CHECK", "suggested_replies": suggested_replies},
+        )
+        db.add(agent_msg)
+        db.commit()
+
+        return ApiResponse(
+            success=True,
+            data=ChatResponseData(
+                response_type="CLARIFICATION",
+                message=turtle_reply,
+                case_id=payload.case_id,
+                priority="HIGH",
+                suggested_replies=suggested_replies,
+                show_emergency_banner=False,
+                request_location=False,
             ),
             error=None,
         )
@@ -640,6 +829,21 @@ async def customer_chat(
             guide_url="https://vinfastauto.com/vn_vi",
         )
 
+        faq_chips = ai_res.get("suggested_replies") or []
+        if any(k in lower_text for k in ["rùa", "biểu tượng", "đèn báo", "cảnh báo"]):
+            if "Xe tôi đang hiện biểu tượng này" not in faq_chips:
+                faq_chips = ["Xe tôi đang hiện biểu tượng này", "Khi nào xe tự giới hạn công suất?", "Tìm trạm sạc gần tôi"]
+        elif any(k in lower_text for k in ["bảo dưỡng", "12.000km", "12000"]):
+            faq_chips = ["Đặt hẹn bảo dưỡng", "Chi phí bảo dưỡng định kỳ", "Danh sách xưởng dịch vụ"]
+
+        needs_loc = any(
+            kw in lower_text
+            for kw in [
+                "gần tôi", "gần nhất", "tìm trạm", "tìm showroom", "xung quanh đây", "định vị",
+                "trạm sạc gần", "xưởng gần", "trạm gần", "trạm sạc quanh"
+            ]
+        )
+
         agent_msg = Message(
             id=str(uuid.uuid4()),
             case_id=None,
@@ -659,6 +863,9 @@ async def customer_chat(
                 case_id=None,
                 citations=citations,
                 service_handoff=service_handoff,
+                suggested_replies=faq_chips if faq_chips else None,
+                show_emergency_banner=False,
+                request_location=needs_loc,
                 remaining_guest_messages=remaining_guest_msgs,
             ),
             error=None,
@@ -773,6 +980,8 @@ async def customer_chat(
                 priority=Priority.HIGH.value,
                 message=agent_reply,
                 safe_guidance=safe_guidance,
+                show_emergency_banner=False,
+                request_location=False,
                 remaining_guest_messages=remaining_guest_msgs,
             ),
             error=None,
@@ -839,6 +1048,8 @@ async def customer_chat(
                 clarification_turn=prior_turns + 1,
                 max_clarification_turns=2,
                 suggested_replies=suggested_replies,
+                show_emergency_banner=False,
+                request_location=False,
                 remaining_guest_messages=remaining_guest_msgs,
             ),
             error=None,
@@ -912,6 +1123,8 @@ async def customer_chat(
             priority=Priority.MEDIUM.value,
             message=agent_reply,
             safe_guidance=safe_guidance,
+            show_emergency_banner=False,
+            request_location=False,
             remaining_guest_messages=remaining_guest_msgs,
         ),
         error=None,

@@ -99,14 +99,16 @@ class SessionStore:
             row = db.execute("SELECT * FROM agent_sessions WHERE id=?", (session_id,)).fetchone()
             if not row or row["owner"] != owner or row["version"] != version:
                 raise SessionConflictError("Session changed during processing; retry the turn")
-            if data.get("case_brief") and data.get("needs_staff_review") and row["role"] == "customer":
+            if data.get("case_brief") and data.get("needs_staff_review") and row["role"] == "customer" and not data.get("is_rag_query"):
                 cid = data.get("case_id")
                 existing = db.execute("SELECT * FROM cases WHERE id=?", (cid,)).fetchone() if cid else None
                 if existing and existing["customer_id"] != owner:
                     raise PermissionError("Case belongs to another customer")
                 if existing and existing["status"] in ("Closed", "Resolved"):
                     cid, existing = None, None
-                cid = cid or f"CASE-{uuid4().hex}"
+                today_str = datetime.now(UTC).strftime("%Y%m%d")
+                count = db.execute("SELECT COUNT(*) FROM cases WHERE id LIKE ?", (f"CASE-{today_str}-%",)).fetchone()[0] or 0
+                cid = cid or f"CASE-{today_str}-{count + 1:03d}"
                 data["case_id"] = cid
                 status = data.get("ticket_status", "Staff Reviewing")
                 if existing:

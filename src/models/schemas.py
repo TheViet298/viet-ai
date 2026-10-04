@@ -202,6 +202,8 @@ class ChatResponseData(BaseModel):
     citations: list[Citation] | None = None
     service_handoff: ServiceHandoff | None = None
     safe_guidance: str | None = None
+    show_emergency_banner: bool = False
+    request_location: bool = False
     remaining_guest_messages: int | None = None  # Số lượt chat còn lại cho Guest trial (tối đa 5)
 
 

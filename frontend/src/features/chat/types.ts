@@ -31,6 +31,8 @@ export interface ChatResponseData {
   safe_guidance?: string;
   priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   status?: string;
+  show_emergency_banner?: boolean;
+  request_location?: boolean;
 }
 
 export interface ApiResponse<T> {

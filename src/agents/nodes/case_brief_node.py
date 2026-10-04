@@ -42,25 +42,32 @@ async def case_brief_node(state: AgentState) -> dict:
     status = "Needs Information" if missing and state.get("clarification_turn", 0) >= 2 else "Staff Reviewing"
     guest = state.get("user_role", "guest") != "customer"
     # Only the bridge can claim successful case creation after its DB transaction.
-    reply = "Đã ghi nhận yêu cầu để chuyên viên dịch vụ tiếp nhận. " + STANDARD_SAFE_GUIDANCE
-    if guest:
-        reply = "Đã ghi nhận sơ bộ yêu cầu. Quý khách vui lòng đăng nhập tài khoản Customer để lưu hồ sơ và theo dõi tiến độ."
-    if state.get("is_critical") or state.get("policy_blocked"):
-        reply = state.get("response", "") + ("\n\nVui lòng đăng nhập để lưu hồ sơ hỗ trợ." if guest else "")
-    elif state.get("is_no_source"):
-        reply = state.get("response", "") + "\n\n" + reply
+    if state.get("is_rag_query"):
+        faq_note = "Hệ thống đã ghi nhận câu hỏi để chuyên viên dịch vụ kiểm tra và phản hồi sớm nhất đến anh/chị."
+        reply = state.get("response", "") + ("\n\n" + faq_note if state.get("response") else faq_note)
+    else:
+        reply = "Đã ghi nhận yêu cầu để chuyên viên dịch vụ tiếp nhận. " + STANDARD_SAFE_GUIDANCE
+        if guest:
+            reply = "Đã ghi nhận sơ bộ yêu cầu. Quý khách vui lòng đăng nhập tài khoản Customer để lưu hồ sơ và theo dõi tiến độ."
+        if state.get("is_critical") or state.get("policy_blocked"):
+            reply = state.get("response", "") + ("\n\nVui lòng đăng nhập để lưu hồ sơ hỗ trợ." if guest else "")
+        elif state.get("is_no_source"):
+            reply = state.get("response", "") + "\n\n" + reply
+
     return {
         "case_brief": brief,
         "ticket_status": status,
         "needs_staff_review": True,
         "routing": routing,
         "login_required": guest,
-        "response_type": state["response_type"]
+        "response_type": "FAQ_ANSWER"
+        if state.get("is_rag_query")
+        else state["response_type"]
         if state.get("is_critical") or state.get("policy_blocked")
         else "LOGIN_REQUIRED"
         if guest
         else "CASE_CREATED",
         "response": reply,
         "final_response": reply,
-        "safe_guidance": state.get("safe_guidance") if state.get("is_critical") else STANDARD_SAFE_GUIDANCE,
+        "safe_guidance": state.get("safe_guidance") if state.get("is_critical") else None if state.get("is_rag_query") else STANDARD_SAFE_GUIDANCE,
     }

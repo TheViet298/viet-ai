@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.agents.context_manager import apply_fact_recency_and_invalidation
+from src.agents.guardrails import evaluate_hard_safety
 from src.agents.routing import decide_routing
 from src.agents.state import AgentState, IntentType, PriorityLevel
 from src.services.agent_llm import structured_call
@@ -27,16 +28,80 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
         return "faq"
     if any(k in lower for k in ["khiếu nại", "bức xúc", "thái độ", "không hài lòng", "phản ánh", "hoàn tiền", "thu sai", "khen ngợi", "crash", "bị văng"]):
         return "complaint"
+
+    # 1. Từ khóa nguy hiểm cứng (cháy, khói, mất phanh, tai nạn...) -> Luôn là Incident
+    hard_safety_keywords = [
+        "cháy", "bốc khói", "mùi khét", "mất phanh", "liệt phanh", "không phanh được",
+        "kẹt chân ga", "nổ lốp", "tai nạn", "lật xe", "ngập nước đến sàn"
+    ]
+    if any(k in lower for k in hard_safety_keywords):
+        return "incident"
+
+    # 2. Dấu hiệu tình trạng thực tế / sự cố hiện tại của xe (has_current_failure)
+    # Phải kiểm tra trước câu hỏi giải thích ("tại sao", "khi nào") để không bị lọt sự cố (e.g. "Tại sao xe tôi không sạc được?")
+    has_current_failure = bool(
+        re.search(
+            r"(?:xe\s*(?:tôi\s*)?(?:đang|bị|vừa|báo|hiện)|bây giờ|đang\s*(?:ở|bị|kẹt|dừng|chạy))|"
+            r"(?:không\s+(?:nhận\s*sạc|sạc được|khởi động|đi được|chạy nổi|vào điện|lên nguồn|mở (?:cửa|khóa) được))|"
+            r"(?:bị|đang|báo)\s+(?:hỏng|kẹt|gãy|vỡ|lỗi|đơ|đen|mờ đen)|"
+            r"(?:xe tôi|vừa bị|đang bị|xe đang|đang hiện)\s+.*rùa|"
+            r"(?:chết máy|nháy đỏ|nhấp nháy|sập nguồn|mất lái|chảy dầu|xì lốp)|"
+            r"(?:chân phanh|phanh|chân ga|ắc quy|pin).{0,25}(?:hỏng|kẹt|hẫng|chai|tụt nhanh|không ăn)|"
+            r"cứu tôi|cứu hộ|không chạy nổi|không thể tăng tốc|lỗi\s+(?:[a-z]*\d+|0x)",
+            lower,
+        )
+    )
+    if has_current_failure:
+        return "incident"
+
+    # 3. Câu hỏi kiến thức / cẩm nang / giải thích thuần túy (FAQ)
+    is_explanation_query = any(
+        k in lower
+        for k in [
+            "nghĩa là gì",
+            "là gì",
+            "ý nghĩa",
+            "nghĩa là sao",
+            "giải thích",
+            "tại sao",
+            "khi nào",
+            "như thế nào",
+            "cách ",
+            "làm thế nào",
+            "bao lâu",
+            "bao nhiêu",
+            "chính sách",
+            "bảo dưỡng",
+            "bảo hành",
+            "thông số",
+            "giá xe",
+            "đặt lịch",
+            "hình thức",
+            "tính năng",
+            "khác nhau",
+            "xem ở đâu",
+            "có bị",
+            "mốc nào",
+            "quãng đường",
+            "dung lượng",
+            "chu kỳ",
+            "khuyến mãi",
+            "tìm hiểu",
+            "hỏi về",
+            "cho tôi hỏi",
+            "tính phí",
+            "bao tiền",
+        ]
+    )
+    if is_explanation_query:
+        return "faq"
+
     if re.search(
-        r"(?:bị|đang|báo)\s+(?:hỏng|kẹt|gãy|vỡ|lỗi|rùa|đơ|đen|mờ đen)|không mở được (?:cửa|khóa)|"
-        r"không\s+(?:nhận\s*sạc|sạc được|khởi động|đi được|vào điện|lên nguồn|mở (?:cửa|khóa) được)|"
-        r"bật nguồn không lên|màn hình tối|rùa vàng|nháy đỏ|nhấp nháy|va chạm|"
-        r"(?:pin|phanh|lốp|điều hòa|xe).{0,30}(?:hỏng|kẹt|xì|rò|rung|kêu)|"
-        r"(?:chìa khóa|smart key).{0,20}hết pin|lỗi\s+(?:[a-z]*\d+|0x)", lower
+        r"(?:hỏng|kẹt|gãy|vỡ|lỗi)|không mở được (?:cửa|khóa)|"
+        r"bật nguồn không lên|màn hình tối|va chạm|"
+        r"(?:chìa khóa|smart key).{0,20}hết pin", lower
     ):
         return "incident"
-    if any(k in lower for k in ["bao lâu", "bao nhiêu", "chính sách", "bảo hành", "thông số", "giá xe", "đặt lịch", "cách ", "làm thế nào", "như thế nào", "hình thức", "tính năng", "khác nhau", "xem ở đâu", "có bị", "mốc nào", "quãng đường", "dung lượng", "chu kỳ", "khuyến mãi"]):
-        return "faq"
     return "uncertain"
 
 
@@ -110,8 +175,12 @@ async def triage_node(state: AgentState) -> dict:
     foreign_domain = any(
         k in lower for k in ["máy bay", "vietnam airlines", "hyundai", "tesla", "thời tiết", "pin mặt trời", "hòa lưới"]
     )
+    is_crit, rule_name, crit_prio = evaluate_hard_safety(text)
+
     if foreign_domain and "vinfast" not in lower:
         intent, faq = "Out_of_Scope", False
+    elif is_crit:
+        intent, faq, priority = "Service/Incident", False, "CRITICAL"
     elif complaint:
         intent = "Complaint/Feedback"
         extracted["complaint_summary"] = text
@@ -120,25 +189,30 @@ async def triage_node(state: AgentState) -> dict:
             extracted["showroom_dealer"] = dealer.group(1)
     elif continuation:
         intent = previous_intent
+    elif rule_name == "TURTLE_DEFINITION" or (faq and not is_crit):
+        intent = "Sales/General Info"
+        faq = True
     elif charging:
         intent = "Charging/Battery"
     elif incident:
         intent = "Service/Incident"
-    elif scoped or faq:
+    elif scoped:
         intent = "Sales/General Info"
         faq = True
     else:
         intent = "Out_of_Scope"
     priority = (
-        "HIGH"
+        "CRITICAL"
+        if is_crit
+        else "HIGH"
         if complaint or any(k in lower for k in ["kẹt", "không đi được", "chết máy"])
         else "LOW"
-        if faq or intent == "Out_of_Scope"
+        if (faq or intent == "Out_of_Scope" or rule_name == "TURTLE_DEFINITION")
         else "MEDIUM"
     )
-    confidence = 0.90 if (charging or complaint or incident or faq or continuation) else 0.55
-    llm = await structured_call(state, "triage", TriageResult) if confidence < 0.60 and not foreign_domain else None
-    if llm and not foreign_domain:
+    confidence = 0.90 if (is_crit or charging or complaint or incident or faq or continuation) else 0.55
+    llm = await structured_call(state, "triage", TriageResult) if confidence < 0.60 and not foreign_domain and not is_crit else None
+    if llm and not foreign_domain and not is_crit:
         intent, priority, confidence, faq = llm.intent, llm.priority, llm.confidence_score, llm.is_faq
         # Only accept known slots; keep explicitly extracted facts authoritative.
         allowed = {
@@ -153,18 +227,25 @@ async def triage_node(state: AgentState) -> dict:
             "topic",
         }
         extracted = {**{k: v for k, v in sanitized_snapshot(llm.captured_fields).items() if k in allowed}, **extracted}
-    if complaint and not foreign_domain:
+    if complaint and not foreign_domain and not is_crit:
         intent, faq, priority = "Complaint/Feedback", False, "HIGH"
-    actual_failure = request_kind == "incident" or bool(
-        re.search(
-            r"không\s+(?:nhận\s*sạc|sạc được|khởi động|đi được|vào điện)|"
-            r"(?:bị|báo|đang)\s+(?:hỏng|kẹt|lỗi|rùa)|lỗi\s+(?:[a-z]*\d+|0x)|"
-            r"(?:xe|pin|phanh|lốp|điều hòa).{0,30}(?:hỏng|kẹt|xì|rò|rung|kêu)|"
-            r"rùa vàng|nháy đỏ|nhấp nháy đỏ",
-            lower,
+    actual_failure = (request_kind == "incident") or (
+        request_kind != "faq"
+        and bool(
+            re.search(
+                r"không\s+(?:nhận\s*sạc|sạc được|khởi động|đi được|chạy nổi|vào điện)|"
+                r"(?:bị|báo|đang)\s+(?:hỏng|kẹt|lỗi)|lỗi\s+(?:[a-z]*\d+|0x)|"
+                r"(?:xe|pin|phanh|lốp|điều hòa).{0,30}(?:hỏng|kẹt|xì|rò|rung|kêu)|"
+                r"(?:xe tôi|đang bị|vừa bị|đang hiện)\s+.*(?:rùa vàng|con rùa)|nháy đỏ|nhấp nháy đỏ",
+                lower,
+            )
         )
     )
-    if actual_failure and not foreign_domain:
+    if is_crit:
+        faq = False
+        intent = "Service/Incident"
+        priority = "CRITICAL"
+    elif actual_failure and not foreign_domain and request_kind != "faq":
         faq = False
         if intent == "Sales/General Info":
             intent = "Service/Incident"
@@ -176,9 +257,11 @@ async def triage_node(state: AgentState) -> dict:
         faq = False
         if priority == "LOW":
             priority = "MEDIUM"
-    if state.get("priority") == "HIGH":
+    if is_crit:
+        priority = "CRITICAL"
+    elif state.get("priority") == "HIGH":
         priority = "HIGH"
-    if "rùa" in lower and actual_failure:
+    elif "rùa" in lower and actual_failure:
         priority = "HIGH"
     facts = dict(state.get("captured_fields", {}))
     history = state.get("fact_history", [])

@@ -47,6 +47,7 @@ export function CustomerChatContainer() {
     setSelectedModel,
     currentCaseId,
     criticalBanner,
+    requestLocation,
     sendMessage,
     resetChat,
     updateMessageChips,
@@ -59,7 +60,7 @@ export function CustomerChatContainer() {
   const [imageName, setImageName] = useState<string | null>(null);
   const [uploadedAttachmentId, setUploadedAttachmentId] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
-  const [aiStatus, setAiStatus] = useState<string>("Trợ lý Kỹ thuật VinFast AI • Sẵn sàng 24/7");
+  const [aiStatus, setAiStatus] = useState<string>("Trợ lý VF Serv • Hỗ trợ dịch vụ xe điện VinFast");
 
   // ===========================================================================
   // SERVICE MAP PREVIEW & LOCATION CONSENT (ADR-005, screen-spec.md Section 5.4, CUS-03)
@@ -77,15 +78,17 @@ export function CustomerChatContainer() {
     "ALL" | "EXPRESSWAY_RESCUE" | "CHARGING_STATION" | "SERVICE_WORKSHOP"
   >("ALL");
 
-  // Tự động kích hoạt Card xin vị trí khi phát hiện ca khẩn cấp hoặc đã tạo hồ sơ
+  // Tự động kích hoạt Card xin vị trí khi phát hiện ca khẩn cấp hoặc backend gửi cờ request_location
   useEffect(() => {
-    if (criticalBanner || currentCaseId) {
+    if (criticalBanner || requestLocation) {
       setShowLocationCard(true);
       if (criticalBanner) {
         setSuggestedCategory("EXPRESSWAY_RESCUE");
+      } else {
+        setSuggestedCategory("CHARGING_STATION");
       }
     }
-  }, [criticalBanner, currentCaseId]);
+  }, [criticalBanner, requestLocation]);
 
   const handleResetAll = () => {
     resetChat();
@@ -108,7 +111,7 @@ export function CustomerChatContainer() {
     getAiSystemStatus()
       .then((res) => {
         if (res?.status === "ready") {
-          setAiStatus("Hệ thống Trợ lý Kỹ thuật VinFast AI • Sẵn sàng 24/7");
+          setAiStatus("Trợ lý VF Serv • Sẵn sàng hỗ trợ");
         }
       })
       .catch(() => { });
@@ -257,36 +260,45 @@ export function CustomerChatContainer() {
 
     // Nhận diện tự động nếu liên quan địa điểm / cứu hộ
     const lower = text.toLowerCase();
-    if (
-      lower.includes("sạc") ||
-      lower.includes("cc01") ||
-      lower.includes("không vào điện") ||
-      lower.includes("trụ sạc")
-    ) {
-      setSuggestedCategory("CHARGING_STATION");
-      setShowLocationCard(true);
-    } else if (
-      lower.includes("bảo dưỡng") ||
-      lower.includes("12.000km") ||
-      lower.includes("kẹt") ||
-      lower.includes("cần số") ||
-      lower.includes("xưởng") ||
-      lower.includes("phanh")
-    ) {
-      setSuggestedCategory("SERVICE_WORKSHOP");
-      setShowLocationCard(true);
-    } else if (
-      lower.includes("cao tốc") ||
-      lower.includes("cứu hộ") ||
-      lower.includes("mất phanh") ||
-      lower.includes("rùa vàng") ||
-      lower.includes("cháy") ||
-      lower.includes("chết máy")
-    ) {
-      setSuggestedCategory("EXPRESSWAY_RESCUE");
-      setShowLocationCard(true);
-    } else if (lower.includes("trạm")) {
-      setShowLocationCard(true);
+    const isExplanation =
+      lower.includes("nghĩa là gì") ||
+      lower.includes("là gì") ||
+      lower.includes("ý nghĩa") ||
+      lower.includes("giải thích") ||
+      lower.includes("tại sao") ||
+      lower.includes("khi nào") ||
+      lower.includes("hướng dẫn") ||
+      lower.includes("cho tôi hỏi");
+
+    // Chỉ hiển thị thẻ chia sẻ vị trí khi khách thực sự cần tìm điểm hỗ trợ hoặc đang gặp sự cố thực tế
+    if (!isExplanation) {
+      if (
+        lower.includes("tìm trạm") ||
+        lower.includes("trạm gần") ||
+        lower.includes("tìm trạm sạc") ||
+        (lower.includes("trạm sạc") && (lower.includes("ở đâu") || lower.includes("chỗ nào")))
+      ) {
+        setSuggestedCategory("CHARGING_STATION");
+        setShowLocationCard(true);
+      } else if (
+        lower.includes("tìm xưởng") ||
+        lower.includes("xưởng gần") ||
+        lower.includes("đặt lịch xưởng") ||
+        lower.includes("đến xưởng") ||
+        (lower.includes("bảo dưỡng") && lower.includes("ở đâu"))
+      ) {
+        setSuggestedCategory("SERVICE_WORKSHOP");
+        setShowLocationCard(true);
+      } else if (
+        lower.includes("cứu hộ") ||
+        lower.includes("xe tôi đang bị") ||
+        lower.includes("chết máy") ||
+        lower.includes("hết pin giữa đường") ||
+        (lower.includes("cao tốc") && !lower.includes("chính sách"))
+      ) {
+        setSuggestedCategory("EXPRESSWAY_RESCUE");
+        setShowLocationCard(true);
+      }
     }
 
     setImagePreview(null);
