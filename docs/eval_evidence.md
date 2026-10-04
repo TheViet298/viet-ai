@@ -46,8 +46,6 @@ Một ca chỉ được tính là PASS khi đáp ứng đúng tiêu chí nghiệ
 
 **Đánh giá:** Luồng nghiệp vụ từ khách sang nhân viên và cập nhật trạng thái hoạt động thông suốt. Ca này vẫn tính FAIL vì hệ thống làm sai lệch địa điểm khách cung cấp. Phản hồi được sinh từ logic backend có sẵn, chưa ghi nhận trace LLM.
 
-**Minh chứng:** [Input, response, hồ sơ nhân viên và trạng thái khách](evidence/gate2/TC01-response.json).
-
 ### TC02: Khách chưa có đủ thông tin
 
 **Mong đợi:** Hệ thống hỏi làm rõ tối đa 2 lượt rồi tạo hồ sơ `Needs Information`, đồng thời ghi nhận rõ ràng các trường thông tin còn thiếu.
@@ -70,8 +68,6 @@ Một ca chỉ được tính là PASS khi đáp ứng đúng tiêu chí nghiệ
 
 **Đánh giá:** Logic ngắt sau 2 lượt hỏi hoạt động đúng quy định, nhưng bị FAIL về độ chính xác của dữ kiện. Khi khách chưa biết dòng xe, hồ sơ phải ghi nhận là chưa rõ thay vì tự lấy giá trị mặc định. Ca này chưa có trace LLM thành công.
 
-**Minh chứng:** [Ba lượt hội thoại và hồ sơ thiếu thông tin](evidence/gate2/TC02-response.json).
-
 ### TC03: Xe bốc khói khi đang sạc
 
 **Mong đợi:** Hệ thống nhận diện tình huống khẩn cấp, đẩy hồ sơ cho nhân viên ngay và đưa ra hướng dẫn an toàn phù hợp với bối cảnh xe đang đỗ sạc. Không thông báo đã kích hoạt hành động bên ngoài nếu thực tế chưa làm.
@@ -92,8 +88,6 @@ Một ca chỉ được tính là PASS khi đáp ứng đúng tiêu chí nghiệ
 
 **Đánh giá:** FAIL về nội dung hướng dẫn. Cơ chế kích hoạt khẩn cấp bằng rule hoạt động tốt, nhưng câu chữ phản hồi cần sửa lại sát thực tế hơn. Ca này xử lý hoàn toàn bằng rule an toàn trước khi vào LLM.
 
-**Minh chứng:** [Phản hồi khẩn cấp và hồ sơ nhân viên](evidence/gate2/TC03-response.json).
-
 ### TC04: Khiếu nại dịch vụ
 
 **Mong đợi:** Ghi nhận phản ánh khách hàng, tạo hồ sơ chuyển nhân viên và giữ nguyên vẹn nội dung khiếu nại; không tự ý nhận lỗi hay hứa hẹn bồi thường ngoài thẩm quyền.
@@ -109,8 +103,6 @@ Một ca chỉ được tính là PASS khi đáp ứng đúng tiêu chí nghiệ
 **Kết quả kiểm tra:** Tạo hồ sơ `CASE-20261004-004`, nhóm `Complaint/Feedback`, trạng thái `Staff Reviewing`. Nhân viên xem được đầy đủ chi tiết gồm xưởng demo A và thời gian chờ 2 giờ. Câu trả lời của bot giữ chừng mực, không cam kết bồi thường.
 
 **Đánh giá:** PASS trong phạm vi tiếp nhận ban đầu và bàn giao cho nhân viên. Đợt test chưa bao gồm khâu nhân viên xử lý tiếp sau đó. Trường dòng xe trong hồ sơ vẫn bị gán mặc định là VF8 như ở TC02. Ca này chạy qua rule tiếp nhận, chưa kích hoạt LLM.
-
-**Minh chứng:** [Phản hồi và nội dung khiếu nại phía nhân viên](evidence/gate2/TC04-response.json).
 
 ### TC05: Giải thích cảnh báo và tra cứu bảo hành
 
@@ -157,8 +149,6 @@ Lần gọi này kéo dài 5,219 giây và trả về trace `retrieval_status=TI
 
 **Đánh giá:** PASS sau khi thử lại đối với luồng tra cứu tài liệu và dùng LLM tạo câu trả lời kèm citation. Đây là ca duy nhất ghi nhận bằng chứng gọi LLM thật trong app. Do lượt đầu bị timeout và mã case trả về chưa nhất quán với database, luồng tra cứu này vẫn cần tối ưu thêm về độ ổn định.
 
-**Minh chứng:** [Cả ba lượt, response và trace LLM](evidence/gate2/TC05-response.json).
-
 ## 4. Kế hoạch khắc phục và hoàn thiện
 
 Từ các lỗi ghi nhận trong đợt test, em ưu tiên xử lý các đầu việc sau:
@@ -168,14 +158,3 @@ Từ các lỗi ghi nhận trong đợt test, em ưu tiên xử lý các đầu 
 3. Tối ưu thời gian phản hồi của bước tra cứu RAG để tránh chạm ngưỡng timeout 5 giây, đồng thời sửa logic tạo case dự phòng khi tra cứu thất bại để trường `case_id` khớp với nội dung thông báo.
 4. Chạy lại kiểm thử toàn bộ 5 ca sau khi chỉnh sửa code, sau đó tiến hành kiểm thử trên giao diện web để thu thập video và ảnh chụp màn hình chứng minh luồng end-to-end.
 
-## 5. Danh mục file minh chứng
-
-Toàn bộ file JSON lưu vết thời điểm gọi, dữ liệu request/response và trace LLM được lưu trong thư mục `docs/evidence/gate2/`. Các dữ liệu nhạy cảm như token và API key đều đã được loại bỏ:
-
-- [TC01: Lỗi sạc và nhân viên duyệt](evidence/gate2/TC01-response.json)
-- [TC02: Thiếu thông tin](evidence/gate2/TC02-response.json)
-- [TC03: Khẩn cấp](evidence/gate2/TC03-response.json)
-- [TC04: Khiếu nại](evidence/gate2/TC04-response.json)
-- [TC05: Tra cứu và LLM thật](evidence/gate2/TC05-response.json)
-
-Thư mục `evidence/gate2/develop-precheck/` lưu kết quả chạy thử trước đó trên commit `39e6715` của nhánh `develop` (từng gặp lỗi thiếu import và timeout 10 giây). Các file này chỉ dùng để đối chiếu lịch sử kiểm thử, không tính vào kết quả của nhánh `feature/agent-long`.
