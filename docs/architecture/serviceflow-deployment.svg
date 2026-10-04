@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="270mm" height="252mm" viewBox="0 0 1200 1120" xml:lang="vi" role="img" aria-labelledby="title desc">
+<title id="title">ServiceFlow — Sơ đồ triển khai</title>
+<desc id="desc">Cấu hình cục bộ: trình duyệt truy cập Next.js và backend Docker, backend sử dụng bind mount dữ liệu và gọi Gemini tùy cấu hình. Demo độc lập dùng HTTP server và SQLite riêng.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1 L9 5 L1 9" fill="none" stroke="#506273" stroke-width="1.4"/></marker></defs>
+<rect width="1200" height="1120" fill="white"/>
+<g font-family="DejaVu Sans, Arial, sans-serif">
+<text x="40" y="48" font-size="30" font-weight="600" fill="#263747">ServiceFlow · Sơ đồ triển khai</text>
+<text x="40" y="80" font-size="20" font-weight="400" fill="#263747">Cấu hình chạy cục bộ được khai báo trong repo</text>
+<rect x="80" y="115" width="325" height="100" rx="6" fill="#eaf2fb" stroke="#9ba9b6"/>
+<text x="98" y="140" font-size="15" font-weight="400" fill="#263747">«executionEnvironment»</text>
+<text x="98" y="170" font-size="22" font-weight="600" fill="#263747">Trình duyệt</text>
+<text x="98" y="198" font-size="18" font-weight="400" fill="#263747">Ứng dụng web Next.js</text>
+<rect x="40" y="280" width="810" height="510" rx="6" fill="#ffffff" stroke="#9ba9b6"/>
+<text x="58" y="305" font-size="15" font-weight="400" fill="#263747">«device»</text>
+<text x="58" y="335" font-size="22" font-weight="600" fill="#263747">Máy chạy ứng dụng</text>
+<rect x="80" y="365" width="300" height="110" rx="6" fill="#eaf2fb" stroke="#9ba9b6"/>
+<text x="98" y="390" font-size="15" font-weight="400" fill="#263747">«executionEnvironment»</text>
+<text x="98" y="420" font-size="22" font-weight="600" fill="#263747">Node.js / Next.js</text>
+<text x="98" y="448" font-size="18" font-weight="400" fill="#263747">frontend/ · cổng 3000</text>
+<rect x="440" y="365" width="370" height="215" rx="6" fill="#edf1f5" stroke="#9ba9b6"/>
+<text x="458" y="390" font-size="15" font-weight="400" fill="#263747">«executionEnvironment»</text>
+<text x="458" y="420" font-size="22" font-weight="600" fill="#263747">Docker · backend</text>
+<text x="458" y="448" font-size="18" font-weight="400" fill="#263747">Python 3.11 · Uvicorn :8000</text>
+<rect x="465" y="470" width="320" height="105" rx="6" fill="#f0edf8" stroke="#9ba9b6"/>
+<text x="483" y="495" font-size="15" font-weight="400" fill="#263747">«artifact»</text>
+<text x="483" y="525" font-size="22" font-weight="600" fill="#263747">FastAPI</text>
+<text x="483" y="553" font-size="18" font-weight="400" fill="#263747">src.main:app · /api/v1</text>
+<path d="M230 215 V365" fill="none" stroke="#506273" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="244" y="256" font-size="18" font-weight="400" fill="#263747">HTTP :3000</text>
+<path d="M405 165 H625 V365" fill="none" stroke="#506273" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="638" y="256" font-size="18" font-weight="400" fill="#263747">HTTP / JSON :8000</text>
+<text x="457" y="346" font-size="18" font-weight="400" fill="#263747">Hôte 8000 → container 8000</text>
+<rect x="80" y="640" width="730" height="130" rx="6" fill="#edf5ee" stroke="#9ba9b6"/>
+<text x="98" y="665" font-size="15" font-weight="400" fill="#263747">«bindMount»</text>
+<text x="98" y="695" font-size="22" font-weight="600" fill="#263747">Thư mục dữ liệu</text>
+<text x="98" y="723" font-size="18" font-weight="400" fill="#263747">./data → /app/data</text>
+<text x="99" y="754" font-size="19" font-weight="400" fill="#263747">app.db (SQLite)  ·  chroma/ (ChromaDB)  ·  attachments/</text>
+<path d="M625 580 V640" fill="none" stroke="#506273" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="639" y="616" font-size="18" font-weight="400" fill="#263747">đọc / ghi</text>
+<rect x="920" y="425" width="240" height="130" rx="6" fill="#f1f2f4" stroke="#9ba9b6"/>
+<text x="938" y="450" font-size="15" font-weight="400" fill="#263747">«externalService»</text>
+<text x="938" y="480" font-size="22" font-weight="600" fill="#263747">Google Gemini</text>
+<text x="938" y="508" font-size="18" font-weight="400" fill="#263747">API mô hình</text>
+<path d="M810 500 H920" fill="none" stroke="#506273" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+<text x="857" y="483" font-size="18" font-weight="400" fill="#263747">HTTPS</text>
+<rect x="40" y="845" width="1120" height="185" rx="6" fill="#ffffff" stroke="#9ba9b6"/>
+<text x="58" y="870" font-size="15" font-weight="400" fill="#263747">«device»</text>
+<text x="58" y="900" font-size="22" font-weight="600" fill="#263747">Máy chạy demo độc lập</text>
+<rect x="80" y="915" width="250" height="100" rx="6" fill="#eaf2fb" stroke="#9ba9b6"/>
+<text x="98" y="940" font-size="15" font-weight="400" fill="#263747">«executionEnvironment»</text>
+<text x="98" y="970" font-size="22" font-weight="600" fill="#263747">Trình duyệt</text>
+<rect x="435" y="915" width="330" height="100" rx="6" fill="#edf1f5" stroke="#9ba9b6"/>
+<text x="453" y="940" font-size="15" font-weight="400" fill="#263747">«executionEnvironment»</text>
+<text x="453" y="970" font-size="22" font-weight="600" fill="#263747">Python HTTP server</text>
+<text x="453" y="998" font-size="18" font-weight="400" fill="#263747">demo/app.py · :8765</text>
+<rect x="870" y="915" width="250" height="100" rx="6" fill="#edf5ee" stroke="#9ba9b6"/>
+<text x="888" y="940" font-size="15" font-weight="400" fill="#263747">«artifact»</text>
+<text x="888" y="970" font-size="22" font-weight="600" fill="#263747">SQLite demo</text>
+<text x="888" y="998" font-size="18" font-weight="400" fill="#263747">demo/data/demo.db</text>
+<path d="M330 969 H435" fill="none" stroke="#506273" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="348" y="952" font-size="18" font-weight="400" fill="#263747">HTTP</text>
+<path d="M765 969 H870" fill="none" stroke="#506273" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="779" y="952" font-size="18" font-weight="400" fill="#263747">đọc / ghi</text>
+<text x="40" y="1070" font-size="18" font-weight="400" fill="#263747">Nét đứt: gọi Gemini khi có cấu hình · Mũi tên: bên sử dụng → bên cung cấp</text>
+<text x="40" y="1100" font-size="18" font-weight="400" fill="#263747">Demo tách biệt với ứng dụng chính · Không giả định cloud, proxy hoặc database server riêng</text>
+</g>
+</svg>
