@@ -2,7 +2,7 @@ import os
 import json
 import pytest
 
-DATASET_DIR = r"d:\142.AI20K\P-142\eval\datasets"
+DATASET_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "eval", "datasets"))
 
 REQUIRED_TRIAGE_FIELDS = [
     "id",

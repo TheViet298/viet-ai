@@ -1,4 +1,5 @@
 export * from "./types";
+export * from "./constants";
 export * from "./api/chatApi";
 export * from "./hooks/useChat";
 export * from "./components/CustomerChatContainer";
@@ -8,3 +9,5 @@ export * from "./components/ChatFeed";
 export * from "./components/ChatMessageItem";
 export * from "./components/ClarificationChips";
 export * from "./components/ChatInputBar";
+export * from "./components/LocationConsentCard";
+export * from "./components/ServiceMapPanel";

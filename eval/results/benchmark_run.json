@@ -1,6 +1,6 @@
 {
   "metrics": {
-    "timestamp": "2026-09-30T20:20:33.357473",
+    "timestamp": "2026-10-03T20:12:20.340903",
     "total_triage_test_cases": 30,
     "intent_accuracy": 80.0,
     "critical_recall": 100.0,
@@ -9,7 +9,7 @@
     "total_rag_test_cases": 15,
     "rag_grounded_rate_topk": 100.0,
     "no_source_compliance": 100.0,
-    "average_response_latency_sec": 1.31,
+    "average_response_latency_sec": 7.85,
     "safety_critical_recall": 100.0
   },
   "triage_details": [
@@ -411,12 +411,11 @@
       "expected_type": "faq_answer",
       "actual_has_citations": true,
       "retrieved_sources": [
-        "SRC-002",
-        "SRC-002"
+        "SRC-001"
       ],
-      "latency_seconds": 4.17,
+      "latency_seconds": 5.73,
       "passed": true,
-      "reply_sample": "Dạ theo thông tin chính thức từ **Chính sách bảo hành xe ô tô VinFast** (Mục: *Tổng quan*):\n\nnh sách bảo hành xe có thời"
+      "reply_sample": "Xin chào Quý khách, em là Trợ lý AI Dịch vụ Khách hàng VinFast. Em rất vui được hỗ trợ Quý khách!\n\nVề thắc mắc của Quý k"
     },
     {
       "id": "RAG-002",
@@ -424,12 +423,11 @@
       "expected_type": "faq_answer",
       "actual_has_citations": true,
       "retrieved_sources": [
-        "SRC-002",
-        "SRC-002"
+        "SRC-001"
       ],
-      "latency_seconds": 1.87,
+      "latency_seconds": 3.95,
       "passed": true,
-      "reply_sample": "Dạ theo thông tin chính thức từ **Chính sách bảo hành xe ô tô VinFast** (Mục: *Tổng quan*):\n\nnh chống trên) được bảo hàn"
+      "reply_sample": "Xin chào Quý khách, em là Trợ lý ảo VinFast.\n\nHiện tại, trong tài liệu chính thức của em chưa có thông tin về thời hạn b"
     },
     {
       "id": "RAG-003",
@@ -437,12 +435,11 @@
       "expected_type": "faq_answer",
       "actual_has_citations": true,
       "retrieved_sources": [
-        "SRC-001",
-        "SRC-001"
+        "SRC-002"
       ],
-      "latency_seconds": 1.65,
+      "latency_seconds": 6.65,
       "passed": true,
-      "reply_sample": "Dạ theo thông tin chính thức từ **Hướng dẫn sử dụng ứng dụng VinFast** (Mục: *Tổng quan*):\n\nể đặt lịch bảo dưỡng, người "
+      "reply_sample": "Xin chào Quý khách! Em là Trợ lý AI Dịch vụ Khách hàng VinFast. Em rất vui được hỗ trợ Quý khách giải đáp thắc mắc về cá"
     },
     {
       "id": "RAG-004",
@@ -450,12 +447,11 @@
       "expected_type": "faq_answer",
       "actual_has_citations": true,
       "retrieved_sources": [
-        "SRC-008",
-        "SRC-008"
+        "SRC-007"
       ],
-      "latency_seconds": 1.23,
+      "latency_seconds": 9.35,
       "passed": true,
-      "reply_sample": "Dạ theo thông tin chính thức từ **Sổ tay hướng dẫn sử dụng VinFast VF 5 (Chính thức)** (Mục: *Màn hình điều khiển xe*):\n"
+      "reply_sample": "Xin chào Quý khách! Em là Trợ lý dịch vụ khách hàng VinFast. \n\nTheo tài liệu thông số kỹ thuật chính thức của VinFast:\n*"
     },
     {
       "id": "RAG-005",
@@ -463,12 +459,11 @@
       "expected_type": "faq_answer",
       "actual_has_citations": true,
       "retrieved_sources": [
-        "SRC-007",
         "SRC-007"
       ],
-      "latency_seconds": 1.97,
+      "latency_seconds": 6.39,
       "passed": true,
-      "reply_sample": "Dạ theo thông tin chính thức từ **Sổ tay hướng dẫn sử dụng VinFast VF 8 (Chính thức)** (Mục: *Sửa chữa*):\n\nkhuyến cáo củ"
+      "reply_sample": "Xin chào Quý khách, em là Trợ lý AI Dịch vụ Khách hàng VinFast. \n\nHiện tại, trong tài liệu chính thức của em chưa có thô"
     },
     {
       "id": "RAG-006",
@@ -476,12 +471,11 @@
       "expected_type": "faq_answer",
       "actual_has_citations": true,
       "retrieved_sources": [
-        "SRC-006",
-        "SRC-008"
+        "SRC-001"
       ],
-      "latency_seconds": 2.05,
+      "latency_seconds": 4.81,
       "passed": true,
-      "reply_sample": "Dạ theo thông tin chính thức từ **Pin và trạm sạc xe ô tô điện VinFast** (Mục: *Tổng quan*):\n\n, Khách hàng có thể dễ dàn"
+      "reply_sample": "Xin chào Quý khách, em là Trợ lý AI Dịch vụ Khách hàng VinFast. \n\nHiện tại, tài liệu chính thức của em chưa có thông tin"
     },
     {
       "id": "RAG-007",
@@ -489,12 +483,11 @@
       "expected_type": "faq_answer",
       "actual_has_citations": true,
       "retrieved_sources": [
-        "SRC-008",
-        "SRC-007"
+        "SRC-005"
       ],
-      "latency_seconds": 2.05,
+      "latency_seconds": 35.61,
       "passed": true,
-      "reply_sample": "Dạ theo thông tin chính thức từ **Sổ tay hướng dẫn sử dụng VinFast VF 5 (Chính thức)** (Mục: *Lịch bảo dưỡng*):\n\nối điện"
+      "reply_sample": "Dạ theo thông tin chính thức từ **Cẩm nang Bảo dưỡng Định kỳ Ô tô Điện VinFast** (Mục: *Các hạng mục bảo dưỡng định kỳ 1"
     },
     {
       "id": "RAG-008",
@@ -502,12 +495,11 @@
       "expected_type": "faq_answer",
       "actual_has_citations": true,
       "retrieved_sources": [
-        "SRC-003",
-        "SRC-007"
+        "SRC-003"
       ],
-      "latency_seconds": 1.1,
+      "latency_seconds": 5.86,
       "passed": true,
-      "reply_sample": "Dạ theo thông tin chính thức từ **Thông tin cứu hộ và cứu hộ pin 24/7** (Mục: *Tổng quan*):\n\nkhẩn cấp (eCall)*\nAn tâm mọ"
+      "reply_sample": "Chào Quý khách, em là Trợ lý AI Dịch vụ Khách hàng VinFast. \n\nHiện tại, tài liệu chính thức của em chưa có thông tin chi"
     },
     {
       "id": "RAG-009",
@@ -515,12 +507,11 @@
       "expected_type": "faq_answer",
       "actual_has_citations": true,
       "retrieved_sources": [
-        "SRC-007",
-        "SRC-008"
+        "SRC-002"
       ],
-      "latency_seconds": 1.91,
+      "latency_seconds": 5.44,
       "passed": true,
-      "reply_sample": "Dạ theo thông tin chính thức từ **Sổ tay hướng dẫn sử dụng VinFast VF 8 (Chính thức)** (Mục: *Điều hòa*):\n\nều chỉnh nhiệ"
+      "reply_sample": "Xin chào Quý khách! Em là Trợ lý AI Dịch vụ Khách hàng VinFast.\n\nRất tiếc, hiện tại tài liệu hướng dẫn chính thức của em"
     },
     {
       "id": "RAG-010",
@@ -528,12 +519,11 @@
       "expected_type": "faq_answer",
       "actual_has_citations": true,
       "retrieved_sources": [
-        "SRC-008",
-        "SRC-008"
+        "SRC-001"
       ],
-      "latency_seconds": 1.67,
+      "latency_seconds": 33.9,
       "passed": true,
-      "reply_sample": "Dạ theo thông tin chính thức từ **Sổ tay hướng dẫn sử dụng VinFast VF 5 (Chính thức)** (Mục: *VinFast eStore*):\n\nhiệu di"
+      "reply_sample": "Dạ theo thông tin chính thức từ **Chính sách Bảo hành Ô tô Điện VinFast** (Mục: *Thời hạn bảo hành Pin cao áp*):\n\nVinFas"
     },
     {
       "id": "RAG-011",

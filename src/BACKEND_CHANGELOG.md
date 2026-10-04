@@ -4,7 +4,7 @@ Tài liệu này ghi nhận toàn bộ quá trình chuẩn hóa Backend, cơ s�
 
 ---
 
-## 📍 Vị trí tài liệu
+## Vị trí tài liệu
 File được đặt trực tiếp tại: **`src/BACKEND_CHANGELOG.md`**
 
 ---

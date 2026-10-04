@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChatMessage, VehicleModel } from "../types";
+import { ChatMessage, Citation, VehicleModel } from "../types";
 import { sendChatMessage } from "../api/chatApi";
 
 export const INITIAL_WELCOME_MESSAGE: ChatMessage = {
@@ -112,16 +112,95 @@ export function useChat() {
         await new Promise((resolve) => setTimeout(resolve, 400 - elapsed));
       }
 
+      // Rich fallback response for smooth testing and demonstration
+      let fallbackContent = `Dạ em đã ghi nhận thông tin về xe ${selectedModel}. Theo cẩm nang kỹ thuật VinFast, khi gặp tình huống này anh/chị nên kiểm tra kết nối súng sạc và quan sát đèn chỉ báo trên táp-lô.`;
+      let fallbackCitations: Citation[] | undefined = undefined;
+      let fallbackGuidance: string | undefined = undefined;
+      let fallbackReplies = ["Mã lỗi CC01, trụ P02", "Đèn trụ nháy đỏ", "Xe dừng hẳn, an toàn"];
+
+      let isCrit = false;
+
+      if (textToSend.toLowerCase().includes("cao tốc") || textToSend.toLowerCase().includes("mất phanh") || textToSend.toLowerCase().includes("cứu hộ")) {
+        isCrit = true;
+        setCriticalBanner(true);
+        fallbackContent = `Đội cứu hộ phản ứng nhanh 24/7 và Cố vấn VinFast đã được thông báo ở mức ưu tiên cao nhất. Anh/chị hãy bật ngay đèn cảnh báo hazard, rời khỏi xe và đứng sau hộ lan an toàn cao tốc.`;
+        fallbackCitations = [
+          {
+            source_id: "SRC-EMERGENCY-01",
+            title: "Quy trình xử lý sự cố khẩn cấp trên đường cao tốc — Sổ tay VinFast",
+            url: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-va-cuu-ho-xe-dien",
+          },
+        ];
+        fallbackReplies = ["Đã vào làn an toàn", "Xem bản đồ cứu hộ ›", "Gọi 1900-232389"];
+      } else if (textToSend.toLowerCase().includes("bảo dưỡng") || textToSend.toLowerCase().includes("12.000km")) {
+        fallbackContent = `Cấp bảo dưỡng 12.000km cho xe ${selectedModel} bao gồm kiểm tra hệ thống pin cao áp, độ mòn phanh và nâng cấp phần mềm ECU. Anh/chị nên đặt hẹn trước để xưởng chuẩn bị sẵn vật tư.`;
+        fallbackCitations = [
+          {
+            source_id: "SRC-MAINT-12K",
+            title: "Cẩm nang bảo dưỡng định kỳ xe điện VinFast — Mục 3.1",
+            url: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-va-cuu-ho-xe-dien",
+          },
+        ];
+        fallbackReplies = ["Xem danh sách xưởng", "Đặt hẹn xưởng gần nhất", "Chi phí ước tính"];
+      } else if (
+        textToSend.toLowerCase().includes("sạc") ||
+        textToSend.toLowerCase().includes("cc01") ||
+        textToSend.toLowerCase().includes("trụ") ||
+        textToSend.toLowerCase().includes("không vào điện")
+      ) {
+        fallbackContent = `Lỗi CC01 thường do súng sạc chưa khớp ngàm hoặc timeout giao tiếp BMS. Anh/chị bấm nút dừng sạc trên màn hình xe (hoặc bấm mở khóa cửa 2 lần) rồi cắm lại súng dứt khoát.`;
+        fallbackCitations = [
+          {
+            source_id: "SRC-DC-CC01",
+            title: "Sổ tay sạc nhanh DC VinFast — Mục 4.2 Xử lý mã CC01",
+            url: "https://vinfastauto.com/vn_vi/chinh-sach-va-bieu-phi-sac-pin-cong-cong",
+          },
+        ];
+        fallbackReplies = ["Xem bản đồ trạm sạc ›", "Mã lỗi CC01, trụ P02", "Đèn trụ nháy đỏ"];
+      } else if (textToSend.toLowerCase().includes("rùa vàng")) {
+        isCrit = true;
+        setCriticalBanner(true);
+        fallbackContent = `Biểu tượng Con Rùa Vàng (Turtle Mode) kích hoạt để bảo vệ pin khi dung lượng dưới 10% hoặc nhiệt độ pin tăng cao. Anh/chị vui lòng giảm tốc độ, tắt bớt điều hòa và di chuyển vào trạm sạc hoặc vị trí an toàn gần nhất.`;
+        fallbackCitations = [
+          {
+            source_id: "SRC-TURTLE-WARN",
+            title: "Sổ tay an toàn vận hành xe điện VinFast — Chương 6",
+            url: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-va-cuu-ho-xe-dien",
+          },
+        ];
+        fallbackReplies = ["Đã vào làn an toàn", "Xem bản đồ cứu hộ ›", "Tìm trạm sạc gần nhất"];
+      }
+
+      // Tạo mã Case ID động theo từng phiên chat thật (không fix cứng ngày tháng cũ)
+      const shouldCreateCase =
+        textToSend.toLowerCase().includes("sạc") ||
+        textToSend.toLowerCase().includes("rùa vàng") ||
+        textToSend.toLowerCase().includes("cao tốc") ||
+        textToSend.toLowerCase().includes("cứu hộ") ||
+        textToSend.toLowerCase().includes("mất phanh");
+
+      let assignedCaseId: string | undefined = undefined;
+      if (shouldCreateCase) {
+        if (currentCaseId) {
+          assignedCaseId = currentCaseId;
+        } else {
+          const nowStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+          const rand = Math.floor(100 + Math.random() * 900);
+          assignedCaseId = `CASE-${nowStr}-${rand}`;
+          setCurrentCaseId(assignedCaseId);
+        }
+      }
+
       const fallbackMsg: ChatMessage = {
         id: `mock_${Date.now()}`,
         sender: "AGENT",
-        content: `Dạ em đã ghi nhận thông tin sự cố của xe ${selectedModel}. Hệ thống đang kết nối đến máy chủ trung tâm để phân loại và làm rõ.`,
+        content: fallbackContent,
         timestamp: new Date().toISOString(),
-        suggested_replies: [
-          "Mã lỗi CC01, trụ P02",
-          "Đèn trụ nháy đỏ",
-          "Xe dừng hẳn, an toàn",
-        ],
+        citations: fallbackCitations,
+        safe_guidance: fallbackGuidance,
+        suggested_replies: fallbackReplies,
+        case_id: assignedCaseId,
+        priority: isCrit ? "CRITICAL" : undefined,
       };
       setMessages((prev) => [...prev, fallbackMsg]);
     } finally {

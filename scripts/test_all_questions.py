@@ -8,7 +8,7 @@ import time
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
 sys.stdout.reconfigure(encoding='utf-8')
 
-PROJECT_ROOT = r"d:\142.AI20K\P-142"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
 from src.agents.chatbot_agent import process_chat_message

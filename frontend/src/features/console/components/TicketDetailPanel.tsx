@@ -10,6 +10,7 @@ import {
   Clock,
   Send,
   CheckCircle2,
+  AlertCircle,
   AlertTriangle,
   XCircle,
   Car,
@@ -275,8 +276,15 @@ export function TicketDetailPanel({
   const [isEditingBrief, setIsEditingBrief] = useState(false);
   const [editedSummary, setEditedSummary] = useState("");
   const [notes, setNotes] = useState("");
-  const [selectedDept, setSelectedDept] = useState("Charging Operations");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
+
+  // Accordion state for workshop suggested action (collapsed by default as requested)
+  const [isProposalOpen, setIsProposalOpen] = useState(false);
+
+  // Routing selection state
+  const [selectedDept, setSelectedDept] = useState("Charging Operations");
+  const [expandedOtherDeptId, setExpandedOtherDeptId] = useState<string | null>(null);
 
   // Active detail data
   const [ticketDetail, setTicketDetail] = useState<TicketDetail>(() => {
@@ -318,7 +326,37 @@ export function TicketDetailPanel({
     );
   });
 
-  // When ticket prop changes, sync detail
+  // Calculate AI Recommended Routing Department & Rationale
+  const recommendedDept = (() => {
+    if (ticket.priority === "CRITICAL") {
+      return ROUTING_DEPARTMENTS.find((d) => d.id === "emergency_demo") || ROUTING_DEPARTMENTS[4];
+    }
+    if (ticket.intent === "Charging/Battery") {
+      return ROUTING_DEPARTMENTS.find((d) => d.id === "charging_ops") || ROUTING_DEPARTMENTS[0];
+    }
+    if (ticket.intent === "Complaint/Feedback" || ticket.intent === "Complaint") {
+      return ROUTING_DEPARTMENTS.find((d) => d.id === "customer_care") || ROUTING_DEPARTMENTS[2];
+    }
+    if (ticket.intent === "Sales/General Info" || ticket.intent === "Sales") {
+      return ROUTING_DEPARTMENTS.find((d) => d.id === "sales_advisor") || ROUTING_DEPARTMENTS[3];
+    }
+    return ROUTING_DEPARTMENTS.find((d) => d.id === "service_center") || ROUTING_DEPARTMENTS[1];
+  })();
+
+  const aiRationale = (() => {
+    if (ticket.priority === "CRITICAL") {
+      return "Sự cố khẩn cấp trên tuyến cao tốc, cần đội phản ứng nhanh 24/7 kích hoạt xe cứu hộ.";
+    }
+    if (ticket.intent === "Charging/Battery") {
+      return "Lỗi handshake cổng sạc DC CC01, cần chuyên viên trạm sạc kiểm tra module từ xa.";
+    }
+    if (ticket.intent === "Complaint/Feedback" || ticket.intent === "Complaint") {
+      return "Phản ánh dịch vụ cần chuyên viên CSKH liên hệ xử lý trực tiếp.";
+    }
+    return "Cảnh báo đèn táp-lô cần kỹ thuật viên xưởng kết nối cổng OBD-II kiểm tra.";
+  })();
+
+  // When ticket prop changes, sync detail & default selected dept
   useEffect(() => {
     const existing = DETAILED_TICKETS_MAP[ticket.id];
     if (existing) {
@@ -362,7 +400,15 @@ export function TicketDetailPanel({
       setEditedSummary(`Hồ sơ sự cố tiếp nhận cho xe ${ticket.vehicle_model}.`);
     }
     setIsEditingBrief(false);
-  }, [ticket.id]);
+    setSelectedDept(recommendedDept.name);
+    setExpandedOtherDeptId(null);
+  }, [ticket.id, recommendedDept.name]);
+
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(ticket.id);
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 2000);
+  };
 
   const handleSaveBrief = () => {
     setTicketDetail((prev) => ({
@@ -405,133 +451,190 @@ export function TicketDetailPanel({
   };
 
   const isCritical = ticket.priority === "CRITICAL";
+  const otherDepts = ROUTING_DEPARTMENTS.filter((d) => d.id !== recommendedDept.id);
+
+  // Structured key-value parameter rows
+  const captured = ticketDetail.case_brief.captured_fields || {};
+  const parameterRows = [
+    {
+      label: "Dòng xe",
+      value: captured.vehicle_model || ticket.vehicle_model,
+      isWarning: false,
+    },
+    {
+      label: "Vị trí",
+      value: captured.station_location || "Đang xác minh tọa độ",
+      isWarning: !captured.station_location,
+    },
+    {
+      label: "Dung lượng pin (SoC)",
+      value: captured.current_soc || "Chưa rõ",
+      isWarning: String(captured.current_soc || "").includes("< 10%") || String(captured.current_soc || "").includes("Chưa rõ"),
+    },
+    {
+      label: "Mã lỗi kỹ thuật",
+      value: captured.error_code || "Chưa ghi nhận mã DTC",
+      isWarning: String(captured.error_code || "").includes("Chưa rõ") || String(captured.error_code || "").includes("Chưa ghi nhận"),
+      isAlert: String(captured.error_code || "").includes("TURTLE") || String(captured.error_code || "").includes("CC01"),
+    },
+    {
+      label: "Chia sẻ vị trí GPS",
+      value: captured.location_consent || "Chưa bật chia sẻ vị trí",
+      isWarning: String(captured.location_consent || "").includes("Chưa bật"),
+    },
+  ];
+
+  // Optional extra parameters if present (e.g. charger_id, safe_status)
+  if (captured.charger_id) {
+    parameterRows.push({
+      label: "Trụ sạc / Cổng kết nối",
+      value: captured.charger_id,
+      isWarning: false,
+    });
+  }
+  if (captured.safe_status) {
+    parameterRows.push({
+      label: "Tình trạng an toàn",
+      value: captured.safe_status,
+      isWarning: false,
+    });
+  }
 
   return (
-    <div className="bg-white border border-[#E2E8F0] rounded-2xl shadow-xs flex flex-col h-[calc(100vh-175px)] overflow-hidden">
+    <div
+      key={ticket.id}
+      className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col h-[calc(100vh-140px)] overflow-hidden transition-all duration-150"
+    >
       {/* ─────────────────────────────────────────────────────────────
-          1. STICKY DETAIL HEADER (Tối đa text-xl, phân cấp rõ ràng)
+          1. STICKY DETAIL HEADER: 1 NÚT CHÍNH ĐẶC, CÒN LẠI HẠ CẤP
+             Tiêu đề trọng tâm 18-20px, mã case nhỏ, thanh hành động sticky
       ───────────────────────────────────────────────────────────── */}
-      <div className="p-4 border-b border-[#E2E8F0] bg-white space-y-3 shrink-0">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-mono text-base sm:text-lg font-bold text-[#0F172A] flex items-center gap-1.5">
-                {isCritical && <Flame className="w-4 h-4 text-[#DC2626]" />}
-                {ticket.id}
-              </span>
-              <span
-                className={`px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-                  isCritical
-                    ? "bg-[#FEF2F2] text-[#DC2626] border border-[#DC2626]/30"
-                    : ticket.priority === "HIGH"
-                    ? "bg-[#FFFBEB] text-[#D97706] border border-[#D97706]/30"
-                    : "bg-[#EFF3FC] text-[#1E40AF] border border-[#1E40AF]/20"
-                }`}
-              >
-                {ticket.priority}
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#F1F5F9] text-[#475569] border border-[#E2E8F0]">
-                {ticket.status}
-              </span>
-            </div>
+      <div className="sticky top-0 z-10 bg-white border-b border-slate-100 p-4 space-y-3 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+          {/* Main Case Title & Subtitle */}
+          <div className="space-y-1.5 min-w-0 flex-1">
+            <h2 className="text-[18px] sm:text-[19px] font-bold text-slate-900 leading-snug">
+              {ticket.issue_summary || ticketDetail.case_brief.summary}
+            </h2>
 
-            <div className="flex items-center gap-2 text-[12px] text-[#64748B] mt-1 flex-wrap">
-              <span className="flex items-center gap-1 font-semibold text-[#0F172A]">
-                <Car className="w-3.5 h-3.5 text-[#1E40AF]" />
-                {ticket.vehicle_model}
-              </span>
-              <span>•</span>
+            {/* Subtitle: 003 · VF5 · CUST · Status */}
+            <div className="flex items-center gap-2 text-[12px] text-slate-500 flex-wrap">
+              <button
+                type="button"
+                onClick={handleCopyId}
+                className="font-mono text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded inline-flex items-center gap-1 transition group"
+                title="Sao chép mã hồ sơ"
+              >
+                <span>{ticket.id}</span>
+                {copiedId ? (
+                  <Check className="w-3 h-3 text-emerald-600" />
+                ) : (
+                  <span className="text-[10px] text-slate-400 group-hover:text-slate-600">copy</span>
+                )}
+              </button>
+              <span>·</span>
+              <span className="font-medium text-slate-700">{ticket.vehicle_model}</span>
+              <span>·</span>
               <span>
-                Khách: <strong className="font-mono text-[#0F172A]">{ticket.mock_customer_id}</strong>
+                Khách: <strong className="font-mono text-slate-700">{ticket.mock_customer_id}</strong>
               </span>
-              <span>•</span>
-              <span>
-                Ý định: <strong className="text-[#0F172A]">{ticket.intent}</strong>
+              <span>·</span>
+              <span className="inline-flex items-center gap-1.5 font-medium">
+                <span
+                  className={`w-2 h-2 rounded-full ${isCritical
+                      ? "bg-red-500 animate-pulse"
+                      : ticket.priority === "HIGH"
+                        ? "bg-amber-500"
+                        : "bg-blue-500"
+                    }`}
+                />
+                <span className="text-slate-700">{ticket.status}</span>
               </span>
             </div>
           </div>
 
-          {/* Quick Action Buttons on Top Bar */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Quick Action Buttons: 1 Nút Chính Đặc duy nhất, các nút còn lại viền mảnh */}
+          <div className="flex items-center gap-2 shrink-0 pt-0.5">
+            {/* Nút Chính Đặc */}
             <button
               type="button"
               disabled={isSubmitting}
               onClick={() =>
                 executeStaffAction(
-                  "Duyệt Phương Án & Chuyển Xưởng",
+                  "Duyệt phương án & chuyển xưởng",
                   "APPROVE",
                   "In Progress"
                 )
               }
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[12px] font-semibold transition shadow-xs disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[12.5px] font-semibold transition shadow-xs active:scale-[0.98] disabled:opacity-50"
             >
               {isSubmitting ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
                 <CheckCircle2 className="w-3.5 h-3.5" />
               )}
-              <span>Duyệt & Điều Phối</span>
+              <span>Duyệt & Điều phối</span>
             </button>
 
+            {/* Nút Viền Mảnh: Cần thêm tin */}
             <button
               type="button"
               disabled={isSubmitting}
               onClick={() =>
                 executeStaffAction(
-                  "Yêu Cầu Thêm Thông Tin",
+                  "Yêu cầu thêm thông tin",
                   "REQUEST_INFO",
                   "Needs Information"
                 )
               }
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-[#E2E8F0] bg-white hover:bg-[#F8FAFC] text-[#475569] text-[12px] font-medium transition disabled:opacity-50"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[12px] font-medium transition active:scale-[0.98] disabled:opacity-50"
             >
-              <AlertTriangle className="w-3.5 h-3.5 text-[#D97706]" />
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
               <span className="hidden sm:inline">Cần thêm tin</span>
             </button>
 
+            {/* Nút Viền Mảnh: Giải quyết */}
             <button
               type="button"
               disabled={isSubmitting}
               onClick={() =>
                 executeStaffAction("Hoàn tất giải quyết (Resolved)", "RESOLVE", "Resolved")
               }
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#059669] text-[12px] font-semibold transition border border-[#10B981]/20 disabled:opacity-50"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 text-slate-700 text-[12px] font-medium transition active:scale-[0.98] disabled:opacity-50"
             >
-              <Check className="w-3.5 h-3.5" />
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
               <span className="hidden sm:inline">Giải quyết</span>
             </button>
           </div>
         </div>
 
         {/* ─────────────────────────────────────────────────────────────
-            2. SUB-TABS NAVIGATION (Pills phân định 3 khu vực nội dung)
+            SUB-TABS NAVIGATION (Sentence case, clean tabs)
         ───────────────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-1.5 border-t border-[#F1F5F9] pt-2.5">
+        <div className="flex items-center gap-1.5 pt-1">
           <button
             type="button"
             onClick={() => setDetailTab("brief")}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition ${
-              detailTab === "brief"
-                ? "bg-[#EFF3FC] text-[#1E40AF] border border-[#1E40AF]/20"
-                : "text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
-            }`}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition ${detailTab === "brief"
+                ? "bg-[#EFF3FC] text-[#1E40AF] font-semibold"
+                : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+              }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Hồ sơ sự cố (Case Brief)</span>
+            <span>Hồ sơ sự cố</span>
           </button>
 
           <button
             type="button"
             onClick={() => setDetailTab("chat")}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition ${
-              detailTab === "chat"
-                ? "bg-[#EFF3FC] text-[#1E40AF] border border-[#1E40AF]/20"
-                : "text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
-            }`}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition ${detailTab === "chat"
+                ? "bg-[#EFF3FC] text-[#1E40AF] font-semibold"
+                : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+              }`}
           >
             <MessageSquare className="w-3.5 h-3.5" />
             <span>Nhật ký hội thoại</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-[#E2E8F0] text-[#475569] text-[10px]">
+            <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 text-[10px]">
               {ticketDetail.conversation_history.length}
             </span>
           </button>
@@ -539,20 +642,19 @@ export function TicketDetailPanel({
           <button
             type="button"
             onClick={() => setDetailTab("dispatch")}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition ${
-              detailTab === "dispatch"
-                ? "bg-[#EFF3FC] text-[#1E40AF] border border-[#1E40AF]/20"
-                : "text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
-            }`}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition ${detailTab === "dispatch"
+                ? "bg-[#EFF3FC] text-[#1E40AF] font-semibold"
+                : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+              }`}
           >
             <GitBranch className="w-3.5 h-3.5" />
-            <span>Điều phối xưởng & Ghi chú</span>
+            <span>Điều phối xưởng</span>
           </button>
         </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          3. SCROLLABLE TAB CONTENT AREA
+          2. SCROLLABLE TAB CONTENT AREA
       ───────────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
         {/* =========================================================
@@ -560,118 +662,168 @@ export function TicketDetailPanel({
         ========================================================= */}
         {detailTab === "brief" && (
           <div className="space-y-4">
-            {/* AI Summary Card */}
-            <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 space-y-3">
-              <div className="flex items-center justify-between">
+            {/* Tóm tắt sự cố bởi AI - Nền phẳng, sentence case */}
+            <div className="rounded-xl bg-slate-50/80 p-3.5 space-y-2 group">
+              <div className="flex items-center justify-between text-[12px]">
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#1E40AF] flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5" /> AI Case Brief (Chuẩn Hóa)
+                  <span className="font-semibold text-slate-800 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#1E40AF]" />
+                    Tóm tắt sự cố bởi AI
                   </span>
                   {ticketDetail.case_brief.is_edited_by_staff && (
-                    <span className="text-[10px] font-semibold text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full border border-[#10B981]/20">
-                      Staff đã hiệu chỉnh
+                    <span className="text-[10px] text-[#059669] bg-[#ECFDF5] px-2 py-0.5 rounded-full font-medium">
+                      Đã hiệu chỉnh
                     </span>
                   )}
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-[#059669] font-medium bg-[#ECFDF5] px-2.5 py-0.5 rounded-full border border-[#10B981]/20">
-                    Độ tin cậy: {Math.round((ticketDetail.case_brief.confidence_score || 0.85) * 100)}%
+                  <span className="text-[11px] text-slate-500">
+                    Độ tin cậy: <strong className="text-emerald-700 font-semibold">{Math.round((ticketDetail.case_brief.confidence_score || 0.85) * 100)}%</strong>
                   </span>
 
                   {!isEditingBrief && (
                     <button
                       type="button"
                       onClick={() => setIsEditingBrief(true)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-[#1E40AF] hover:bg-[#EFF3FC] border border-[#1E40AF]/20 transition"
+                      className="opacity-70 group-hover:opacity-100 inline-flex items-center gap-1 text-[11px] font-medium text-[#1E40AF] hover:underline transition"
                     >
                       <Edit3 className="w-3 h-3" />
-                      <span>Sửa Brief</span>
+                      <span>Sửa</span>
                     </button>
                   )}
                 </div>
               </div>
 
               {isEditingBrief ? (
-                <div className="space-y-2.5">
+                <div className="space-y-2 pt-1">
                   <textarea
                     value={editedSummary}
                     onChange={(e) => setEditedSummary(e.target.value)}
                     rows={3}
-                    className="w-full text-[13px] p-3 rounded-xl border border-[#CBD5E1] bg-white text-[#0F172A] leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20"
+                    className="w-full text-[13px] p-2.5 rounded-lg border border-slate-300 bg-white text-slate-900 leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20"
                     placeholder="Chỉnh sửa nội dung tóm tắt sự cố..."
                   />
                   <div className="flex justify-end gap-2">
                     <button
                       type="button"
                       onClick={handleCancelBrief}
-                      className="px-3 py-1.5 rounded-lg border border-[#E2E8F0] bg-white text-[12px] font-semibold text-[#64748B] hover:bg-[#F8FAFC]"
+                      className="px-2.5 py-1 rounded-lg text-[12px] font-medium text-slate-600 hover:bg-slate-200"
                     >
                       Hủy
                     </button>
                     <button
                       type="button"
                       onClick={handleSaveBrief}
-                      className="px-3 py-1.5 rounded-lg bg-[#059669] hover:bg-[#047857] text-white text-[12px] font-semibold"
+                      className="px-3 py-1 rounded-lg bg-[#1E40AF] text-white text-[12px] font-medium hover:bg-[#1D4ED8]"
                     >
-                      Lưu thay đổi
+                      Lưu
                     </button>
                   </div>
                 </div>
               ) : (
-                <p className="text-[13px] text-[#0F172A] leading-relaxed font-medium">
+                <p className="text-[13px] text-slate-800 leading-relaxed">
                   {ticketDetail.case_brief.summary}
                 </p>
               )}
             </div>
 
-            {/* Extracted Technical Fields Grid */}
-            <div className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
-                Dữ kiện kỹ thuật bóc tách (Extracted Parameters)
-              </span>
+            {/* ─────────────────────────────────────────────────────────────
+                THAM SỐ BÓC TÁCH: BỎ Ô, DÙNG DANH SÁCH KEY-VALUE
+                Chỉ tô nổi những mục thiếu/cần xác minh (màu vàng cam/đỏ)
+            ───────────────────────────────────────────────────────────── */}
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[12.5px] font-semibold text-slate-900">
+                  Dữ kiện kỹ thuật bóc tách
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  Trích xuất tự động từ hội thoại
+                </span>
+              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                {Object.entries(ticketDetail.case_brief.captured_fields || {}).map(([key, val]) => {
-                  const isDtc = key === "error_code";
-                  const isLocation = key.includes("location");
-
-                  return (
-                    <div
-                      key={key}
-                      className={`p-3 rounded-xl border text-[12px] transition ${
-                        isDtc
-                          ? "bg-[#FEF2F2]/60 border-[#DC2626]/30 text-[#991B1B]"
-                          : isLocation
-                          ? "bg-[#EFF3FC]/50 border-[#1E40AF]/20 text-[#1E40AF]"
-                          : "bg-white border-[#E2E8F0] text-[#0F172A]"
-                      }`}
+              <div className="rounded-xl border border-slate-100 divide-y divide-slate-100 overflow-hidden bg-white text-[13px]">
+                {parameterRows.map((row, idx) => (
+                  <div
+                    key={idx}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between py-2.5 px-3.5 hover:bg-slate-50/50 transition gap-1 sm:gap-4"
+                  >
+                    <span className="text-slate-500 text-[12.5px] sm:w-44 shrink-0 font-normal">
+                      {row.label}
+                    </span>
+                    <span
+                      className={`font-medium flex-1 sm:text-right ${row.isAlert
+                          ? "text-red-600 font-semibold flex items-center sm:justify-end gap-1.5"
+                          : row.isWarning
+                            ? "text-amber-600 font-semibold flex items-center sm:justify-end gap-1.5"
+                            : "text-slate-900"
+                        }`}
                     >
-                      <div className="flex items-center justify-between text-[#64748B] text-[10px] uppercase font-mono">
-                        <span>{key.replace(/_/g, " ")}</span>
-                        {isLocation && <MapPin className="w-3 h-3 text-[#1E40AF]" />}
-                      </div>
-                      <div className="font-semibold mt-1 text-[13px] truncate" title={String(val)}>
-                        {String(val)}
-                      </div>
-                    </div>
-                  );
-                })}
+                      {row.isAlert && <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                      {row.isWarning && !row.isAlert && (
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      )}
+                      <span>{row.value}</span>
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Suggested Action Alert Box */}
-            <div className="rounded-2xl border border-[#1E40AF]/20 bg-[#EFF3FC] p-4 flex items-start gap-3 shadow-xs">
-              <div className="w-8 h-8 rounded-xl bg-white text-[#1E40AF] flex items-center justify-center shrink-0 shadow-xs">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <div className="space-y-1 min-w-0">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#1E40AF]">
-                  Phương Án Đề Xuất Cho Xưởng Dịch Vụ
-                </span>
-                <p className="text-[13px] text-[#1E3A8A] font-medium leading-relaxed">
-                  {ticketDetail.case_brief.suggested_action}
-                </p>
+            {/* ─────────────────────────────────────────────────────────────
+                PHƯƠNG ÁN ĐỀ XUẤT CHO XƯỞNG: ACCORDION ĐÓNG SẴN
+                Tóm tắt 1 dòng khi đóng, mở/đóng 150-200ms ease-out với mũi tên xoay
+            ───────────────────────────────────────────────────────────── */}
+            <div className="pt-1">
+              <div className="rounded-xl border border-slate-100 bg-slate-50/60 overflow-hidden transition-all duration-200">
+                {/* Accordion Header (Click to toggle) */}
+                <button
+                  type="button"
+                  onClick={() => setIsProposalOpen(!isProposalOpen)}
+                  className="w-full p-3 flex items-center justify-between text-left gap-3 hover:bg-slate-100/60 transition"
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Sparkles className="w-4 h-4 text-[#1E40AF] shrink-0" />
+                    <span className="text-[12.5px] font-semibold text-slate-900 shrink-0">
+                      Phương án đề xuất cho xưởng:
+                    </span>
+                    {/* Tóm tắt 1 dòng khi đóng */}
+                    <span className="text-[12px] text-slate-500 truncate font-normal">
+                      {ticketDetail.case_brief.suggested_action}
+                    </span>
+                  </div>
+
+                  <ChevronRight
+                    className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ease-out ${isProposalOpen ? "rotate-90 text-[#1E40AF]" : ""
+                      }`}
+                  />
+                </button>
+
+                {/* Accordion Content */}
+                {isProposalOpen && (
+                  <div className="p-3.5 pt-0 border-t border-slate-100 space-y-2.5 animate-fadeIn">
+                    <p className="text-[13px] text-slate-800 leading-relaxed font-normal bg-white p-3 rounded-lg border border-slate-100">
+                      {ticketDetail.case_brief.suggested_action}
+                    </p>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNotes(
+                            (prev) =>
+                              (prev ? prev + "\n" : "") +
+                              `[Phương án đề xuất]: ${ticketDetail.case_brief.suggested_action}`
+                          );
+                          setDetailTab("dispatch");
+                          onActionComplete?.("Đã sao chép phương án vào Ghi chú điều phối!");
+                        }}
+                        className="text-[11.5px] font-medium text-[#1E40AF] hover:underline"
+                      >
+                        Chèn vào ghi chú điều phối →
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -682,12 +834,12 @@ export function TicketDetailPanel({
         ========================================================= */}
         {detailTab === "chat" && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between text-[12px] text-[#64748B] px-1">
-              <span>Nhật ký trao đổi giữa Khách hàng và Trợ lý AI</span>
+            <div className="flex items-center justify-between text-[12px] text-slate-500 px-1">
+              <span>Nhật ký trao đổi với khách hàng</span>
               <span>Được đồng bộ tự động</span>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {ticketDetail.conversation_history.map((msg, idx) => {
                 const isCust = msg.sender === "CUSTOMER";
                 const isStaff = msg.sender === "STAFF";
@@ -695,31 +847,30 @@ export function TicketDetailPanel({
                 return (
                   <div
                     key={idx}
-                    className={`p-3.5 rounded-2xl text-[13px] space-y-1.5 transition ${
-                      isCust
-                        ? "bg-[#EFF3FC] border border-[#1E40AF]/20 ml-4 sm:ml-8"
+                    className={`p-3 rounded-xl text-[13px] space-y-1 transition ${isCust
+                        ? "bg-[#EFF3FC] ml-4 sm:ml-8"
                         : isStaff
-                        ? "bg-[#F3E8FF] border border-[#7E22CE]/20 mr-4 sm:mr-8"
-                        : "bg-white border border-[#E2E8F0] mr-4 sm:mr-8 shadow-xs"
-                    }`}
+                          ? "bg-[#F3E8FF] mr-4 sm:mr-8"
+                          : "bg-slate-50 mr-4 sm:mr-8"
+                      }`}
                   >
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="flex items-center gap-1.5 font-bold">
+                      <span className="flex items-center gap-1.5 font-medium">
                         {isCust ? (
                           <span className="text-[#1E40AF] flex items-center gap-1">
                             <User className="w-3.5 h-3.5" /> Khách hàng
                           </span>
                         ) : isStaff ? (
                           <span className="text-[#7E22CE] flex items-center gap-1">
-                            <ShieldCheck className="w-3.5 h-3.5" /> Cố vấn Dịch vụ
+                            <ShieldCheck className="w-3.5 h-3.5" /> Cố vấn dịch vụ
                           </span>
                         ) : (
                           <span className="text-[#059669] flex items-center gap-1">
-                            <Bot className="w-3.5 h-3.5" /> AI Agent tiếp nhận
+                            <Bot className="w-3.5 h-3.5" /> AI Agent
                           </span>
                         )}
                       </span>
-                      <span className="text-[10px] text-[#94A3B8] font-mono">
+                      <span className="text-[10px] text-slate-400 font-mono">
                         {new Date(msg.created_at).toLocaleTimeString("vi-VN", {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -727,7 +878,7 @@ export function TicketDetailPanel({
                       </span>
                     </div>
 
-                    <p className="text-[#0F172A] leading-relaxed pl-5 font-normal">
+                    <p className="text-slate-800 leading-relaxed font-normal">
                       {msg.content}
                     </p>
                   </div>
@@ -739,42 +890,108 @@ export function TicketDetailPanel({
 
         {/* =========================================================
             SUB-TAB 3: ROUTING & DISPATCHER ACTIONS
+            Hiện 1 nhóm AI đề xuất ở trên cùng kèm lý do 1 dòng.
+            Các nhóm khác thu gọn thành danh sách tên.
         ========================================================= */}
         {detailTab === "dispatch" && (
           <div className="space-y-4">
-            <div className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
-                Chọn bộ phận chuyên trách tiếp nhận (5 Nhóm P0 Chuẩn Hóa)
+            {/* Top Recommended Group by AI */}
+            <div className="space-y-1.5">
+              <span className="text-[12.5px] font-semibold text-slate-900 block px-1">
+                Bộ phận đề xuất bởi AI
               </span>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {ROUTING_DEPARTMENTS.map((dept) => {
+              <div
+                onClick={() => setSelectedDept(recommendedDept.name)}
+                className={`cursor-pointer p-3.5 rounded-xl border transition-all ${selectedDept === recommendedDept.name
+                    ? "bg-[#EFF3FC]/70 border-[#1E40AF] ring-1 ring-[#1E40AF]"
+                    : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+                  }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#1E40AF]" />
+                    <span className="text-[13.5px] font-bold text-slate-900">
+                      {recommendedDept.name}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-blue-100 text-[#1E40AF]">
+                      {recommendedDept.badge}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-slate-500 font-mono">
+                    Phụ trách: {recommendedDept.lead.split("(")[0].trim()}
+                  </span>
+                </div>
+
+                {/* 1-line Rationale */}
+                <p className="text-[12px] text-[#1E3A8A] mt-2 font-medium bg-white/70 p-2 rounded-lg border border-blue-100">
+                  💡 Lý do đề xuất: {aiRationale}
+                </p>
+              </div>
+            </div>
+
+            {/* Other Departments: Collapsed List */}
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[12px] text-slate-500 font-medium block px-1">
+                Hoặc chọn nhóm bộ phận khác:
+              </span>
+
+              <div className="rounded-xl border border-slate-100 divide-y divide-slate-100 overflow-hidden bg-white">
+                {otherDepts.map((dept) => {
                   const isSelected = selectedDept === dept.name;
+                  const isExpanded = expandedOtherDeptId === dept.id;
 
                   return (
-                    <div
-                      key={dept.id}
-                      onClick={() => setSelectedDept(dept.name)}
-                      className={`cursor-pointer p-3.5 rounded-xl border transition-all ${
-                        isSelected
-                          ? "bg-[#EFF3FC] border-[#1E40AF] ring-2 ring-[#1E40AF]/15 shadow-xs"
-                          : "bg-white border-[#E2E8F0] hover:border-[#CBD5E1]"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[13px] font-bold text-[#0F172A]">
-                          {dept.name}
-                        </span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${dept.color}`}>
-                          {dept.badge}
-                        </span>
+                    <div key={dept.id} className="transition">
+                      <div
+                        onClick={() => {
+                          setSelectedDept(dept.name);
+                          setExpandedOtherDeptId(isExpanded ? null : dept.id);
+                        }}
+                        className={`cursor-pointer p-3 flex items-center justify-between hover:bg-slate-50 transition ${isSelected ? "bg-[#EFF3FC]/40" : ""
+                          }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <input
+                            type="radio"
+                            name="routingDept"
+                            checked={isSelected}
+                            onChange={() => {
+                              setSelectedDept(dept.name);
+                            }}
+                            className="text-[#1E40AF] focus:ring-[#1E40AF]"
+                          />
+                          <span
+                            className={`text-[13px] ${isSelected ? "font-bold text-[#1E40AF]" : "font-medium text-slate-800"
+                              }`}
+                          >
+                            {dept.name}
+                          </span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${dept.color}`}>
+                            {dept.badge}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">
+                            {dept.lead.split("(")[0].trim()}
+                          </span>
+                          <ChevronRight
+                            className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""
+                              }`}
+                          />
+                        </div>
                       </div>
-                      <p className="text-[11px] text-[#64748B] mt-1 line-clamp-2">
-                        {dept.description}
-                      </p>
-                      <div className="text-[10px] text-[#475569] mt-2 font-mono">
-                        Phụ trách: {dept.lead}
-                      </div>
+
+                      {/* Expanded description on click or select */}
+                      {isExpanded && (
+                        <div className="px-9 pb-3 text-[12px] text-slate-600 space-y-1 bg-slate-50/50 animate-fadeIn">
+                          <p>{dept.description}</p>
+                          <p className="text-[11px] text-slate-400 font-mono">
+                            Người phụ trách: {dept.lead}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -782,26 +999,26 @@ export function TicketDetailPanel({
             </div>
 
             {/* Notes Textarea */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 pt-1">
               <label
                 htmlFor="dispatch-notes-input"
-                className="block text-[11px] font-bold uppercase tracking-wider text-[#64748B]"
+                className="block text-[12px] font-semibold text-slate-700"
               >
-                Ghi chú điều phối nội bộ / Chỉ dẫn kỹ thuật viên xưởng:
+                Ghi chú điều phối gửi xưởng (tùy chọn):
               </label>
               <textarea
                 id="dispatch-notes-input"
                 rows={2}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="VD: Chuẩn bị máy chẩn đoán giao thức CAN-bus, trạm Metropolis cử nhân viên bảo trì kiểm tra trụ P02..."
-                className="w-full text-[13px] p-3 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] focus:bg-white text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20"
+                placeholder="VD: Chuẩn bị máy chẩn đoán CAN-bus, trạm Metropolis cử KTV kiểm tra trụ P02..."
+                className="w-full text-[13px] p-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20"
               />
             </div>
 
             {/* Dispatch confirmation button */}
-            <div className="pt-2 border-t border-[#E2E8F0] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              <span className="text-[12px] text-[#64748B]">
+            <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <span className="text-[12px] text-slate-500">
                 Nhóm đích: <strong className="text-[#1E40AF]">{selectedDept}</strong>
               </span>
 
@@ -815,12 +1032,12 @@ export function TicketDetailPanel({
                     "In Progress"
                   )
                 }
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[13px] font-semibold transition shadow-xs disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[12.5px] font-semibold transition shadow-xs disabled:opacity-50"
               >
                 {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
-                  <Send className="w-4 h-4" />
+                  <Send className="w-3.5 h-3.5" />
                 )}
                 <span>Xác nhận chuyển nhóm tiếp nhận</span>
               </button>

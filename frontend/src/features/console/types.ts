@@ -13,7 +13,9 @@ export type TicketIntent =
   | "Charging/Battery"
   | "Service/Incident"
   | "Sales"
-  | "Complaint";
+  | "Sales/General Info"
+  | "Complaint"
+  | "Complaint/Feedback";
 
 export interface CaseBrief {
   summary: string;

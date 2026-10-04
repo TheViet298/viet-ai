@@ -158,12 +158,29 @@ async def process_chat_message(
             llm = get_llm()
             prompt = SYSTEM_PROMPT_TEMPLATE.format(context=context_text, query=sanitized_text)
             ai_msg = await llm.ainvoke(prompt)
-            final_reply = ai_msg.content
+            raw_content = ai_msg.content
+            if isinstance(raw_content, list):
+                final_reply = "".join(
+                    block.get("text", "") if isinstance(block, dict) else getattr(block, "text", str(block))
+                    for block in raw_content
+                )
+            elif isinstance(raw_content, str):
+                final_reply = raw_content
+            else:
+                final_reply = str(raw_content)
         else:
             final_reply = extract_direct_answer_fallback(sanitized_text, context_text, citations)
     except Exception:
         # Graceful fallback: trích xuất trực tiếp
         final_reply = extract_direct_answer_fallback(sanitized_text, context_text, citations)
+
+    if isinstance(final_reply, list):
+        final_reply = "".join(
+            b.get("text", "") if isinstance(b, dict) else str(b)
+            for b in final_reply
+        )
+    elif not isinstance(final_reply, str):
+        final_reply = str(final_reply)
 
     # Bước 5: Xác định Intent và cờ Staff Review
     text_lower = user_message.lower()

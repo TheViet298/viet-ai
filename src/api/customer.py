@@ -551,6 +551,13 @@ async def customer_chat(
             "Dạ theo tài liệu chính thức từ VinFast, anh/chị có thể dễ dàng tra cứu thông tin chi tiết, "
             "quản lý tình trạng xe và đặt lịch dịch vụ trực tiếp trên Ứng dụng VinFast."
         )
+        if isinstance(agent_reply, list):
+            agent_reply = "".join(
+                b.get("text", "") if isinstance(b, dict) else getattr(b, "text", str(b))
+                for b in agent_reply
+            )
+        elif not isinstance(agent_reply, str):
+            agent_reply = str(agent_reply)
         citations = []
         if ai_res.get("citations"):
             for c in ai_res["citations"]:
@@ -752,9 +759,9 @@ async def customer_chat(
                 "(Anh/chị cũng có thể tải ảnh màn hình để em nhận diện sơ bộ)."
             )
             suggested_replies = [
-                "Trạm Landmark 81 trụ số 3, lỗi 0x41",
+                "Xem bản đồ trạm sạc ›",
                 "Mã lỗi CC01, trụ P02",
-                "Không thấy mã lỗi",
+                "Đèn trụ nháy đỏ",
             ]
 
         agent_msg = Message(

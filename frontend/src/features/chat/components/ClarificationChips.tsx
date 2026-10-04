@@ -1,3 +1,5 @@
+import { CornerDownRight } from "lucide-react";
+
 interface ClarificationChipsProps {
   chips?: string[];
   onSelectChip: (chip: string) => void;
@@ -10,14 +12,16 @@ export function ClarificationChips({
   if (!chips || chips.length === 0) return null;
 
   return (
-    <div className="mt-2.5 flex flex-wrap gap-1.5 max-w-[85%]">
+    <div className="mt-2.5 pb-2 flex flex-wrap gap-1.5 max-w-full pl-0.5 animate-fadeIn">
       {chips.map((chip, idx) => (
         <button
           key={idx}
+          type="button"
           onClick={() => onSelectChip(chip)}
-          className="text-[12px] bg-[#EFF3FC] text-[#1E40AF] hover:bg-[#1E40AF] hover:text-white border border-[#E2E8F0] rounded-full px-3 py-1 font-medium transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+          className="inline-flex items-center gap-1.5 text-[12px] bg-white hover:bg-blue-50/90 text-slate-700 hover:text-[#1E40AF] border border-slate-200/90 hover:border-blue-300 rounded-xl px-3 py-1.5 font-medium transition-all shadow-2xs active:scale-[0.98] group"
         >
-          {chip}
+          <CornerDownRight className="w-3 h-3 text-slate-400 group-hover:text-[#1E40AF] transition" />
+          <span>{chip}</span>
         </button>
       ))}
     </div>

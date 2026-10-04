@@ -105,6 +105,22 @@ Các nhận xét sau phản ánh thời điểm kiểm tra, không thay thế ti
 
 ---
 
-<!-- Format: copy block trên cho mỗi ngày làm việc -->
+## 2026-10-03 (Gate G3: Chuẩn hóa UI/UX Chat, Bản đồ Vị trí ADR-005 & Đa dạng hóa Intent Landing Page)
+
+| Member | Task | Status | Output | Time |
+|---|---|---|---|---|
+| Thế Việt | Tinh gọn giao diện Chat (`SCR-01`, `SCR-02`): Áp dụng luật "Một tin nhắn chỉ một box", bỏ box lồng box, phục hồi 70% không gian hội thoại | ✅ Done | `ChatMessageItem.tsx`, `CustomerChatContainer.tsx`, `ChatFeed.tsx` | 4h |
+| Thế Việt | Tích hợp Bản đồ Dịch vụ & Xin quyền Vị trí theo ADR-005: Docking thanh consent trên ô nhập, tính khoảng cách Haversine chính xác theo GPS, hạ độ cao map 45% hiển thị trọn vẹn nút Chỉ đường/Gọi, làm mờ ghim ngoài nhóm lọc | ✅ Done | `ServiceMapPanel.tsx`, `LocationConsentCard.tsx`, `distance.ts`, `constants.ts` | 5h |
+| Thế Việt | Tái cấu trúc Hero Section Landing Page (`SCR-05.1`): Chuyển tông giọng trung tính "Bạn cần hỗ trợ gì về xe điện?", xoay vòng placeholder 4 kịch bản, chip đa dạng 4 nhóm ý định, phân tách trạng thái Guest vs Customer | ✅ Done | `LandingPage.tsx` | 3.5h |
+| Long | Tối ưu hóa phân loại Intent & Hard Safety Guardrails: Phân định ca khẩn cấp cao tốc (kích hoạt sticky red banner) và ca thường (lỗi sạc CC01, bảo dưỡng không chiếm dụng diện tích banner) | ✅ Done | `src/agents/chatbot_agent.py`, `EmergencyAlertBanner.tsx`, `useChat.ts` | 3h |
+| Triển | Chuẩn hóa sinh mã Case ID động (`CASE-YYYYMMDD-XXX`) trên cả Backend và Frontend Mock fallback, bổ sung chip `"Xem bản đồ trạm sạc ›"` vào kịch bản làm rõ | ✅ Done | `src/api/customer.py`, `src/models/schemas.py`, `useChat.ts` | 2.5h |
+| Cả nhóm | Kiểm thử Production Build Next.js & Kiểm tra luồng liên thông giữa Chat, Bản đồ gợi ý và Landing Page | ✅ Done | `npm run build` thành công 100% (9/9 routes, 0 error, 0 lint warning) | 2h |
+
+**Tổng kết ngày:** Đã hoàn thiện toàn diện bộ giao diện người dùng theo chuẩn `screen-spec.md` (Mục 1, 2, 5.1, 5.4) và `ADR-005`:
+1. **Chat:** Triệt tiêu anti-pattern "box lồng box", cố định banner an toàn khẩn cấp 46px ngay dưới Navbar, thanh consent vị trí mỏng nhẹ không làm nghẽn luồng chat.
+2. **Bản đồ:** Tự động đồng bộ vị trí GPS thực tế, tính khoảng cách Haversine chuẩn xác, chiều cao bản đồ 45% giúp thẻ điểm hỗ trợ đầu tiên không bị che khuất nút hành động, ghim ngoài bộ lọc tự động làm mờ trực quan.
+3. **Landing Hero:** Mở rộng từ định kiến "chỉ báo lỗi" sang tiếp nhận toàn diện 3 nhóm khách (sự cố, hỏi cẩm nang/đặt lịch, khách vãng lai), dropdown dòng xe linh hoạt cho Guest và tự động điền cho Customer đã đăng nhập.
+
+---
 
 <!-- Format: copy block trên cho mỗi ngày làm việc -->

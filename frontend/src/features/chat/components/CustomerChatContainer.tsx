@@ -1,15 +1,31 @@
 "use client";
 
-import { Car, FileImage, RotateCcw, ScanLine, ShieldCheck } from "lucide-react";
-import { useState } from "react";
-import { VehicleModel } from "../types";
+import {
+  Car,
+  FileImage,
+  RotateCcw,
+  ScanLine,
+  ShieldCheck,
+  PhoneCall,
+  ArrowRight,
+  ExternalLink,
+  MapPin,
+  Map,
+  Compass,
+} from "lucide-react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { VehicleModel, UserLocationState } from "../types";
 import { useChat } from "../hooks/useChat";
 import { EmergencyAlertBanner } from "./EmergencyAlertBanner";
 import { QuickPromptsBar } from "./QuickPromptsBar";
 import { ChatFeed } from "./ChatFeed";
 import { ChatInputBar } from "./ChatInputBar";
-
+import { LocationConsentCard } from "./LocationConsentCard";
+import { ServiceMapPanel } from "./ServiceMapPanel";
+import { CHAT_SEED_SERVICE_POINTS } from "../constants";
 import { getAiSystemStatus, uploadAttachment } from "../api/chatApi";
+import { useAuth } from "@/features/shared";
 
 const VEHICLE_MODELS: VehicleModel[] = [
   "VF8",
@@ -22,6 +38,7 @@ const VEHICLE_MODELS: VehicleModel[] = [
 ];
 
 export function CustomerChatContainer() {
+  const { user, role, loginAs } = useAuth();
   const {
     messages,
     input,
@@ -34,61 +51,177 @@ export function CustomerChatContainer() {
     sendMessage,
     resetChat,
   } = useChat();
+
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
   const [uploadedAttachmentId, setUploadedAttachmentId] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
-  const [aiStatus, setAiStatus] = useState<string>("VinFast RAG Chatbot Agent • Guardrails sẵn sàng");
+  const [aiStatus, setAiStatus] = useState<string>("Trợ lý Kỹ thuật VinFast AI • Sẵn sàng 24/7");
+
+  // ===========================================================================
+  // SERVICE MAP PREVIEW & LOCATION CONSENT (ADR-005, screen-spec.md Section 5.4, CUS-03)
+  // ===========================================================================
+  const [locationState, setLocationState] = useState<UserLocationState>({
+    status: "PENDING",
+    source: "USER_TEXT",
+    label: "",
+  });
+  const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
+  const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
+  const [showLocationCard, setShowLocationCard] = useState<boolean>(false);
+  const [suggestedCategory, setSuggestedCategory] = useState<
+    "ALL" | "EXPRESSWAY_RESCUE" | "CHARGING_STATION" | "SERVICE_WORKSHOP"
+  >("ALL");
+
+  // Tự động kích hoạt Card xin vị trí khi phát hiện ca khẩn cấp hoặc đã tạo hồ sơ
+  useEffect(() => {
+    if (criticalBanner || currentCaseId) {
+      setShowLocationCard(true);
+      if (criticalBanner) {
+        setSuggestedCategory("EXPRESSWAY_RESCUE");
+      }
+    }
+  }, [criticalBanner, currentCaseId]);
 
   const handleResetAll = () => {
     resetChat();
     setImagePreview(null);
     setImageName(null);
     setUploadedAttachmentId(null);
+    setIsMapOpen(false);
+    setShowLocationCard(false);
+    setSuggestedCategory("ALL");
+    setSelectedPointId(null);
+    setLocationState({
+      status: "PENDING",
+      source: "USER_TEXT",
+      label: "",
+    });
   };
 
   // Load AI System Status from /api/v1/status
-  useState(() => {
-    if (typeof window !== "undefined") {
-      getAiSystemStatus()
-        .then((res) => {
-          if (res?.status === "ready") {
-            setAiStatus(`${res.agent} • ${res.safety_guardrails === "enabled" ? "Guardrails bảo vệ" : "Sẵn sàng"}`);
-          }
-        })
-        .catch(() => {});
-    }
-  });
+  useEffect(() => {
+    getAiSystemStatus()
+      .then((res) => {
+        if (res?.status === "ready") {
+          setAiStatus("Hệ thống Trợ lý Kỹ thuật VinFast AI • Sẵn sàng 24/7");
+        }
+      })
+      .catch(() => { });
+  }, []);
 
   // Pre-load draft from Landing Hero if available
-  useState(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const savedPrompt = sessionStorage.getItem("vf_initial_prompt");
-        const savedModel = sessionStorage.getItem("vf_initial_model");
-        const savedImg = sessionStorage.getItem("vf_initial_image");
-        const savedImgName = sessionStorage.getItem("vf_initial_image_name");
+  useEffect(() => {
+    try {
+      const savedPrompt = sessionStorage.getItem("vf_initial_prompt");
+      const savedModel = sessionStorage.getItem("vf_initial_model");
+      const savedImg = sessionStorage.getItem("vf_initial_image");
+      const savedImgName = sessionStorage.getItem("vf_initial_image_name");
 
-        if (savedPrompt) {
-          setInput(savedPrompt);
-          sessionStorage.removeItem("vf_initial_prompt");
+      if (savedPrompt) {
+        setInput(savedPrompt);
+        sessionStorage.removeItem("vf_initial_prompt");
+      }
+      if (savedModel) {
+        const cleanModel = savedModel.replace("VinFast ", "") as VehicleModel;
+        if (VEHICLE_MODELS.includes(cleanModel)) {
+          setSelectedModel(cleanModel);
         }
-        if (savedModel) {
-          const cleanModel = savedModel.replace("VinFast ", "") as VehicleModel;
-          if (VEHICLE_MODELS.includes(cleanModel)) {
-            setSelectedModel(cleanModel);
-          }
-          sessionStorage.removeItem("vf_initial_model");
-        }
-        if (savedImg) {
-          setImagePreview(savedImg);
-          setImageName(savedImgName || "anh_canh_bao.jpg");
-          sessionStorage.removeItem("vf_initial_image");
-          sessionStorage.removeItem("vf_initial_image_name");
-        }
-      } catch {}
+        sessionStorage.removeItem("vf_initial_model");
+      }
+      if (savedImg) {
+        setImagePreview(savedImg);
+        setImageName(savedImgName || "anh_canh_bao.jpg");
+        sessionStorage.removeItem("vf_initial_image");
+        sessionStorage.removeItem("vf_initial_image_name");
+      }
+    } catch { }
+  }, [setInput, setSelectedModel]);
+
+  // ===========================================================================
+  // LOCATION HANDLERS (Tuân thủ ADR-005: timeout 8s, không lấy GPS nền, 3 lựa chọn)
+  // ===========================================================================
+  const handleConsentGps = () => {
+    setIsLocating(true);
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setIsLocating(false);
+      setLocationState({
+        status: "MANUAL",
+        source: "USER_TEXT",
+        label: "Trình duyệt không hỗ trợ GPS (Vui lòng nhập tay)",
+      });
+      return;
     }
-  });
+
+    let timeoutId: NodeJS.Timeout;
+
+    const successHandler = (pos: GeolocationPosition) => {
+      clearTimeout(timeoutId);
+      setIsLocating(false);
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      setLocationState({
+        status: "CONSENTED",
+        source: "BROWSER_GPS",
+        label: "Đã ghi nhận vị trí của bạn (GPS)",
+        coords: { lat, lng },
+      });
+      setIsMapOpen(true);
+    };
+
+    const errorHandler = () => {
+      clearTimeout(timeoutId);
+      setIsLocating(false);
+      setLocationState({
+        status: "MANUAL",
+        source: "USER_TEXT",
+        label: "Tín hiệu GPS yếu hoặc bị chặn (Vui lòng nhập tay)",
+      });
+    };
+
+    // Timeout 8 giây theo đúng tài liệu (tránh treo khi ở trong hầm hoặc cao tốc)
+    timeoutId = setTimeout(() => {
+      setIsLocating(false);
+      setLocationState({
+        status: "MANUAL",
+        source: "USER_TEXT",
+        label: "Quá thời gian chờ GPS > 8s (Vui lòng nhập tay)",
+      });
+    }, 8000);
+
+    navigator.geolocation.getCurrentPosition(successHandler, errorHandler, {
+      timeout: 8000,
+      enableHighAccuracy: false,
+    });
+  };
+
+  const handleManualLocation = (areaText: string) => {
+    setLocationState({
+      status: "MANUAL",
+      source: "USER_TEXT",
+      label: areaText,
+      coords: { lat: 10.7821, lng: 106.8423 }, // Mặc định ghim khu vực tham chiếu
+    });
+    setIsMapOpen(true);
+  };
+
+  const handleSkipLocation = () => {
+    setLocationState({
+      status: "NOT_SHARED",
+      source: "USER_TEXT",
+      label: "Không chia sẻ",
+    });
+    setIsMapOpen(false);
+  };
+
+  const handleResetLocation = () => {
+    setLocationState({
+      status: "PENDING",
+      source: "USER_TEXT",
+      label: "",
+    });
+  };
 
   const selectImage = async (file: File) => {
     setImageName(file.name);
@@ -96,7 +229,7 @@ export function CustomerChatContainer() {
     reader.onload = () => setImagePreview(String(reader.result));
     reader.readAsDataURL(file);
 
-    // Upload lên máy chủ backend để OCR/Vision phân tích tín hiệu sơ bộ
+    // Upload lên máy chủ backend để OCR/Vision phân tích sơ bộ
     setIsUploadingImage(true);
     try {
       const res = await uploadAttachment(file);
@@ -111,158 +244,301 @@ export function CustomerChatContainer() {
   };
 
   const submit = () => {
-    const text = input.trim() || (imagePreview ? "Tôi gửi ảnh cảnh báo và chưa rõ vấn đề. Nhờ trợ lý nhận diện dấu hiệu sơ bộ." : "");
+    const text =
+      input.trim() ||
+      (imagePreview
+        ? "Tôi gửi ảnh cảnh báo táp-lô/trụ sạc. Nhờ Trợ lý AI nhận diện triệu chứng sơ bộ."
+        : "");
     if (!text) return;
     sendMessage(text, uploadedAttachmentId ? [uploadedAttachmentId] : undefined);
-    // Sau khi gửi thì reset preview
+
+    // Nhận diện tự động nếu liên quan địa điểm / cứu hộ
+    const lower = text.toLowerCase();
+    if (
+      lower.includes("sạc") ||
+      lower.includes("cc01") ||
+      lower.includes("không vào điện") ||
+      lower.includes("trụ sạc")
+    ) {
+      setSuggestedCategory("CHARGING_STATION");
+      setShowLocationCard(true);
+    } else if (
+      lower.includes("bảo dưỡng") ||
+      lower.includes("12.000km") ||
+      lower.includes("kẹt") ||
+      lower.includes("cần số") ||
+      lower.includes("xưởng") ||
+      lower.includes("phanh")
+    ) {
+      setSuggestedCategory("SERVICE_WORKSHOP");
+      setShowLocationCard(true);
+    } else if (
+      lower.includes("cao tốc") ||
+      lower.includes("cứu hộ") ||
+      lower.includes("mất phanh") ||
+      lower.includes("rùa vàng") ||
+      lower.includes("cháy") ||
+      lower.includes("chết máy")
+    ) {
+      setSuggestedCategory("EXPRESSWAY_RESCUE");
+      setShowLocationCard(true);
+    } else if (lower.includes("trạm")) {
+      setShowLocationCard(true);
+    }
+
     setImagePreview(null);
     setImageName(null);
     setUploadedAttachmentId(null);
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
-      {/* Critical Alert Banner (SCR-01 / SCR-03) */}
+    <div className="w-full">
+      {/* Critical Alert Banner (Sticky 46px ngay dưới Navbar, đỏ đậm tương phản cao) */}
       <EmergencyAlertBanner visible={criticalBanner} />
 
-      {/* Main Chat Box */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="bg-white border border-[#E2E8F0] rounded-2xl shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col h-[740px]">
-          {/* Header */}
-          <div className="px-4 py-3 bg-[#F8FAFC] text-[#0F172A] flex items-center justify-between border-b border-[#E2E8F0]">
-            <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-[10px] bg-[#1E40AF] flex items-center justify-center text-white shadow-xs">
-                <Car className="w-4 h-4 text-white" />
+      <div
+        className={`mx-auto px-4 py-3 sm:py-4 transition-all duration-300 ${
+          isMapOpen ? "max-w-7xl" : "max-w-4xl"
+        }`}
+      >
+
+      {/* Main Layout: Desktop 55/45 khi mở map, Mặc định chat chiếm toàn bộ max-w-4xl */}
+      <div
+        className={`grid gap-4 items-start transition-all duration-300 ${
+          isMapOpen ? "lg:grid-cols-[1.12fr_0.88fr]" : "grid-cols-1"
+        }`}
+      >
+        {/* =============================================================
+            KHUNG CHAT CHÍNH (RỘNG RÃI, CHIẾM 70% CHIỀU CAO, KHÔNG BỊ BÓP)
+        ============================================================= */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden flex flex-col h-[calc(100vh-140px)] min-h-[580px] max-h-[820px]">
+          {/* Header thu gọn thấp (~40px) */}
+          <div className="px-3.5 py-2 bg-slate-50/90 text-slate-900 flex items-center justify-between border-b border-slate-200/80">
+            <div className="flex items-center space-x-2 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-[#1E40AF] flex items-center justify-center text-white shrink-0 shadow-2xs">
+                <Car className="w-3.5 h-3.5 text-white" />
               </div>
-              <div>
-                <div className="font-bold text-[14px] text-[#0F172A]">Trợ lý Kỹ thuật VinFast AI</div>
-                <div className="text-[11px] text-[#64748B] flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] inline-block animate-pulse"></span>
-                  <span className="truncate max-w-[240px] sm:max-w-none">{aiStatus}</span>
+              <div className="min-w-0">
+                <div className="font-bold text-[13px] text-slate-900 truncate">
+                  Trợ lý Kỹ thuật VinFast AI
                 </div>
+              </div>
+              <div className="text-[11px] text-slate-500 hidden sm:flex items-center gap-1.5 pl-2 border-l border-slate-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse shrink-0" />
+                <span className="truncate max-w-[200px]">
+                  {role === "GUEST" ? "Khách vãng lai" : "Sẵn sàng 24/7"}
+                </span>
               </div>
             </div>
 
-            {/* Header Right Actions */}
-            <div className="flex items-center gap-2">
+            {/* Header Right Actions: Gộp Làm mới & Chọn xe thành 1 hàng thấp */}
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
                 onClick={handleResetAll}
-                className="flex items-center gap-1.5 rounded-[10px] bg-white hover:bg-[#F1F5F9] text-[#475569] hover:text-[#0F172A] text-[12px] font-medium px-2.5 py-1 border border-[#E2E8F0] transition shadow-xs"
-                title="Làm mới cuộc trò chuyện và bắt đầu phiên hỏi mới"
+                className="flex items-center gap-1 rounded-lg bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 text-[11.5px] font-medium px-2 py-1 border border-slate-200 shadow-2xs transition active:scale-95"
+                title="Làm mới cuộc trò chuyện"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
+                <RotateCcw className="w-3 h-3" />
                 <span className="hidden sm:inline">Làm mới</span>
               </button>
 
-              <span className="text-[11px] text-[#64748B] hidden sm:inline uppercase tracking-wider font-semibold">Dòng xe:</span>
-              <select
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value as VehicleModel)}
-                className="bg-white text-[#0F172A] text-[12px] rounded-[10px] px-2 py-1 border border-[#E2E8F0] focus:outline-none focus:border-[#1E40AF]"
-              >
-                {VEHICLE_MODELS.map((model) => (
-                  <option key={model} value={model} className="bg-white text-[#0F172A]">
-                    {model}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-2xs">
+                <span className="text-[10.5px] text-slate-400 font-semibold uppercase mr-1">Xe:</span>
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value as VehicleModel)}
+                  className="bg-transparent text-slate-800 text-[11.5px] font-semibold focus:outline-none cursor-pointer"
+                >
+                  {VEHICLE_MODELS.map((model) => (
+                    <option key={model} value={model} className="bg-white text-slate-900">
+                      {model}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
-          {/* Quick Prompts Bar */}
-          <QuickPromptsBar
-            onSelectPrompt={(qp) => {
-              setSelectedModel(qp.model);
-              sendMessage(qp.text);
-            }}
-          />
+          {/* Case Status Strip: Thanh mỏng 1 dòng khi đã có Case ID */}
+          {currentCaseId && (
+            <div className="px-3.5 py-1.5 bg-blue-50/80 border-b border-blue-200/60 flex items-center justify-between text-[11.5px] animate-fadeIn">
+              <div className="flex items-center gap-1.5 truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse shrink-0" />
+                <span className="text-slate-600">Hồ sơ:</span>
+                <strong className="font-mono font-bold text-slate-900">{currentCaseId}</strong>
+                <span className="text-slate-400">·</span>
+                <span className="text-blue-700 font-medium">Đang tiếp nhận xử lý</span>
+              </div>
+              {role === "GUEST" ? (
+                <button
+                  type="button"
+                  onClick={() => loginAs("CUSTOMER")}
+                  className="text-[#1E40AF] font-bold hover:underline flex items-center gap-0.5 shrink-0 text-[11px]"
+                >
+                  <span>Đăng nhập</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              ) : (
+                <Link
+                  href="/track-case"
+                  className="text-[#1E40AF] font-bold hover:underline flex items-center gap-0.5 shrink-0 text-[11px]"
+                >
+                  <span>Xem tiến trình ›</span>
+                </Link>
+              )}
+            </div>
+          )}
 
-          {/* Messages Feed */}
+          {/* Quick Prompts Bar: CHỈ HIỆN KHI CHAT TRỐNG (messages.length <= 1) */}
+          {messages.length <= 1 && (
+            <QuickPromptsBar
+              onSelectPrompt={(qp) => {
+                setSelectedModel(qp.model);
+                sendMessage(qp.text);
+                const lower = qp.text.toLowerCase();
+                if (lower.includes("sạc") || lower.includes("cc01")) {
+                  setSuggestedCategory("CHARGING_STATION");
+                  setShowLocationCard(true);
+                } else if (
+                  lower.includes("bảo dưỡng") ||
+                  lower.includes("kẹt") ||
+                  lower.includes("số")
+                ) {
+                  setSuggestedCategory("SERVICE_WORKSHOP");
+                  setShowLocationCard(true);
+                } else if (
+                  lower.includes("rùa vàng") ||
+                  lower.includes("cứu hộ") ||
+                  lower.includes("cao tốc")
+                ) {
+                  setSuggestedCategory("EXPRESSWAY_RESCUE");
+                  setShowLocationCard(true);
+                }
+              }}
+            />
+          )}
+
+          {/* Messages Feed (Không còn chứa Card vị trí làm chật chội luồng chat) */}
           <ChatFeed
             messages={messages}
             loading={loading}
-            onSelectReply={(reply) => sendMessage(reply)}
+            isMapOpen={isMapOpen}
+            showLocationCard={showLocationCard}
+            onSelectReply={(reply) => {
+              const lower = reply.toLowerCase();
+              if (
+                lower.includes("bản đồ") ||
+                lower.includes("xem bản đồ") ||
+                lower.includes("điểm cứu hộ")
+              ) {
+                setShowLocationCard(true);
+                setIsMapOpen(true);
+                return;
+              }
+              sendMessage(reply);
+              if (lower.includes("sạc") || lower.includes("trạm")) {
+                setSuggestedCategory("CHARGING_STATION");
+                setShowLocationCard(true);
+              } else if (lower.includes("xưởng") || lower.includes("bảo dưỡng")) {
+                setSuggestedCategory("SERVICE_WORKSHOP");
+                setShowLocationCard(true);
+              } else if (lower.includes("cứu hộ") || lower.includes("cao tốc")) {
+                setSuggestedCategory("EXPRESSWAY_RESCUE");
+                setShowLocationCard(true);
+              }
+            }}
           />
+
+          {/* Card Xin Quyền Vị Trí: ĐƯA RA KHỎI LUỒNG CHAT, LÀM THANH MỎNG DÍNH TRÊN Ô NHẬP */}
+          {showLocationCard && (
+            <LocationConsentCard
+              locationState={locationState}
+              isLocating={isLocating}
+              isMapOpen={isMapOpen}
+              onConsentGps={handleConsentGps}
+              onManualLocation={handleManualLocation}
+              onSkip={handleSkipLocation}
+              onToggleMap={() => setIsMapOpen(!isMapOpen)}
+              onResetLocation={handleResetLocation}
+            />
+          )}
 
           {/* Input Bar */}
           <ChatInputBar
             input={input}
             onChangeInput={setInput}
             onSend={submit}
-            disabled={loading}
+            disabled={loading || isUploadingImage}
             vehicleModel={selectedModel}
             imagePreview={imagePreview}
             imageName={imageName}
             onSelectImage={selectImage}
-            onClearImage={() => { setImagePreview(null); setImageName(null); }}
+            onClearImage={() => {
+              setImagePreview(null);
+              setImageName(null);
+              setUploadedAttachmentId(null);
+            }}
           />
+
+          {/* Ghi chú bảo mật: 1 dòng mỏng nhẹ thay cho Card cồng kềnh */}
+          <div className="py-1 px-3 bg-slate-50/70 border-t border-slate-100 flex items-center justify-center gap-1.5 text-[10.5px] text-slate-400">
+            <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+            <span>Dữ liệu được mã hóa và bảo mật theo chính sách quyền riêng tư VinFast.</span>
+          </div>
         </div>
 
-        {/* Sidebar Info - Card 16px, shadow rất nhẹ */}
-        <aside className="space-y-4">
-          <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#0D9488]">
-              <ScanLine className="h-3.5 w-3.5" /> Tín hiệu Case
-            </div>
-            <div className="mt-3 space-y-3 text-[13px]">
-              <div>
-                <p className="text-[11px] font-medium uppercase tracking-wider text-[#64748B]">Trạng thái</p>
-                <p className="mt-0.5 font-semibold text-[#0F172A]">
-                  {currentCaseId ? "Staff Reviewing" : loading ? "AI đang phân tích..." : "Chưa tạo case"}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] font-medium uppercase tracking-wider text-[#64748B]">Dòng xe</p>
-                <p className="mt-0.5 font-semibold text-[#0F172A]">{selectedModel}</p>
-              </div>
-              {currentCaseId && (
-                <div className="rounded-xl bg-[#EFF3FC] border border-[#1E40AF]/20 p-2.5">
-                  <p className="text-[11px] text-[#1E40AF] font-medium">Mã hồ sơ tiếp nhận</p>
-                  <p className="mt-0.5 font-mono text-[12px] font-bold text-[#0F172A]">{currentCaseId}</p>
-                </div>
-              )}
-
-              {messages.length > 1 && (
-                <button
-                  type="button"
-                  onClick={handleResetAll}
-                  className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-xl border border-[#E2E8F0] bg-[#F6F7F9] hover:bg-[#EFF3FC] py-2 text-[12px] font-semibold text-[#1E40AF] transition"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Bắt đầu cuộc trò chuyện mới</span>
-                </button>
-              )}
-            </div>
+        {/* =============================================================
+            CỘT PHẢI (DESKTOP): CHỈ TRƯỢT RA KHI KHÁCH KÍCH HOẠT ACTION (XEM MAP)
+            Mặc định không có 5 card tĩnh làm rối mắt!
+        ============================================================= */}
+        {isMapOpen && (
+          <div className="hidden lg:block animate-fadeIn">
+            <ServiceMapPanel
+              isOpen={isMapOpen}
+              onClose={() => setIsMapOpen(false)}
+              locationState={locationState}
+              servicePoints={CHAT_SEED_SERVICE_POINTS}
+              selectedPointId={selectedPointId}
+              onSelectPoint={(id) => setSelectedPointId(id)}
+              suggestedCategory={suggestedCategory}
+            />
           </div>
+        )}
+      </div>
 
-          <div className="rounded-2xl border border-[#E2E8F0] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-            <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[#0D9488]">
-              <FileImage className="h-3.5 w-3.5" /> Bằng chứng hình ảnh
-            </div>
-            {imagePreview ? (
-              <>
-                <img src={imagePreview} alt="Ảnh cảnh báo" className="mt-3 h-28 w-full rounded-xl object-cover border border-[#E2E8F0]" />
-                <p className="mt-2 text-[12px] leading-relaxed text-[#64748B]">
-                  <strong className="text-[#0F172A]">Dấu hiệu sơ bộ:</strong> Đã chuyển cho Agent/Staff kiểm tra. Không thay thế chẩn đoán chuyên sâu tại xưởng.
-                </p>
-              </>
-            ) : (
-              <p className="mt-2 text-[12px] leading-relaxed text-[#64748B]">
-                Tải ảnh chụp táp-lô hoặc trụ sạc để Agent nhận diện tín hiệu sơ bộ trước khi hỏi context.
-              </p>
-            )}
-          </div>
+      {/* =============================================================
+          MOBILE: BOTTOM-SHEET MODAL (HIỆN TRÊN ĐIỆN THOẠI KHI MỞ MAP)
+      ============================================================= */}
+      {isMapOpen && (
+        <ServiceMapPanel
+          isOpen={isMapOpen}
+          onClose={() => setIsMapOpen(false)}
+          locationState={locationState}
+          servicePoints={CHAT_SEED_SERVICE_POINTS}
+          selectedPointId={selectedPointId}
+          onSelectPoint={(id) => setSelectedPointId(id)}
+          suggestedCategory={suggestedCategory}
+          isMobileModal={true}
+        />
+      )}
 
-          <div className="rounded-2xl border border-[#E2E8F0] bg-[#F6F7F9] p-4 text-[12px] leading-relaxed text-[#64748B] shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-            <div className="flex items-center gap-2 font-semibold text-[#0F172A]">
-              <ShieldCheck className="h-4 w-4 text-[#10B981]" /> Quy chuẩn an toàn No-PII
-            </div>
-            <p className="mt-1.5 text-[11px] text-[#64748B]">
-              Nếu có nguy cơ kỹ thuật, Agent sẽ chuẩn hóa thành case và chuyển Staff Review phê duyệt. Tuyệt đối không lưu CCCD hay biển số thật.
-            </p>
-          </div>
-        </aside>
+      {/* MOBILE FLOATING MAP BUTTON KHI CHƯA MỞ MAP */}
+      {!isMapOpen && (
+        <div className="lg:hidden fixed bottom-6 right-4 z-40">
+          <button
+            type="button"
+            onClick={() => {
+              setShowLocationCard(true);
+              setIsMapOpen(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1E40AF] hover:bg-[#1D4ED8] text-white font-bold text-[12.5px] shadow-lg active:scale-95 transition"
+          >
+            <Compass className="w-4 h-4 animate-spin [animation-duration:8s]" />
+            <span>Bản đồ cứu hộ (4 điểm)</span>
+          </button>
+        </div>
+      )}
       </div>
     </div>
   );

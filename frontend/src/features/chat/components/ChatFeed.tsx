@@ -1,64 +1,138 @@
-'use client'
-import { useEffect, useRef } from "react";
+"use client";
+
+import { useEffect, useRef, useState, useCallback } from "react";
 import { ChatMessage } from "../types";
 import { ChatMessageItem } from "./ChatMessageItem";
-import { Sparkles } from "lucide-react";
+import { Sparkles, ArrowDown } from "lucide-react";
 
 interface ChatFeedProps {
   messages: ChatMessage[];
   loading: boolean;
   onSelectReply: (reply: string) => void;
+  isMapOpen?: boolean;
+  showLocationCard?: boolean;
+  children?: React.ReactNode;
 }
 
-export function ChatFeed({ messages, loading, onSelectReply }: ChatFeedProps) {
+export function ChatFeed({
+  messages,
+  loading,
+  onSelectReply,
+  isMapOpen,
+  showLocationCard,
+  children,
+}: ChatFeedProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
+  const isNearBottomRef = useRef(true);
 
+  // Kiểm tra vị trí cuộn của người dùng
+  const handleScroll = useCallback(() => {
+    if (!containerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+    const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+    
+    // Nếu cách đáy dưới 120px thì coi là đang ở đáy
+    const nearBottom = distanceFromBottom < 120;
+    isNearBottomRef.current = nearBottom;
+    setShowScrollBottomBtn(!nearBottom);
+  }, []);
+
+  // Cuộn xuống đáy một cách an toàn
+  const scrollToBottom = useCallback((smooth = true) => {
+    if (!bottomRef.current) return;
+    bottomRef.current.scrollIntoView({
+      behavior: smooth ? "smooth" : "auto",
+    });
+    setShowScrollBottomBtn(false);
+  }, []);
+
+  // Tự động cuộn khi tin nhắn mới, mở bản đồ hoặc thanh vị trí xuất hiện
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+    const timer = setTimeout(() => {
+      scrollToBottom(true);
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [messages, loading, isMapOpen, showLocationCard, scrollToBottom]);
+
+  // Lắng nghe thay đổi kích thước khung chat khi trượt mở bản đồ (tránh chip bị cắt cụt)
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const resizeObserver = new ResizeObserver(() => {
+      if (isNearBottomRef.current) {
+        scrollToBottom(false);
+      }
+    });
+    resizeObserver.observe(containerRef.current);
+    return () => resizeObserver.disconnect();
+  }, [scrollToBottom]);
 
   return (
-    <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-4">
-      {messages.map((msg) => (
-        <ChatMessageItem
-          key={msg.id}
-          message={msg}
-          onSelectReply={onSelectReply}
-        />
-      ))}
+    <div className="relative flex-1 min-h-0 flex flex-col">
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="flex-1 p-3.5 sm:p-4 pb-8 sm:pb-10 overflow-y-auto space-y-3.5"
+      >
+        {messages.map((msg, idx) => (
+          <ChatMessageItem
+            key={msg.id}
+            message={msg}
+            isLastMessage={idx === messages.length - 1}
+            onSelectReply={onSelectReply}
+          />
+        ))}
 
-      {/* AI Suy nghĩ và Tra cứu tri thức */}
-      {loading && (
-        <div className="flex items-start gap-2.5 animate-in fade-in duration-300">
-          <div className="w-8 h-8 rounded-[10px] bg-[#1E40AF] text-[#10B981] flex items-center justify-center shrink-0 shadow-sm mt-0.5">
-            <Sparkles className="w-4 h-4 text-white animate-pulse" />
-          </div>
-
-          <div className="rounded-2xl rounded-bl-sm border border-[#E2E8F0] bg-white p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] max-w-[85%] sm:max-w-[75%] space-y-1.5">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[12px] font-bold text-[#1E40AF]">Trợ lý VinFast AI</span>
-              <span className="text-[11px] text-[#64748B] flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-ping inline-block"></span>
-                <span>Đang suy nghĩ...</span>
-              </span>
+        {/* AI Suy nghĩ và Tra cứu cẩm nang kỹ thuật */}
+        {loading && (
+          <div className="flex items-start gap-2 animate-fadeIn">
+            <div className="w-6 h-6 rounded-lg bg-[#1E40AF] flex items-center justify-center shrink-0 mt-0.5">
+              <Sparkles className="w-3 h-3 text-white animate-pulse" />
             </div>
 
-            <div className="flex items-center gap-2 py-0.5">
-              <div className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-[#1E40AF] animate-bounce [animation-delay:-0.3s]"></span>
-                <span className="w-2 h-2 rounded-full bg-[#0D9488] animate-bounce [animation-delay:-0.15s]"></span>
-                <span className="w-2 h-2 rounded-full bg-[#10B981] animate-bounce"></span>
+            <div className="rounded-2xl rounded-tl-xs bg-slate-100 p-2.5 max-w-[85%] sm:max-w-[70%] space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[11.5px] font-bold text-[#1E40AF]">Trợ lý VinFast AI</span>
+                <span className="text-[10.5px] text-slate-400 flex items-center gap-1 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping inline-block" />
+                  <span>Đang xử lý</span>
+                </span>
               </div>
-              <span className="text-[12px] text-[#64748B] italic">
-                Đang đối soát cẩm nang kỹ thuật & chuẩn hóa dữ kiện...
-              </span>
+
+              <div className="flex items-center gap-2 py-0.5">
+                <div className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#1E40AF] animate-bounce [animation-delay:-0.3s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#0284C7] animate-bounce [animation-delay:-0.15s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-bounce" />
+                </div>
+                <span className="text-[11.5px] text-slate-500 italic">
+                  Đang tra cứu cẩm nang kỹ thuật & đối chiếu an toàn...
+                </span>
+              </div>
             </div>
           </div>
+        )}
+
+        <div ref={bottomRef} className="h-3 shrink-0" />
+      </div>
+
+      {/* Nút nổi "↓ Tin mới" khi người dùng cuộn ngược lên trên */}
+      {showScrollBottomBtn && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 animate-fadeIn">
+          <button
+            type="button"
+            onClick={() => scrollToBottom(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-900 text-white text-[11px] font-semibold shadow-md active:scale-95 transition"
+          >
+            <ArrowDown className="w-3 h-3" />
+            <span>Tin mới</span>
+          </button>
         </div>
       )}
 
-      <div ref={bottomRef} />
+      {/* Slot thanh vị trí ngoài luồng chat (nếu có) */}
+      {children}
     </div>
   );
 }
-

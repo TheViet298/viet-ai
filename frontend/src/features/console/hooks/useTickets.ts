@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { TicketItem, TicketPriority, TicketStatus } from "../types";
+export type { TicketItem, TicketPriority, TicketStatus };
 import { getTicketQueue } from "../api/consoleApi";
 
 export const INITIAL_TICKETS: TicketItem[] = [

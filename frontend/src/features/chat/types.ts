@@ -89,7 +89,25 @@ export interface ArticleItem {
   title: string;
   category: string;
   summary: string;
-  content: string;
+  content?: string;
   source_url: string;
   verified_at: string;
+  applicable_models?: string[];
+}
+
+export interface ServicePointSeed {
+  id: string;
+  name: string;
+  type: "SERVICE_WORKSHOP" | "CHARGING_STATION" | "EXPRESSWAY_RESCUE";
+  address: string;
+  distance?: string;
+  hotline: string;
+  coords: { lat: number; lng: number };
+}
+
+export interface UserLocationState {
+  status: "CONSENTED" | "MANUAL" | "NOT_SHARED" | "PENDING";
+  source: "BROWSER_GPS" | "USER_TEXT" | "MAP_PICKER";
+  label: string;
+  coords?: { lat: number; lng: number };
 }

@@ -67,6 +67,7 @@ class ArticleItem(BaseModel):
     content: str
     source_url: str
     verified_at: str
+    applicable_models: list[str] | None = None
 
 
 class PublicArticlesData(BaseModel):
