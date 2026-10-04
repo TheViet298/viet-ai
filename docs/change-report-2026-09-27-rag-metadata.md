@@ -172,3 +172,19 @@ Lần cập nhật này chỉ bổ sung mục T5 vào `docs/change-report-2026-0
 Chưa chạy toàn bộ `pytest tests/` hoặc Ruff. Smoke test chỉ dùng dữ liệu tài khoản tổng hợp và SQLite tạm. Bốn file API/test đã đồng bộ từ develop; thay đổi cấu hình và RAG service là phần hỗ trợ để các import, khởi động và hành vi chưa có knowledge collection hoạt động trong nhánh này.
 
 Lần cập nhật này bổ sung mục T6 vào báo cáo; không commit hoặc push báo cáo.
+
+## T7 — Architecture directory and file inventory (2026-09-30)
+
+The `docs/architecture/` directory and all nine files listed below are present in commit `72ccecb` (`2026-09-30 22:28:41 +0700`). Git records files rather than directories, so this confirms that the directory and its contents existed in that commit; it does not mean every file was first created on September 30.
+
+| File | First recorded add date in repository history |
+| --- | --- |
+| `agent-workflow.md` | 2026-09-24 |
+| `api-contract.md` | 2026-09-24 |
+| `data-model.md` | 2026-09-24 |
+| `rag-and-data-sources.md` | 2026-09-24 |
+| `system-overview.md` | 2026-09-24 |
+| `triage-and-hitl-rules.md` | 2026-09-24 |
+| `gate-g2-proposal.md` | 2026-09-27 |
+| `langgraph-state-and-guardrails.md` | 2026-09-28 |
+| `auth-and-rbac.md` | 2026-09-30 |
