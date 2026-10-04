@@ -105,7 +105,7 @@ Các nhận xét sau phản ánh thời điểm kiểm tra, không thay thế ti
 
 ---
 
-## 2026-10-03 (Gate G3: Chuẩn hóa UI/UX Chat, Bản đồ Vị trí ADR-005 & Đa dạng hóa Intent Landing Page)
+## 2026-10-03 (Gate G2: Chuẩn hóa UI/UX Chat, Bản đồ Vị trí ADR-005 & Đa dạng hóa Intent Landing Page)
 
 | Member | Task | Status | Output | Time |
 |---|---|---|---|---|
