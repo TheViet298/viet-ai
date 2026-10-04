@@ -1,0 +1,63 @@
+[
+  {
+    "image_id": "img_vfe34_tpms_cluster_01",
+    "vehicle_model": "VinFast VF e34",
+    "image_type": "cluster_display_real_photo",
+    "title_vi": "Ảnh cụm màn hình hiển thị cảnh báo lỗi áp suất lốp trên VF e34",
+    "source_url": "https://static-cms-prod.vinfastauto.com/ky-hieu-canh-bao-loi-ap-suat-lop-tren-vf-e34_1652457282.jpg",
+    "article_reference": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
+    "format": "JPG",
+    "visual_elements": {
+      "symbols_detected": ["tpms_icon_amber", "car_silhouette_top_view", "four_wheel_status_display"],
+      "text_detected": ["Áp suất lốp", "bar", "psi"],
+      "quality_assessment": "Clear cluster screen view; suitable for full screen understanding benchmark"
+    },
+    "associated_symptom_keys": [
+      "rapid_leak",
+      "over_pressure",
+      "high_temperature",
+      "sensor_battery_low",
+      "tpms_system_error"
+    ],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+  },
+  {
+    "image_id": "img_vfe34_tpms_icon_low_pressure",
+    "vehicle_model": "VinFast VF e34",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng đèn cảnh báo áp suất lốp thấp (vàng)",
+    "source_url": "https://static-cms-prod.vinfastauto.com/ap-suat-lop-1_1652627856.png",
+    "article_reference": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": ["tpms_horseshoe_exclamation_amber"],
+      "text_detected": [],
+      "quality_assessment": "High-contrast clean icon; ideal for icon classification unit test"
+    },
+    "associated_symptom_keys": [
+      "low_pressure"
+    ],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+  },
+  {
+    "image_id": "img_vfe34_tpms_icon_sensor_fault",
+    "vehicle_model": "VinFast VF e34",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng đèn cảnh báo lỗi cảm biến áp suất lốp",
+    "source_url": "https://static-cms-prod.vinfastauto.com/ap-suat-lop-5_1652627955.png",
+    "article_reference": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": ["tpms_sensor_error_amber"],
+      "text_detected": [],
+      "quality_assessment": "High-contrast clean icon; ideal for sensor error classification"
+    },
+    "associated_symptom_keys": [
+      "sensor_fault"
+    ],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+  }
+]
