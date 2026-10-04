@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
 
     # LLM Configuration (Google Gemini)
     google_api_key: str = ""
-    model_name: str = "gemini-3.5-flash"
+    model_name: str = "gemini-2.5-flash"
     llm_temperature: float = Field(default=0.7, ge=0.0, le=2.0)
 
     # Database
@@ -30,6 +30,22 @@ class Settings(BaseSettings):
 
     # Vector Store
     chroma_persist_dir: str = "./data/chroma"
+    agent_llm_enabled: bool = True
+    agent_turn_timeout_s: float = Field(default=2.0, gt=0, le=2.5)
+    agent_llm_timeout_s: float = Field(default=1.2, gt=0, le=2.0)
+    agent_circuit_cooldown_s: float = Field(default=60, ge=1)
+    rag_max_distance: float = Field(default=0.70, ge=0.0)
+    rag_context_max_bytes: int = Field(default=6000, gt=0)
+    agent_context_max_bytes: int = Field(default=8000, gt=0)
+    customer_demo_token: str = ""
+    staff_demo_token: str = ""
+    service_points_file: str = "./fixtures/service_points.demo.json"
+
+    @model_validator(mode="after")
+    def validate_context_budgets(self):
+        if self.rag_context_max_bytes > self.agent_context_max_bytes:
+            raise ValueError("RAG evidence budget exceeds prompt budget")
+        return self
 
 
 @lru_cache

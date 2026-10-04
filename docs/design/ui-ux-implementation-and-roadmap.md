@@ -1,8 +1,8 @@
 # Báo Cáo Hiện Trạng & Lộ Trình Phát Triển UI/UX Frontend
-> **Dự án:** VinFast ServiceFlow AI (P-142)  
-> **Phiên bản Milestone:** Demo v1.0 — Phục vụ buổi báo cáo / demo  
-> **Cập nhật ngày:** 04/10/2026  
-> **Người phụ trách:** Frontend & UI/UX Team  
+> **Dự án:** VinFast ServiceFlow AI (P-142)
+> **Phiên bản Milestone:** Demo v1.0 — Phục vụ buổi báo cáo / demo
+> **Cập nhật ngày:** 04/10/2026
+> **Người phụ trách:** Frontend & UI/UX Team
 > **Tài liệu tham chiếu:** [screen-spec.md](screen-spec.md) | [ui-flow.md](ui-flow.md) | [ADR-005](../decisions/ADR-005-roles-location-and-customer-confirmation.md)
 
 ---
@@ -156,4 +156,3 @@ graph TD
 - `frontend/src/features/console/components/StaffConsoleShell.tsx` (Console layout & role gate)
 - `frontend/src/features/console/components/TicketDetailPanel.tsx` (Case detail, HITL actions, editable brief)
 - `src/api/customer.py` (FastAPI backend: sinh Case ID động, suggested replies, triage rules)
-

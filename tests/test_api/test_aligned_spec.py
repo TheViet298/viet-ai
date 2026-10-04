@@ -124,8 +124,15 @@ async def test_customer_chat_critical_safety(client):
 
 
 @pytest.mark.asyncio
-async def test_customer_chat_faq(client):
+async def test_customer_chat_faq(client, monkeypatch):
     """Kiểm tra khách hàng hỏi thông tin sạc (FAQ answer kèm citation và service handoff)."""
+    # API mapping is verified against grounded evidence, independent of a local KB.
+    from src.services.rag_service import source_registry
+    import src.api.customer as api
+    async def grounded_faq(*args, **kwargs):
+        source = source_registry()["SRC-003"]
+        return {"reply": "Theo biểu phí đã xác thực.", "citations": [{**source, "source_id": "SRC-003", "relevant_snippet": "Biểu phí sạc.", "applicable_models": ["ALL"]}]}
+    monkeypatch.setattr(api, "process_chat_message", grounded_faq)
     token = await get_auth_token(client, "customer@vinfast.vn", "customer123")
     headers = {"Authorization": f"Bearer {token}"}
 

@@ -1,211 +1,109 @@
 from __future__ import annotations
 
-import os
-import re
-from typing import Any
+import asyncio
+from uuid import uuid4
+from weakref import WeakValueDictionary
 
-from src.agents.guardrails import (
-    evaluate_hard_safety,
-    sanitize_pii,
-    is_hitl_mandatory,
-    EMERGENCY_SAFE_GUIDANCE,
-    VINFAST_HOTLINE,
-)
-from src.services.rag_service import rag_service
+from langchain_core.messages import AIMessage, HumanMessage
+from pydantic import BaseModel, Field
 
-SYSTEM_PROMPT_TEMPLATE = """Bạn là Trợ lý AI Dịch vụ Khách hàng VinFast (VinFast Virtual Service Assistant).
-Nhiệm vụ của bạn là hỗ trợ chủ xe và khách hàng giải đáp thắc mắc về xe ô tô điện VinFast (bảo hành, trạm sạc, ứng dụng VinFast, sổ tay vận hành).
+from src.agents.context_manager import token_count
+from src.agents.graph import agent
+from src.agents.guardrails import evaluate_hard_safety, sanitize_pii
+from src.services.agent_llm import structured_call
+from src.services.observability import get_tracer_callbacks
+from src.services.session_store import get_store
+from src.services.tracer import sanitized_snapshot
 
-QUY TẮC CỐT LÕI (BẮT BUỘC TUÂN THỦ):
-1. CHỈ sử dụng thông tin có trong phần [TÀI LIỆU CHÍNH THỨC] dưới đây để trả lời. Tuyệt đối không suy đoán hay thêm thắt thông tin không có trong tài liệu.
-2. Trả lời bằng tiếng Việt lịch sự, thân thiện, rõ ràng, gạch đầu dòng các bước thao tác (nếu có).
-3. Đính kèm liên kết trích dẫn nguồn ở cuối câu trả lời nếu có.
-4. Nếu tài liệu không đủ thông tin, thông báo rõ ràng và đề xuất chuyển chuyên viên hỗ trợ.
+_LOCKS: WeakValueDictionary[str, asyncio.Lock] = WeakValueDictionary()
 
-[TÀI LIỆU CHÍNH THỨC]:
-{context}
 
-Câu hỏi của khách hàng: {query}
-"""
+class MemorySummary(BaseModel):
+    summary: str = Field(max_length=600)
 
-def extract_direct_answer_fallback(query: str, context: str, citations: list[dict]) -> str:
-    """
-    Trích xuất câu trả lời chuẩn xác trực tiếp từ chunk tài liệu chính thức
-    khi LLM API chưa cấu hình key thật.
-    """
-    if not context or not citations:
-        return (
-            "Dạ hiện tại hệ thống chưa tìm thấy tài liệu chính thức từ VinFast xác nhận thông tin này. "
-            "Để đảm bảo tính chính xác, câu hỏi này đã được ghi nhận và chuyển cho chuyên viên kỹ thuật (Staff Review) "
-            "để kiểm tra và phản hồi Quý khách sớm nhất ạ."
-        )
-
-    top_citation = citations[0]
-    title = top_citation.get("title", "Tài liệu VinFast")
-    url = top_citation.get("url", "https://vinfastauto.com/vn_vi")
-    section = top_citation.get("section", "Chi tiết")
-
-    # Lấy nội dung văn bản sạch
-    clean_lines = []
-    for line in context.split("\n"):
-        line = line.strip()
-        if line and not line.startswith("[Tài liệu"):
-            clean_lines.append(line)
-
-    summary_text = "\n".join(clean_lines[:6])
-
-    response = (
-        f"Dạ theo thông tin chính thức từ **{title}** (Mục: *{section}*):\n\n"
-        f"{summary_text}\n\n"
-        f"📎 **Nguồn tài liệu chính thức:** [{title}]({url})"
-    )
-    return response
 
 async def process_chat_message(
     user_message: str,
     conversation_history: list[dict[str, str]] | None = None,
-) -> dict[str, Any]:
-    """
-    Hàm xử lý hội thoại chính của Chatbot Agent (Core AI Slice):
-    1. Kiểm tra an toàn khẩn cấp (Hard Safety Guardrails).
-    2. Ẩn danh hóa PII nếu có.
-    3. Tra cứu Knowledge Base qua RAG.
-    4. Sinh câu trả lời kèm Citation URL.
-    5. Đánh giá cờ duyệt Human-in-the-loop (Staff Review).
-    """
-    # Bước 1: Ẩn danh PII (nếu có SĐT thật / biển số thật)
-    sanitized_text, is_pii, pii_types = sanitize_pii(user_message)
-
-    # Bước 2: Kiểm tra Hard Safety Rules (Cháy, mất phanh, ngập nước...)
-    is_critical, trigger_rule, priority = evaluate_hard_safety(user_message)
-    if is_critical:
-        reply_emergency = (
-            f"🚨 **CẢNH BÁO AN TOÀN KHẨN CẤP ({trigger_rule})** 🚨\n\n"
-            f"{EMERGENCY_SAFE_GUIDANCE}\n\n"
-            f"📞 **Tổng đài cứu hộ khẩn cấp:** **{VINFAST_HOTLINE}** (Hoạt động 24/7)"
-        )
-        return {
-            "reply": reply_emergency,
-            "intent": "safety_adversarial_oos",
-            "priority": "critical",
-            "needs_staff_review": True,
-            "is_safety_trigger": True,
-            "citations": [
-                {
-                    "source_id": "SRC-003",
-                    "title": "Thông tin cứu hộ và cứu hộ pin 24/7",
-                    "url": "https://vinfastauto.com/vn_vi/thong-tin-cuu-ho-oto",
-                    "section": "Cứu hộ khẩn cấp 24/7"
-                }
+    clarification_turn: int = 0,
+    captured_fields: dict | None = None,
+    *,
+    session_id: str | None = None,
+    user_role: str = "guest",
+    owner: str | None = None,
+    client_context: dict | None = None,
+) -> dict:
+    if user_role not in {"guest", "customer", "staff"}:
+        raise ValueError("Invalid role")
+    if user_role != "guest" and not owner:
+        raise PermissionError("Authenticated owner required")
+    session_id = session_id or uuid4().hex
+    owner = owner or f"guest:{session_id}"
+    lock = _LOCKS.setdefault(session_id, asyncio.Lock())
+    async with lock:
+        store = get_store()
+        critical = evaluate_hard_safety(user_message)[0]
+        state, version = store.claim(session_id, owner, user_role, emergency=critical)
+        if not state.get("turn"):
+            state.update(
+                clarification_turn=min(clarification_turn, 2), captured_fields=sanitized_snapshot(captured_fields or {})
+            )
+            state["messages"] = [
+                HumanMessage(content=sanitize_pii(m.get("content", ""))[0])
+                if m.get("role") == "user"
+                else AIMessage(content=sanitize_pii(m.get("content", ""))[0])
+                for m in (conversation_history or [])
             ]
-        }
-
-    # Bước 2.5: Kiểm tra câu hỏi ngoài phạm vi / thương hiệu khác / can thiệp trái phép
-    text_lower = user_message.lower()
-    oos_keywords = [
-        "vé máy bay", "vietnam airlines", "vietjet", "tesla", "hyundai", "toyota", "honda",
-        "thời tiết", "mặt trời", "áp mái", "hòa lưới", "tự đấu dây", "can thiệp tăng công suất",
-        "giảm giá bí mật", "bẻ khóa", "hack động cơ", "phá khóa"
-    ]
-    if any(kw in text_lower for kw in oos_keywords):
-        reply_no_source = (
-            "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách chính thức của VinFast "
-            "nhưng chưa có thông tin xác thực cho yêu cầu này. \n\n"
-            "Để tránh cung cấp thông tin không chính xác, em đã tạo phiếu yêu cầu và chuyển tiếp "
-            "cho bộ phận chuyên viên hỗ trợ (Staff Review). Quý khách sẽ nhận được phản hồi chính thức sớm nhất ạ."
+        context = sanitized_snapshot(client_context or {})
+        if context.get("reset_faq_context"):
+            state["is_rag_query"] = False
+        if context.get("vehicle_model"):
+            state["vehicle_model"] = context["vehicle_model"]
+            state.setdefault("captured_fields", {}).setdefault("vehicle_model", context["vehicle_model"])
+        state.update(query=sanitize_pii(user_message)[0], latest_user_message=sanitize_pii(user_message)[0])
+        result = await agent.ainvoke(
+            state,
+            config={
+                "callbacks": get_tracer_callbacks(session_id=session_id, user_id=owner),
+                "metadata": {"session_id": session_id},
+            },
         )
+        result["messages"].append(AIMessage(content=result.get("response", "")))
+        if len(result["messages"]) > 10 or sum(token_count(str(m.content)) for m in result["messages"]) > 8000:
+            old = result["messages"][:-6]
+            buffer_summary = (result.get("memory_summary", "") + "\n" + "\n".join(str(m.content)[:200] for m in old))[
+                -1800:
+            ]
+            summary = (
+                None
+                if result.get("is_critical")
+                else await structured_call({**result, "memory_summary": buffer_summary}, "memory", MemorySummary)
+            )
+            result["memory_summary"] = sanitize_pii(summary.summary if summary else buffer_summary)[0]
+            result["messages"] = result["messages"][-6:]
+        saved = store.save_turn(session_id, owner, version, result)
+        reply = saved.get("response", "")
+        if saved.get("case_id") and saved.get("response_type") == "CASE_CREATED":
+            reply += f"\n\nMã hồ sơ: {saved['case_id']}."
         return {
-            "reply": reply_no_source,
-            "intent": "safety_adversarial_oos",
-            "priority": "low",
-            "needs_staff_review": True,
-            "is_safety_trigger": False,
-            "citations": []
+            "session_id": session_id,
+            "reply": reply,
+            "response": reply,
+            "intent": saved.get("intent"),
+            "priority": saved.get("priority", "MEDIUM"),
+            "confidence_score": saved.get("confidence_score", 0),
+            "needs_staff_review": saved.get("needs_staff_review", False),
+            "is_safety_trigger": saved.get("is_critical", False),
+            "is_no_source": saved.get("is_no_source", False),
+            "citations": saved.get("rag_citations", []),
+            "suggested_replies": saved.get("suggested_replies", []),
+            "case_brief": saved.get("case_brief"),
+            "case_id": saved.get("case_id"),
+            "ticket_status": saved.get("ticket_status"),
+            "response_type": saved.get("response_type"),
+            "clarification_turn": saved.get("clarification_turn", 0),
+            "max_clarification_turns": 2,
+            "remaining_guest_messages": saved.get("remaining_guest_messages", 0),
+            "login_required": saved.get("login_required", False),
+            "routing": saved.get("routing"),
         }
-
-    # Bước 3: Tra cứu tri thức từ ChromaDB Knowledge Base (Mục 2.4)
-    rag_result = rag_service.retrieve(sanitized_text, top_k=2)
-
-    # Nếu không có nguồn hoặc khoảng cách vượt ngưỡng -> Rule 2.4 NO_SOURCE
-    if rag_result["status"] == "NO_SOURCE":
-        reply_no_source = (
-            "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách chính thức của VinFast "
-            "nhưng chưa có thông tin xác thực cho yêu cầu này. \n\n"
-            "Để tránh cung cấp thông tin không chính xác, em đã tạo phiếu yêu cầu và chuyển tiếp "
-            "cho bộ phận chuyên viên hỗ trợ (Staff Review). Quý khách sẽ nhận được phản hồi chính thức sớm nhất ạ."
-        )
-        return {
-            "reply": reply_no_source,
-            "intent": "safety_adversarial_oos",
-            "priority": "low",
-            "needs_staff_review": True,
-            "is_safety_trigger": False,
-            "citations": []
-        }
-
-    # Bước 4: Tạo câu trả lời có căn cứ (Grounded Response)
-    citations = rag_result["citations"]
-    context_text = rag_result["context_text"]
-
-    # Thử gọi LLM nếu có cấu hình key hợp lệ, nếu không thì dùng trích xuất chuẩn mực
-    try:
-        from src.services.llm import get_llm
-        from src.config import get_settings
-        settings = get_settings()
-
-        # Kiểm tra xem key có phải placeholder không
-        if settings.google_api_key and "your" not in settings.google_api_key.lower():
-            llm = get_llm()
-            prompt = SYSTEM_PROMPT_TEMPLATE.format(context=context_text, query=sanitized_text)
-            ai_msg = await llm.ainvoke(prompt)
-            raw_content = ai_msg.content
-            if isinstance(raw_content, list):
-                final_reply = "".join(
-                    block.get("text", "") if isinstance(block, dict) else getattr(block, "text", str(block))
-                    for block in raw_content
-                )
-            elif isinstance(raw_content, str):
-                final_reply = raw_content
-            else:
-                final_reply = str(raw_content)
-        else:
-            final_reply = extract_direct_answer_fallback(sanitized_text, context_text, citations)
-    except Exception:
-        # Graceful fallback: trích xuất trực tiếp
-        final_reply = extract_direct_answer_fallback(sanitized_text, context_text, citations)
-
-    if isinstance(final_reply, list):
-        final_reply = "".join(
-            b.get("text", "") if isinstance(b, dict) else str(b)
-            for b in final_reply
-        )
-    elif not isinstance(final_reply, str):
-        final_reply = str(final_reply)
-
-    # Bước 5: Xác định Intent và cờ Staff Review
-    text_lower = user_message.lower()
-    if any(kw in text_lower for kw in ["sạc", "trụ sạc", "pin", "thuê pin", "hết pin"]):
-        intent = "charging_battery"
-    elif any(kw in text_lower for kw in ["bảo dưỡng", "sửa chữa", "lỗi", "kêu", "cứu hộ", "lốp"]):
-        intent = "service_incident"
-    elif any(kw in text_lower for kw in ["bức xúc", "khiếu nại", "thái độ", "trừ tiền"]):
-        intent = "complaint_feedback"
-    else:
-        intent = "sales_general_info"
-
-    needs_review = is_hitl_mandatory(
-        intent=intent,
-        priority=priority,
-        confidence_score=0.95,
-        is_critical=False,
-        rag_score=1.0 - (rag_result["best_distance"] / 2.0)
-    )
-
-    return {
-        "reply": final_reply,
-        "intent": intent,
-        "priority": priority.lower(),
-        "needs_staff_review": needs_review,
-        "is_safety_trigger": False,
-        "citations": citations
-    }

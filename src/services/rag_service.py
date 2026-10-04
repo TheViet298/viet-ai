@@ -1,258 +1,348 @@
-import os
+from __future__ import annotations
+
+import json
+import math
 import re
-from typing import Any
-import chromadb
+import unicodedata
+from collections import Counter
+from datetime import date
+from functools import lru_cache
+from hashlib import sha256
+from pathlib import Path
+from threading import RLock
+from urllib.parse import urlparse
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-CHROMA_DIR = os.getenv("CHROMA_DIR", os.path.join(PROJECT_ROOT, "data", "chroma"))
-COLLECTION_NAME = "vinfast_knowledge_base"
-DEFAULT_SIMILARITY_THRESHOLD = 0.70  # Ngưỡng cosine/L2 distance theo ADR-003 & Rule 2.4
+from src.agents.context_manager import resolve_policy_conflict, utf8_size
+from src.config import get_settings
 
-# Bộ tri thức chuẩn hóa dự phòng (Offline Fallback Knowledge Base)
-FALLBACK_KNOWLEDGE_BASE = [
-    {
-        "source_id": "SRC-001",
-        "title": "Chính sách Bảo hành Ô tô Điện VinFast",
-        "url": "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-xe-dien",
-        "section": "Thời hạn bảo hành Pin cao áp",
-        "keywords": ["bảo hành", "thời hạn", "pin", "vf8", "vf 8", "năm", "km", "bảo hành pin"],
-        "content": (
-            "VinFast áp dụng chính sách bảo hành chính hãng cho xe ô tô điện VF 8 là 10 năm hoặc 200.000 km "
-            "(tùy điều kiện nào đến trước). Đối với pin cao áp mua đứt theo xe, thời hạn bảo hành là 10 năm "
-            "không giới hạn số km lăn bánh. Trong trường hợp dung lượng pin giảm xuống dưới 70%, VinFast cam kết "
-            "sửa chữa hoặc thay thế miễn phí."
-        ),
-    },
-    {
-        "source_id": "SRC-002",
-        "title": "Hướng dẫn sử dụng Ứng dụng VinFast",
-        "url": "https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast",
-        "section": "Đặt lịch dịch vụ & Quản lý xe",
-        "keywords": ["ứng dụng", "app", "đặt lịch", "bảo dưỡng", "lịch hẹn", "xưởng", "theo dõi"],
-        "content": (
-            "Để đặt lịch bảo dưỡng xe trên ứng dụng VinFast:\n"
-            "1. Mở ứng dụng VinFast và đăng nhập tài khoản chủ xe.\n"
-            "2. Tại màn hình chính, chọn mục 'Dịch vụ' -> 'Đặt lịch bảo dưỡng/sửa chữa'.\n"
-            "3. Chọn Xưởng dịch vụ VinFast gần nhất và khung giờ thuận tiện.\n"
-            "4. Điền mô tả yêu cầu hoặc chọn cấp bảo dưỡng tương ứng (ví dụ: cấp 12.000 km) và bấm 'Xác nhận đặt lịch'.\n"
-            "Hệ thống sẽ gửi thông báo xác nhận và nhắc lịch hẹn trước 24 giờ."
-        ),
-    },
-    {
-        "source_id": "SRC-003",
-        "title": "Chính sách Cứu hộ Giao thông & Cứu hộ Pin 24/7 VinFast",
-        "url": "https://vinfastauto.com/vn_vi/dich-vu-cuu-ho-24-7",
-        "section": "Đường dây nóng Cứu hộ khẩn cấp",
-        "keywords": ["cứu hộ", "hotline", "gọi cứu hộ", "hết pin", "kéo xe", "tai nạn", "khẩn cấp", "1900"],
-        "content": (
-            "Tổng đài cứu hộ khẩn cấp chính thức của VinFast hoạt động 24/7 trên toàn quốc: 1900-232389 (Phím 1).\n"
-            "VinFast cung cấp dịch vụ Cứu hộ Pin lưu động (Mobile Charging) hỗ trợ sạc nhanh cứu hộ khi xe hết pin trên đường, "
-            "và điều xe cứu hộ chuyên dụng đưa xe về Xưởng dịch vụ gần nhất hoàn toàn miễn phí trong thời gian bảo hành."
-        ),
-    },
-    {
-        "source_id": "SRC-004",
-        "title": "Biểu phí và Chính sách Sạc xe điện tại Trạm sạc Công cộng VinFast",
-        "url": "https://vinfastauto.com/vn_vi/chinh-sach-bieu-phi-sac-xe-dien",
-        "section": "Đơn giá sạc & Phí chiếm dụng trụ sạc",
-        "keywords": ["biểu phí", "giá sạc", "chi phí sạc", "tiền sạc", "phí chiếm dụng", "quá giờ", "kwh"],
-        "content": (
-            "Chính sách sạc xe điện VinFast tại trạm sạc công cộng:\n"
-            "1. Đơn giá sạc: Áp dụng đơn giá tính theo kWh theo biểu giá công bố của VinFast (thanh toán tự động qua App).\n"
-            "2. Phí chiếm dụng trụ sạc: Kể từ phút thứ 10 sau khi pin đã sạc đầy (100%) mà chủ xe chưa rút súng sạc di chuyển xe, "
-            "hệ thống sẽ bắt đầu tính phí chiếm dụng trụ sạc là 1.000 VNĐ/phút nhằm đảm bảo tính công bằng cho các chủ xe khác."
-        ),
-    },
-    {
-        "source_id": "SRC-005",
-        "title": "Cẩm nang Bảo dưỡng Định kỳ Ô tô Điện VinFast",
-        "url": "https://vinfastauto.com/vn_vi/lich-bao-duong-dinh-ky-xe-dien",
-        "section": "Các hạng mục bảo dưỡng định kỳ 12.000 km",
-        "keywords": ["bảo dưỡng", "định kỳ", "12.000", "12000", "km", "hạng mục", "cấp 1", "vf8", "vf 8", "lịch", "bảo trì"],
-        "content": (
-            "Theo Cẩm nang Bảo dưỡng Định kỳ chính thức của VinFast, các hạng mục kiểm tra mốc 12.000 km (hoặc 12 tháng) cho xe ô tô điện VinFast (VF 8, VF 9, VF 5, VF e34) bao gồm:\n"
-            "1. Kiểm tra tổng thể pack pin cao áp, độ kín khít và mức dung dịch làm mát pin.\n"
-            "2. Kiểm tra hệ thống phanh (má phanh, đĩa phanh, dầu phanh) và hoạt động của phanh tái sinh.\n"
-            "3. Kiểm tra hệ thống lái, thanh giằng, rô-tuyn, giảm xóc và siết lực ốc gầm theo tiêu chuẩn.\n"
-            "4. Kiểm tra độ mòn hoa lốp và cân chỉnh áp suất tiêu chuẩn cho 4 bánh xe.\n"
-            "5. Vệ sinh hoặc thay thế lọc gió điều hòa (lọc gió cabin) để đảm bảo không khí trong xe.\n"
-            "6. Chẩn đoán quét lỗi phần mềm qua cổng OBD-II, cập nhật phiên bản phần mềm FRS mới nhất tại Xưởng dịch vụ."
-        ),
-    },
-    {
-        "source_id": "SRC-006",
-        "title": "Danh mục Sản phẩm và Chính sách Bán hàng Ô tô điện VinFast",
-        "url": "https://vinfastauto.com/vn_vi/cac-dong-xe-o-to",
-        "section": "Tư vấn mua xe & Dải sản phẩm xe điện",
-        "keywords": ["mua xe", "bán xe", "tư vấn", "giá xe", "bảng giá", "dòng xe", "vf3", "vf 3", "vf5", "vf 5", "vf6", "vf 6", "vf7", "vf 7", "vf8", "vf 8", "vf9", "vf 9", "lái thử", "đặt cọc", "trả góp", "ưu đãi", "lăn bánh"],
-        "content": (
-            "VinFast hiện cung cấp dải sản phẩm ô tô điện toàn diện phủ khắp các phân khúc:\n"
-            "- VF 3: Mini SUV đô thị nhỏ gọn, thiết kế vuông vức cá tính, di chuyển linh hoạt.\n"
-            "- VF 5 Plus: A-SUV trẻ trung, tối ưu chi phí vận hành cho gia đình và đô thị.\n"
-            "- VF 6: B-SUV thời thượng, ngập tràn công nghệ thông minh và an toàn.\n"
-            "- VF 7: C-SUV phong cách thể thao, hiệu năng ấn tượng với 2 phiên bản Eco và Plus.\n"
-            "- VF 8: D-SUV sang trọng, hệ thống hỗ trợ lái nâng cao ADAS và trợ lý ảo thông minh.\n"
-            "- VF 9: E-SUV 7 chỗ đẳng cấp thương gia, tiện nghi hàng đầu.\n"
-            "Khách hàng có thể đăng ký trải nghiệm lái thử miễn phí và đặt cọc xe trực tiếp tại website VinFast Auto hoặc hệ thống Showroom/Nhà phân phối trên toàn quốc."
-        ),
-    },
-    {
-        "source_id": "SRC-007",
-        "title": "Thông số Kỹ thuật Chi tiết Ô tô điện VinFast (Catalog)",
-        "url": "https://vinfastauto.com/vn_vi/thong-so-ky-thuat-o-to-dien",
-        "section": "So sánh thông số kỹ thuật xe",
-        "keywords": ["thông số", "khác nhau", "so sánh", "vf7", "vf 7", "plus", "eco", "vf9", "vf 9", "nặng bao nhiêu", "dài rộng", "kích thước", "trọng lượng", "động cơ", "quãng đường"],
-        "content": (
-            "Thông số kỹ thuật tiêu chuẩn của các dòng xe ô tô điện VinFast:\n"
-            "1. So sánh VF 7 phiên bản Plus và Eco:\n"
-            "- Động cơ & Dẫn động: Bản Plus trang bị 2 mô tơ điện AWD (công suất tối đa 349 mã lực, mô-men xoắn 500 Nm); Bản Eco trang bị 1 mô tơ FWD (công suất 201 mã lực, mô-men xoắn 310 Nm).\n"
-            "- Pin & Quãng đường: Bản Plus pin 70,8 kWh cho tầm hoạt động tới 431 km (WLTP); Bản Eco pin 59,6 kWh cho tầm hoạt động tới 450 km (WLTP).\n"
-            "2. Thông số kích thước và trọng lượng xe VF 9:\n"
-            "- Kích thước tổng thể (Dài x Rộng x Cao): 5.118 x 2.254 x 1.696 (mm), chiều dài cơ sở 3.150 mm.\n"
-            "- Trọng lượng không tải của xe VF 9: khoảng 2,83 tấn đến 2,88 tấn tùy phiên bản."
-        ),
-    },
-]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_cache_lock = RLock()
 
-KNOWN_MODELS = ["VF 3", "VF 5", "VF 6", "VF 7", "VF 8", "VF 9", "VF e34"]
+
+def words(text: str) -> set[str]:
+    normalized = unicodedata.normalize("NFKC", text).casefold()
+    normalized = re.sub(r"vf\s*(e34|[356789])", r"vf\1", normalized)
+    return set(re.findall(r"\w+", normalized)) - {"xe", "vinfast", "là", "của", "có", "bao", "nhiêu", "những", "nào", "được", "ô", "tô", "điện", "cho", "và", "thì", "để", "cách"}
+
+
+def select_supported_evidence(query: str, citations: list[dict]) -> list[dict]:
+    """Preserve complete source lines and their conditions; never invent facts."""
+    from src.services.answer_evidence import answer_section
+    selected = []
+    seen = set()
+    for citation in citations:
+        lines = citation["relevant_snippet"].splitlines()
+        if not lines:
+            continue
+        # Chunks are bounded complete sections. Never trim required list steps.
+        excerpt = answer_section(query, "\n".join(lines))
+        if not excerpt or excerpt in seen:
+            continue
+        seen.add(excerpt)
+        selected.append({**citation, "relevant_snippet": excerpt})
+    return selected
+
+
+@lru_cache(maxsize=4)
+def _collection(path: str):
+    import chromadb
+    from chromadb.config import Settings as ChromaSettings
+
+    # Register the optional function before Chroma deserializes its saved config.
+    from src.services import multilingual_embeddings  # noqa: F401
+    client = chromadb.PersistentClient(path=path, settings=ChromaSettings(anonymized_telemetry=False))
+    return client.get_collection("vinfast_knowledge_base")
+
+
+def get_collection(path: str):
+    with _cache_lock:
+        return _collection(path)
+
+
+@lru_cache(maxsize=4)
+def _corpus(path: str, count: int, revision: tuple):
+    return get_collection(path).get(include=["documents", "metadatas", "embeddings"])
+
+
+def get_corpus(path: str, count: int):
+    # A same-count upsert changes SQLite/WAL state and invalidates this snapshot.
+    revision = tuple((p.name, p.stat().st_size, p.stat().st_mtime_ns) for p in (Path(path) / "chroma.sqlite3", Path(path) / "chroma.sqlite3-wal") if p.is_file())
+    with _cache_lock:
+        return _corpus(path, count, revision)
+
+
+def knowledge_fingerprint(path: str) -> str:
+    """Hash logical content and vectors; SQLite housekeeping is excluded."""
+    import numpy as np
+    collection = get_collection(path)
+    corpus = get_corpus(path, collection.count())
+    digest = sha256()
+    for i in sorted(range(len(corpus['ids'])), key=lambda j: corpus['ids'][j]):
+        digest.update(json.dumps([corpus['ids'][i], corpus['documents'][i], corpus['metadatas'][i]], ensure_ascii=False, sort_keys=True).encode('utf-8'))
+        digest.update(np.asarray(corpus['embeddings'][i], dtype='<f4').tobytes())
+    return digest.hexdigest()
+
+
+def model_applies(meta: dict, model: str | None) -> bool:
+    if not model:
+        return True
+    models = meta.get("applicable_models", "")
+    models = models.split(",") if isinstance(models, str) else models
+    normalized = {re.sub(r"\s+", "", str(m)).upper() for m in models}
+    return "ALL" in normalized or re.sub(r"\s+", "", model).upper() in normalized
+
+
+def rank_candidates(query: str, rows: list[tuple]) -> list[tuple]:
+    terms = words(query)
+    document_words = [words(row[0] or "") for row in rows]
+    frequencies = Counter(term for terms_in_doc in document_words for term in terms_in_doc)
+    total = max(1, len(rows))
+    def score(pair):
+        row, terms_in_doc = pair
+        overlap = sum(math.log(1 + total / frequencies[t]) for t in terms & terms_in_doc)
+        total_weight = sum(math.log(1 + total / max(1, frequencies[t])) for t in terms) or 1
+        lexical = overlap / total_weight
+        semantic = max(0, 1 - float(row[2]) / 2)
+        return (0.35 * lexical + 0.65 * semantic, -float(row[2]))
+    return [row for row, _ in sorted(zip(rows, document_words, strict=True), key=score, reverse=True)]
+
+
+def requested_source_type(query: str) -> str | None:
+    lower = query.lower()
+    if "bảo hành" in lower:
+        return "official_policy"
+    if any(k in lower for k in ["dung lượng", "nedc", "quãng đường", "eco", "plus", "thông số"]):
+        return "official_catalog"
+    if any(k in lower for k in ["adas", "ngập nước", "sổ tay"]):
+        return "official_manual"
+    if any(k in lower for k in ["ứng dụng", "app", "đặt lịch", "từ xa"]):
+        return "official_guide"
+    return None
+
+
+def source_registry() -> dict[str, dict]:
+    """Use the project's reviewed registry, never invented HTTP verification."""
+    registry = {}
+    for line in (PROJECT_ROOT / "docs/data-sources.md").read_text(encoding="utf-8").splitlines():
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) != 7 or not re.fullmatch(r"\*\*SRC-\d+\*\*", cells[0]) or "Đã xác minh (200 OK)" not in cells[4]:
+            continue
+        try:
+            date.fromisoformat(cells[5])
+        except ValueError:
+            continue
+        match = re.search(r"`(https://[^`]+)`", cells[2])
+        if match:
+            registry[cells[0].strip("*")] = {
+                "title": cells[1],
+                "url": match.group(1),
+                "source_type": cells[3].strip("`"),
+                "status_code": 200,
+                "verified_at": cells[5],
+            }
+    verification = PROJECT_ROOT / "docs/data-source-url-verification.json"
+    if verification.is_file():
+        for item in json.loads(verification.read_text(encoding="utf-8")):
+            if item["source_id"] in registry and item["status_code"] == 200:
+                date.fromisoformat(item["verified_at"])
+                registry[item["source_id"]].setdefault("approved_urls", {})[item["url"]] = item["verified_at"]
+    return registry
+
+
+def valid_citation(citation: dict, model: str | None = None) -> bool:
+    source = source_registry().get(citation.get("source_id"))
+    if not source:
+        return False
+    expected_date = source.get("approved_urls", {}).get(citation.get("url"))
+    if expected_date is None and source["url"] == citation.get("url"):
+        expected_date = source["verified_at"]
+    if expected_date is None:
+        return False
+    if urlparse(citation["url"]).hostname not in {"vinfastauto.com", "om.vinfastauto.com"}:
+        return False
+    if citation.get("status_code") != 200 or citation.get("verified_at") != expected_date:
+        return False
+    normalized = {re.sub(r"\s+", "", str(m)).upper() for m in citation.get("applicable_models", [])}
+    if model and "ALL" not in normalized and model.upper() not in normalized:
+        return False
+    if not normalized or not citation.get("relevant_snippet"):
+        return False
+    try:
+        if not 0 <= float(citation["distance"]) <= get_settings().rag_max_distance:
+            return False
+    except (KeyError, TypeError, ValueError):
+        return False
+    return not resolve_policy_conflict(citation["relevant_snippet"])
+
 
 class RAGService:
-    def __init__(self, chroma_dir: str = CHROMA_DIR, collection_name: str = COLLECTION_NAME):
-        self.chroma_dir = chroma_dir
-        self.collection_name = collection_name
-        self.client = None
-        self.collection = None
+    @staticmethod
+    def failure(status: str, category: str) -> dict:
+        return {"status": status, "best_distance": None, "citations": [],
+                "diagnostics": {"stage": "retrieval", "category": category, "status": status.lower(), "candidates": []}}
+
+    def retrieve(self, query: str, top_k: int = 3, vehicle_model: str | None = None) -> dict:
+        settings = get_settings()
+        if not Path(settings.chroma_persist_dir, "chroma.sqlite3").is_file():
+            return self.failure("UNAVAILABLE", "missing_index")
         try:
-            os.makedirs(self.chroma_dir, exist_ok=True)
-            self.client = chromadb.PersistentClient(path=self.chroma_dir)
-            self.collection = self.client.get_or_create_collection(name=self.collection_name)
-        except Exception:
-            self.client = None
-            self.collection = None
+            collection = get_collection(settings.chroma_persist_dir)
+            count = collection.count()
+            if not count:
+                return self.failure("NO_SOURCE", "empty_collection")
+            candidates = 20
+            source_type = requested_source_type(query)
+            registry = source_registry()
+            allowed = [source_id for source_id, meta in registry.items() if meta["source_type"] == source_type] if source_type else []
+            if not allowed:
+                # Source title relevance narrows service queries without benchmark IDs.
+                scores = {source_id: len(words(query) & words(meta["title"])) for source_id, meta in registry.items()}
+                peak = max(scores.values(), default=0)
+                allowed = [source_id for source_id, score in scores.items() if peak >= 2 and score == peak]
+            where = {"source_id": {"$in": allowed}} if allowed else None
+            configuration = collection.configuration
+            if configuration.get("hnsw", {}).get("space") == "l2" and configuration.get("embedding_function"):
+                # Full lexical candidate selection keeps Vietnamese terms that a
+                # vector-only shortlist misses. Distances remain the actual stored
+                # embedding's squared L2, with the same conservative threshold.
+                import numpy as np
+                corpus = get_corpus(settings.chroma_persist_dir, count)
+                function = configuration["embedding_function"]
+                query_embedding = function.embed_query(input=[query])[0] if hasattr(function, "embed_query") else function(input=[query])[0]
+                distances = np.sum((np.asarray(corpus["embeddings"]) - query_embedding) ** 2, axis=1)
+                rows = [(doc, meta, float(distance), chunk_id) for doc, meta, distance, chunk_id in zip(
+                    corpus["documents"], corpus["metadatas"], distances, corpus["ids"], strict=True
+                ) if (not allowed or meta.get("source_id") in allowed) and model_applies(meta or {}, vehicle_model)]
+                ranked = rank_candidates(query, rows)
+                # Do not lose supported candidates behind high-distance lexical hits.
+                shortlist = [row for row in ranked if row[2] <= settings.rag_max_distance][:candidates]
+                shortlist += [row for row in ranked if row[2] > settings.rag_max_distance][:max(0, candidates - len(shortlist))]
+                result = {"documents": [[r[0] for r in shortlist]], "metadatas": [[r[1] for r in shortlist]], "distances": [[r[2] for r in shortlist]], "ids": [[r[3] for r in shortlist]]}
+            else:
+                # Chroma stores comma-separated model applicability; fetch the
+                # source subset first and normalize before the bounded shortlist.
+                raw = collection.query(query_texts=[query], n_results=count, where=where, include=["documents", "metadatas", "distances"])
+                indices = [i for i, meta in enumerate(raw["metadatas"][0]) if model_applies(meta or {}, vehicle_model)][:candidates]
+                result = {key: [[raw[key][0][i] for i in indices]] for key in ["documents", "metadatas", "distances", "ids"]}
+            from src.services.rag_index import load_parent_map
+            return self.filter_results(result, vehicle_model, query, min(max(1, top_k), 3), parent_map=load_parent_map(settings.chroma_persist_dir))
+        except TimeoutError:
+            return self.failure("TIMEOUT", "timeout")
+        except Exception as error:
+            from chromadb.errors import NotFoundError
+            if isinstance(error, NotFoundError):
+                return self.failure("UNAVAILABLE", "missing_collection")
+            return self.failure("ERROR", "backend_or_schema_error")
 
-    def retrieve(self, query: str, top_k: int = 3, threshold: float = DEFAULT_SIMILARITY_THRESHOLD) -> dict[str, Any]:
-        """
-        Truy vấn tài liệu từ ChromaDB kết hợp Model-Aware Filtering, Fallback Knowledge Base và Rule 2.4.
-        """
-        query_lower = query.lower()
+    def retrieve_diagnostics(self, query: str, top_k: int = 3, vehicle_model: str | None = None) -> dict:
+        return self.retrieve(query, top_k, vehicle_model)
 
-        # Nhận diện dòng xe cụ thể nếu người dùng hỏi đích danh model
-        detected_model = None
-        for m in KNOWN_MODELS:
-            # Match "vf 7", "vf7", etc.
-            pattern = r'\b' + re.escape(m.lower()).replace(r'\ ', r'\s*') + r'\b'
-            if re.search(pattern, query_lower):
-                detected_model = m
-                break
-
-        docs = []
-        metas = []
-        dists = []
-        chunk_ids = []
-
-        # 1. Thử truy vấn ChromaDB nếu collection đã nạp dữ liệu
-        if self.collection is not None:
-            try:
-                count = self.collection.count()
-                if count > 0:
-                    # Nếu có model cụ thể -> Truy vấn ưu tiên catalog/tài liệu của model đó
-                    if detected_model:
-                        try:
-                            model_res = self.collection.query(
-                                query_texts=[query],
-                                n_results=top_k,
-                                where={"applicable_models": detected_model}
-                            )
-                            if model_res and model_res.get("documents") and model_res["documents"][0]:
-                                docs.extend(model_res["documents"][0])
-                                metas.extend(model_res["metadatas"][0])
-                                dists.extend(model_res["distances"][0])
-                                chunk_ids.extend(model_res["ids"][0])
-                        except Exception:
-                            pass
-
-                    # Truy vấn ngữ nghĩa chung (Toàn bộ database)
-                    general_res = self.collection.query(
-                        query_texts=[query],
-                        n_results=top_k,
-                        include=["documents", "metadatas", "distances"]
-                    )
-
-                    gen_docs = general_res["documents"][0] if general_res.get("documents") else []
-                    gen_metas = general_res["metadatas"][0] if general_res.get("metadatas") else []
-                    gen_dists = general_res["distances"][0] if general_res.get("distances") else []
-                    gen_cids = general_res["ids"][0] if general_res.get("ids") else []
-
-                    # Ghép và lọc trùng lặp
-                    seen_cids = set(chunk_ids)
-                    for d, m, dist, cid in zip(gen_docs, gen_metas, gen_dists, gen_cids):
-                        if cid not in seen_cids:
-                            seen_cids.add(cid)
-                            docs.append(d)
-                            metas.append(m)
-                            dists.append(dist)
-                            chunk_ids.append(cid)
-
-                    best_distance = min(dists) if dists else 999.0
-
-                    if docs and best_distance <= threshold:
-                        citations = []
-                        context_parts = []
-                        for idx, (doc, meta, dist, cid) in enumerate(zip(docs, metas, dists, chunk_ids), 1):
-                            if idx <= top_k and dist <= threshold + 0.15:
-                                context_parts.append(f"[Tài liệu {idx} - Nguồn {meta.get('source_id')} | {meta.get('title')}]:\n{doc}")
-                                citations.append({
-                                    "source_id": meta.get("source_id", ""),
-                                    "chunk_id": cid,
-                                    "title": meta.get("title", ""),
-                                    "url": meta.get("url", ""),
-                                    "section": meta.get("section", ""),
-                                    "distance": round(dist, 4)
-                                })
-                        if citations:
-                            return {
-                                "status": "SUCCESS",
-                                "best_distance": round(best_distance, 4),
-                                "context_text": "\n\n".join(context_parts),
-                                "citations": citations
-                            }
-            except Exception:
-                pass
-
-        # 2. Fallback Knowledge Base đối soát từ khóa thông minh
-        q_lower = query.lower()
-        matched_items = []
-        for item in FALLBACK_KNOWLEDGE_BASE:
-            match_score = sum(1 for kw in item["keywords"] if kw in q_lower)
-            if match_score > 0:
-                matched_items.append((match_score, item))
-
-        if matched_items:
-            matched_items.sort(key=lambda x: x[0], reverse=True)
-            top_item = matched_items[0][1]
-            return {
-                "status": "SUCCESS",
-                "best_distance": 0.25,
-                "context_text": f"[Tài liệu 1 - Nguồn {top_item['source_id']} | {top_item['title']}]:\n{top_item['content']}",
-                "citations": [
-                    {
-                        "source_id": top_item["source_id"],
-                        "chunk_id": f"{top_item['source_id']}-CHUNK-01",
-                        "title": top_item["title"],
-                        "url": top_item["url"],
-                        "section": top_item["section"],
-                        "distance": 0.25,
-                    }
-                ],
+    def filter_results(self, result: dict, vehicle_model: str | None = None, query: str = "", top_k: int = 3, *, parent_map: dict | None = None) -> dict:
+        registry = source_registry()
+        citations = []
+        diagnostics = []
+        initial_budget = get_settings().rag_context_max_bytes
+        budget = initial_budget
+        candidates = list(zip(
+            result["documents"][0], result["metadatas"][0], result["distances"][0], result["ids"][0], strict=True
+        ))
+        candidates = rank_candidates(query, candidates) if query else candidates
+        accepted_parents = set()
+        for doc, meta, distance, chunk_id in candidates:
+            meta = meta or {}
+            parent_id = meta.get("parent_chunk_id")
+            if parent_id:
+                if not parent_map or parent_id not in parent_map:
+                    raise ValueError("Missing parent evidence")
+                parent = parent_map[parent_id]
+                from src.services.rag_index import content_hash
+                child_hash = content_hash(doc)[:12]
+                if meta.get("parent_sha256") != parent.get("sha256") or not re.fullmatch(
+                    re.escape(parent_id) + r"::child:\d+:" + child_hash, chunk_id
+                ):
+                    raise ValueError("Child-parent integrity mismatch")
+                doc, meta = parent["document"], parent["metadata"]
+                if parent_id in accepted_parents:
+                    continue
+            source = registry.get(meta.get("source_id"))
+            approved_date = source.get("approved_urls", {}).get(meta.get("url")) if source else None
+            if not source or (source["url"] != meta.get("url") and not approved_date):
+                diagnostics.append({"chunk_id": chunk_id, "reason": "registry_mismatch"})
+                continue
+            models = meta.get("applicable_models", "")
+            models = models.split(",") if isinstance(models, str) else models
+            models = [re.sub(r"\s+", "", str(m)).upper() for m in models]
+            if vehicle_model and "ALL" not in models and re.sub(r"\s+", "", vehicle_model).upper() not in models:
+                diagnostics.append({"chunk_id": chunk_id, "reason": "model_mismatch"})
+                continue
+            variant = re.search(r"\b(plus|eco)\b", query, re.I)
+            if variant and source["source_type"] == "official_catalog" and variant.group().lower() not in (doc or "").lower():
+                diagnostics.append({"chunk_id": chunk_id, "reason": "variant_mismatch"})
+                continue
+            sections = select_supported_evidence(query, [{"relevant_snippet": doc or ""}])
+            if not sections:
+                reason = "procedure_goal_mismatch" if "đặt lịch" in query.casefold() and "đặt lịch" not in (doc or "").casefold() else "missing_answer_evidence"
+                diagnostics.append({"chunk_id": chunk_id, "reason": reason})
+                continue
+            excerpt = sections[0]["relevant_snippet"]
+            lower_query = query.casefold()
+            lower_excerpt = re.sub(r"\s*-\s*", " ", excerpt.casefold())
+            subjects = [term for term in ("truyền động", "pin cao áp", "ắc quy", "lốp", "mobile service", "ngập nước", "adas") if term in lower_query]
+            if any(term not in lower_excerpt for term in subjects) or (query and (not words(query) & words(excerpt) or len(words(excerpt)) < 6)):
+                diagnostics.append({"chunk_id": chunk_id, "reason": "missing_answer_subject"})
+                continue
+            procedure_requested = any(term in lower_query for term in ("hướng dẫn", "cách ", "làm thế nào", "như thế nào"))
+            body = "\n".join(excerpt.splitlines()[1:]).casefold()
+            if procedure_requested and "đặt lịch" in lower_query and "đặt lịch" not in excerpt.splitlines()[0].casefold():
+                diagnostics.append({"chunk_id": chunk_id, "reason": "procedure_goal_mismatch"})
+                continue
+            if procedure_requested and not any(term in body for term in ("bước ", "bấm ", "chọn ", "nhập ", "truy cập ", "thực hiện ", "kiểm tra ", "xác nhận ", "bật ", "tắt ")):
+                diagnostics.append({"chunk_id": chunk_id, "reason": "missing_procedure"})
+                continue
+            if source["source_type"] == "official_catalog":
+                passage_variants = set(re.findall(r"\b(?:eco|plus)\b", excerpt.lower()))
+                years = set(re.findall(r"\b20\d{2}\b", excerpt))
+                requested_years = set(re.findall(r"\b20\d{2}\b", query))
+                if (passage_variants and not variant) or (variant and passage_variants != {variant.group().lower()}) or (requested_years and not requested_years <= years):
+                    diagnostics.append({"chunk_id": chunk_id, "reason": "unresolved_applicability"})
+                    continue
+            if utf8_size(excerpt) > budget:
+                diagnostics.append({"chunk_id": chunk_id, "reason": "context_budget_exceeded", "size_bytes": utf8_size(excerpt)})
+                continue
+            snippet = excerpt
+            citation = {
+                **source,
+                "url": meta["url"],
+                "verified_at": approved_date or source["verified_at"],
+                "source_id": meta["source_id"],
+                "chunk_id": chunk_id,
+                "applicable_models": models,
+                "relevant_snippet": snippet,
+                "distance": distance,
             }
-
+            if parent_id:
+                citation["parent_chunk_id"] = parent_id
+            if not valid_citation(citation, vehicle_model):
+                reason = "unsafe_content" if resolve_policy_conflict(snippet) else "distance_or_metadata"
+                diagnostics.append({"chunk_id": chunk_id, "source_id": meta["source_id"], "distance": distance, "reason": reason})
+                continue
+            diagnostics.append({"chunk_id": chunk_id, "source_id": meta["source_id"], "distance": distance, "reason": "accepted"})
+            citations.append(citation)
+            accepted_parents.add(parent_id or chunk_id)
+            budget -= utf8_size(snippet)
+            if len(citations) >= top_k or budget <= 0:
+                break
         return {
-            "status": "NO_SOURCE",
-            "best_distance": 999.0,
-            "context_text": "",
-            "citations": [],
-            "message": "Không tìm thấy tài liệu chính thức của VinFast xác thực thông tin này."
+            "status": "SUCCESS" if citations else "NO_SOURCE",
+            "citations": citations,
+            "best_distance": min(c["distance"] for c in citations) if citations else None,
+            "diagnostics": {"stage": "retrieval", "candidates": diagnostics,
+                            "candidate_parent_ids": list(dict.fromkeys((m or {}).get("parent_chunk_id", cid) for _, m, _, cid in candidates)),
+                            "selected_parent_ids": [c.get("parent_chunk_id", c["chunk_id"]) for c in citations],
+                            "embedding": "collection-configured", "distance_threshold": get_settings().rag_max_distance,
+                            "category": "success" if citations else "context_budget_exceeded" if any(d["reason"] == "context_budget_exceeded" for d in diagnostics) else "no_eligible_evidence",
+                            "context_bytes_used": initial_budget - budget, "context_bytes_remaining": budget, "context_max_bytes": initial_budget},
         }
 
-# Singleton instance phục vụ tái sử dụng nhanh
+
 rag_service = RAGService()

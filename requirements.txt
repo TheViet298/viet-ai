@@ -18,10 +18,12 @@ alembic>=1.14.0
 # psycopg2-binary>=2.9.0   # chỉ cần khi đổi sang PostgreSQL
 
 # Vector Store (uncomment as needed)
-chromadb>=0.5.0
+chromadb>=1.0.0,<2
 
 # Dev tools
 ruff>=0.8.0
 pytest>=8.0.0
 pytest-asyncio>=0.24.0
 httpx>=0.28.0
+beautifulsoup4>=4.12,<5
+# Optional cloud tracing: pip install langfuse>=3,<4

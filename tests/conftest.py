@@ -4,7 +4,16 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
+from src.config import get_settings
 from src.main import app
+
+
+@pytest.fixture(autouse=True)
+def isolated_agent_environment(monkeypatch, tmp_path):
+    settings = get_settings()
+    monkeypatch.setattr(settings, "agent_llm_enabled", False)
+    monkeypatch.setattr(settings, "database_url", f"sqlite:///{tmp_path / 'app.db'}")
+    monkeypatch.setattr(settings, "chroma_persist_dir", str(tmp_path / "chroma"))
 
 
 @pytest_asyncio.fixture
