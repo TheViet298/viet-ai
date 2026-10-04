@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ShieldCheck,
   Sparkles,
@@ -25,7 +25,14 @@ import {
   FileText,
   MessageSquare,
 } from "lucide-react";
-import { TicketItem, TicketStatus, StaffActionType, TicketDetail } from "../types";
+import {
+  TicketItem,
+  TicketStatus,
+  StaffActionType,
+  TicketDetail,
+  VIETNAMESE_STATUS_MAP,
+  VIETNAMESE_PRIORITY_MAP,
+} from "../types";
 import { ROUTING_DEPARTMENTS } from "./StaffConsoleShell";
 import { getTicketDetail, submitStaffAction } from "../api/consoleApi";
 
@@ -356,8 +363,14 @@ export function TicketDetailPanel({
     return "Cảnh báo đèn táp-lô cần kỹ thuật viên xưởng kết nối cổng OBD-II kiểm tra.";
   })();
 
+  // Ref cuộn panel chi tiết về đỉnh khi đổi case
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   // When ticket prop changes, sync detail & default selected dept
   useEffect(() => {
+    // Cuộn panel về đầu mỗi khi đổi case
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+
     const existing = DETAILED_TICKETS_MAP[ticket.id];
     if (existing) {
       setTicketDetail(existing);
@@ -464,7 +477,7 @@ export function TicketDetailPanel({
     {
       label: "Vị trí",
       value: captured.station_location || "Đang xác minh tọa độ",
-      isWarning: !captured.station_location,
+      isWarning: !captured.station_location || String(captured.station_location).includes("Đang"),
     },
     {
       label: "Dung lượng pin (SoC)",
@@ -473,7 +486,7 @@ export function TicketDetailPanel({
     },
     {
       label: "Mã lỗi kỹ thuật",
-      value: captured.error_code || "Chưa ghi nhận mã DTC",
+      value: captured.error_code || "Chưa ghi nhận mã lỗi",
       isWarning: String(captured.error_code || "").includes("Chưa rõ") || String(captured.error_code || "").includes("Chưa ghi nhận"),
       isAlert: String(captured.error_code || "").includes("TURTLE") || String(captured.error_code || "").includes("CC01"),
     },
@@ -500,36 +513,51 @@ export function TicketDetailPanel({
     });
   }
 
+  // Tiêu đề ngắn 1 dòng cho Header
+  const displayHeaderTitle =
+    ticket.issue_summary && ticket.issue_summary !== "Yêu cầu kiểm tra sự cố"
+      ? ticket.issue_summary
+      : ticketDetail.case_brief.summary
+      ? ticketDetail.case_brief.summary.split(".")[0]
+      : `Hồ sơ sự cố xe ${ticket.vehicle_model}`;
+
   return (
     <div
       key={ticket.id}
-      className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col h-[calc(100vh-140px)] overflow-hidden transition-all duration-150"
+      className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col h-[calc(100vh-140px)] overflow-hidden transition-all duration-150 animate-in fade-in slide-in-from-right-2 duration-200"
     >
       {/* ─────────────────────────────────────────────────────────────
-          1. STICKY DETAIL HEADER: 1 NÚT CHÍNH ĐẶC, CÒN LẠI HẠ CẤP
-             Tiêu đề trọng tâm 18-20px, mã case nhỏ, thanh hành động sticky
+          1. STICKY DETAIL HEADER: 1 DÒNG SÚC TÍCH, DÍNH TRÊN CÙNG KHI CUỘN
+             Mã case nhỏ, trạng thái đồng nhất, 3 nút hành động sticky
       ───────────────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-10 bg-white border-b border-slate-100 p-4 space-y-3 shrink-0">
+      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-slate-100 p-4 space-y-2.5 shrink-0 shadow-2xs">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           {/* Main Case Title & Subtitle */}
-          <div className="space-y-1.5 min-w-0 flex-1">
-            <h2 className="text-[18px] sm:text-[19px] font-bold text-slate-900 leading-snug">
-              {ticket.issue_summary || ticketDetail.case_brief.summary}
+          <div className="space-y-1 min-w-0 flex-1">
+            <h2
+              className="text-[17px] sm:text-[18px] font-bold text-slate-900 leading-snug truncate"
+              title={ticket.issue_summary || ticketDetail.case_brief.summary}
+            >
+              {displayHeaderTitle}
             </h2>
 
-            {/* Subtitle: 003 · VF5 · CUST · Status */}
+            {/* Subtitle: 001 · CASE-20260924-001 · VF8 · Khách: CUST · Trạng thái */}
             <div className="flex items-center gap-2 text-[12px] text-slate-500 flex-wrap">
+              <span className="font-semibold text-slate-800 font-mono">
+                {ticket.id.replace(/^CASE-\d+-/i, "")}
+              </span>
+              <span>·</span>
               <button
                 type="button"
                 onClick={handleCopyId}
-                className="font-mono text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded inline-flex items-center gap-1 transition group"
-                title="Sao chép mã hồ sơ"
+                className="font-mono text-slate-600 bg-slate-100 hover:bg-slate-200 px-1.5 py-0.5 rounded inline-flex items-center gap-1 transition text-[11px]"
+                title="Sao chép toàn bộ mã hồ sơ"
               >
                 <span>{ticket.id}</span>
                 {copiedId ? (
                   <Check className="w-3 h-3 text-emerald-600" />
                 ) : (
-                  <span className="text-[10px] text-slate-400 group-hover:text-slate-600">copy</span>
+                  <span className="text-[9px] text-slate-400">copy</span>
                 )}
               </button>
               <span>·</span>
@@ -541,14 +569,17 @@ export function TicketDetailPanel({
               <span>·</span>
               <span className="inline-flex items-center gap-1.5 font-medium">
                 <span
-                  className={`w-2 h-2 rounded-full ${isCritical
+                  className={`w-2 h-2 rounded-full ${
+                    isCritical
                       ? "bg-red-500 animate-pulse"
                       : ticket.priority === "HIGH"
-                        ? "bg-amber-500"
-                        : "bg-blue-500"
-                    }`}
+                      ? "bg-amber-500"
+                      : "bg-blue-500"
+                  }`}
                 />
-                <span className="text-slate-700">{ticket.status}</span>
+                <span className="text-slate-700 font-medium">
+                  {VIETNAMESE_STATUS_MAP[ticket.status] || ticket.status}
+                </span>
               </span>
             </div>
           </div>
@@ -656,7 +687,7 @@ export function TicketDetailPanel({
       {/* ─────────────────────────────────────────────────────────────
           2. SCROLLABLE TAB CONTENT AREA
       ───────────────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
         {/* =========================================================
             SUB-TAB 1: CASE BRIEF & TECHNICAL FIELDS
         ========================================================= */}
@@ -730,7 +761,7 @@ export function TicketDetailPanel({
 
             {/* ─────────────────────────────────────────────────────────────
                 THAM SỐ BÓC TÁCH: BỎ Ô, DÙNG DANH SÁCH KEY-VALUE
-                Chỉ tô nổi những mục thiếu/cần xác minh (màu vàng cam/đỏ)
+                Giá trị đặt sát nhãn, chỉ tô nổi mục thiếu/cần xác minh (màu vàng cam/đỏ)
             ───────────────────────────────────────────────────────────── */}
             <div className="space-y-1.5 pt-1">
               <div className="flex items-center justify-between px-1">
@@ -746,18 +777,19 @@ export function TicketDetailPanel({
                 {parameterRows.map((row, idx) => (
                   <div
                     key={idx}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between py-2.5 px-3.5 hover:bg-slate-50/50 transition gap-1 sm:gap-4"
+                    className="flex items-center py-2.5 px-3.5 hover:bg-slate-50/50 transition gap-3"
                   >
-                    <span className="text-slate-500 text-[12.5px] sm:w-44 shrink-0 font-normal">
+                    <span className="text-slate-500 text-[12.5px] w-36 sm:w-44 shrink-0 font-normal">
                       {row.label}
                     </span>
                     <span
-                      className={`font-medium flex-1 sm:text-right ${row.isAlert
-                          ? "text-red-600 font-semibold flex items-center sm:justify-end gap-1.5"
+                      className={`font-medium flex-1 text-left flex items-center gap-1.5 ${
+                        row.isAlert
+                          ? "text-red-600 font-semibold"
                           : row.isWarning
-                            ? "text-amber-600 font-semibold flex items-center sm:justify-end gap-1.5"
-                            : "text-slate-900"
-                        }`}
+                          ? "text-amber-600 font-semibold"
+                          : "text-slate-900"
+                      }`}
                     >
                       {row.isAlert && <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
                       {row.isWarning && !row.isAlert && (

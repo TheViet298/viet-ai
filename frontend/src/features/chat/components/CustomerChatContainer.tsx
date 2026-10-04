@@ -18,14 +18,13 @@ import Link from "next/link";
 import { VehicleModel, UserLocationState } from "../types";
 import { useChat } from "../hooks/useChat";
 import { EmergencyAlertBanner } from "./EmergencyAlertBanner";
-import { QuickPromptsBar } from "./QuickPromptsBar";
 import { ChatFeed } from "./ChatFeed";
 import { ChatInputBar } from "./ChatInputBar";
 import { LocationConsentCard } from "./LocationConsentCard";
 import { ServiceMapPanel } from "./ServiceMapPanel";
 import { CHAT_SEED_SERVICE_POINTS } from "../constants";
 import { getAiSystemStatus, uploadAttachment } from "../api/chatApi";
-import { useAuth } from "@/features/shared";
+import { useAuth, ProductMark } from "@/features/shared";
 
 const VEHICLE_MODELS: VehicleModel[] = [
   "VF8",
@@ -50,7 +49,11 @@ export function CustomerChatContainer() {
     criticalBanner,
     sendMessage,
     resetChat,
-  } = useChat();
+    updateMessageChips,
+  } = useChat({
+    userName: user?.name,
+    vehicleModel: user?.vehicleModel || "VF8",
+  });
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
@@ -316,17 +319,17 @@ export function CustomerChatContainer() {
           <div className="px-3.5 py-2 bg-slate-50/90 text-slate-900 flex items-center justify-between border-b border-slate-200/80">
             <div className="flex items-center space-x-2 min-w-0">
               <div className="w-7 h-7 rounded-lg bg-[#1E40AF] flex items-center justify-center text-white shrink-0 shadow-2xs">
-                <Car className="w-3.5 h-3.5 text-white" />
+                <ProductMark className="w-4 h-4 text-white" />
               </div>
               <div className="min-w-0">
                 <div className="font-bold text-[13px] text-slate-900 truncate">
-                  Trợ lý Kỹ thuật VinFast AI
+                  VF Serv AI · <span className="font-normal text-slate-600">Trợ lý Dịch vụ VinFast</span>
                 </div>
               </div>
               <div className="text-[11px] text-slate-500 hidden sm:flex items-center gap-1.5 pl-2 border-l border-slate-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse shrink-0" />
                 <span className="truncate max-w-[200px]">
-                  {role === "GUEST" ? "Khách vãng lai" : "Sẵn sàng 24/7"}
+                  {role === "GUEST" ? "Guest" : "Sẵn sàng 24/7"}
                 </span>
               </div>
             </div>
@@ -390,36 +393,7 @@ export function CustomerChatContainer() {
             </div>
           )}
 
-          {/* Quick Prompts Bar: CHỈ HIỆN KHI CHAT TRỐNG (messages.length <= 1) */}
-          {messages.length <= 1 && (
-            <QuickPromptsBar
-              onSelectPrompt={(qp) => {
-                setSelectedModel(qp.model);
-                sendMessage(qp.text);
-                const lower = qp.text.toLowerCase();
-                if (lower.includes("sạc") || lower.includes("cc01")) {
-                  setSuggestedCategory("CHARGING_STATION");
-                  setShowLocationCard(true);
-                } else if (
-                  lower.includes("bảo dưỡng") ||
-                  lower.includes("kẹt") ||
-                  lower.includes("số")
-                ) {
-                  setSuggestedCategory("SERVICE_WORKSHOP");
-                  setShowLocationCard(true);
-                } else if (
-                  lower.includes("rùa vàng") ||
-                  lower.includes("cứu hộ") ||
-                  lower.includes("cao tốc")
-                ) {
-                  setSuggestedCategory("EXPRESSWAY_RESCUE");
-                  setShowLocationCard(true);
-                }
-              }}
-            />
-          )}
-
-          {/* Messages Feed (Không còn chứa Card vị trí làm chật chội luồng chat) */}
+          {/* Messages Feed (Không còn hàng QuickPromptsBar trùng lặp, giữ khung chat thông thoáng) */}
           <ChatFeed
             messages={messages}
             loading={loading}
@@ -436,6 +410,34 @@ export function CustomerChatContainer() {
                 setIsMapOpen(true);
                 return;
               }
+
+              // Khi khách chọn "Báo sự cố kỹ thuật": mở các chip lỗi cụ thể ngay dưới bong bóng chào
+              if (reply === "Báo sự cố kỹ thuật") {
+                const lastMsg = messages[messages.length - 1];
+                if (lastMsg) {
+                  updateMessageChips(lastMsg.id, [
+                    "Mã lỗi CC01 trụ sạc",
+                    "Cảnh báo rùa vàng",
+                    "Kẹt súng sạc",
+                    "Xe không khởi động",
+                  ]);
+                }
+                setInput(`Xe ${selectedModel} của tôi đang gặp sự cố kỹ thuật: `);
+                return;
+              }
+
+              // Điền sẵn câu hỏi vào ô nhập đối với các nhóm chip tư vấn / tra cứu
+              const GREETING_PREFILLS: Record<string, string> = {
+                "Tư vấn xe": `Tôi muốn tư vấn thông tin các dòng xe điện VinFast từ VF 3 đến VF 9, giá lăn bánh và đăng ký lái thử cho xe ${selectedModel}.`,
+                "Trạm sạc & ứng dụng": `Hướng dẫn cách sạc pin tại trạm sạc công cộng, biểu phí sạc và tính năng trên App VinFast cho xe ${selectedModel}.`,
+                "Bảo hành & bảo dưỡng": `Chính sách bảo hành pin 10 năm và cẩm nang bảo dưỡng định kỳ 12.000km xe ${selectedModel}.`,
+              };
+
+              if (GREETING_PREFILLS[reply]) {
+                setInput(GREETING_PREFILLS[reply]);
+                return;
+              }
+
               sendMessage(reply);
               if (lower.includes("sạc") || lower.includes("trạm")) {
                 setSuggestedCategory("CHARGING_STATION");

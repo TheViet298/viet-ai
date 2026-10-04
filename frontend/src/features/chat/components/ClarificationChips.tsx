@@ -1,4 +1,4 @@
-import { CornerDownRight } from "lucide-react";
+import React from "react";
 
 interface ClarificationChipsProps {
   chips?: string[];
@@ -18,9 +18,8 @@ export function ClarificationChips({
           key={idx}
           type="button"
           onClick={() => onSelectChip(chip)}
-          className="inline-flex items-center gap-1.5 text-[12px] bg-white hover:bg-blue-50/90 text-slate-700 hover:text-[#1E40AF] border border-slate-200/90 hover:border-blue-300 rounded-xl px-3 py-1.5 font-medium transition-all shadow-2xs active:scale-[0.98] group"
+          className="inline-flex items-center text-[12px] bg-white hover:bg-blue-50/90 text-slate-700 hover:text-[#1E40AF] border border-slate-200/90 hover:border-blue-300 rounded-xl px-3 py-1.5 font-medium transition-all shadow-2xs active:scale-[0.98]"
         >
-          <CornerDownRight className="w-3 h-3 text-slate-400 group-hover:text-[#1E40AF] transition" />
           <span>{chip}</span>
         </button>
       ))}

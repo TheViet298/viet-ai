@@ -489,20 +489,16 @@ async def customer_chat(
     is_greeting = any(lower_text == kw or lower_text.startswith(f"{kw} ") for kw in greeting_keywords) and not is_technical_incident
 
     if is_greeting:
+        customer_name = payload.client_context.customer_name if payload.client_context else None
+        target = f"anh/chị {customer_name}" if customer_name else "anh/chị"
         greeting_reply = (
-            "Dạ em xin chào anh/chị! Em là Trợ lý AI Dịch vụ Khách hàng VinFast. "
-            "Em luôn sẵn sàng đồng hành và hỗ trợ anh/chị 24/7:\n\n"
-            "• 🚗 **Tư vấn sản phẩm & Mua xe:** Thông tin dải xe điện VF 3 đến VF 9, giá lăn bánh, đăng ký lái thử.\n"
-            "• 🔋 **Trạm sạc & Ứng dụng:** Hướng dẫn sạc pin công cộng, biểu phí sạc, các tính năng trên App VinFast.\n"
-            "• 🔧 **Bảo hành & Bảo dưỡng:** Chính sách bảo hành pin 10 năm, cẩm nang bảo dưỡng định kỳ 12.000km.\n"
-            "• ⚠️ **Hỗ trợ Kỹ thuật:** Tiếp nhận sự cố sạc pin, chẩn đoán sơ bộ và điều phối cứu hộ khẩn cấp.\n\n"
-            "Anh/chị cần em hỗ trợ nội dung nào hôm nay ạ?"
+            f"Chào {target}! Em là Trợ lý VF Serv, hỗ trợ dịch vụ xe điện VinFast 24/7. Em có thể hỗ trợ được gì cho {target} hôm nay ạ?"
         )
         suggested_replies = [
-            "Tôi muốn mua xe",
-            "Thời hạn bảo hành pin VF 8",
-            "Bảo dưỡng định kỳ 12.000km",
-            "Trạm sạc bị lỗi",
+            "Tư vấn xe",
+            "Trạm sạc & ứng dụng",
+            "Bảo hành & bảo dưỡng",
+            "Báo sự cố kỹ thuật",
         ]
         agent_msg = Message(
             id=str(uuid.uuid4()),
@@ -538,14 +534,14 @@ async def customer_chat(
 
     if is_sales_inquiry:
         sales_reply = (
-            "Dạ VinFast xin chào anh/chị! Hiện nay VinFast đang phân phối hệ sinh thái ô tô điện thông minh toàn diện phủ khắp các phân khúc:\n\n"
-            "🚗 **VF 3**: Mini SUV đô thị nhỏ gọn, thiết kế vuông vức cá tính, di chuyển linh hoạt.\n"
-            "🚙 **VF 5 Plus**: A-SUV trẻ trung, tối ưu chi phí vận hành cho gia đình và đô thị.\n"
-            "🚘 **VF 6**: B-SUV thời thượng, ngập tràn công nghệ thông minh và an toàn.\n"
-            "🏎️ **VF 7**: C-SUV phong cách thể thao, hiệu năng ấn tượng với 2 phiên bản Eco và Plus.\n"
-            "✨ **VF 8**: D-SUV sang trọng, hệ thống hỗ trợ lái nâng cao ADAS và trợ lý ảo thông minh.\n"
-            "👑 **VF 9**: E-SUV 7 chỗ đẳng cấp thương gia, tiện nghi hàng đầu.\n\n"
-            "Anh/chị đang quan tâm đến dòng xe nào hoặc cần em tư vấn thêm về tầm giá, chính sách thuê/mua pin hay đặt lịch lái thử tận nơi ạ?"
+            "VinFast hiện có dải xe điện phủ nhiều phân khúc:\n\n"
+            "- **VF 3**: mini SUV đô thị nhỏ gọn, thiết kế vuông vức, di chuyển linh hoạt\n"
+            "- **VF 5 Plus**: A-SUV trẻ trung, tối ưu chi phí vận hành cho gia đình và đô thị\n"
+            "- **VF 6**: B-SUV thời thượng, nhiều công nghệ thông minh và an toàn\n"
+            "- **VF 7**: C-SUV phong cách thể thao, có 2 phiên bản Eco và Plus\n"
+            "- **VF 8**: D-SUV sang trọng, có hệ thống hỗ trợ lái nâng cao (ADAS) và trợ lý ảo\n"
+            "- **VF 9**: E-SUV 7 chỗ đẳng cấp thương gia, tiện nghi hàng đầu\n\n"
+            "Anh/chị đang quan tâm dòng nào, hoặc cần em tư vấn thêm về tầm giá, chính sách thuê/mua pin, đặt lịch lái thử?"
         )
         sales_citations = [
             Citation(
@@ -608,8 +604,9 @@ async def customer_chat(
             },
         )
         agent_reply = ai_res.get("reply") or (
-            "Dạ theo tài liệu chính thức từ VinFast, anh/chị có thể dễ dàng tra cứu thông tin chi tiết, "
-            "quản lý tình trạng xe và đặt lịch dịch vụ trực tiếp trên Ứng dụng VinFast."
+            "Theo tài liệu chính thức từ VinFast, anh/chị có thể tra cứu thông tin chi tiết, "
+            "quản lý tình trạng xe và đặt lịch dịch vụ trực tiếp trên Ứng dụng VinFast.\n\n"
+            "Anh/chị cần em hỗ trợ thao tác cụ thể nào không ạ?"
         )
         if isinstance(agent_reply, list):
             agent_reply = "".join(

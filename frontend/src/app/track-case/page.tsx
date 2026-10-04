@@ -683,7 +683,7 @@ export default function TrackCasePage() {
                   Yêu cầu của tôi
                 </h1>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-[#1E40AF] border border-blue-200/60">
-                  {role === "GUEST" ? "Khách vãng lai" : "Thời gian thực"}
+                  {role === "GUEST" ? "Guest" : "Thời gian thực"}
                 </span>
               </div>
               <p className="text-[12.5px] text-slate-500 mt-0.5">
@@ -818,13 +818,13 @@ export default function TrackCasePage() {
             <div className="space-y-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-[11.5px] font-semibold">
                 <Car className="w-3.5 h-3.5 text-[#1E40AF]" />
-                Chế độ Khách vãng lai (Guest)
+                Chế độ Guest
               </span>
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                 Yêu cầu đăng nhập tài khoản Khách hàng
               </h2>
               <p className="text-[13px] text-slate-500 max-w-lg mx-auto leading-relaxed">
-                Theo tiêu chuẩn phân quyền & bảo mật dữ liệu xe (ADR-005), hồ sơ kỹ thuật và tiến trình xử lý sự cố chỉ dành riêng cho Khách hàng sở hữu xe. Khách vãng lai có thể tra cứu cẩm nang công khai.
+                Theo tiêu chuẩn phân quyền & bảo mật dữ liệu xe (ADR-005), hồ sơ kỹ thuật và tiến trình xử lý sự cố chỉ dành riêng cho Khách hàng sở hữu xe. Bạn có thể tra cứu cẩm nang công khai hoặc đăng nhập để theo dõi hồ sơ.
               </p>
             </div>
 

@@ -13,6 +13,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { ProductMark } from "./ProductMark";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -40,8 +41,16 @@ export function Navbar() {
           { name: "Knowledge Hub", href: "/#knowledge-hub", icon: BookOpen },
         ];
 
+  const isAuthPage = pathname === "/login" || pathname === "/register";
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md text-[#0F172A] shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+    <header
+      className={`sticky top-0 z-50 w-full border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md text-[#0F172A] shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all duration-300 ease-in-out ${
+        isAuthPage
+          ? "-translate-y-full opacity-0 pointer-events-none h-0 overflow-hidden border-b-0"
+          : "translate-y-0 opacity-100 h-14"
+      }`}
+    >
       {/* Banner nhỏ thông báo khi Staff đang ở chế độ Customer Preview */}
       {role === "STAFF" && (
         <div className="bg-[#EFF3FC] border-b border-[#1E40AF]/20 px-4 py-1 text-[11px] font-medium text-[#1E40AF] flex items-center justify-between">
@@ -64,16 +73,16 @@ export function Navbar() {
         <div className="flex items-center justify-between h-14">
           {/* Logo Brand */}
           <div className="flex items-center space-x-3">
-            <Link href="/" className="flex items-center space-x-2 group">
-              <div className="w-8 h-8 rounded-[10px] bg-[#1E40AF] flex items-center justify-center text-white shadow-sm transition-transform group-hover:scale-105">
-                <ScanLine className="w-4 h-4 text-white" />
+            <Link href="/" className="flex items-center space-x-2.5 group">
+              <div className="w-8 h-8 rounded-[10px] bg-[#1E40AF] flex items-center justify-center text-white shadow-xs transition-transform group-hover:scale-105">
+                <ProductMark className="w-4 h-4 text-white" />
               </div>
               <div>
-                <div className="font-bold text-[15px] tracking-tight flex items-center gap-1.5 font-display text-[#0F172A]">
-                  ServiceFlow <span className="text-[#1E40AF] font-bold">AI</span>
+                <div className="font-bold text-[16px] tracking-tight flex items-center gap-1 font-display text-[#0F172A]">
+                  VF <span className="text-[#1E40AF] font-bold">Serv</span>
                 </div>
-                <div className="text-[10px] text-[#64748B] tracking-wider font-mono uppercase font-semibold">
-                  EV Support Hub
+                <div className="text-[9.5px] text-[#64748B] tracking-wider font-mono uppercase font-semibold">
+                  VinFast EV Hub
                 </div>
               </div>
             </Link>

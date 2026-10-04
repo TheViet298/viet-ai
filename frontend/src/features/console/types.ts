@@ -76,3 +76,20 @@ export interface StaffActionPayload {
   edited_brief?: Partial<CaseBrief> | null;
   notes?: string;
 }
+
+export const VIETNAMESE_STATUS_MAP: Record<string, string> = {
+  "New": "Mới tiếp nhận",
+  "Staff Reviewing": "Chờ duyệt",
+  "Needs Information": "Cần thêm tin",
+  "In Progress": "Đang xử lý",
+  "Resolved": "Đã xử lý",
+  "Closed": "Đã đóng",
+  "Reopened": "Mở lại",
+};
+
+export const VIETNAMESE_PRIORITY_MAP: Record<string, string> = {
+  "CRITICAL": "Khẩn cấp",
+  "HIGH": "Ưu tiên",
+  "MEDIUM": "Tiêu chuẩn",
+  "LOW": "Thấp",
+};

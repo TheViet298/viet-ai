@@ -151,6 +151,7 @@ class ClientContext(BaseModel):
     mock_customer_id: str | None = "CUST_MOCK_01"
     vehicle_model: str | None = "VF8"
     vehicle_code_mock: str | None = "VF-SF-00231"
+    customer_name: str | None = None
 
 
 class CustomerChatRequest(BaseModel):
@@ -365,12 +366,17 @@ class TicketItem(BaseModel):
     id: str
     mock_customer_id: str
     vehicle_model: str
+    vehicle_code_mock: str | None = None
     intent: str
     priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
     status: str
     missing_info_flag: bool = False
     created_at: str
     confidence_score: float
+    issue_summary: str | None = None
+    suggested_action: str | None = None
+    has_location_consent: bool = False
+    error_code_short: str | None = None
 
 
 class TicketQueueData(BaseModel):

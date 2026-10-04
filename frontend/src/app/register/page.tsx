@@ -12,8 +12,9 @@ import {
   ArrowRight,
   ShieldCheck,
   AlertCircle,
+  ArrowLeft,
 } from "lucide-react";
-import { useAuth } from "@/features/shared";
+import { useAuth, ProductMark } from "@/features/shared";
 
 const VEHICLES = ["VF8", "VF5", "VF3", "VF6", "VF7", "VF9", "e34"];
 
@@ -84,17 +85,26 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center bg-[#F6F7F9] px-4 py-12">
+    <div className="relative flex min-h-screen items-center justify-center bg-[#F6F7F9] px-4 py-12">
+      {/* Nút quay lại trang chủ tiện lợi */}
+      <Link
+        href="/"
+        className="absolute top-5 left-5 sm:top-6 sm:left-6 inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-500 hover:text-slate-900 bg-white/90 hover:bg-white border border-slate-200/90 hover:border-slate-300 px-3.5 py-1.5 rounded-full shadow-2xs transition-all duration-200 hover:-translate-x-0.5 group z-10"
+      >
+        <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 transition-colors" />
+        <span>Về trang chủ</span>
+      </Link>
+
       <div className="w-full max-w-md">
         <div className="rounded-2xl border border-[#E2E8F0] bg-white p-6 sm:p-7 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           {/* Logo */}
           <div className="text-center">
             <Link href="/" className="inline-flex items-center gap-2 group">
-              <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#1E40AF] text-[#10B981] shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-                <ScanLine className="h-5 w-5 text-white" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#1E40AF] text-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                <ProductMark className="h-5 w-5 text-white" />
               </div>
-              <span className="text-[18px] font-bold tracking-tight text-[#0F172A] font-display">
-                ServiceFlow <span className="text-[#1E40AF]">AI</span>
+              <span className="text-[19px] font-bold tracking-tight text-[#0F172A] font-display">
+                VF <span className="text-[#1E40AF]">Serv</span>
               </span>
             </Link>
             <h1 className="mt-3 text-[20px] font-bold text-[#0F172A]">

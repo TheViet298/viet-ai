@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
-import { ExternalLink, FileText, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { ExternalLink, FileText, Check } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ChatMessage } from "../types";
 import { ClarificationChips } from "./ClarificationChips";
 
@@ -18,13 +20,36 @@ export function ChatMessageItem({
   onSelectReply,
 }: ChatMessageItemProps) {
   const isCustomer = message.sender === "CUSTOMER";
-  const [showFullDetails, setShowFullDetails] = useState(false);
 
-  // Nếu câu trả lời dài hơn 220 ký tự thì chia phần tóm tắt và phần chi tiết
-  const hasLongContent = !isCustomer && message.content.length > 220;
-  const mainContent = hasLongContent && !showFullDetails
-    ? message.content.slice(0, 190) + "..."
-    : message.content;
+  // Chuẩn hóa ký tự bullet point, tách dòng nếu bị dồn và lọc emoji đầu mục
+  const normalizedContent = useMemo(() => {
+    if (!message.content) return "";
+    let text = message.content;
+
+    // 1. Xóa các mã nguồn học thuật thô lọt vào text (vd: [SRC-006], [SRC-001], [1], [2])
+    text = text.replace(/\s*\[(?:SRC-[A-Za-z0-9_-]+|\d+)\]/g, "");
+
+    // 2. Chuẩn hóa đại từ xưng hô thân thiện, loại bỏ xưng 'Quý khách' khách khí
+    text = text.replace(/\bquý\s+khách\b/gi, "anh/chị");
+    text = text.replace(/(^|[.!?]\s+)(anh\/chị)/g, (_m, p1, p2) => p1 + "Anh/chị");
+
+    // 3. Tách các mục bị dồn trên 1 dòng có emoji + bold (vd: "🚗 **VF 3**: ... 🚙 **VF 5 Plus**: ...")
+    text = text.replace(/(?:^|\n|[.!?]\s+)[\p{Emoji_Presentation}\p{Extended_Pictographic}]\s*(\*\*[^*]+\*\*)/gu, "\n\n- $1");
+
+    // 4. Xóa emoji ở đầu các mục danh sách (vd: "- 🚗 **VF 3**" hoặc "1. 🚗 **VF 3**")
+    text = text.replace(/^([ \t]*[-*]|\d+\.)\s*[\p{Emoji_Presentation}\p{Extended_Pictographic}]\s*/gmu, "$1 ");
+
+    // 5. Chuẩn hóa bullet point unicode (•, ●, ▪, ▫) thành markdown (- )
+    text = text.replace(/^[ \t]*[•●▪▫]\s*/gm, "- ");
+
+    // 6. Nếu dòng bắt đầu bằng emoji đơn thuần ở đầu dòng thì chuyển thành gạch đầu dòng
+    text = text.replace(/^[ \t]*[\p{Emoji_Presentation}\p{Extended_Pictographic}]\s*/gmu, "- ");
+
+    // 7. Đảm bảo trước danh sách gạch đầu dòng luôn có dòng trống để Markdown parser nhận diện đúng thẻ <ul>
+    text = text.replace(/([^\n])\n(- |\d+\. )/g, "$1\n\n$2");
+
+    return text.trim();
+  }, [message.content]);
 
   return (
     <div className={`flex flex-col ${isCustomer ? "items-end" : "items-start"} space-y-1.5`}>
@@ -41,66 +66,102 @@ export function ChatMessageItem({
           - AI: Xám nhạt, KHÔNG VIỀN (Độ sâu bằng khác biệt màu nền)
       ───────────────────────────────────────────────────────────── */}
       <div
-        className={`max-w-[88%] sm:max-w-[76%] rounded-2xl p-3 sm:p-3.5 text-[13px] leading-relaxed transition-all ${
-          isCustomer
+        className={`max-w-[88%] sm:max-w-[76%] rounded-2xl p-3 sm:p-3.5 text-[13px] leading-relaxed transition-all ${isCustomer
             ? "bg-[#1E40AF] text-white rounded-tr-xs"
             : "bg-slate-100 text-slate-800 rounded-tl-xs"
-        }`}
+          }`}
       >
-        <div className="whitespace-pre-wrap leading-relaxed">{mainContent}</div>
+        {isCustomer ? (
+          <div className="whitespace-pre-wrap leading-relaxed">{message.content}</div>
+        ) : (
+          <div className="chat-markdown-body text-[13px] leading-relaxed text-slate-800">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              allowedElements={[
+                "p",
+                "strong",
+                "em",
+                "ul",
+                "ol",
+                "li",
+                "a",
+                "code",
+                "span",
+                "br",
+              ]}
+              unwrapDisallowed={true}
+              components={{
+                p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+                strong: ({ children }) => (
+                  <strong className="font-semibold text-slate-900">{children}</strong>
+                ),
+                em: ({ children }) => <em className="italic">{children}</em>,
+                ul: ({ children }) => (
+                  <ul className="my-2 space-y-1.5 list-disc pl-[18px] leading-relaxed marker:text-slate-400">
+                    {children}
+                  </ul>
+                ),
+                ol: ({ children }) => (
+                  <ol className="my-2 space-y-1.5 list-decimal pl-[18px] leading-relaxed marker:text-slate-400">
+                    {children}
+                  </ol>
+                ),
+                li: ({ children }) => (
+                  <li className="pl-0.5 my-1.5 leading-relaxed text-slate-800">{children}</li>
+                ),
+                a: ({ href, children }) => (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#1E40AF] underline hover:text-blue-800 font-medium inline-flex items-center gap-0.5"
+                  >
+                    {children}
+                  </a>
+                ),
+                code: ({ children }) => (
+                  <code className="px-1.5 py-0.5 bg-slate-200/80 text-slate-800 rounded font-mono text-[12px]">
+                    {children}
+                  </code>
+                ),
+              }}
+            >
+              {normalizedContent}
+            </ReactMarkdown>
+          </div>
+        )}
 
         {/* Chỉ dẫn an toàn: gộp trực tiếp vào bong bóng dạng chữ đậm, KHÔNG TẠO HỘP VÀNG */}
         {message.safe_guidance && message.priority !== "CRITICAL" && (
-          <div className="mt-1.5 text-[12px] text-amber-950 font-medium">
+          <div className="mt-2 pt-1.5 border-t border-slate-200/60 text-[12px] text-amber-950 font-medium">
             <strong>Chỉ dẫn: </strong>
             <span>{message.safe_guidance}</span>
           </div>
         )}
 
         {/* ─────────────────────────────────────────────────────────────
-            CẤP 2: NGUỒN TÀI LIỆU & NÚT CHI TIẾT (KHÔNG CÓ KHUNG TO)
+            CẤP 2: NGUỒN TÀI LIỆU (KHÔNG CÓ KHUNG TO)
         ───────────────────────────────────────────────────────────── */}
-        <div className="mt-2 pt-1 flex items-center justify-between gap-2 text-[11px] text-slate-500">
-          {/* Nguồn tài liệu thu gọn thành chip 1 dòng */}
-          {message.citations && message.citations.length > 0 ? (
-            <div className="flex items-center gap-1.5 min-w-0">
-              {message.citations.slice(0, 1).map((cite, i) => (
-                <a
-                  key={i}
-                  href={cite.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 hover:text-[#1E40AF] font-medium truncate"
-                  title={cite.title}
-                >
-                  <FileText className="w-3 h-3 text-[#1E40AF] shrink-0" />
-                  <span className="truncate max-w-[200px] sm:max-w-[260px]">
-                    {cite.title.replace(/—.*$/, "").trim()}
-                  </span>
-                  <ExternalLink className="w-2.5 h-2.5 opacity-60 shrink-0" />
-                </a>
-              ))}
-            </div>
-          ) : (
-            <span />
-          )}
-
-          {/* Toggle Xem chi tiết cho tin nhắn dài */}
-          {hasLongContent && (
-            <button
-              type="button"
-              onClick={() => setShowFullDetails(!showFullDetails)}
-              className="text-[#1E40AF] hover:underline font-semibold flex items-center gap-0.5 shrink-0 ml-auto"
-            >
-              <span>{showFullDetails ? "Thu gọn" : "Xem chi tiết"}</span>
-              {showFullDetails ? (
-                <ChevronUp className="w-3 h-3" />
-              ) : (
-                <ChevronDown className="w-3 h-3" />
-              )}
-            </button>
-          )}
-        </div>
+        {message.citations && message.citations.length > 0 && (
+          <div className="mt-2 pt-1 flex items-center gap-1.5 text-[11px] text-slate-500">
+            {message.citations.slice(0, 1).map((cite, i) => (
+              <a
+                key={i}
+                href={cite.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 hover:text-[#1E40AF] font-medium truncate"
+                title={cite.title}
+              >
+                <FileText className="w-3 h-3 text-[#1E40AF] shrink-0" />
+                <span className="truncate max-w-[200px] sm:max-w-[260px]">
+                  {cite.title.replace(/—.*$/, "").trim()}
+                </span>
+                <ExternalLink className="w-2.5 h-2.5 opacity-60 shrink-0" />
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
@@ -127,12 +188,12 @@ export function ChatMessageItem({
 
       {/* ─────────────────────────────────────────────────────────────
           CẤP 4: GỢI Ý TRẢ LỜI NHANH
-          - CHỈ HIỆN DƯỚI TIN NHẮN CUỐI CÙNG (Tối đa 2-3 chip)
+          - CHỈ HIỆN DƯỚI TIN NHẮN CUỐI CÙNG (Tối đa 4 chip cho lời chào hoặc 2-3 chip sự cố)
           - Tự động biến mất sau khi khách gửi tin nhắn mới
       ───────────────────────────────────────────────────────────── */}
       {isLastMessage && message.suggested_replies && message.suggested_replies.length > 0 && (
         <ClarificationChips
-          chips={message.suggested_replies.slice(0, 3)}
+          chips={message.suggested_replies.slice(0, 4)}
           onSelectChip={onSelectReply}
         />
       )}

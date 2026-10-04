@@ -46,7 +46,7 @@ export function StaffGuardGate() {
         <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-3.5 text-[12px] text-[#475569] flex items-center justify-center gap-2">
           <span>Vai trò hiện tại của bạn:</span>
           <span className="font-semibold text-[#0F172A] px-2 py-0.5 rounded-lg bg-white border border-[#CBD5E1]">
-            {role === "CUSTOMER" ? "Chủ xe (Customer)" : "Khách vãng lai (Guest)"}
+            {role === "CUSTOMER" ? "Chủ xe (Customer)" : "Guest"}
           </span>
         </div>
 

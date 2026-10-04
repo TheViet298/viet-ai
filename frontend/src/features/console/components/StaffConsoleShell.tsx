@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   ScanLine,
@@ -33,9 +33,9 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
-import { useAuth } from "@/features/shared";
+import { useAuth, ProductMark } from "@/features/shared";
 import { useTickets } from "../hooks/useTickets";
-import { TicketItem, TicketStatus } from "../types";
+import { TicketItem, TicketStatus, VIETNAMESE_STATUS_MAP, VIETNAMESE_PRIORITY_MAP } from "../types";
 import { TicketDetailPanel } from "./TicketDetailPanel";
 
 export type ConsoleTab =
@@ -46,6 +46,66 @@ export type ConsoleTab =
   | "knowledge"
   | "preview"
   | "profile";
+
+// Helper phân nhóm ngày cho danh sách Ticket
+function getTicketDateLabel(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "Khác";
+    const now = new Date();
+
+    const isToday =
+      d.getDate() === now.getDate() &&
+      d.getMonth() === now.getMonth() &&
+      d.getFullYear() === now.getFullYear();
+    if (isToday) return "Hôm nay";
+
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday =
+      d.getDate() === yesterday.getDate() &&
+      d.getMonth() === yesterday.getMonth() &&
+      d.getFullYear() === yesterday.getFullYear();
+    if (isYesterday) return "Hôm qua";
+
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    return `${day}/${month}/${d.getFullYear()}`;
+  } catch {
+    return "Khác";
+  }
+}
+
+// Rút gọn mã case: CASE-20261004-001 -> 001
+function getShortTicketId(id: string): string {
+  const match = id.match(/(\d{3,4})$/);
+  if (match) return match[1];
+  return id.replace(/^CASE-/i, "");
+}
+
+// Lấy tiêu đề sự cố thật từ tóm tắt AI hoặc fallback theo intent/xe
+function getTicketDisplayTitle(ticket: TicketItem): string {
+  if (
+    ticket.issue_summary &&
+    ticket.issue_summary.trim() &&
+    ticket.issue_summary !== "Yêu cầu kiểm tra sự cố"
+  ) {
+    return ticket.issue_summary;
+  }
+  if (ticket.error_code_short) {
+    return `Sự cố lỗi ${ticket.error_code_short} trên xe ${ticket.vehicle_model}`;
+  }
+  if (ticket.intent === "Charging/Battery") {
+    return `Sự cố trạm sạc & pin xe ${ticket.vehicle_model}`;
+  }
+  if (ticket.intent === "Service/Incident") {
+    return `Cảnh báo kỹ thuật vận hành xe ${ticket.vehicle_model}`;
+  }
+  if (ticket.intent.includes("Complaint")) {
+    return `Phản ánh dịch vụ khách hàng xe ${ticket.vehicle_model}`;
+  }
+  return `Yêu cầu hỗ trợ kỹ thuật xe ${ticket.vehicle_model}`;
+}
 
 // 5 Bộ phận Routing chuẩn hóa P0
 export const ROUTING_DEPARTMENTS = [
@@ -260,8 +320,105 @@ export function StaffConsoleShell() {
     );
   });
 
+  // Đồng bộ selectedTicketId từ URL parameter '?case=...' khi trang tải
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const p = new URLSearchParams(window.location.search).get("case");
+      if (p) {
+        setSelectedTicketId(p);
+      }
+    }
+  }, []);
+
+  // Lắng nghe sự kiện Back/Forward của trình duyệt để đổi case tương ứng
+  useEffect(() => {
+    const handlePopState = () => {
+      if (typeof window !== "undefined") {
+        const p = new URLSearchParams(window.location.search).get("case");
+        if (p) {
+          setSelectedTicketId(p);
+        }
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  // Chọn case đồng thời cập nhật URL mà không reload trang
+  const handleSelectTicket = useCallback((ticketId: string) => {
+    setSelectedTicketId(ticketId);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("case", ticketId);
+      window.history.pushState({ caseId: ticketId }, "", url.toString());
+    }
+  }, []);
+
   const currentActiveTicket =
     activeQueueTickets.find((t) => t.id === selectedTicketId) || activeQueueTickets[0] || null;
+
+  // Phân nhóm danh sách ticket theo ngày
+  const groupedQueueTickets = useMemo(() => {
+    const groups: { dateLabel: string; tickets: TicketItem[] }[] = [];
+    activeQueueTickets.forEach((t) => {
+      const label = getTicketDateLabel(t.created_at);
+      let group = groups.find((g) => g.dateLabel === label);
+      if (!group) {
+        group = { dateLabel: label, tickets: [] };
+        groups.push(group);
+      }
+      group.tickets.push(t);
+    });
+    return groups;
+  }, [activeQueueTickets]);
+
+  // Phím tắt ↑ ↓ (hoặc J/K) để duyệt nhanh qua danh sách case và tự cuộn vào khung nhìn
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      if (activeTab !== "queue" || activeQueueTickets.length === 0) return;
+
+      if (e.key === "ArrowDown" || e.key === "j" || e.key === "J") {
+        e.preventDefault();
+        const currentIndex = activeQueueTickets.findIndex(
+          (t) => t.id === currentActiveTicket?.id
+        );
+        const nextIndex =
+          currentIndex < activeQueueTickets.length - 1 ? currentIndex + 1 : 0;
+        const nextTicket = activeQueueTickets[nextIndex];
+        if (nextTicket) {
+          handleSelectTicket(nextTicket.id);
+          const el = document.getElementById(`ticket-item-${nextTicket.id}`);
+          el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+      } else if (e.key === "ArrowUp" || e.key === "k" || e.key === "K") {
+        e.preventDefault();
+        const currentIndex = activeQueueTickets.findIndex(
+          (t) => t.id === currentActiveTicket?.id
+        );
+        const prevIndex =
+          currentIndex > 0 ? currentIndex - 1 : activeQueueTickets.length - 1;
+        const prevTicket = activeQueueTickets[prevIndex];
+        if (prevTicket) {
+          handleSelectTicket(prevTicket.id);
+          const el = document.getElementById(`ticket-item-${prevTicket.id}`);
+          el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeTab, activeQueueTickets, currentActiveTicket?.id, handleSelectTicket]);
 
   const handleSendPreviewMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -298,7 +455,7 @@ export function StaffConsoleShell() {
     { id: "profile", label: "Hồ sơ Staff", icon: User },
   ];
 
-  const currentTabItem = NAV_ITEMS.find((n) => n.id === activeTab) || NAV_ITEMS[0];
+  const currentTabItem = NAV_ITEMS.find((t) => t.id === activeTab) || NAV_ITEMS[0];
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex antialiased text-slate-900">
@@ -314,12 +471,12 @@ export function StaffConsoleShell() {
         <div className="h-14 flex items-center justify-between px-3.5 border-b border-slate-800 shrink-0">
           <div className="flex items-center gap-2.5 overflow-hidden">
             <div className="w-8 h-8 rounded-xl bg-[#1E40AF] flex items-center justify-center text-white shrink-0 shadow-sm">
-              <ScanLine className="w-4 h-4 text-white" />
+              <ProductMark className="w-4 h-4 text-white" />
             </div>
             {!isSidebarCollapsed && (
               <div className="min-w-0 flex-1 truncate transition-opacity duration-200">
-                <div className="font-bold text-[14px] tracking-tight text-white flex items-center gap-1 font-display">
-                  ServiceFlow <span className="text-[#60A5FA]">AI</span>
+                <div className="font-bold text-[15px] tracking-tight text-white flex items-center gap-1 font-display">
+                  VF <span className="text-[#60A5FA]">Serv</span>
                 </div>
                 <div className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">
                   Staff Console
@@ -427,8 +584,8 @@ export function StaffConsoleShell() {
 
           <div className="flex items-center gap-3.5 text-[12px]">
             <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white shadow-2xs border border-slate-200/50 text-slate-600">
-              <span className={`w-2 h-2 rounded-full ${isLiveApi ? "bg-[#10B981] animate-pulse" : "bg-slate-400"}`} />
-              <span className="text-[11px] font-medium">{isLiveApi ? "Live REST API (8000)" : "Offline Seed Mode"}</span>
+              <span className={`w-2 h-2 rounded-full ${isLiveApi ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
+              <span className="text-[11px] font-medium">{isLiveApi ? "Hệ thống trực tuyến" : "Chế độ mẫu"}</span>
             </div>
             <span className="hidden md:inline text-[11px] text-slate-500">
               Cơ sở: <strong className="text-slate-800 font-medium">VinFast Times City</strong>
@@ -479,7 +636,7 @@ export function StaffConsoleShell() {
                   <div className="flex items-center gap-1 bg-slate-200/50 p-1 rounded-xl text-[11px] font-medium">
                     {[
                       { id: "ALL", label: "Tất cả" },
-                      { id: "CRITICAL", label: "🔥 Critical" },
+                      { id: "CRITICAL", label: "🔥 Khẩn cấp" },
                       { id: "Staff Reviewing", label: "Chờ duyệt" },
                       { id: "Needs Information", label: "Cần tin" },
                       { id: "In Progress", label: "Đang xử lý" },
@@ -527,7 +684,7 @@ export function StaffConsoleShell() {
                     <span>
                       Hồ sơ đang mở: <strong className="text-slate-900">{activeQueueTickets.length}</strong>
                     </span>
-                    <span>Ưu tiên Critical lên đầu</span>
+                    <span className="text-slate-400">Dùng phím ↑ ↓ (hoặc J/K) để duyệt</span>
                   </div>
 
                   <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden divide-y divide-slate-100 h-[calc(100vh-140px)] overflow-y-auto scrollbar-thin">
@@ -538,100 +695,104 @@ export function StaffConsoleShell() {
                         <p className="text-[12px] mt-1">Không có hồ sơ nào khớp với bộ lọc hiện tại.</p>
                       </div>
                     ) : (
-                      activeQueueTickets.map((ticket) => {
-                        const isSelected = (currentActiveTicket?.id || "") === ticket.id;
-                        const isCritical = ticket.priority === "CRITICAL";
-                        const isHigh = ticket.priority === "HIGH";
+                      groupedQueueTickets.map((group) => (
+                        <div key={group.dateLabel} className="divide-y divide-slate-100">
+                          {/* Dòng tiêu đề nhỏ phân nhóm ngày */}
+                          <div className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs px-3.5 py-1.5 border-y border-slate-100/90 flex items-center justify-between text-[11px] font-semibold text-slate-600 uppercase tracking-wide">
+                            <span>{group.dateLabel}</span>
+                            <span className="text-[10px] font-normal text-slate-400 lowercase">{group.tickets.length} hồ sơ</span>
+                          </div>
 
-                        const shortId = ticket.id.replace("CASE-20260924-", "");
-                        const formattedTime = new Date(ticket.created_at).toLocaleTimeString("vi-VN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        });
+                          {group.tickets.map((ticket) => {
+                            const isSelected = (currentActiveTicket?.id || "") === ticket.id;
+                            const isCritical = ticket.priority === "CRITICAL";
+                            const isHigh = ticket.priority === "HIGH";
 
-                        return (
-                          <div
-                            key={ticket.id}
-                            onClick={() => setSelectedTicketId(ticket.id)}
-                            className={`group cursor-pointer p-3.5 transition-colors border-l-[3px] ${
-                              isSelected
-                                ? "bg-[#EFF3FC]/80 border-l-[#1E40AF]"
-                                : isCritical
-                                ? "bg-[#FFF8F8] border-l-red-500 hover:bg-[#FFF1F1]"
-                                : isHigh
-                                ? "bg-white border-l-amber-400 hover:bg-slate-50/80"
-                                : "bg-white border-l-transparent hover:bg-slate-50/80"
-                            }`}
-                          >
-                            {/* Dòng 1: Tiêu đề to, đậm nhất kèm chấm Priority */}
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`w-2 h-2 rounded-full shrink-0 ${
-                                  isCritical
-                                    ? "bg-red-500 ring-2 ring-red-200 animate-pulse"
+                            const shortId = getShortTicketId(ticket.id);
+                            const title = getTicketDisplayTitle(ticket);
+                            const formattedTime = new Date(ticket.created_at).toLocaleTimeString("vi-VN", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            });
+
+                            return (
+                              <div
+                                id={`ticket-item-${ticket.id}`}
+                                key={ticket.id}
+                                onClick={() => handleSelectTicket(ticket.id)}
+                                className={`group cursor-pointer p-3.5 transition-all border-l-[3.5px] ${
+                                  isSelected
+                                    ? "bg-[#EFF3FC] border-l-[#1E40AF] shadow-2xs"
+                                    : isCritical
+                                    ? "bg-white border-l-red-500 hover:bg-slate-50/80"
                                     : isHigh
-                                    ? "bg-amber-500"
+                                    ? "bg-white border-l-amber-500 hover:bg-slate-50/80"
                                     : ticket.priority === "MEDIUM"
-                                    ? "bg-blue-500"
-                                    : "bg-slate-300"
-                                }`}
-                                title={`Mức ưu tiên: ${ticket.priority}`}
-                              />
-                              <h3
-                                className={`text-[13.5px] font-semibold truncate leading-tight flex-1 ${
-                                  isSelected ? "text-[#1E40AF]" : "text-slate-900 group-hover:text-[#1E40AF]"
+                                    ? "bg-white border-l-blue-400 hover:bg-slate-50/80"
+                                    : "bg-white border-l-transparent hover:border-l-slate-200 hover:bg-slate-50/80"
                                 }`}
                               >
-                                {ticket.issue_summary || "Yêu cầu kiểm tra sự cố"}
-                              </h3>
-                            </div>
+                                {/* Dòng 1: Tiêu đề sự cố thật từ AI brief + nhãn mức độ/trạng thái duy nhất */}
+                                <div className="flex items-center justify-between gap-2">
+                                  <h3
+                                    className={`text-[13.5px] truncate leading-tight flex-1 ${
+                                      isSelected
+                                        ? "font-bold text-[#1E40AF]"
+                                        : "font-semibold text-slate-900 group-hover:text-[#1E40AF]"
+                                    }`}
+                                  >
+                                    {title}
+                                  </h3>
 
-                            {/* Dòng 2: 003 · VF5 · 15:40 (nhỏ, xám) */}
-                            <div className="mt-1.5 pl-4 text-[12px] text-slate-500 flex items-center justify-between font-mono">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-semibold text-slate-700">{shortId}</span>
-                                <span>·</span>
-                                <span className="font-sans font-medium text-slate-600">{ticket.vehicle_model}</span>
-                                <span>·</span>
-                                <span className="text-slate-400">{formattedTime}</span>
-                              </div>
-
-                              {/* Hover Reveal cho thông tin phụ: GPS, Mã lỗi, Trạng thái */}
-                              <div className="relative flex items-center justify-end">
-                                {/* Mặc định: Nhãn khẩn cấp nếu Critical/High */}
-                                <div className="group-hover:opacity-0 transition-opacity duration-150">
-                                  {isCritical ? (
-                                    <span className="text-[10.5px] font-bold text-red-600 font-sans tracking-wide">
-                                      Khẩn cấp
-                                    </span>
-                                  ) : isHigh ? (
-                                    <span className="text-[10.5px] font-semibold text-amber-600 font-sans">
-                                      Ưu tiên
-                                    </span>
-                                  ) : null}
+                                  {/* Gom thành một dấu hiệu duy nhất mỗi dòng ở góc phải */}
+                                  <div className="shrink-0 flex items-center gap-1 font-sans">
+                                    {isCritical ? (
+                                      <span className="px-1.5 py-0.5 rounded text-[10.5px] font-bold text-red-600 bg-red-50 tracking-wide">
+                                        Khẩn cấp
+                                      </span>
+                                    ) : isHigh ? (
+                                      <span className="px-1.5 py-0.5 rounded text-[10.5px] font-semibold text-amber-700 bg-amber-50">
+                                        Ưu tiên
+                                      </span>
+                                    ) : (
+                                      <span className="text-[11px] text-slate-500 font-medium">
+                                        {VIETNAMESE_STATUS_MAP[ticket.status] || ticket.status}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
 
-                                {/* Khi hover: trượt nhẹ 4px và hiện GPS, Mã lỗi, Trạng thái */}
-                                <div className="absolute right-0 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-1 group-hover:translate-x-0 flex items-center gap-1.5 font-sans pointer-events-none">
-                                  {ticket.error_code_short && (
-                                    <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-mono text-[10px]">
-                                      {ticket.error_code_short}
+                                {/* Dòng 2: Mã case rút gọn, dòng xe, giờ: 001 · VF8 · 07:29 */}
+                                <div className="mt-1.5 text-[12px] text-slate-500 flex items-center justify-between font-mono">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`font-semibold ${isSelected ? "text-[#1E40AF]" : "text-slate-700"}`}>
+                                      {shortId}
                                     </span>
-                                  )}
-                                  {ticket.has_location_consent && (
-                                    <span className="px-1 py-0.2 rounded bg-blue-50 text-[#1E40AF] text-[10px] font-medium">
-                                      GPS
-                                    </span>
-                                  )}
-                                  <span className="text-[11px] text-slate-500 font-medium">
-                                    {ticket.status}
-                                  </span>
+                                    <span>·</span>
+                                    <span className="font-sans font-medium text-slate-600">{ticket.vehicle_model}</span>
+                                    <span>·</span>
+                                    <span className="text-slate-400">{formattedTime}</span>
+                                  </div>
+
+                                  {/* Thông tin phụ hiển thị nhẹ nhàng: Mã lỗi hoặc GPS */}
+                                  <div className="flex items-center gap-1 font-sans">
+                                    {ticket.error_code_short && (
+                                      <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-mono text-[10px]">
+                                        {ticket.error_code_short}
+                                      </span>
+                                    )}
+                                    {ticket.has_location_consent && (
+                                      <span className="px-1 py-0.2 rounded bg-blue-50 text-[#1E40AF] text-[10px] font-medium">
+                                        GPS
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </div>
-                        );
-                      })
+                            );
+                          })}
+                        </div>
+                      ))
                     )}
                   </div>
                 </div>

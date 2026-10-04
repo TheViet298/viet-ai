@@ -1,33 +1,106 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChatMessage, Citation, VehicleModel } from "../types";
 import { sendChatMessage } from "../api/chatApi";
 
-export const INITIAL_WELCOME_MESSAGE: ChatMessage = {
-  id: "welcome-1",
-  sender: "AGENT",
-  content:
-    "Xin chào anh/chị! Em là Trợ lý Dịch vụ VinFast AI. Em có thể hỗ trợ anh/chị tra cứu hướng dẫn sử dụng, giải đáp về sạc pin/ứng dụng, hoặc tiếp nhận sự cố kỹ thuật của xe.",
-  timestamp: new Date().toISOString(),
-};
+export interface ChatUserContext {
+  userName?: string;
+  vehicleModel?: string;
+  caseId?: string | null;
+}
 
-export function useChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_WELCOME_MESSAGE]);
+export function getSalutation(fullName?: string): { title: string; shortName: string; pronoun: string } {
+  if (!fullName || !fullName.trim()) {
+    return { title: "", shortName: "", pronoun: "bạn" };
+  }
+  const parts = fullName.trim().split(/\s+/);
+  const shortName = parts[parts.length - 1];
+  const lower = fullName.toLowerCase();
+  const isFemale =
+    lower.includes("thị") ||
+    ["hoa", "lan", "mai", "hương", "trang", "linh", "ngọc", "thảo", "hằng", "nhung", "yến"].includes(shortName.toLowerCase());
+  const title = isFemale ? "chị" : "anh";
+  return { title, shortName, pronoun: title };
+}
+
+export function createWelcomeMessage(context?: ChatUserContext | string): ChatMessage {
+  const ctx: ChatUserContext =
+    typeof context === "string" ? { userName: context } : context || {};
+  const { userName, vehicleModel, caseId } = ctx;
+  const { title, shortName, pronoun } = getSalutation(userName);
+
+  let content: string;
+  if (shortName) {
+    if (caseId) {
+      content = `Chào ${title} ${shortName}! Hồ sơ ${caseId} đang được kỹ thuật viên kiểm tra. ${title.charAt(0).toUpperCase() + title.slice(1)} cần em giúp thêm gì hôm nay không ạ?`;
+    } else if (vehicleModel) {
+      content = `Chào ${title} ${shortName}! Em là Trợ lý AI của VinFast. Em có thể giúp gì cho chiếc ${vehicleModel} của ${pronoun} hôm nay ạ?`;
+    } else {
+      content = `Chào ${title} ${shortName}! Em là Trợ lý AI của VinFast, hỗ trợ 24/7. Hôm nay em giúp gì được cho ${pronoun} ạ?`;
+    }
+  } else {
+    // Khách vãng lai (Guest)
+    if (caseId) {
+      content = `Xin chào! Hồ sơ ${caseId} đang được kỹ thuật viên kiểm tra. Anh/Chị cần em giúp thêm gì hôm nay không ạ?`;
+    } else if (vehicleModel) {
+      content = `Xin chào! Em là Trợ lý AI của VinFast. Anh/Chị cần em giúp gì hôm nay ạ?`;
+    } else {
+      content = `Xin chào! Em là Trợ lý AI của VinFast, hỗ trợ 24/7. Anh/Chị cần em giúp gì hôm nay ạ?`;
+    }
+  }
+
+  return {
+    id: "welcome-1",
+    sender: "AGENT",
+    content,
+    timestamp: new Date().toISOString(),
+    suggested_replies: [
+      "Tư vấn xe",
+      "Trạm sạc & ứng dụng",
+      "Bảo hành & bảo dưỡng",
+      "Báo sự cố kỹ thuật",
+    ],
+  };
+}
+
+export const INITIAL_WELCOME_MESSAGE: ChatMessage = createWelcomeMessage();
+
+export function useChat(context?: ChatUserContext | string) {
+  const ctx: ChatUserContext =
+    typeof context === "string" ? { userName: context } : context || {};
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [createWelcomeMessage(ctx)]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<VehicleModel>("VF8");
+  const [selectedModel, setSelectedModel] = useState<VehicleModel>(
+    (ctx.vehicleModel as VehicleModel) || "VF8"
+  );
   const [sessionId, setSessionId] = useState(() => `sess_vf_${Math.random().toString(36).substring(2, 9)}`);
-  const [currentCaseId, setCurrentCaseId] = useState<string | null>(null);
+  const [currentCaseId, setCurrentCaseId] = useState<string | null>(ctx.caseId || null);
   const [criticalBanner, setCriticalBanner] = useState(false);
 
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].id === "welcome-1") {
+        return [createWelcomeMessage(ctx)];
+      }
+      return prev;
+    });
+  }, [ctx.userName, ctx.vehicleModel, ctx.caseId]);
+
   const resetChat = () => {
-    setMessages([INITIAL_WELCOME_MESSAGE]);
+    setMessages([createWelcomeMessage(ctx)]);
     setInput("");
     setLoading(false);
     setCurrentCaseId(null);
     setCriticalBanner(false);
     setSessionId(`sess_vf_${Math.random().toString(36).substring(2, 9)}`);
+  };
+
+  const updateMessageChips = (messageId: string, newChips: string[]) => {
+    setMessages((prev) =>
+      prev.map((msg) => (msg.id === messageId ? { ...msg, suggested_replies: newChips } : msg))
+    );
   };
 
   const sendMessage = async (messageText?: string, attachmentIds?: string[]) => {
@@ -70,6 +143,7 @@ export function useChat() {
           mock_customer_id: "CUST_MOCK_01",
           vehicle_model: selectedModel,
           vehicle_code_mock: `VF-${selectedModel}-8899`,
+          customer_name: ctx.userName,
         },
       });
 
@@ -169,6 +243,28 @@ export function useChat() {
           },
         ];
         fallbackReplies = ["Đã vào làn an toàn", "Xem bản đồ cứu hộ ›", "Tìm trạm sạc gần nhất"];
+      } else if (
+        textToSend.toLowerCase().includes("tư vấn xe") ||
+        textToSend.toLowerCase().includes("dòng xe") ||
+        textToSend.toLowerCase().includes("mua xe") ||
+        textToSend.toLowerCase().includes("vf 3") ||
+        textToSend.toLowerCase().includes("giá lăn bánh") ||
+        textToSend.toLowerCase().includes("lái thử")
+      ) {
+        fallbackContent = `VinFast hiện có dải xe điện phủ nhiều phân khúc:\n\n- **VF 3**: mini SUV đô thị nhỏ gọn, thiết kế vuông vức, di chuyển linh hoạt\n- **VF 5 Plus**: A-SUV trẻ trung, tối ưu chi phí vận hành cho gia đình và đô thị\n- **VF 6**: B-SUV thời thượng, nhiều công nghệ thông minh và an toàn\n- **VF 7**: C-SUV phong cách thể thao, có 2 phiên bản Eco và Plus\n- **VF 8**: D-SUV sang trọng, có hệ thống hỗ trợ lái nâng cao (ADAS) và trợ lý ảo\n- **VF 9**: E-SUV 7 chỗ đẳng cấp thương gia, tiện nghi hàng đầu\n\nAnh/chị đang quan tâm dòng nào, hoặc cần em tư vấn thêm về tầm giá, chính sách thuê/mua pin, đặt lịch lái thử?`;
+        fallbackCitations = [
+          {
+            source_id: "SRC-006",
+            title: "Danh mục Sản phẩm và Chính sách Bán hàng Ô tô điện VinFast",
+            url: "https://vinfastauto.com/vn_vi/cac-dong-xe-o-to",
+          },
+        ];
+        fallbackReplies = [
+          "Tư vấn xe VF 3 & VF 5",
+          "Tư vấn xe VF 7 & VF 8",
+          "Bảng giá xe mới nhất",
+          "Đăng ký lái thử miễn phí",
+        ];
       }
 
       // Tạo mã Case ID động theo từng phiên chat thật (không fix cứng ngày tháng cũ)
@@ -221,5 +317,6 @@ export function useChat() {
     setCriticalBanner,
     sendMessage,
     resetChat,
+    updateMessageChips,
   };
 }

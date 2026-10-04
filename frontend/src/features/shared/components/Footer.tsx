@@ -4,13 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ScanLine, PhoneCall, ShieldCheck, FileCheck, BatteryCharging, Wrench, AlertTriangle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { ProductMark } from "./ProductMark";
 
 export function Footer() {
   const pathname = usePathname();
   const { role } = useAuth();
 
-  // Ẩn Footer khi Staff đang ở màn /console để tạo không gian làm việc chuyên nghiệp
-  if (pathname?.startsWith("/console") && role === "STAFF") {
+  // Ẩn Footer khi Staff đang ở màn /console hoặc màn đăng nhập/đăng ký
+  if (
+    (pathname?.startsWith("/console") && role === "STAFF") ||
+    pathname === "/login" ||
+    pathname === "/register"
+  ) {
     return null;
   }
   return (
@@ -20,9 +25,9 @@ export function Footer() {
         <div className="flex items-center gap-2">
           <Link href="/" className="inline-flex items-center gap-1.5 font-bold text-slate-900 font-display">
             <div className="flex h-5 w-5 items-center justify-center rounded-md bg-[#1E40AF] text-white">
-              <ScanLine className="h-3 w-3" />
+              <ProductMark className="h-3.5 w-3.5 text-white" />
             </div>
-            <span>ServiceFlow <span className="text-[#1E40AF]">AI</span></span>
+            <span>VF <span className="text-[#1E40AF]">Serv</span></span>
           </Link>
           <span className="text-slate-300">|</span>
           <span className="text-slate-400">© 2026 VinFast EV Support</span>

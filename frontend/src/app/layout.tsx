@@ -3,9 +3,9 @@ import { Navbar, Footer, AuthProvider } from "@/features/shared";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VinFast ServiceFlow AI — Hệ thống Tiếp nhận & Điều phối Dịch vụ",
+  title: "VF Serv — Dịch vụ & Điều phối Kỹ thuật Xe điện VinFast",
   description:
-    "AI Agent tiếp nhận, làm rõ dữ kiện có ngữ cảnh, tra cứu cẩm nang kỹ thuật VinFast và hỗ trợ Reviewer điều phối sự cố xe điện.",
+    "Hệ thống tiếp nhận, xử lý sự cố kỹ thuật và điều phối dịch vụ xe điện VinFast thông minh (VF Serv).",
 };
 
 export default function RootLayout({

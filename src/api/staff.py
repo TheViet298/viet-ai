@@ -11,6 +11,7 @@ from src.models.db_models import (
     CaseBrief,
     CaseUpdate,
     Priority,
+    SenderType,
     StaffAction,
     StaffAuditLog,
     TicketStatus,
@@ -151,7 +152,7 @@ def get_ticket_queue(
     Lấy danh sách Ticket trong hàng đợi Service Agent Console theo api-contract.md Mục 3.1.
     RBAC: Chỉ nhân viên (Staff) mới có quyền truy cập.
     """
-    query = db.query(Case).options(joinedload(Case.brief))
+    query = db.query(Case).options(joinedload(Case.brief), joinedload(Case.messages))
 
     if status and status != "ALL":
         query = query.filter(Case.status == status)
@@ -164,17 +165,45 @@ def get_ticket_queue(
     items: list[TicketItem] = []
     for c in cases:
         conf_score = c.brief.confidence_score if c.brief else 0.90
+        summary: str | None = None
+        suggested: str | None = None
+        err_code: str | None = None
+        has_loc: bool = False
+
+        if c.brief:
+            summary = c.brief.summary
+            suggested = c.brief.suggested_action
+            if c.brief.captured_fields:
+                err_code = str(c.brief.captured_fields.get("error_code") or "") or None
+                has_loc = bool(
+                    c.brief.captured_fields.get("location_consent")
+                    or c.brief.captured_fields.get("gps_coordinates")
+                    or c.brief.captured_fields.get("station_location")
+                )
+
+        # Fallback tốt hơn nếu AI chưa tóm tắt: lấy 60 ký tự đầu của tin nhắn khách
+        if not summary and c.messages:
+            cust_msg = next((m.content for m in c.messages if m.sender_type == SenderType.CUSTOMER), None)
+            if cust_msg:
+                trimmed = cust_msg.strip().replace("\n", " ")
+                summary = (trimmed[:60] + "...") if len(trimmed) > 60 else trimmed
+
         items.append(
             TicketItem(
                 id=c.id,
                 mock_customer_id=c.mock_customer_id or f"CUST_{c.id}",
                 vehicle_model=c.vehicle_model or "VF8",
+                vehicle_code_mock=c.vehicle_code_mock,
                 intent=c.intent,
                 priority=c.priority,
                 status=c.status,
                 missing_info_flag=(c.status == TicketStatus.NEEDS_INFORMATION.value),
                 created_at=c.created_at.isoformat() if c.created_at else utcnow().isoformat(),
                 confidence_score=round(conf_score, 2),
+                issue_summary=summary,
+                suggested_action=suggested,
+                has_location_consent=has_loc,
+                error_code_short=err_code,
             )
         )
 

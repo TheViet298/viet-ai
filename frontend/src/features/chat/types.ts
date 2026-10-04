@@ -4,6 +4,7 @@ export interface ClientContext {
   mock_customer_id?: string;
   vehicle_model?: VehicleModel | string;
   vehicle_code_mock?: string;
+  customer_name?: string;
 }
 
 export interface Citation {

@@ -1030,7 +1030,7 @@ export function LandingPage() {
               Sẵn sàng đồng hành cùng bạn trên mọi nẻo đường
             </h2>
             <p className="mx-auto max-w-lg text-[13.5px] text-slate-300 leading-relaxed">
-              Trợ lý VinFast ServiceFlow AI túc trực 24/7 để tiếp nhận, hỗ trợ và kết nối kỹ thuật viên giải quyết sự cố tức thời.
+              Trợ lý VF Serv AI túc trực 24/7 để tiếp nhận, hỗ trợ và kết nối kỹ thuật viên giải quyết sự cố tức thời.
             </p>
           </div>
 
