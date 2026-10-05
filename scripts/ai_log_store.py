@@ -51,7 +51,7 @@ def locked(directory, name='.capture.lock', blocking=True):
         try:
             if os.name == 'nt':
                 import msvcrt
-                if not stream.read(1):
+                if os.fstat(stream.fileno()).st_size == 0:
                     stream.write(b'0')
                     stream.flush()
                 stream.seek(0)

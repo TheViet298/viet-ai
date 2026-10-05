@@ -219,6 +219,9 @@ def watch(root, interval, submit):
                 try:
                     capture(root)
                     if submit and time.monotonic() - last_submit >= 15:
+                        subprocess.run([sys.executable, str(Path(__file__).with_name('log_antigravity.py')),
+                                        '--auto'], cwd=root, stdout=subprocess.DEVNULL,
+                                       stderr=subprocess.DEVNULL, timeout=30, check=False)
                         from submit_log import submit_all
                         submit_all()
                         last_submit = time.monotonic()

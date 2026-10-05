@@ -56,6 +56,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from ai_log_store import append_entries, log_dir as shared_log_dir, repo_root
 
 # Fix Windows console encoding so VN diacritics in prompts print cleanly.
 if sys.platform == "win32":
@@ -293,6 +294,71 @@ def iter_user_inputs(brain_dirs: list[Path], cutoff: datetime | None,
                                               cutoff)
 
 
+def iter_transcript_activity(transcript: Path, conv_id: str,
+                             cutoff: datetime | None):
+    """Public user prompts, tool invocations and final replies only.
+
+    GENERIC model records can contain tool output or internal context, so they
+    are deliberately excluded. PLANNER_RESPONSE content is only included when
+    the record has no tool calls and is the conversation's final model record.
+    """
+    records = []
+    with transcript.open(encoding="utf-8") as source:
+        for line in source:
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(record, dict):
+                records.append(record)
+    final_model_step = next((r.get("step_index") for r in reversed(records)
+                             if r.get("type") == "PLANNER_RESPONSE"
+                             and r.get("source") == "MODEL"
+                             and r.get("status") == "DONE"
+                             and not r.get("tool_calls")
+                             and r.get("content")), None)
+    for record in records:
+        ts = record.get("created_at") or ""
+        if cutoff and ts:
+            try:
+                if datetime.fromisoformat(ts.replace("Z", "+00:00")) < cutoff:
+                    continue
+            except ValueError:
+                pass
+        step = record.get("step_index", 0)
+        if record.get("type") == "USER_INPUT" and record.get("source") == "USER_EXPLICIT":
+            prompt = extract_user_prompt(record.get("content", ""))
+            if prompt:
+                yield {"timestamp": ts, "step_index": step, "event": "UserPrompt", "prompt": prompt}
+        elif record.get("type") == "PLANNER_RESPONSE" and record.get("source") == "MODEL":
+            for index, call in enumerate(record.get("tool_calls") or []):
+                if not isinstance(call, dict):
+                    continue
+                yield {"timestamp": ts, "step_index": step, "event": "PreToolUse",
+                       "call_index": index, "tool_name": call.get("name", ""),
+                       "tool_input": call.get("args", {})}
+            if step == final_model_step:
+                yield {"timestamp": ts, "step_index": step, "event": "Stop",
+                       "response": record["content"],
+                       "response_summary": record["content"][:500]}
+
+
+def activity_entries(transcript: Path, conv_id: str, cutoff: datetime | None,
+                     context: tuple[str, str, str, str], model: str = "gemini"):
+    repo, branch, commit, student = context
+    for activity in iter_transcript_activity(transcript, conv_id, cutoff):
+        step = activity.pop("step_index")
+        index = activity.pop("call_index", None)
+        ts = activity.pop("timestamp")
+        event = activity["event"]
+        suffix = f"-{index}" if index is not None else ""
+        yield {"ts": ts or datetime.now(VN_TZ).isoformat(), "tool": "antigravity",
+               "entry_id": f"antigravity-{conv_id}-{step:05d}" if event == "UserPrompt"
+               else f"antigravity-{conv_id}-{step:05d}-{event}{suffix}",
+               "session_id": conv_id, "model": model, "repo": repo,
+               "branch": branch, "commit": commit, "student": student, **activity}
+
+
 # ---------------------------------------------------------------------------
 # Emitting entries
 # ---------------------------------------------------------------------------
@@ -362,30 +428,10 @@ def log_from_hook(transcript: Path, data: dict) -> int:
     workspaces = [w for w in (data.get("workspacePaths") or []) if w]
     root = Path(workspaces[0]) if workspaces else Path.cwd()
 
-    log_dir = Path(os.environ.get("AI_LOG_DIR", ".ai-log"))
-    if not log_dir.is_absolute():
-        log_dir = root / log_dir
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / "session.jsonl"
-    logged_ids = get_logged_entry_ids(log_file)
-
-    repo, branch, commit, student = repo_context(root)
+    directory = shared_log_dir(root)
     model = data.get("modelName") or "gemini"
-
-    new_entries = [
-        e for e in (
-            build_entry(msg, repo, branch, commit, student, model)
-            for msg in iter_transcript_inputs(transcript, conv_id, None)
-        )
-        if e["entry_id"] not in logged_ids
-    ]
-    if not new_entries:
-        return 0
-
-    with open(log_file, "a", encoding="utf-8") as f:
-        for e in new_entries:
-            f.write(json.dumps(e, ensure_ascii=False) + "\n")
-    return len(new_entries)
+    return append_entries(directory, activity_entries(
+        transcript, conv_id, None, repo_context(root), model))
 
 
 def hook_mode() -> None:
@@ -453,47 +499,39 @@ def main() -> None:
               file=sys.stderr)
         sys.exit(0)
 
-    log_dir = Path(os.environ.get("AI_LOG_DIR", ".ai-log"))
-    log_dir.mkdir(exist_ok=True)
-    log_file = log_dir / "session.jsonl"
-    logged_ids = get_logged_entry_ids(log_file)
-
     cutoff = None
     if not args.all:
         cutoff = datetime.now(tz=VN_TZ) - timedelta(hours=args.hours)
 
     repo_root_n = "" if args.no_repo_filter else _normalize(str(Path.cwd()))
 
-    repo, branch, commit, student = repo_context()
-
+    context = repo_context()
     new_entries: list[dict] = []
-    for msg in iter_user_inputs(brain_dirs, cutoff, args.conv_id, repo_root_n):
-        entry = build_entry(msg, repo, branch, commit, student)
-        if entry["entry_id"] in logged_ids:
-            continue
-        new_entries.append(entry)
-        logged_ids.add(entry["entry_id"])
+    for brain in brain_dirs:
+        for conv_dir in sorted(brain.iterdir()):
+            if not conv_dir.is_dir() or (args.conv_id and conv_dir.name != args.conv_id):
+                continue
+            transcript = conv_dir / ".system_generated" / "logs" / "transcript.jsonl"
+            if not transcript.is_file():
+                continue
+            if repo_root_n and not _conv_matches_repo(_conv_cwds(transcript), repo_root_n):
+                continue
+            new_entries.extend(activity_entries(transcript, conv_dir.name, cutoff, context))
 
     if not new_entries:
         scope = "all" if args.all else f"{args.hours}h"
         repo_note = "any repo" if args.no_repo_filter else f"repo={repo_root_n or '(unknown)'}"
-        print(f"[antigravity-log] No new prompts ({repo_note}, window={scope}).",
+        print(f"[antigravity-log] No activity found ({repo_note}, window={scope}).",
               file=sys.stderr)
         sys.exit(0)
 
     if args.dry_run:
-        print(f"\n[antigravity-log] DRY RUN — would log "
-              f"{len(new_entries)} entries:\n")
-        for e in new_entries:
-            preview = e["prompt"].replace("\n", " ")[:120]
-            print(f"  [{e['ts'][:19]}] {preview}")
+        from collections import Counter
+        print(json.dumps({"events": dict(Counter(e["event"] for e in new_entries)),
+                          "total": len(new_entries)}))
         sys.exit(0)
-
-    with open(log_file, "a", encoding="utf-8") as f:
-        for e in new_entries:
-            f.write(json.dumps(e, ensure_ascii=False) + "\n")
-
-    print(f"[antigravity-log] Logged {len(new_entries)} prompt(s) from "
+    count = append_entries(shared_log_dir(repo_root()), new_entries)
+    print(f"[antigravity-log] Logged {count} new activity record(s) from "
           f"Antigravity IDE.", file=sys.stderr)
 
 

@@ -82,6 +82,7 @@ def _submit_one():
         pending = LOG_DIR / f'session.pending.{os.getpid()}.{time.time_ns()}.jsonl'
         LOG_FILE.rename(pending)
     lines, entries = [], []
+    invalid_line = None
     with pending.open(encoding='utf-8') as source:
         for number, line in enumerate(source, 1):
             if not line.strip():
@@ -91,12 +92,15 @@ def _submit_one():
                 if not isinstance(entry, dict):
                     raise ValueError('Expected an object')
             except ValueError:
-                with locked(LOG_DIR):
-                    _restore_pending(pending)
-                print(f'[ai-log] Invalid JSON record at line {number}; all logs kept locally.', file=sys.stderr)
-                return 0, False
+                invalid_line = number
+                break
             lines.append(line if line.endswith('\n') else line + '\n')
             entries.append(entry)
+    if invalid_line is not None:
+        with locked(LOG_DIR):
+            _restore_pending(pending)
+        print(f'[ai-log] Invalid JSON record at line {invalid_line}; all logs kept locally.', file=sys.stderr)
+        return 0, False
     if not entries:
         pending.unlink()
         return 0, True
@@ -111,10 +115,23 @@ def _submit_one():
         request = urllib.request.Request(SERVER_URL,
             data=json.dumps({'entries': [wire_entry(e) for e in entries[:count]]}, ensure_ascii=False).encode('utf-8'),
             headers={'Content-Type': 'application/json', 'Authorization': f'Bearer {API_KEY}'}, method='POST')
-        with urllib.request.urlopen(request, timeout=30) as response:
-            status, body = response.status, response.read(65536)
-            if not 200 <= status < 300:
-                raise ValueError('Unexpected response status')
+        for attempt in range(4):
+            try:
+                with urllib.request.urlopen(request, timeout=30) as response:
+                    status, body = response.status, response.read(65536)
+                    if not 200 <= status < 300:
+                        raise ValueError('Unexpected response status')
+                break
+            except urllib.error.HTTPError as error:
+                if error.code != 429 or attempt == 3:
+                    raise
+                retry_after = error.headers.get('Retry-After', '')
+                try:
+                    delay = min(60, max(1, float(retry_after)))
+                except ValueError:
+                    delay = 5 * (attempt + 1)
+                print(f'[ai-log] Rate limited; retrying in {delay:g}s.', file=sys.stderr)
+                time.sleep(delay)
     except (urllib.error.URLError, TimeoutError, OSError, ValueError) as error:
         with locked(LOG_DIR):
             _restore_pending(pending)

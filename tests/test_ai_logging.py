@@ -13,11 +13,34 @@ SCRIPTS = Path(__file__).resolve().parents[1] / 'scripts'
 sys.path.insert(0, str(SCRIPTS))
 
 import ai_log_store as store
+import log_antigravity
 import log_codex
 import submit_log
 
 
 class CaptureTests(unittest.TestCase):
+    def test_antigravity_captures_prompt_tools_and_final_only(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'transcript.jsonl'
+            records = [
+                {'type':'USER_INPUT','source':'USER_EXPLICIT','step_index':0,
+                 'created_at':'2026-10-04T00:00:00Z','content':'<USER_REQUEST>Xin chào</USER_REQUEST>'},
+                {'type':'PLANNER_RESPONSE','source':'MODEL','step_index':1,
+                 'created_at':'2026-10-04T00:00:01Z','content':'private reasoning',
+                 'tool_calls':[{'name':'run_command','args':{'Cwd':'K:\\vinai\\P-142','CommandLine':'git status'}}]},
+                {'type':'GENERIC','source':'MODEL','step_index':2,
+                 'created_at':'2026-10-04T00:00:02Z','content':'private tool output'},
+                {'type':'PLANNER_RESPONSE','source':'MODEL','status':'DONE','step_index':3,
+                 'created_at':'2026-10-04T00:00:03Z','content':'Đã hoàn thành.'},
+            ]
+            path.write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in records),encoding='utf-8')
+            entries=list(log_antigravity.activity_entries(path,'conversation',None,
+                ('P-142','main','1234567','synthetic')))
+            self.assertEqual([e['event'] for e in entries],['UserPrompt','PreToolUse','Stop'])
+            self.assertNotIn('private reasoning',json.dumps(entries))
+            self.assertNotIn('private tool output',json.dumps(entries))
+            self.assertEqual(entries[-1]['response'],'Đã hoàn thành.')
+
     def test_ingestion_tool_payloads_are_lossless_strings(self):
         entry = {'tool_input': {'question': 'pin'}, 'tool_response': [{'text': 'Đã kiểm tra'}]}
         wire = submit_log.wire_entry(entry)
@@ -115,7 +138,7 @@ class CaptureTests(unittest.TestCase):
             cwd=SCRIPTS.parent,env={**os.environ,'AI_LOG_DIR':str(directory)},timeout=10)
         self.assertEqual(result.returncode,0,result.stderr)
         self.assertEqual(json.loads(result.stdout),{})
-        self.assertEqual(json.loads((directory/'session.jsonl').read_text())['prompt'],prompt)
+        self.assertEqual(json.loads((directory/'session.jsonl').read_text(encoding='utf-8'))['prompt'],prompt)
 
 
 class SubmissionTests(unittest.TestCase):
