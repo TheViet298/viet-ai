@@ -22,7 +22,7 @@ class Settings(BaseSettings):
 
     # LLM Configuration (Google Gemini)
     google_api_key: str = ""
-    model_name: str = "gemini-2.5-flash"
+    model_name: str = "gemini-2.0-flash"
     dashboard_vision_enabled: bool = True
     dashboard_vision_model: str = "gemini-3.5-flash"
     dashboard_vision_timeout_s: float = Field(default=25, gt=0, le=60)

@@ -1,3 +1,5 @@
+"use client";
+
 import { HelpCircle, ChevronRight } from "lucide-react";
 import { QuickPrompt, VehicleModel } from "../types";
 
