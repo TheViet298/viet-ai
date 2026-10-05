@@ -75,6 +75,7 @@ export async function sendChatMessage(params: {
       "Content-Type": "application/json",
       ...authHeaders,
     },
+    signal: AbortSignal.timeout(8000),
     body: JSON.stringify({
       session_id: params.sessionId,
       case_id: params.caseId || null,

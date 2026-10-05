@@ -1,3 +1,5 @@
+"use client";
+
 import { ImagePlus, Send, X, Sparkles } from "lucide-react";
 
 interface ChatInputBarProps {
