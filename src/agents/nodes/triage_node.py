@@ -6,13 +6,15 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.agents.context_manager import apply_fact_recency_and_invalidation
-from src.agents.guardrails import evaluate_hard_safety
+from src.agents.guardrails import evaluate_hard_safety, strip_accents, without_negated_hazards
 from src.agents.routing import decide_routing
 from src.agents.state import AgentState, IntentType, PriorityLevel
 from src.services.agent_llm import structured_call
+from src.services.chat_classification import current_clause, denied_reports, temporal_context, without_denied_reports
 from src.services.followup_context import FAQ_FOLLOWUPS
+from src.services.location_extraction import extract_locations
 from src.services.tracer import sanitized_snapshot
-from src.services.vehicle_knowledge import is_general_vehicle_question
+from src.services.vehicle_knowledge import is_general_vehicle_question, is_vehicle_comparison
 
 
 class TriageResult(BaseModel):
@@ -25,11 +27,17 @@ class TriageResult(BaseModel):
 
 
 def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", "oos", "uncertain"]:
+    if temporal_context(text) in {'resolved_past', 'hypothetical', 'knowledge'}:
+        return 'faq'
+    reports_denied = bool(denied_reports(text))
+    text = without_denied_reports(without_negated_hazards(current_clause(text)))
     lower = text.lower()
     if any(k in lower for k in ["bí mật", "nội bộ", "không công khai", "tháng sau"]):
         return "faq"
     if any(k in lower for k in ["khiếu nại", "bức xúc", "thái độ", "không hài lòng", "phản ánh", "hoàn tiền", "thu sai", "khen ngợi", "crash", "bị văng"]):
         return "complaint"
+
+    lower_unaccented = strip_accents(lower)
 
     # 1. Từ khóa nguy hiểm cứng (cháy, khói, mất phanh, tai nạn...) -> Luôn là Incident
     hard_safety_keywords = [
@@ -41,20 +49,37 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
 
     # 2. Dấu hiệu tình trạng thực tế / sự cố hiện tại của xe (has_current_failure)
     # Phải kiểm tra trước câu hỏi giải thích ("tại sao", "khi nào") để không bị lọt sự cố (e.g. "Tại sao xe tôi không sạc được?")
+    current_failure_regex = (
+        r"(?:xe\s*(?:vf\s*(?:[356789]|e34)|e34)?\s*(?:của\s*(?:tôi|mình|em))?\s*(?:đang|bị|vừa|báo|hiện)|bây giờ|đang\s*(?:ở|bị|kẹt|dừng|chạy))|"
+        r"(?:không\s+(?:nhận\s*sạc|sạc được|khởi động|đi được|chạy được|chạy nổi|di chuyển được|vào điện|lên nguồn|mở (?:cửa|khóa) được|mở được (?:cửa|khóa)))|"
+        r"(?:bị|đang|báo)\s+(?:hỏng|kẹt|gãy|vỡ|lỗi|đơ|đen|mờ đen|mã|ma)|"
+        r"(?:báo|hiện|nổi)\s+(?:mã|lỗi|code)?\s*[a-z0-9_-]{3,10}|"
+        r"(?:vô lăng|tay lái)\s+(?:rung|lắc|lệch|giật|nặng)|"
+        r"(?:xe tôi|vừa bị|đang bị|xe đang|đang hiện)\s+.*rùa|"
+        r"(?:chết máy|nháy đỏ|nhấp nháy|sập nguồn|mất lái|chảy dầu|xì lốp)|"
+        r"(?:chân phanh|phanh|chân ga|ắc quy|pin).{0,25}(?:hỏng|kẹt|hẫng|chai|tụt nhanh|không ăn)|"
+        r"cứu tôi|cần cứu hộ|gọi cứu hộ|^cứu hộ[.!? ]*$|không chạy nổi|không thể tăng tốc|lỗi\s+(?:[a-z]*\d+|0x)"
+    )
+    current_failure_unaccented_regex = (
+        r"(?:xe\s*(?:vf\s*(?:[356789]|e34)|e34)?\s*(?:cua\s*(?:toi|minh|em))?\s*(?:dang|bi|vua|bao|hien)|bay gio|dang\s*(?:o|bi|ket|dung|chay))|"
+        r"(?:khong\s+(?:nhan\s*sac|sac duoc|khoi dong|di duoc|chay duoc|chay noi|di chuyen duoc|vao dien|len nguon|mo (?:cua|khoa) duoc))|"
+        r"(?:bi|dang|bao)\s+(?:hong|ket|gay|vo|loi|do|den|mo den|ma)|"
+        r"(?:bao|hien|noi)\s+(?:ma|loi|code)?\s*[a-z0-9_-]{3,10}|"
+        r"(?:vo lang|tay lai)\s+(?:rung|lac|lech|giat|nang)|"
+        r"(?:xe toi|vua bi|dang bi|xe dang|dang hien)\s+.*rua|"
+        r"(?:chet may|nhay do|nhap nhay|sap nguon|mat lai|chay dau|xi lop)|"
+        r"(?:chan phanh|phanh|chan ga|ac quy|pin).{0,25}(?:hong|ket|hang|chai|tut nhanh|khong an)|"
+        r"cuu toi|can cuu ho|goi cuu ho|^cuu ho[.!? ]*$|khong chay noi|khong the tang toc|loi\s+(?:[a-z]*\d+|0x)"
+    )
     has_current_failure = bool(
-        re.search(
-            r"(?:xe\s*(?:tôi\s*)?(?:đang|bị|vừa|báo|hiện)|bây giờ|đang\s*(?:ở|bị|kẹt|dừng|chạy))|"
-            r"(?:không\s+(?:nhận\s*sạc|sạc được|khởi động|đi được|chạy nổi|vào điện|lên nguồn|mở (?:cửa|khóa) được|mở được (?:cửa|khóa)))|"
-            r"(?:bị|đang|báo)\s+(?:hỏng|kẹt|gãy|vỡ|lỗi|đơ|đen|mờ đen)|"
-            r"(?:xe tôi|vừa bị|đang bị|xe đang|đang hiện)\s+.*rùa|"
-            r"(?:chết máy|nháy đỏ|nhấp nháy|sập nguồn|mất lái|chảy dầu|xì lốp)|"
-            r"(?:chân phanh|phanh|chân ga|ắc quy|pin).{0,25}(?:hỏng|kẹt|hẫng|chai|tụt nhanh|không ăn)|"
-            r"cứu tôi|cần cứu hộ|gọi cứu hộ|^cứu hộ[.!? ]*$|không chạy nổi|không thể tăng tốc|lỗi\s+(?:[a-z]*\d+|0x)",
-            lower,
-        )
+        re.search(current_failure_regex, lower)
+        or re.search(current_failure_unaccented_regex, lower_unaccented)
     )
     if has_current_failure:
         return "incident"
+
+    if is_vehicle_comparison(text):
+        return "faq"
 
     if is_general_vehicle_question(text):
         return "faq"
@@ -107,23 +132,26 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
         r"(?:chìa khóa|smart key).{0,20}hết pin", lower
     ):
         return "incident"
-    return "uncertain"
+    return "faq" if reports_denied else "uncertain"
 
 
-def extract_fields(text: str) -> dict[str, str]:
+def extract_fields(text: str, *, asserted_only: bool = True) -> dict[str, str]:
+    if asserted_only:
+        if temporal_context(text) in {'hypothetical', 'resolved_past', 'knowledge'}:
+            return {}
+        text = without_denied_reports(current_clause(text))
     fields = {}
     patterns = {
         "vehicle_model": r"\b(?:VF\s*(?:[356789]|e34)|e34)\b",
         "charger_id": r"\b(?:VN-CS-[A-Z0-9]+-[A-Z0-9]+|P\d{2})\b",
         "error_code": r"\b(?:CC\d{2}|E\d{3}|P\d{4}|BMS_\d{3}|0x[0-9a-f]+)\b",
-        "station_location": r"(?:tại|ở)\s+(?:trạm\s*(?:sạc\s*)?)?([^,.!?]{2,80})",
         "warning_symbol": r"(?:rùa vàng|con rùa|đèn đỏ|nháy đỏ|nhấp nháy đỏ|đèn cổng sạc[^,.!?]{0,30})",
-        "operational_status": r"(?:không khởi động|không đi được|vẫn (?:đi|chạy)[^,.!?]{0,30}|không sạc được|không nhận sạc)",
+        "operational_status": r"(?:không khởi động|không đi được|không chạy được|không di chuyển được|vẫn (?:đi|chạy)[^,.!?]{0,30}|không sạc được|không nhận sạc)",
     }
     for field, pattern in patterns.items():
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
-            value = match.group(1) if field == "station_location" else match.group(0)
+            value = match.group(0)
             fields[field] = value.strip()
     if "vehicle_model" in fields:
         fields["vehicle_model"] = re.sub(r"\s+", "", fields["vehicle_model"]).upper()
@@ -131,8 +159,7 @@ def extract_fields(text: str) -> dict[str, str]:
             fields["vehicle_model"] = "e34"
     if "warning_symbol" in fields and any(k in text.lower() for k in ["sạc", "trụ"]):
         fields.setdefault("error_code", fields["warning_symbol"])
-    if any(k in text.lower() for k in ["tại nhà", "ở nhà", "sạc ac tại nhà"]):
-        fields["station_location"] = "Tại nhà"
+    fields.update(extract_locations(text))
     return fields
 
 
@@ -218,7 +245,7 @@ async def triage_node(state: AgentState) -> dict:
     confidence = 0.90 if (is_crit or charging or complaint or incident or faq or continuation) else 0.55
     # Ordinary conversation needs no official evidence; product commitments,
     # technical details and repair requests still use the existing grounded flow.
-    specialist = any(term in lower for term in [
+    specialist = is_vehicle_comparison(text) or any(term in lower for term in [
         "bảo hành", "chính sách", "thông số", "dung lượng", "điện áp", "cell", "bms",
         "chu kỳ", "kwh", "bao nhiêu", "bao lâu", "quãng đường", "giá", "phí",
         "khuyến mãi", "ưu đãi", "đổi gói", "chuyển gói", "đặt lịch", "điều kiện",
@@ -244,7 +271,6 @@ async def triage_node(state: AgentState) -> dict:
             "vehicle_model",
             "charger_id",
             "error_code",
-            "station_location",
             "warning_symbol",
             "operational_status",
             "showroom_dealer",
@@ -299,6 +325,14 @@ async def triage_node(state: AgentState) -> dict:
         intent, faq, general, confidence = "Sales/General Info", False, False, 0.90
     facts = dict(state.get("captured_fields", {}))
     history = state.get("fact_history", [])
+    if "vehicle_context" in state:
+        context = state["vehicle_context"]
+        # Only observations from the original input can become facts. A resolved
+        # topic or an LLM extraction is not customer evidence.
+        extracted = extract_fields(state.get('latest_user_message', text))
+        extracted.pop("vehicle_model", None)
+        if context.get("is_incident") and context.get("incident_model"):
+            extracted["vehicle_model"] = context["incident_model"]
     for field, value in extracted.items():
         facts, history = apply_fact_recency_and_invalidation(
             facts, history, field, value, f"user:turn:{state.get('turn', 0)}"
@@ -313,7 +347,7 @@ async def triage_node(state: AgentState) -> dict:
         "priority": priority,
         "confidence_score": confidence,
         "routing": decide_routing({**state, "intent": intent, "is_rag_query": faq}).target,
-        "vehicle_model": facts.get("vehicle_model", state.get("vehicle_model")),
+        "vehicle_model": state.get("vehicle_model") if "vehicle_context" in state else facts.get("vehicle_model", state.get("vehicle_model")),
         "captured_fields": facts,
         "fact_history": history,
         "is_rag_query": faq,
