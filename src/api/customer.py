@@ -180,9 +180,77 @@ async def upload_attachment(
     )
 
 
-# ==============================================================================
-# 2. CUSTOMER CHAT API — Nguồn: api-contract.md Mục 2.1
-# ==============================================================================
+def determine_incident_clarification_prompt(
+    query: str,
+    car_label: str,
+    error_code: str | None = None,
+    charger_id: str | None = None,
+    station_name: str | None = None,
+) -> tuple[str, list[str]]:
+    lower = query.lower()
+    from src.agents.guardrails import strip_accents
+    lower_unaccented = strip_accents(lower)
+
+    # 1. Subtype: Thân vỏ / Cửa / Khóa xe
+    if re.search(r"\b(kẹt cửa|cửa|kính|cốp|khóa|mở cửa)\b", lower) or re.search(r"\b(ket cua|cua|kinh|cop|khoa|mo cua)\b", lower_unaccented):
+        msg = (
+            f"Dạ em ghi nhận xe {car_label} đang gặp vấn đề về cửa/khóa xe. "
+            "Hiện tại người trên xe có bị mắc kẹt không ạ? Cửa nào đang bị kẹt và anh/chị có thể thoát ra ngoài xe an toàn không?"
+        )
+        suggested = ["Tôi đang ở ngoài xe", "Mọi người đều an toàn", "Cửa bên lái bị kẹt", "Cần hỗ trợ khẩn cấp"]
+        return msg, suggested
+
+    # 2. Subtype: Cảnh báo táp-lô / Rùa vàng / Vận hành yếu / Vô lăng rung
+    if (
+        re.search(r"\b(rùa vàng|con rùa|chạy yếu|vô lăng rung|rung|mất lái|đèn vàng)\b", lower)
+        or re.search(r"\b(rua vang|con rua|chay yeu|vo lang rung|rung|mat lai|den vang)\b", lower_unaccented)
+    ):
+        msg = (
+            f"Dạ em ghi nhận xe {car_label} đang có cảnh báo vận hành (rùa vàng hoặc chạy yếu/rung). "
+            "Anh/chị đã đỗ xe ở vị trí an toàn chưa ạ? Xe hiện còn di chuyển được không và mức pin còn khoảng bao nhiêu %?"
+        )
+        suggested = ["Đã dừng ở nơi an toàn", "Pin còn dưới 20%", "Xe vẫn di chuyển chậm được", "Cần gọi cứu hộ"]
+        return msg, suggested
+
+    # 3. Subtype: Lỗi sạc cụ thể (Đã có error_code / trạm sạc / hoặc có từ khoá sạc)
+    is_charging_related = bool(
+        error_code
+        or charger_id
+        or station_name
+        or re.search(r"\b(sạc|sac|trụ|tru|trạm|tram|cc01|không vào điện|khong vao dien)\b", lower)
+    )
+    if is_charging_related:
+        if error_code and not charger_id and not station_name:
+            msg = (
+                f"Dạ em đã ghi nhận xe {car_label} đang báo lỗi {error_code.upper()}. "
+                "Anh/chị vui lòng cho em biết tên trạm sạc hoặc số trụ đang cắm để kỹ thuật viên kiểm tra kết nối từ xa nhé ạ?"
+            )
+            suggested = ["Trạm Vincom Landmark 81, trụ 3", "Trạm Vincom Metropolis, trụ P02", "Trạm sạc cao tốc"]
+            return msg, suggested
+        elif (charger_id or station_name) and not error_code:
+            loc = station_name or charger_id
+            msg = (
+                f"Dạ em ghi nhận xe {car_label} đang ở {loc}. "
+                "Màn hình xe hoặc đèn trụ có báo mã lỗi cụ thể nào (ví dụ: CC01, 0x41) không ạ? "
+                "Anh/chị cũng có thể chụp ảnh màn hình táp-lô để em nhận diện sơ bộ nhé."
+            )
+            suggested = ["Lỗi communication error 0x41", "Mã lỗi CC01", "Đèn trụ nháy đỏ, không hiện mã"]
+            return msg, suggested
+        else:
+            msg = (
+                f"Dạ em ghi nhận xe {car_label} đang gặp vấn đề kỹ thuật liên quan đến sạc pin. "
+                "Anh/chị có thể cho em biết trạm sạc, số trụ hoặc mã lỗi hiển thị trên táp-lô (ví dụ: CC01, 0x41) không ạ?"
+            )
+            suggested = ["Xem bản đồ trạm sạc ›", "Mã lỗi CC01, trụ P02", "Đèn trụ nháy đỏ"]
+            return msg, suggested
+
+    # 4. Fallback sự cố kỹ thuật chung (KHÔNG giả định là sạc)
+    msg = (
+        f"Dạ em ghi nhận xe {car_label} đang gặp sự cố kỹ thuật. "
+        "Anh/chị vui lòng cho em biết xe hiện đang báo mã lỗi gì trên táp-lô hoặc mô tả thêm tình trạng vận hành để kỹ thuật viên hỗ trợ nhé ạ."
+    )
+    suggested = ["Xe báo lỗi trên màn hình", "Xe không di chuyển được", "Cần gọi cứu hộ"]
+    return msg, suggested
 
 
 @router.post("/chat", response_model=ApiResponse[ChatResponseData])
@@ -1260,39 +1328,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         if not car_model:
             clarification_msg = "Anh/chị đang gặp sự cố với dòng xe nào ạ?"
             suggested_replies = ["VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"]
-        elif error_code and not charger_id and not station_name:
-            clarification_msg = (
-                f"Dạ em đã ghi nhận xe {car_label} đang báo lỗi {error_code.upper()}. "
-                "Anh/chị vui lòng cho em biết tên trạm sạc hoặc số trụ đang cắm để kỹ thuật viên kiểm tra kết nối từ xa nhé ạ?"
-            )
-            suggested_replies = [
-                "Trạm Vincom Landmark 81, trụ 3",
-                "Trạm Vincom Metropolis, trụ P02",
-                "Trạm sạc cao tốc",
-            ]
-        elif (charger_id or station_name) and not error_code:
-            loc = station_name or charger_id
-            clarification_msg = (
-                f"Dạ em ghi nhận xe {car_label} đang ở {loc}. "
-                "Màn hình xe hoặc đèn trụ có báo mã lỗi cụ thể nào (ví dụ: CC01, 0x41) không ạ? "
-                "Anh/chị cũng có thể chụp ảnh màn hình táp-lô để em nhận diện sơ bộ nhé."
-            )
-            suggested_replies = [
-                "Lỗi communication error 0x41",
-                "Mã lỗi CC01",
-                "Đèn trụ nháy đỏ, không hiện mã",
-            ]
         else:
-            clarification_msg = (
-                f"Dạ em ghi nhận xe {car_label} đang gặp vấn đề kỹ thuật liên quan đến sạc/vận hành. "
-                "Anh/chị có thể cho em biết trạm sạc, số trụ hoặc mã lỗi hiển thị trên táp-lô (ví dụ: CC01, 0x41) không ạ? "
-                "(Anh/chị cũng có thể tải ảnh màn hình để em nhận diện sơ bộ)."
+            clarification_msg, suggested_replies = determine_incident_clarification_prompt(
+                text, car_label, error_code=error_code, charger_id=charger_id, station_name=station_name
             )
-            suggested_replies = [
-                "Xem bản đồ trạm sạc ›",
-                "Mã lỗi CC01, trụ P02",
-                "Đèn trụ nháy đỏ",
-            ]
 
         agent_msg = Message(
             id=str(uuid.uuid4()),
