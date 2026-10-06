@@ -57,7 +57,7 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
         r"(?:vô lăng|tay lái)\s+(?:rung|lắc|lệch|giật|nặng)|"
         r"(?:xe tôi|vừa bị|đang bị|xe đang|đang hiện)\s+.*rùa|"
         r"(?:chết máy|nháy đỏ|nhấp nháy|sập nguồn|mất lái|chảy dầu|xì lốp)|"
-        r"(?:chân phanh|phanh|chân ga|ắc quy|pin).{0,25}(?:hỏng|kẹt|hẫng|chai|tụt nhanh|không ăn)|"
+        r"(?:chân phanh|phanh|chân ga|ắc quy|pin).{0,25}\b(?:hỏng|kẹt|hẫng|chai|tụt nhanh|không ăn)\b|"
         r"cứu tôi|cần cứu hộ|gọi cứu hộ|^cứu hộ[.!? ]*$|không chạy nổi|không thể tăng tốc|lỗi\s+(?:[a-z]*\d+|0x)"
     )
     current_failure_unaccented_regex = (
@@ -68,7 +68,7 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
         r"(?:vo lang|tay lai)\s+(?:rung|lac|lech|giat|nang)|"
         r"(?:xe toi|vua bi|dang bi|xe dang|dang hien)\s+.*rua|"
         r"(?:chet may|nhay do|nhap nhay|sap nguon|mat lai|chay dau|xi lop)|"
-        r"(?:chan phanh|phanh|chan ga|ac quy|pin).{0,25}(?:hong|ket|hang|chai|tut nhanh|khong an)|"
+        r"(?:chan phanh|phanh|chan ga|ac quy|pin).{0,25}\b(?:hong|ket|hang|chai|tut nhanh|khong an)\b|"
         r"cuu toi|can cuu ho|goi cuu ho|^cuu ho[.!? ]*$|khong chay noi|khong the tang toc|loi\s+(?:[a-z]*\d+|0x)"
     )
     has_current_failure = bool(

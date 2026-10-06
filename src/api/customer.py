@@ -1364,7 +1364,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         return ApiResponse(
             success=True,
             data=ChatResponseData(
-                response_type="HIGH_VOLTAGE_SAFETY_WARNING",
+                response_type="FAQ_ANSWER",
                 message=hazard_warning,
                 case_id=active_case_id,
                 status=active_case.status if active_case else None,

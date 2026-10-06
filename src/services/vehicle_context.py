@@ -65,7 +65,19 @@ def resolve_vehicle_context(text: str, previous: dict | None = None) -> dict:
     if safety_update:
         incident_fields["safety_status"] = "customer_reported_safe"
 
-    incident = failure or model_answer or slot_answer or safety_update or bool(previous.get("is_incident") and soc_match)
+    prior_topic = previous.get("topic", "")
+    symbol_reference = bool(
+        re.search(r'(?:biểu tượng này|sự cố này|lỗi này|đây này|đèn này)', lower)
+        and re.search(r'rùa|con rùa', prior_topic, re.I)
+    )
+    incident = (
+        failure
+        or model_answer
+        or slot_answer
+        or safety_update
+        or bool(previous.get("is_incident") and soc_match)
+        or symbol_reference
+    )
 
     if incident:
         incident_fields.update(extracted)
@@ -75,8 +87,7 @@ def resolve_vehicle_context(text: str, previous: dict | None = None) -> dict:
         models = list(previous.get("models", []))
 
     resolved = text
-    prior_topic = previous.get("topic", "")
-    if incident and re.search(r'(?:biểu tượng này|sự cố này|lỗi này|đây này|đèn này)', lower) and re.search(r'rùa|con rùa', prior_topic, re.I):
+    if symbol_reference:
         incident_fields['warning_symbol'] = 'rùa vàng'
         resolved = f'{text} (rùa vàng)'
     topic = MODEL.sub("", text).strip(" .?!")
