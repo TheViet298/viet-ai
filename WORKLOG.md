@@ -25,24 +25,25 @@
 
 | Member | Task | Status | Output | Time |
 |---|---|---|---|---|
-| Cả nhóm | Tổng hợp tiến độ Gate G1, chuẩn bị nội dung Mentor Duty submit | 🔎 Chưa xác minh | WORKLOG ghi nhận đã chuẩn bị/nộp; repo chưa có nội dung log hoặc biên nhận nộp bài | 2h |
-| Thế Việt, Long | Thiết kế form khảo sát người dùng xe điện VinFast để kiểm chứng pain point | 🔎 Chưa xác minh | Repo chưa có bản câu hỏi/form; tài liệu chỉ ghi nhận kết quả khảo sát thăm dò | 3h |
-| Khôi | Xây dựng bộ test cases đánh giá Intent Accuracy & Critical Recall | 🔄 WIP | Dataset v1 có 12/40 ca mục tiêu; chưa có baseline | 4h |
-| Long | Thiết kế chi tiết LangGraph state schema và guardrails | 🔄 WIP | State TypedDict/graph mẫu; emergency rules mới ở tài liệu | 4h |
-| Triển | Khởi tạo cấu trúc Pydantic models và FastAPI routes cho Case lifecycle | 🔄 WIP | `src/models/schemas.py` và `src/api/routes.py` hiện chỉ xử lý chat mẫu | 4h |
-
-<!-- update info from feature/ai-long branch: merge giữ nguyên cả hai phiên bản để nhóm review sau. -->
-<!-- Khác biệt: feature/ai-khoi ghi nhận kiểm chứng ngày 27/09, các mục chưa xác minh/WIP; Long ghi state và guardrails Done, có 19 unit tests. Bảng Long giữ các trạng thái gốc Done của Mentor Duty/form. Giữ cả hai bảng, chưa kết luận về thời điểm hoàn thành hay bằng chứng nộp bài. -->
-
-### Nội dung Long bổ sung — chờ đối chiếu
-
-| Member | Task | Status | Output | Time |
-|---|---|---|---|---|
 | Cả nhóm | Tổng hợp tiến độ Gate G1, chuẩn bị nội dung Mentor Duty submit | ✅ Done | Mentor Duty log (Done/Doing/Blocked/Questions) | 2h |
 | Thế Việt, Long | Thiết kế form khảo sát người dùng xe điện VinFast để kiểm chứng pain point | ✅ Done | Draft câu hỏi khảo sát cho chủ xe & tài xế GSM | 3h |
 | Khôi | Xây dựng bộ test cases đánh giá Intent Accuracy & Critical Recall | 🔄 WIP | Benchmark dataset (40 mẫu test) | 4h |
 | Long | Thiết kế chi tiết LangGraph state schema và guardrails | ✅ Done | `src/agents/state.py` & `src/agents/guardrails.py` + 19 unit tests | 4h |
 | Triển | Khởi tạo cấu trúc Pydantic models và FastAPI routes cho Case lifecycle | 🔄 WIP | `src/models/schemas.py` & `src/api/routes.py` | 4h |
+
+<!-- update info from feature/ai-khoi branch -->
+
+### Đối chiếu lịch sử ngày 27/09 từ feature/ai-khoi
+
+Các nhận xét sau phản ánh thời điểm kiểm tra, không thay thế tiến độ triển khai mới trên develop.
+
+| Member | Task | Status | Output | Time |
+|---|---|---|---|---|
+| Cả nhóm | Tổng hợp tiến độ Gate G1, chuẩn bị nội dung Mentor Duty submit | 🔎 Chưa xác minh | WORKLOG ghi nhận đã chuẩn bị/nộp; repo chưa có nội dung log hoặc biên nhận nộp bài | 2h |
+| Thế Việt, Long | Thiết kế form khảo sát người dùng xe điện VinFast để kiểm chứng pain point | 🔎 Chưa xác minh | Repo chưa có bản câu hỏi/form; tài liệu chỉ ghi nhận kết quả khảo sát thăm dò | 3h |
+| Khôi | Xây dựng bộ test cases đánh giá Intent Accuracy & Critical Recall | 🔄 WIP | Dataset v1 có 12/40 ca mục tiêu; chưa có baseline | 4h |
+| Long | Thiết kế chi tiết LangGraph state schema và guardrails | 🔄 WIP | State TypedDict/graph mẫu; emergency rules mới ở tài liệu | 4h |
+| Triển | Khởi tạo cấu trúc Pydantic models và FastAPI routes cho Case lifecycle | 🔄 WIP | `src/models/schemas.py` và `src/api/routes.py` hiện chỉ xử lý chat mẫu | 4h |
 
 **Tổng kết ngày (đã đối chiếu 27/09):** WORKLOG ban đầu ghi đã nộp Mentor Duty ngày 23/09/2026, nhưng repo chưa có bằng chứng để xác nhận việc nộp. Form khảo sát và WBS chi tiết cũng chưa có đầu ra kiểm tra được trong repo. Các module LangGraph và FastAPI vẫn đang WIP.
 
@@ -89,13 +90,36 @@
 
 ---
 
-## [YYYY-MM-DD]
+## 2026-09-30 (Gate G2: Core Engine, Vertical Slice & Full-Stack AI Integration)
 
 | Member | Task | Status | Output | Time |
 |---|---|---|---|---|
-| | | | | |
+| Thế Việt | Tích hợp toàn diện giao diện Frontend (Chat, Case Tracking, Console, Auth) với Live REST APIs | ✅ Done | `chatApi.ts`, `track-case/page.tsx`, `CustomerChatContainer.tsx`, `AuthContext.tsx` | 5h |
+| Thế Việt | Nâng cấp trải nghiệm Chat: Nút làm mới phiên hội thoại (Reset Chat) và hiệu ứng AI Thinking Bubble sinh động | ✅ Done | `ChatFeed.tsx`, `CustomerChatContainer.tsx`, `useChat.ts` | 3h |
+| Long | Tích hợp Core AI Chatbot Agent từ nhánh develop, chuẩn hóa Guardrails (Hard Safety, No-PII, HITL flag) | ✅ Done | `src/agents/chatbot_agent.py`, `src/agents/guardrails.py` | 4h |
+| Khôi | Mở rộng Fallback Knowledge Base lên 7 nguồn (bổ sung danh mục xe VF 3 - VF 9 và catalog thông số kỹ thuật) | ✅ Done | `src/services/rag_service.py` (SRC-001 đến SRC-007) | 3h |
+| Triển | Chuẩn hóa Triage Router 5 Intents (`sales_general_info`, `charging_battery`, `service_incident`, `complaint_feedback`, `safety_adversarial_oos`); xử lý thông minh câu hỏi tư vấn mua xe | ✅ Done | `src/api/customer.py` | 4h |
+| Cả nhóm | Kiểm thử End-to-End Vertical Slice: Khẩn cấp (Safety) $\rightarrow$ Tra cứu (RAG FAQ) $\rightarrow$ Sự cố sạc ($\text{Landmark 81}$) $\rightarrow$ Bàn điều phối (Console HITL) | ✅ Done | Hệ thống chạy thông suốt trên `localhost:3000` & `localhost:8000` | 3h |
 
-**Tổng kết ngày:**
+**Tổng kết ngày:** Đã merge và kết nối hoàn chỉnh giữa Frontend UI, Backend FastAPI, SQLite Database và Core AI Agent. Đã tinh chỉnh router theo đúng chuẩn bộ dataset `triage_test_v1.jsonl`, loại bỏ hiện tượng hỏi mặc định và cho phép phân luồng thông minh từ chào hỏi, tư vấn bán hàng đến tiếp nhận sự cố kỹ thuật.
+
+---
+
+## 2026-10-03 (Gate G2: Chuẩn hóa UI/UX Chat, Bản đồ Vị trí ADR-005 & Đa dạng hóa Intent Landing Page)
+
+| Member | Task | Status | Output | Time |
+|---|---|---|---|---|
+| Thế Việt | Tinh gọn giao diện Chat (`SCR-01`, `SCR-02`): Áp dụng luật "Một tin nhắn chỉ một box", bỏ box lồng box, phục hồi 70% không gian hội thoại | ✅ Done | `ChatMessageItem.tsx`, `CustomerChatContainer.tsx`, `ChatFeed.tsx` | 4h |
+| Thế Việt | Tích hợp Bản đồ Dịch vụ & Xin quyền Vị trí theo ADR-005: Docking thanh consent trên ô nhập, tính khoảng cách Haversine chính xác theo GPS, hạ độ cao map 45% hiển thị trọn vẹn nút Chỉ đường/Gọi, làm mờ ghim ngoài nhóm lọc | ✅ Done | `ServiceMapPanel.tsx`, `LocationConsentCard.tsx`, `distance.ts`, `constants.ts` | 5h |
+| Thế Việt | Tái cấu trúc Hero Section Landing Page (`SCR-05.1`): Chuyển tông giọng trung tính "Bạn cần hỗ trợ gì về xe điện?", xoay vòng placeholder 4 kịch bản, chip đa dạng 4 nhóm ý định, phân tách trạng thái Guest vs Customer | ✅ Done | `LandingPage.tsx` | 3.5h |
+| Long | Tối ưu hóa phân loại Intent & Hard Safety Guardrails: Phân định ca khẩn cấp cao tốc (kích hoạt sticky red banner) và ca thường (lỗi sạc CC01, bảo dưỡng không chiếm dụng diện tích banner) | ✅ Done | `src/agents/chatbot_agent.py`, `EmergencyAlertBanner.tsx`, `useChat.ts` | 3h |
+| Triển | Chuẩn hóa sinh mã Case ID động (`CASE-YYYYMMDD-XXX`) trên cả Backend và Frontend Mock fallback, bổ sung chip `"Xem bản đồ trạm sạc ›"` vào kịch bản làm rõ | ✅ Done | `src/api/customer.py`, `src/models/schemas.py`, `useChat.ts` | 2.5h |
+| Cả nhóm | Kiểm thử Production Build Next.js & Kiểm tra luồng liên thông giữa Chat, Bản đồ gợi ý và Landing Page | ✅ Done | `npm run build` thành công 100% (9/9 routes, 0 error, 0 lint warning) | 2h |
+
+**Tổng kết ngày:** Đã hoàn thiện toàn diện bộ giao diện người dùng theo chuẩn `screen-spec.md` (Mục 1, 2, 5.1, 5.4) và `ADR-005`:
+1. **Chat:** Triệt tiêu anti-pattern "box lồng box", cố định banner an toàn khẩn cấp 46px ngay dưới Navbar, thanh consent vị trí mỏng nhẹ không làm nghẽn luồng chat.
+2. **Bản đồ:** Tự động đồng bộ vị trí GPS thực tế, tính khoảng cách Haversine chuẩn xác, chiều cao bản đồ 45% giúp thẻ điểm hỗ trợ đầu tiên không bị che khuất nút hành động, ghim ngoài bộ lọc tự động làm mờ trực quan.
+3. **Landing Hero:** Mở rộng từ định kiến "chỉ báo lỗi" sang tiếp nhận toàn diện 3 nhóm khách (sự cố, hỏi cẩm nang/đặt lịch, khách vãng lai), dropdown dòng xe linh hoạt cho Guest và tự động điền cho Customer đã đăng nhập.
 
 ---
 
