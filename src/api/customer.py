@@ -58,6 +58,8 @@ from src.models.schemas import (
     ServiceHandoff,
     ServicePointItem,
     ServicePointsData,
+    SessionHistoryMessageItem,
+    SessionHistoryResponseData,
 )
 from src.services.auth import check_case_ownership, get_optional_user, require_customer
 from src.services.chat_cases import (
@@ -2252,3 +2254,80 @@ def acknowledge_safety(case_id: str, payload: SafetyAcknowledgementPayload,
         raise HTTPException(409, "Tình trạng sự cố đã thay đổi. Vui lòng tải lại.")
     return ApiResponse(success=True, data=SafetyAcknowledgementData(case_id=case.id, **safety_fields(case),
                        emergency_context=session_emergency_context(db, current_user.id, case.session_id)), error=None)
+
+
+@router.get("/sessions/{session_id}/history", response_model=ApiResponse[SessionHistoryResponseData])
+def get_session_chat_history(
+    session_id: str,
+    guest_session_id: str | None = Query(None),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    current_user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Lấy toàn bộ lịch sử hội thoại của một phiên chat theo session_id.
+    Bảo đảm phân quyền truy cập:
+    - Nếu phiên có tin nhắn của khách hàng đã đăng nhập, chỉ chính tài khoản đó mới xem được.
+    - Nếu là phiên thử nghiệm guest, khách hàng phải cung cấp guest_session_id hoặc X-Session-Id khớp.
+    """
+    messages = (
+        db.query(Message)
+        .filter(Message.session_id == session_id)
+        .order_by(Message.created_at.asc(), Message.id.asc())
+        .all()
+    )
+
+    active_case_id = None
+    for msg in messages:
+        if msg.case_id:
+            active_case_id = msg.case_id
+        meta = msg.msg_metadata or {}
+        msg_user_id = meta.get("user_id")
+        msg_guest_id = meta.get("guest_session_id")
+
+        if msg_user_id:
+            if not current_user:
+                raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để xem lịch sử phiên này.")
+            if current_user.id != msg_user_id and current_user.role != "STAFF":
+                raise HTTPException(status_code=403, detail="Bạn không có quyền truy cập lịch sử phiên này.")
+        elif msg_guest_id and not current_user:
+            provided_guest = guest_session_id or x_session_id
+            if provided_guest and provided_guest != msg_guest_id and session_id != msg_guest_id:
+                raise HTTPException(status_code=403, detail="Bạn không có quyền truy cập lịch sử phiên này.")
+
+    items = []
+    for msg in messages:
+        meta = msg.msg_metadata or {}
+        raw_citations = meta.get("citations") or []
+        citations = []
+        for c in raw_citations:
+            if isinstance(c, dict):
+                citations.append(Citation(**c))
+
+        created_str = msg.created_at.isoformat() if msg.created_at else datetime.now(UTC).isoformat()
+        items.append(
+            SessionHistoryMessageItem(
+                id=msg.id,
+                sender=msg.sender_type,
+                content=msg.content,
+                timestamp=created_str,
+                response_type=meta.get("response_type"),
+                citations=citations,
+                suggested_replies=meta.get("suggested_replies") or [],
+                safe_guidance=meta.get("safe_guidance"),
+                case_id=msg.case_id,
+                priority=meta.get("priority"),
+            )
+        )
+
+    return ApiResponse(
+        success=True,
+        data=SessionHistoryResponseData(
+            session_id=session_id,
+            case_id=active_case_id,
+            messages=items,
+            total=len(items),
+        ),
+        error=None,
+    )
+
