@@ -1055,6 +1055,31 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     # NHÓM C: TRA CỨU TRI THỨC / RAG FAQ (KHI KHÔNG PHẢI SỰ CỐ KỸ THUẬT)
     # --------------------------------------------------------------------------
     if not is_technical_incident:
+        from src.services.vehicle_context import detect_memory_recall_query
+        is_recall, recall_reply = detect_memory_recall_query(text, vehicle_context)
+        if is_recall and recall_reply:
+            agent_msg = Message(
+                id=str(uuid.uuid4()),
+                case_id=active_case_id,
+                session_id=payload.session_id,
+                sender_type=SenderType.AGENT.value,
+                content=recall_reply,
+                msg_metadata={"turn": prior_turns + 1, "response_type": "FAQ_ANSWER", "user_id": user_id},
+            )
+            db.add(agent_msg)
+            db.flush()
+            return ApiResponse(
+                success=True,
+                data=ChatResponseData(
+                    response_type="FAQ_ANSWER",
+                    message=recall_reply,
+                    case_id=active_case_id,
+                    request_location=False,
+                    show_emergency_banner=bool(active_case and active_case.priority == Priority.CRITICAL.value),
+                ),
+                error=None,
+            )
+
         # Gọi Chatbot Agent Core AI (Tra cứu RAG ChromaDB / Fallback KB)
         models_in_question = vehicle_context["models"]
         knowledge_model = models_in_question[0] if len(models_in_question) == 1 else (

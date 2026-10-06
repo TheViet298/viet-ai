@@ -46,16 +46,27 @@ def resolve_vehicle_context(text: str, previous: dict | None = None) -> dict:
     if ownership and len(models) == 1:
         owned = models[0]
         incident_model = None
-    # A model-only answer can fill the vehicle slot of an ongoing incident.
     model_answer = bool(previous.get("is_incident") and MODEL.fullmatch(lower))
     slot_answer = bool(previous.get("is_incident") and request_kind == "uncertain"
                        and extracted and not lower.startswith(("còn ", "thế còn ", "vậy còn ")))
-    incident = failure or model_answer or slot_answer
-    incident_fields = dict(previous.get("incident_fields", {})) if previous.get("is_incident") and not new_scope else {}
+    incident_fields = dict(previous.get("incident_fields", {})) if (previous.get("is_incident") or previous.get("owned_model")) and not new_scope else {}
     for denied in denied_reports(text):
         for field, value in extract_fields(denied, asserted_only=False).items():
             if str(incident_fields.get(field, '')).casefold() == value.casefold():
                 incident_fields.pop(field, None)
+
+    soc_match = re.search(r"(?:pin\s*(?:còn)?\s*|pin\s*)(\d{1,3}%)|\b(\d{1,3}%)\s*pin", lower)
+    if soc_match:
+        incident_fields["soc"] = soc_match.group(1) or soc_match.group(2)
+    contact_match = re.search(r"\b(?:liên hệ|goi lai|lien he)\s+(?:sau|truoc|vao lúc)?\s*(\d{1,2}(?:h| giờ|:00)?)\b", lower)
+    if contact_match:
+        incident_fields["contact_preference"] = f"sau {contact_match.group(1)}" if "sau" in lower else contact_match.group(0)
+    safety_update = bool(previous.get("is_incident") and re.search(r"\b(an toàn|an toan|đã dừng|da dung)\b", lower))
+    if safety_update:
+        incident_fields["safety_status"] = "customer_reported_safe"
+
+    incident = failure or model_answer or slot_answer or safety_update or bool(previous.get("is_incident") and soc_match)
+
     if incident:
         incident_fields.update(extracted)
         incident_model = models[0] if len(models) == 1 else (incident_model or owned)
@@ -90,11 +101,40 @@ def resolve_vehicle_context(text: str, previous: dict | None = None) -> dict:
         "incident_case_id": None if new_scope else previous.get('incident_case_id'),
         "topic": topic[:800],
         "incident_query": resolved[:1200] if incident else previous.get("incident_query", ""),
-        "incident_fields": incident_fields if incident else {},
+        "incident_fields": incident_fields if (incident or incident_fields) else previous.get("incident_fields", {}),
         "owned_model": owned,
-        "incident_model": incident_model,
-        "is_incident": incident,
+        "incident_model": incident_model or previous.get("incident_model"),
+        "is_incident": incident or previous.get("is_incident", False),
         "resolved_query": resolved[:1200],
         "source": "customer_message" if MODEL.search(text) else "session_reference",
         "model_source": text[:500] if MODEL.search(text) else previous.get("model_source"),
     }
+
+
+def detect_memory_recall_query(query: str, vehicle_context: dict) -> tuple[bool, str | None]:
+    lower = query.lower()
+    from src.agents.guardrails import strip_accents
+    lower_unaccented = strip_accents(lower)
+
+    is_recall = bool(
+        re.search(r"\b(?:quay lại|nhắc lại|vừa rồi|trước đó|xe tôi là dòng nào|pin còn bao nhiêu)\b", lower)
+        or re.search(r"\b(?:quay lai|nhac lai|vua roi|truoc do|xe toi la dong nao|pin con bao nhieu)\b", lower_unaccented)
+    )
+    if not is_recall:
+        return False, None
+
+    incident_model = vehicle_context.get("incident_model") or vehicle_context.get("owned_model")
+    fields = vehicle_context.get("incident_fields", {})
+    soc = fields.get("soc")
+
+    if incident_model or soc:
+        parts = []
+        if incident_model:
+            parts.append(f"{incident_model}")
+        if soc:
+            parts.append(f"pin còn {soc}")
+        details = " và ".join(parts)
+        answer = f"Dạ xe anh/chị đang ghi nhận sự cố là {details} ạ. Anh/chị cần em hỗ trợ tiếp điều gì cho xe ạ?"
+        return True, answer
+
+    return False, None
