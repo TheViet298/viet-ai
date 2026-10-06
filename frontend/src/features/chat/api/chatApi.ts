@@ -63,6 +63,7 @@ export async function uploadAttachment(file: File, imageKind: "auto" | "dashboar
  * Gửi tin nhắn chat từ khách hàng, hỗ trợ kèm mã định danh ảnh đã tải
  */
 export async function sendChatMessage(params: {
+  requestId?: string;
   sessionId: string;
   message: string;
   caseId?: string | null;
@@ -77,15 +78,12 @@ export async function sendChatMessage(params: {
       ...authHeaders,
     },
     body: JSON.stringify({
+      request_id: params.requestId,
       session_id: params.sessionId,
       case_id: params.caseId || null,
       message: params.message,
       attachment_ids: params.attachmentIds || [],
-      client_context: params.clientContext || {
-        mock_customer_id: "CUST_MOCK_01",
-        vehicle_model: "VF8",
-        vehicle_code_mock: "VF-SF-00231",
-      },
+      client_context: params.clientContext || {},
     }),
   });
 
@@ -94,6 +92,39 @@ export async function sendChatMessage(params: {
     throw new Error(`Chat API error (${res.status}): ${errorText}`);
   }
 
+  return res.json();
+}
+
+/**
+ * Lấy lịch sử hội thoại của phiên chat (multi-topic chat remediation)
+ */
+export async function getSessionHistory(sessionId: string): Promise<ApiResponse<{
+  session_id: string;
+  case_id: string | null;
+  messages: Array<{
+    id: string;
+    sender: "CUSTOMER" | "AGENT" | "STAFF" | "SYSTEM";
+    content: string;
+    timestamp: string;
+    response_type?: "CLARIFICATION" | "FAQ_ANSWER" | "CASE_CREATED";
+    citations?: any[];
+    suggested_replies?: string[];
+    safe_guidance?: string;
+    case_id?: string | null;
+    priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  }>;
+  total: number;
+}>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const res = await fetch(`${BASE_URL}/api/v1/customer/sessions/${sessionId}/history`, {
+    headers: {
+      ...authHeaders,
+    },
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to fetch session history (${res.status}): ${errorText}`);
+  }
   return res.json();
 }
 
@@ -110,6 +141,17 @@ export async function getCaseStatus(caseId: string) {
   if (!res.ok) {
     throw new Error(`Failed to fetch case status: ${res.statusText}`);
   }
+  return res.json();
+}
+
+export async function acknowledgeCaseSafety(caseId: string, incidentVersion: number) {
+  const authHeaders = await getCustomerAuthHeaders();
+  const res = await fetch(`${BASE_URL}/api/v1/customer/cases/${caseId}/safety-acknowledgement`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders },
+    body: JSON.stringify({ incident_version: incidentVersion }),
+  });
+  if (!res.ok) throw new Error(`Safety acknowledgement failed (${res.status})`);
   return res.json();
 }
 
