@@ -1223,6 +1223,39 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         )
 
     # TRƯỜNG HỢP B: CHƯA ĐỦ DỮ KIỆN KỸ THUẬT & CÒN LƯỢT HỎI LÀM RÕ (Turn < 2)
+    from src.agents.guardrails import evaluate_hazardous_intervention
+    is_hazardous, hazard_warning = evaluate_hazardous_intervention(text)
+    if is_hazardous and hazard_warning:
+        agent_msg = Message(
+            id=str(uuid.uuid4()),
+            case_id=active_case_id,
+            session_id=payload.session_id,
+            sender_type=SenderType.AGENT.value,
+            content=hazard_warning,
+            msg_metadata={
+                "turn": prior_turns + 1,
+                "response_type": "HIGH_VOLTAGE_SAFETY_WARNING",
+                "user_id": user_id,
+                "suggested_replies": ["Tôi hiểu rồi", "Kết nối chuyên viên kỹ thuật"],
+            },
+        )
+        db.add(agent_msg)
+        db.flush()
+        return ApiResponse(
+            success=True,
+            data=ChatResponseData(
+                response_type="HIGH_VOLTAGE_SAFETY_WARNING",
+                message=hazard_warning,
+                case_id=active_case_id,
+                status=active_case.status if active_case else None,
+                priority=Priority.HIGH.value,
+                request_location=False,
+                show_emergency_banner=False,
+                suggested_replies=["Tôi hiểu rồi", "Kết nối chuyên viên kỹ thuật"],
+            ),
+            error=None,
+        )
+
     if prior_turns < 2:
         if not car_model:
             clarification_msg = "Anh/chị đang gặp sự cố với dòng xe nào ạ?"

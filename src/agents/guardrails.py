@@ -162,6 +162,27 @@ def without_negated_hazards(text: str) -> str:
     return text
 
 
+HAZARDOUS_INTERVENTION_PATTERN = (
+    r"\b(?:tháo|mở|can thiệp|đấu nối|chạm vào|tự sửa|đo điện)\s+(?:bộ\s+)?(?:pin|cọc pin|dây cam|dây cao áp|hệ thống cao áp|pack pin|cell pin)\b|"
+    r"\b(?:thao|mo|can thiep|dau noi|cham vao|tu sua|do dien)\s+(?:bo\s+)?(?:pin|coc pin|day cam|day cao ap|cao ap)\b|"
+    r"\b(?:tháo|thao)\s+(?:bộ\s+|bo\s+)?pin\s+(?:ra|để|de)\b"
+)
+
+
+def evaluate_hazardous_intervention(text: str) -> tuple[bool, str | None]:
+    """Phát hiện yêu cầu hoặc câu hỏi về việc tự ý can thiệp phần cứng/hệ thống pin cao áp nguy hiểm."""
+    lower = text.lower()
+    lower_unaccented = strip_accents(lower)
+    if re.search(HAZARDOUS_INTERVENTION_PATTERN, lower) or re.search(HAZARDOUS_INTERVENTION_PATTERN, lower_unaccented):
+        warning = (
+            "CẢNH BÁO AN TOÀN CAO ÁP: Quý khách tuyệt đối không tự ý tháo mở, can thiệp hoặc chạm vào bộ pin và hệ thống dây điện cao áp. "
+            "Hệ thống pin ô tô điện hoạt động ở điện áp rất cao và tiềm ẩn nguy cơ giật điện hoặc cháy nổ nguy hiểm đến tính mạng. "
+            "Vui lòng giữ khoảng cách an toàn với xe và chờ kỹ thuật viên chuyên trách của VinFast tiếp nhận xử lý."
+        )
+        return True, warning
+    return False, None
+
+
 # =====================================================================
 # Layer 3: Boundary Guardrails (Clarification & Out-of-Scope)
 # =====================================================================
