@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.agent_customer import router as agent_customer_router
 from src.api.auth import router as auth_router
 from src.api.cases import router as cases_router
 from src.api.customer import router as customer_router
@@ -46,6 +47,7 @@ app.add_middleware(
 )
 
 # Đăng ký các Router API
+app.include_router(agent_customer_router, prefix="/api/v1/agent")
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(public_router, prefix="/api/v1")
 app.include_router(customer_router, prefix="/api/v1")
@@ -56,4 +58,5 @@ app.include_router(router, prefix="/api/v1")
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "env": settings.app_env}
+    return {"status": "ok", "env": settings.app_env, "service": "VF Serv"}
+

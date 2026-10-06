@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from typing import Any
 
 from src.agents.state import PriorityLevel
@@ -55,27 +56,38 @@ def sanitize_pii(text: str) -> tuple[str, bool, list[str]]:
     return sanitized, len(detected_types) > 0, detected_types
 
 
+def strip_accents(s: str) -> str:
+    """Loại bỏ dấu tiếng Việt để đối chiếu từ khóa gõ không dấu."""
+    nfkd = unicodedata.normalize("NFD", s)
+    return "".join(c for c in nfkd if unicodedata.category(c) != "Mn").replace("đ", "d").replace("Đ", "D")
+
+
 # =====================================================================
 # Layer 2: Hard Safety Rules Guardrail (Deterministic Code/Regex)
 # =====================================================================
 
 CRITICAL_STANDALONE_RULES: dict[str, str] = {
-    "SMOKE_OR_FIRE": r"\b(cháy|bốc khói|mùi khét|lửa|xì khói)\b",
+    "SMOKE_OR_FIRE": (
+        r"\b(cháy|cháy xe|xe bốc lửa|bốc lửa|khói|bốc khói|mùi khét|lửa|xì khói|chập điện|"
+        r"chay|chay xe|xe boc lua|boc lua|khoi|boc khoi|mui khet|chap dien)\b"
+    ),
     "BRAKE_FAILURE": (
         r"\b(mất phanh|liệt phanh|phanh không ăn|không phanh được|không ăn phanh|"
-        r"hẫng phanh|(chân phanh|phanh)\s*(bị\s*)?(hẫng|mất|kẹt|sát sàn)|"
-        r"(hẫng|mất|kẹt)\s*(chân phanh|phanh))\b"
+        r"hẫng phanh|đạp phanh không ăn|(chân phanh|phanh)\s*(bị\s*)?(hẫng|mất|kẹt|sát sàn)|"
+        r"(hẫng|mất|kẹt)\s*(chân phanh|phanh)|"
+        r"mat phanh|liet phanh|phanh khong an|khong phanh duoc|hang phanh)\b"
     ),
-    "ACCELERATOR_JAM": r"\b(kẹt chân ga|kẹt ga|dính ga|chân ga bị kẹt)\b",
-    "TIRE_BURST": r"\b(nổ lốp|rách lốp|nổ vỏ|bể bánh)\b",
-    "ACCIDENT": r"\b(tai nạn|lật xe|đâm va mạnh|va chạm mạnh)\b",
-    "FLOODED_CABIN": r"\b(ngập nước đến sàn|nước tràn vào sàn|ngập sàn xe|ngập đến sàn)\b",
+    "ACCELERATOR_JAM": r"\b(kẹt chân ga|kẹt ga|dính ga|chân ga bị kẹt|ket chan ga|ket ga)\b",
+    "TIRE_BURST": r"\b(nổ lốp|rách lốp|nổ vỏ|bể bánh|no lop|rach lop|be banh)\b",
+    "ACCIDENT": r"\b(tai nạn|lật xe|đâm va mạnh|va chạm mạnh|tai nan|lat xe)\b",
+    "FLOODED_CABIN": r"\b(ngập nước đến sàn|nước tràn vào sàn|ngập sàn xe|ngập đến sàn|ngap nuoc den san|ngap san xe)\b",
 }
 
-TURTLE_PATTERN = r"\b(rùa vàng|con rùa|biểu tượng con rùa|báo rùa)\b"
+TURTLE_PATTERN = r"\b(rùa vàng|con rùa|biểu tượng con rùa|báo rùa|rua vang|con rua)\b"
 TURTLE_DANGER_CONDITIONS = (
     r"\b(cao tốc|mất kiểm soát|giảm công suất|dừng giữa đường|"
-    r"không thể tăng tốc|giật mạnh|mất lái|đang chạy|trên cầu)\b"
+    r"không thể tăng tốc|giật mạnh|mất lái|đang chạy|trên cầu|"
+    r"cao toc|mat kiem soat|giam cong suat|dung giua duong|giat manh|mat lai|dang chay|tren cau)\b"
 )
 
 
@@ -86,18 +98,38 @@ def evaluate_hard_safety(text: str) -> tuple[bool, str | None, PriorityLevel]:
         (is_critical, trigger_rule_name, priority)
     """
     text_lower = text.lower()
+    text_unaccented = strip_accents(text_lower)
 
     # 1. Kiểm tra các rủi ro độc lập (cháy, mất phanh, kẹt ga...)
+    # Bỏ qua nếu là câu hỏi kiến thức thuần túy phủ định (e.g. "tại sao xe điện không có khói?")
+    is_pure_inquiry = bool(re.search(r"\b(nghĩa là gì|là gì|ý nghĩa|tại sao lại không có|có khói không)\b", text_lower))
+    has_emergency_presence = bool(re.search(r"\b(xe tôi|xe của tôi|đang bị|vừa bị|đang|vừa|thấy|bốc|khét|cứu)\b", text_lower))
+
     for rule_name, pattern in CRITICAL_STANDALONE_RULES.items():
-        if re.search(pattern, text_lower):
+        rule_text = text_lower
+        normalized_text = text_unaccented
+        if rule_name == "SMOKE_OR_FIRE":
+            # Do not turn accented "chạy" (driving) into "cháy" (fire).
+            # For unaccented input, only suppress the explicit driving phrase.
+            rule_text = re.sub(r"\b(?:đang|vẫn|dang|van)\s+(?:chạy|chay)\b", "di chuyển", text_lower)
+            normalized_text = rule_text
+        if re.search(pattern, rule_text) or re.search(pattern, normalized_text):
+            if is_pure_inquiry and not has_emergency_presence and rule_name == "SMOKE_OR_FIRE":
+                continue
             return True, rule_name, "CRITICAL"
 
     # 2. Kiểm tra tổ hợp rủi ro: "rùa vàng" + điều kiện nguy hiểm / cao tốc
-    has_turtle = bool(re.search(TURTLE_PATTERN, text_lower))
+    has_turtle = bool(re.search(TURTLE_PATTERN, text_lower) or re.search(TURTLE_PATTERN, text_unaccented))
     if has_turtle:
-        has_danger_context = bool(re.search(TURTLE_DANGER_CONDITIONS, text_lower))
+        has_danger_context = bool(
+            re.search(TURTLE_DANGER_CONDITIONS, text_lower) or re.search(TURTLE_DANGER_CONDITIONS, text_unaccented)
+        )
         if has_danger_context:
             return True, "TURTLE_ON_HIGHWAY", "CRITICAL"
+        is_inquiry = bool(re.search(r"\b(nghĩa là gì|là gì|ý nghĩa|nghĩa là sao|tại sao lại có|giải thích|tìm hiểu)\b", text_lower))
+        has_current_state = bool(re.search(r"\b(xe tôi|xe của tôi|đang bị|đang hiện|vừa bị|bị hiện|xe đang|vừa hiện)\b", text_lower))
+        if is_inquiry and not has_current_state:
+            return False, "TURTLE_DEFINITION", "LOW"
         # Rùa vàng ở điều kiện bình thường (bãi xe, ngõ nhà) -> HIGH, không gắn CRITICAL
         return False, "TURTLE_NORMAL", "HIGH"
 

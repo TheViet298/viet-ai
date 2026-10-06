@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timezone
 from typing import Any, Generic, Literal, TypeVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 T = TypeVar("T")
 
@@ -67,6 +67,7 @@ class ArticleItem(BaseModel):
     content: str
     source_url: str
     verified_at: str
+    applicable_models: list[str] | None = None
 
 
 class PublicArticlesData(BaseModel):
@@ -100,28 +101,57 @@ class AttachmentOut(BaseModel):
 # =====================================================================
 
 class ChatRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     message: str = Field(..., min_length=1, max_length=5000, description="Tin nhắn từ user")
+    session_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    guest_session_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    case_id: str | None = None
+    client_context: dict[str, str] = Field(default_factory=dict)
 
 
 class ChatResponse(BaseModel):
     response: str = Field(..., description="Phản hồi từ agent")
     analysis: str = Field(default="", description="Phân tích nội bộ")
-    intent: str | None = Field(default=None, description="Ý định phân loại")
-    priority: str | None = Field(default=None, description="Mức độ ưu tiên")
-    needs_staff_review: bool = Field(default=False, description="Cần chuyên viên duyệt")
-    is_safety_trigger: bool = Field(default=False, description="Kích hoạt cảnh báo an toàn khẩn cấp")
-    citations: list[dict[str, Any]] = Field(default_factory=list, description="Danh sách trích dẫn nguồn")
+    session_id: str
+    response_type: str
+    intent: str | None = None
+    priority: str = "MEDIUM"
+    confidence_score: float = 0
+    needs_staff_review: bool = False
+    is_safety_trigger: bool = False
+    is_no_source: bool = False
+    citations: list[dict] = Field(default_factory=list)
+    suggested_replies: list[str] = Field(default_factory=list)
+    case_id: str | None = None
+    ticket_status: str | None = None
+    clarification_turn: int = 0
+    max_clarification_turns: int = 2
+    remaining_guest_messages: int = 0
+    login_required: bool = False
+    routing: str | None = None
 
 
-# ==============================================================================
-# CUSTOMER API SCHEMAS — Nguồn: docs/architecture/api-contract.md Mục 2
-# ==============================================================================
+class ConfirmationRequest(BaseModel):
+    action: Literal["RESOLVED_CONFIRMED", "STILL_UNRESOLVED"]
+
+
+class StaffActionRequest(BaseModel):
+    action: Literal["APPROVE", "REQUEST_INFO", "RESOLVE", "CLOSE", "REOPEN"]
+
+
+class LocationRequest(BaseModel):
+    case_id: str
+    status: Literal["CONSENTED", "MANUAL", "NOT_SHARED"]
+    location_label: str = Field(default="", max_length=200)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
 
 
 class ClientContext(BaseModel):
     mock_customer_id: str | None = "CUST_MOCK_01"
     vehicle_model: str | None = "VF8"
     vehicle_code_mock: str | None = "VF-SF-00231"
+    customer_name: str | None = None
 
 
 class CustomerChatRequest(BaseModel):
@@ -129,6 +159,7 @@ class CustomerChatRequest(BaseModel):
     case_id: str | None = None  # e.g. CASE-20260924-001, null nếu là tin nhắn đầu tiên
     message: str = Field(..., min_length=1, max_length=5000, description="Nội dung tin nhắn khách hàng")
     attachment_ids: list[str] | None = Field(default_factory=list, description="Danh sách mã file/ảnh đính kèm")
+    guest_session_id: str | None = Field(default=None, description="Dùng khi chưa login (giới hạn 5 lượt)")
     client_context: ClientContext | None = Field(default=None, description="Ngữ cảnh mô phỏng (No-PII)")
 
 
@@ -160,6 +191,7 @@ class ServiceHandoff(BaseModel):
 
 
 class ChatResponseData(BaseModel):
+    visual_evidence: dict[str, Any] | None = None
     response_type: Literal["CLARIFICATION", "FAQ_ANSWER", "CASE_CREATED"]
     message: str
     case_id: str | None = None
@@ -171,14 +203,19 @@ class ChatResponseData(BaseModel):
     citations: list[Citation] | None = None
     service_handoff: ServiceHandoff | None = None
     safe_guidance: str | None = None
+    show_emergency_banner: bool = False
+    request_location: bool = False
+    remaining_guest_messages: int | None = None  # Số lượt chat còn lại cho Guest trial (tối đa 5)
 
 
 class CustomerCaseStatusData(BaseModel):
     case_id: str
     status: str
     status_description: str | None = None
+    customer_message: str | None = None
     created_at: str
     updated_at: str | None = None
+
 
 
 class CustomerCaseItem(BaseModel):
@@ -216,6 +253,114 @@ class ReopenCaseResponseData(BaseModel):
 
 
 # ==============================================================================
+# LOCATION & SERVICE POINTS SCHEMAS — Nguồn: ADR-005 & api-contract.md 1.1
+# ==============================================================================
+
+
+class CaseLocationPayload(BaseModel):
+    case_id: str
+    status: Literal["CONSENTED", "MANUAL", "NOT_SHARED", "UNKNOWN"] = "CONSENTED"
+    source: Literal["BROWSER_GPS", "USER_TEXT", "MAP_PICKER"] = "USER_TEXT"
+    location_label: str = Field(..., min_length=1)
+    latitude: float | None = None
+    longitude: float | None = None
+    precision: Literal["APPROXIMATE", "EXACT"] = "APPROXIMATE"
+    share_with_staff: bool = True
+
+
+class CaseLocationOut(BaseModel):
+    case_id: str
+    status: str
+    source: str
+    location_label: str
+    latitude: float | None = None
+    longitude: float | None = None
+    precision: str
+    share_with_staff: bool
+    created_at: str
+
+
+class ServicePointItem(BaseModel):
+    id: str
+    name: str
+    category: Literal["CHARGING_STATION", "SERVICE_CENTER", "RESCUE_POST", "SHOWROOM"]
+    address: str
+    distance_km: float | None = None
+    latitude: float
+    longitude: float
+    hotline: str | None = None
+    operating_hours: str | None = None
+    charger_types: list[str] | None = None
+
+
+class ServicePointsData(BaseModel):
+    case_id: str
+    recommended_points: list[ServicePointItem]
+
+
+# ==============================================================================
+# CUSTOMER CONFIRMATION & CASE UPDATES — Nguồn: ADR-005 & api-contract.md 2.3
+# ==============================================================================
+
+
+class CustomerConfirmationPayload(BaseModel):
+    confirmation: Literal["RESOLVED_CONFIRMED", "STILL_UNRESOLVED"]
+    feedback_note: str | None = None
+
+
+class CustomerConfirmationResponseData(BaseModel):
+    success: bool = True
+    case_id: str
+    status: str
+    message: str
+
+
+class CustomerActionPayload(BaseModel):
+    action: Literal["CONFIRM_RESOLUTION", "REOPEN"]
+    reason: str | None = None
+    feedback_note: str | None = None
+
+
+class CustomerActionResponseData(BaseModel):
+    case_id: str
+    status: str
+    updated_at: str | None = None
+    customer_message: str | None = None
+
+
+
+class CaseUpdateOut(BaseModel):
+    id: str
+    case_id: str
+    author_type: Literal["STAFF", "SYSTEM"]
+    status_after_update: str
+    customer_message: str
+    next_step: str | None = None
+    awaiting_customer_confirmation: bool = False
+    created_at: str
+
+
+# ==============================================================================
+# PUBLIC SUPPORT INSIGHTS — Nguồn: ADR-005 & api-contract.md 2.3
+# ==============================================================================
+
+
+class SupportInsightItem(BaseModel):
+    id: str
+    title: str
+    category: str
+    vehicle_models: list[str]
+    symptom: str
+    recommended_action: str
+    hotline_support: str | None = None
+
+
+class PublicSupportInsightsData(BaseModel):
+    items: list[SupportInsightItem]
+    total: int
+
+
+# ==============================================================================
 # STAFF API SCHEMAS — Nguồn: docs/architecture/api-contract.md Mục 3
 # ==============================================================================
 
@@ -224,12 +369,17 @@ class TicketItem(BaseModel):
     id: str
     mock_customer_id: str
     vehicle_model: str
+    vehicle_code_mock: str | None = None
     intent: str
     priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
     status: str
     missing_info_flag: bool = False
     created_at: str
     confidence_score: float
+    issue_summary: str | None = None
+    suggested_action: str | None = None
+    has_location_consent: bool = False
+    error_code_short: str | None = None
 
 
 class TicketQueueData(BaseModel):
@@ -266,6 +416,17 @@ class TicketDetailData(BaseModel):
     case_brief: CaseBriefOut
     conversation_history: list[ConversationItem]
     attachments: list[AttachmentOut] = Field(default_factory=list)
+    location: CaseLocationOut | None = None
+    updates: list[CaseUpdateOut] = Field(default_factory=list)
+
+
+class CustomerCaseDetailData(BaseModel):
+    case: CustomerCaseItem
+    case_brief: CaseBriefOut | None = None
+    location: CaseLocationOut | None = None
+    updates: list[CaseUpdateOut] = Field(default_factory=list)
+    attachments: list[AttachmentOut] = Field(default_factory=list)
+    conversation_history: list[ConversationItem] = Field(default_factory=list)
 
 
 class StaffActionPayload(BaseModel):
@@ -279,3 +440,23 @@ class StaffActionPayload(BaseModel):
 class StaffActionResponseData(BaseModel):
     success: bool = True
     case_id: str
+
+
+class StaffDashboardData(BaseModel):
+    critical_count: int
+    staff_reviewing_count: int
+    needs_information_count: int
+    resolved_today_count: int
+    total_cases_count: int
+
+
+class RoutingDepartmentItem(BaseModel):
+    id: str
+    name: str
+    description: str
+    contact_email: str | None = None
+
+
+class RoutingDirectoryData(BaseModel):
+    departments: list[RoutingDepartmentItem]
+    total: int
