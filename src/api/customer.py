@@ -1677,6 +1677,12 @@ def confirm_customer_case_resolution(
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
     check_case_ownership(case, current_user)
 
+    if case.status != TicketStatus.RESOLVED.value:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Hồ sơ chỉ có thể xác nhận khi ở trạng thái Resolved (trạng thái hiện tại: {case.status})",
+        )
+
     # Tắt cờ awaiting_customer_confirmation ở các CaseUpdate trước đó
     db.query(CaseUpdate).filter(
         CaseUpdate.case_id == case.id,
@@ -1793,6 +1799,11 @@ def handle_customer_action(
     ).update({"awaiting_customer_confirmation": False}, synchronize_session=False)
 
     if payload.action == "CONFIRM_RESOLUTION":
+        if case.status != TicketStatus.RESOLVED.value:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Hồ sơ chỉ có thể xác nhận khi ở trạng thái Resolved (trạng thái hiện tại: {case.status})",
+            )
         prev_status = case.status
         case.status = TicketStatus.CLOSED.value
         case.updated_at = utcnow()
