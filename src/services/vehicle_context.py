@@ -4,6 +4,7 @@ import re
 from src.agents.guardrails import sanitize_pii
 from src.agents.nodes.triage_node import classify_request_kind, extract_fields
 from src.services.chat_classification import denied_reports, temporal_context
+from src.services.vehicle_knowledge import is_vehicle_comparison
 
 MODEL = re.compile(r"\b(?:vf\s*(?:e34|[356789])|e34)\b", re.I)
 
@@ -115,7 +116,7 @@ def resolve_vehicle_context(text: str, previous: dict | None = None) -> dict:
         "incident_fields": incident_fields if (incident or incident_fields) else previous.get("incident_fields", {}),
         "owned_model": owned,
         "incident_model": incident_model or previous.get("incident_model"),
-        "is_incident": incident or previous.get("is_incident", False),
+        "is_incident": False if is_vehicle_comparison(text) else (incident or previous.get("is_incident", False)),
         "resolved_query": resolved[:1200],
         "source": "customer_message" if MODEL.search(text) else "session_reference",
         "model_source": text[:500] if MODEL.search(text) else previous.get("model_source"),
