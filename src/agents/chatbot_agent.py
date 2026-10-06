@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from uuid import uuid4
 from weakref import WeakValueDictionary
 
@@ -8,12 +9,12 @@ from langchain_core.messages import AIMessage, HumanMessage
 from pydantic import BaseModel, Field
 
 from src.agents.cardd_evidence import make_cardd_signal
-from src.agents.context_manager import token_count
 from src.agents.graph import agent
 from src.agents.guardrails import evaluate_hard_safety, sanitize_pii
 from src.services.agent_llm import structured_call
+from src.services.memory_buffer import compact_memory
 from src.services.observability import get_tracer_callbacks
-from src.services.session_store import get_store
+from src.services.session_store import decode_state, encode_state, get_store, prepare_application_turn
 from src.services.tracer import sanitized_snapshot
 
 _LOCKS: WeakValueDictionary[str, asyncio.Lock] = WeakValueDictionary()
@@ -34,6 +35,9 @@ async def process_chat_message(
     owner: str | None = None,
     client_context: dict | None = None,
     damage_evidence: dict | None = None,
+    persist_business_case: bool = True,
+    application_db=None,
+    application_session_id: str | None = None,
 ) -> dict:
     if user_role not in {"guest", "customer", "staff"}:
         raise ValueError("Invalid role")
@@ -43,9 +47,25 @@ async def process_chat_message(
     owner = owner or f"guest:{session_id}"
     lock = _LOCKS.setdefault(session_id, asyncio.Lock())
     async with lock:
-        store = get_store()
-        critical = evaluate_hard_safety(user_message)[0]
-        state, version = store.claim(session_id, owner, user_role, emergency=critical)
+        if application_db is not None:
+            from src.models.db_models import ChatSession
+            if persist_business_case:
+                raise ValueError('Application owns business case persistence')
+            app_session = application_db.get(ChatSession, application_session_id or session_id)
+            expected_owner = f'user:{owner}' if user_role != 'guest' else owner
+            if not app_session or app_session.owner != expected_owner:
+                raise PermissionError('Application session belongs to another principal')
+            state = decode_state(json.dumps((app_session.memory_states or {}).get(session_id, {})))
+            if not state.get('turn'):
+                from src.config import get_settings
+                if get_settings().database_url.startswith('sqlite:///'):
+                    state = get_store().read_existing_state(session_id, owner, user_role) or state
+            state.update(session_id=session_id, user_role=user_role)
+            store, version = None, None
+        else:
+            store = get_store()
+            critical = evaluate_hard_safety(user_message)[0]
+            state, version = store.claim(session_id, owner, user_role, emergency=critical)
         if not state.get("turn"):
             state.update(
                 clarification_turn=min(clarification_turn, 2), captured_fields=sanitized_snapshot(captured_fields or {})
@@ -61,8 +81,10 @@ async def process_chat_message(
             state["is_rag_query"] = False
         if context.get("vehicle_model"):
             state["vehicle_model"] = context["vehicle_model"]
-            state.setdefault("captured_fields", {}).setdefault("vehicle_model", context["vehicle_model"])
-        state.update(query=sanitize_pii(user_message)[0], latest_user_message=sanitize_pii(user_message)[0])
+        if context.get("vehicle_context"):
+            state['pending_vehicle_context'] = context['vehicle_context']
+        original_message = context.get("original_user_message") or user_message
+        state.update(query=sanitize_pii(original_message)[0], latest_user_message=sanitize_pii(original_message)[0])
         # Server-side AI evidence only; never read this from arbitrary client_context.
         state['pending_cardd_signal'] = make_cardd_signal(damage_evidence,state.get('turn',0)+1) if damage_evidence is not None else None
         result = await agent.ainvoke(
@@ -72,20 +94,25 @@ async def process_chat_message(
                 "metadata": {"session_id": session_id},
             },
         )
+        if not persist_business_case:
+            prepare_application_turn(result)
         result["messages"].append(AIMessage(content=result.get("response", "")))
-        if len(result["messages"]) > 10 or sum(token_count(str(m.content)) for m in result["messages"]) > 8000:
-            old = result["messages"][:-6]
-            buffer_summary = (result.get("memory_summary", "") + "\n" + "\n".join(str(m.content)[:200] for m in old))[
-                -1800:
-            ]
+        if compact_memory(result):
+            buffer_summary = result['memory_summary']
             summary = (
                 None
                 if result.get("is_critical")
                 else await structured_call({**result, "memory_summary": buffer_summary}, "memory", MemorySummary)
             )
             result["memory_summary"] = sanitize_pii(summary.summary if summary else buffer_summary)[0]
-            result["messages"] = result["messages"][-6:]
-        saved = store.save_turn(session_id, owner, version, result)
+        if application_db is not None:
+            # No commit here: messages, memory and request cache share the
+            # transaction owned by run_chat_turn, including failure rollback.
+            saved = result
+            app_session.memory_states = {**(app_session.memory_states or {}), session_id: json.loads(encode_state(saved))}
+            application_db.flush()
+        else:
+            saved = store.save_turn(session_id, owner, version, result, persist_business_case=persist_business_case)
         reply = saved.get("response", "")
         if saved.get("case_id") and saved.get("response_type") == "CASE_CREATED":
             reply += f"\n\nMã hồ sơ: {saved['case_id']}."
@@ -99,6 +126,8 @@ async def process_chat_message(
             "needs_staff_review": saved.get("needs_staff_review", False),
             "is_safety_trigger": saved.get("is_critical", False),
             "is_no_source": saved.get("is_no_source", False),
+            "retrieval_diagnostics": saved.get("retrieval_diagnostics", {}),
+            "retrieval_status": saved.get("retrieval_status"),
             "citations": saved.get("rag_citations", []),
             "suggested_replies": saved.get("suggested_replies", []),
             "case_brief": saved.get("case_brief"),
