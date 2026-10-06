@@ -332,6 +332,27 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     resolved_text = vehicle_context["resolved_query"]
     vehicle_label = vehicle_model or "chưa xác định dòng"
 
+    if active_case:
+        new_model = vehicle_context.get("incident_model") or vehicle_model
+        if new_model and active_case.vehicle_model != new_model:
+            active_case.vehicle_model = new_model
+            active_case.updated_at = datetime.now(UTC)
+        brief = db.query(CaseBrief).filter_by(case_id=active_case.id).first()
+        if brief:
+            captured = dict(brief.captured_fields or {})
+            if new_model:
+                captured["vehicle_model"] = new_model
+            if vehicle_context.get("incident_fields"):
+                captured.update(vehicle_context["incident_fields"])
+            denied = vehicle_context.get("denied_reports", [])
+            for d in denied:
+                if d.get("error_code") and captured.get("error_code") == d.get("error_code"):
+                    captured.pop("error_code", None)
+                if d.get("charger_id") and captured.get("charger_id") == d.get("charger_id"):
+                    captured.pop("charger_id", None)
+            brief.captured_fields = captured
+            db.flush()
+
     # Kiểm tra các tín hiệu OCR/Vision từ các ảnh đính kèm (nếu có)
     attached_signals: list[dict] = []
     attached_ocr_snippets: list[str] = []
@@ -1240,6 +1261,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             )
             db.add(case)
             db.flush()
+        else:
+            if car_model and case.vehicle_model != car_model:
+                case.vehicle_model = car_model
+                case.updated_at = datetime.now(UTC)
 
         cust_msg.case_id = case.id
         db.query(Message).filter(

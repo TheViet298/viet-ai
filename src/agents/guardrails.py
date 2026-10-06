@@ -146,7 +146,7 @@ def evaluate_hard_safety(text: str) -> tuple[bool, str | None, PriorityLevel]:
 def without_negated_hazards(text: str) -> str:
     """Mask denied hazards while keeping affirmative hazards in other clauses."""
     hazard_terms = (
-        r"(?:khói|khoi|mùi khét|mui khet|bốc khói|boc khoi|cháy xe|chay xe|cháy|chay|"
+        r"(?:khói|khoi(?!\s+dong)|mùi khét|mui khet|bốc khói|boc khoi|cháy xe|chay xe|cháy|chay|"
         r"chập điện|chap dien|xì khói|xi khoi|bốc lửa|boc lua|mất phanh|mat phanh|"
         r"liệt phanh|liet phanh|kẹt chân ga|ket chan ga|nổ lốp|no lop|tai nạn|tai nan)"
     )
