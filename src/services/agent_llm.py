@@ -18,7 +18,7 @@ _circuits: dict[str, dict] = {}
 
 def circuit_key() -> str:
     s = get_settings()
-    return sha256((s.google_api_key + s.model_name).encode()).hexdigest()
+    return sha256((str(s.google_api_key) + str(getattr(s, "model_name", "gemini"))).encode()).hexdigest()
 
 
 def open_circuit() -> None:
@@ -43,11 +43,12 @@ def classify_provider_error(error: Exception) -> str:
 
 def record_outcome(state: AgentState, prompt: str, decision: str, usage: dict | None = None, parsed=None) -> None:
     usage = usage or {}
+    state["last_llm_outcome"] = decision
     try:
         record_trace_step(
             state.get("session_id", "unspecified"), state.get("turn", 0), "llm", prompt, decision,
             tokens_in=usage.get("input_tokens"), tokens_out=usage.get("output_tokens"),
-            metadata={"model": get_settings().model_name, "output": sanitized_snapshot(parsed.model_dump()) if isinstance(parsed, BaseModel) else None},
+            metadata={"model": getattr(get_settings(), "model_name", "gemini"), "output": sanitized_snapshot(parsed.model_dump()) if isinstance(parsed, BaseModel) else None},
         )
     except Exception:
         pass
