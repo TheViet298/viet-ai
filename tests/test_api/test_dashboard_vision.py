@@ -23,6 +23,7 @@ def gemini(monkeypatch):
 
     settings = get_settings()
     monkeypatch.setattr(settings, "agent_llm_enabled", True)
+    monkeypatch.setattr(settings, "vision_provider", "google")
     monkeypatch.setattr(settings, "google_api_key", "test-key")
     monkeypatch.setattr(settings, "dashboard_vision_model", "gemini-3.5-flash")
     result = {
@@ -96,6 +97,7 @@ async def test_invalid_image_is_rejected(client, customer_db):
 @pytest.mark.asyncio
 async def test_missing_key_preserves_upload_without_fake_ocr(client, customer_db, monkeypatch):
     monkeypatch.setattr(get_settings(), "google_api_key", "")
+    monkeypatch.setattr(get_settings(), "openai_api_key", "")
     response = await client.post("/api/v1/customer/attachments", files={
         "file": ("cc01.png", image_bytes(), "image/png"),
     })
@@ -129,6 +131,7 @@ async def test_provider_auth_error_is_safe_and_actionable(monkeypatch):
     from src.services import dashboard_vision_service as vision
 
     monkeypatch.setattr(get_settings(), "agent_llm_enabled", True)
+    monkeypatch.setattr(get_settings(), "vision_provider", "google")
     monkeypatch.setattr(get_settings(), "google_api_key", "private-key")
     def handler(request):
         return httpx.Response(401, json={"error": {"message": "private-key"}})
@@ -164,6 +167,8 @@ async def test_transient_overload_retries_then_reads_image(monkeypatch):
     from src.services import dashboard_vision_service as vision
 
     monkeypatch.setattr(get_settings(), "agent_llm_enabled", True)
+    monkeypatch.setattr(get_settings(), "vision_provider", "google")
+    monkeypatch.setattr(get_settings(), "google_api_key", "test-key")
     attempts = []
     def handler(request):
         attempts.append(request)
@@ -180,3 +185,42 @@ async def test_transient_overload_retries_then_reads_image(monkeypatch):
     ))
     signals = await vision.analyze_dashboard_image(image_bytes(), "image/png")
     assert signals.get("symptom_keys") == ["sensor_fault"]
+
+
+@pytest.mark.asyncio
+async def test_analyze_dashboard_image_openai_provider(monkeypatch):
+    import src.services.dashboard_vision_service as dash_mod
+    from unittest.mock import AsyncMock, MagicMock
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "agent_llm_enabled", True)
+    monkeypatch.setattr(settings, "dashboard_vision_enabled", True)
+    monkeypatch.setattr(settings, "vision_provider", "openai")
+    monkeypatch.setattr(settings, "openai_api_key", "mock-openai-key")
+    monkeypatch.setattr(settings, "vision_model", "gpt-6-luna")
+
+    mock_client = MagicMock()
+    mock_chat = MagicMock()
+    mock_completions = MagicMock()
+
+    mock_response = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.finish_reason = "stop"
+    mock_choice.message.content = (
+        '{"is_dashboard": true, "ocr_text": "Tire pressure low", '
+        '"symptom_keys": ["low_pressure"], "confidence": 0.95, '
+        '"wheel_position": "rear_right", "observations": ["TPMS warning low tire pressure"]}'
+    )
+    mock_response.choices = [mock_choice]
+
+    mock_completions.create = AsyncMock(return_value=mock_response)
+    mock_chat.completions = mock_completions
+    mock_client.chat = mock_chat
+
+    monkeypatch.setattr(dash_mod, "get_async_openai_client", lambda: mock_client)
+
+    result = await dash_mod.analyze_dashboard_image(image_bytes(), "image/png")
+    assert result.get("evidence_type") in {"GEMINI_VISION", "OPENAI_VISION"}
+    assert result.get("is_dashboard") is True
+    assert "low_pressure" in result.get("symptom_keys", [])
+    assert result.get("wheel_position") == "rear_right"
