@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -14,10 +15,12 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { ProductMark } from "./ProductMark";
+import { UserProfileModal } from "./UserProfileModal";
 
 export function Navbar() {
   const pathname = usePathname();
   const { user, role, logout } = useAuth();
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // Khi Staff đang ở màn /console -> Ẩn Navbar Customer để nhường toàn bộ giao diện cho Staff Console Shell
   if (pathname?.startsWith("/console") && role === "STAFF") {
@@ -116,20 +119,25 @@ export function Navbar() {
           <div className="flex items-center gap-2">
             {user && role === "CUSTOMER" ? (
               /* Hồ sơ Customer */
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1 rounded-xl">
-                  <div className="w-6 h-6 rounded-full bg-[#1E40AF] text-white flex items-center justify-center text-[11px] font-bold">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsProfileOpen(true)}
+                  className="flex items-center gap-2 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] hover:border-slate-300 px-3 py-1 rounded-xl transition group text-left cursor-pointer"
+                  title="Xem và chỉnh sửa hồ sơ xe & tài khoản"
+                >
+                  <div className="w-6 h-6 rounded-full bg-[#1E40AF] text-white flex items-center justify-center text-[11px] font-bold group-hover:scale-105 transition shrink-0">
                     <User className="w-3.5 h-3.5" />
                   </div>
                   <div className="flex flex-col text-left">
-                    <span className="text-[12px] font-semibold leading-tight text-[#0F172A]">
+                    <span className="text-[12px] font-semibold leading-tight text-[#0F172A] group-hover:text-[#1E40AF] transition">
                       {user.name}
                     </span>
                     <span className="text-[10px] text-[#1E40AF] font-mono font-medium">
                       {user.vehicleModel || "VF8"}
                     </span>
                   </div>
-                </div>
+                </button>
 
                 <button
                   type="button"
@@ -171,6 +179,11 @@ export function Navbar() {
           </div>
         </div>
       </div>
+
+      <UserProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+      />
     </header>
   );
 }

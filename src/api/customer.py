@@ -38,6 +38,7 @@ from src.models.db_models import (
     StaffAuditLog,
     TicketStatus,
     User,
+    UserRole,
     utcnow,
 )
 from src.models.schemas import (
@@ -198,6 +199,9 @@ async def customer_chat(
     - Sinh Case Brief và lưu vết vào Database SQLite
     - Guest trial: giới hạn 5 lượt/phiên, trả remaining_guest_messages
     """
+    if current_user and current_user.role != UserRole.CUSTOMER.value:
+        raise HTTPException(status_code=403, detail="Customer account required")
+
     # 0. Kiểm tra xác thực hoặc Guest Trial (ADR-005 & api-contract.md Mục 1)
     remaining_guest_msgs: int | None = None
     if not current_user:
@@ -237,7 +241,11 @@ async def customer_chat(
             else (f"GUEST_{payload.guest_session_id[:8]}" if payload.guest_session_id else "CUST_MOCK_01")
         )
     )
-    vehicle_model = (ctx.vehicle_model if ctx and ctx.vehicle_model else "VF8").upper()
+    vehicle_model = (
+        ctx.vehicle_model
+        if ctx and ctx.vehicle_model
+        else (current_user.vehicle_model if current_user and current_user.vehicle_model else "VF8")
+    ).upper()
     vehicle_code = ctx.vehicle_code_mock if ctx else "VF-SF-00231"
 
     # Kiểm tra các tín hiệu OCR/Vision từ các ảnh đính kèm (nếu có)
@@ -338,6 +346,8 @@ async def customer_chat(
                 user_id=user_id,
                 session_id=payload.session_id,
                 mock_customer_id=mock_cust_id,
+                mock_customer_name=current_user.full_name if current_user and current_user.full_name else None,
+                mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=vehicle_model,
                 intent=Intent.SERVICE_INCIDENT.value,
@@ -699,9 +709,11 @@ async def customer_chat(
         if not case:
             case = Case(
                 id=new_case_id,
-                user_id=current_user.id,
+                user_id=user_id,
                 session_id=payload.session_id,
                 mock_customer_id=mock_cust_id,
+                mock_customer_name=current_user.full_name if current_user and current_user.full_name else None,
+                mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=vehicle_model,
                 intent=Intent.COMPLAINT_FEEDBACK.value,
@@ -1063,6 +1075,8 @@ async def customer_chat(
                 user_id=user_id,
                 session_id=payload.session_id,
                 mock_customer_id=mock_cust_id,
+                mock_customer_name=current_user.full_name if current_user and current_user.full_name else None,
+                mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=car_model,
                 intent=Intent.CHARGING_BATTERY.value,
@@ -1223,6 +1237,8 @@ async def customer_chat(
             user_id=user_id,
             session_id=payload.session_id,
             mock_customer_id=mock_cust_id,
+            mock_customer_name=current_user.full_name if current_user and current_user.full_name else None,
+            mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
             vehicle_code_mock=vehicle_code,
             vehicle_model=car_model,
             intent=Intent.SERVICE_INCIDENT.value,
@@ -1578,6 +1594,8 @@ def handle_customer_action(
     case = db.get(Case, case_id)
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
+    if current_user and current_user.role != UserRole.CUSTOMER.value:
+        raise HTTPException(status_code=403, detail="Customer account required")
     check_case_ownership(case, current_user, session_id=x_session_id)
 
     actor_id = current_user.id if current_user else f"SESSION_{x_session_id or 'GUEST'}"
@@ -1886,6 +1904,9 @@ def get_customer_case_status(
     case = db.get(Case, case_id)
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
+
+    if current_user and current_user.role != UserRole.CUSTOMER.value:
+        raise HTTPException(status_code=403, detail="Customer account required")
 
     check_case_ownership(case, current_user, session_id=x_session_id)
 

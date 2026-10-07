@@ -28,6 +28,8 @@ export interface CaseBrief {
 export interface TicketItem {
   id: string;
   mock_customer_id: string;
+  customer_name?: string;
+  customer_phone?: string;
   vehicle_model: string;
   vehicle_code_mock?: string;
   intent: TicketIntent;
@@ -46,6 +48,8 @@ export interface TicketDetail {
   case: {
     id: string;
     mock_customer_id: string;
+    customer_name?: string;
+    customer_phone?: string;
     vehicle_code_mock?: string;
     vehicle_model: string;
     intent: TicketIntent;
@@ -89,7 +93,7 @@ export const VIETNAMESE_STATUS_MAP: Record<string, string> = {
 
 export const VIETNAMESE_PRIORITY_MAP: Record<string, string> = {
   "CRITICAL": "Khẩn cấp",
-  "HIGH": "Ưu tiên",
+  "HIGH": "Ưu tiên cao",
   "MEDIUM": "Tiêu chuẩn",
   "LOW": "Thấp",
 };

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from src.api.auth import Principal, customer, staff
+from src.api.dependencies import Principal, customer, staff
 from src.api.routes import chat
 from src.models.schemas import ChatResponse, ConfirmationRequest, LocationRequest, StaffActionRequest
 from src.services.location_service import save_location, suggest_service_points

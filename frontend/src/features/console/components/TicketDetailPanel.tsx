@@ -35,6 +35,7 @@ import {
 } from "../types";
 import { ROUTING_DEPARTMENTS } from "./StaffConsoleShell";
 import { getTicketDetail, submitStaffAction } from "../api/consoleApi";
+import { useAuth } from "@/features/shared";
 
 interface TicketDetailPanelProps {
   ticket: TicketItem;
@@ -42,12 +43,14 @@ interface TicketDetailPanelProps {
   onStatusUpdate?: (ticketId: string, newStatus: TicketStatus) => void;
 }
 
-// Mock dataset chi tiết tương ứng với 5 Ticket ID
+// Fallback dataset chi tiết tương ứng với các Ticket ID mẫu
 const DETAILED_TICKETS_MAP: Record<string, TicketDetail> = {
   "CASE-20260924-001": {
     case: {
       id: "CASE-20260924-001",
-      mock_customer_id: "CUST_MOCK_01",
+      mock_customer_id: "VF-CUST-001",
+      customer_name: "Nguyễn Văn Tuấn",
+      customer_phone: "0912345678",
       vehicle_code_mock: "VF-SF-00231",
       vehicle_model: "VF8",
       intent: "Charging/Battery",
@@ -98,7 +101,9 @@ const DETAILED_TICKETS_MAP: Record<string, TicketDetail> = {
   "CASE-20260924-002": {
     case: {
       id: "CASE-20260924-002",
-      mock_customer_id: "CUST_MOCK_99",
+      mock_customer_id: "VF-CUST-099",
+      customer_name: "Lê Minh Trí",
+      customer_phone: "0934567890",
       vehicle_code_mock: "VF-SF-99120",
       vehicle_model: "VF8",
       intent: "Service/Incident",
@@ -149,7 +154,9 @@ const DETAILED_TICKETS_MAP: Record<string, TicketDetail> = {
   "CASE-20260924-003": {
     case: {
       id: "CASE-20260924-003",
-      mock_customer_id: "CUST_MOCK_02",
+      mock_customer_id: "VF-CUST-002",
+      customer_name: "Trần Thị Mai",
+      customer_phone: "0987654321",
       vehicle_code_mock: "VF-SF-00445",
       vehicle_model: "VF5",
       intent: "Service/Incident",
@@ -193,7 +200,9 @@ const DETAILED_TICKETS_MAP: Record<string, TicketDetail> = {
   "CASE-20260924-004": {
     case: {
       id: "CASE-20260924-004",
-      mock_customer_id: "CUST_MOCK_15",
+      mock_customer_id: "VF-CUST-015",
+      customer_name: "Phạm Hồng Phúc",
+      customer_phone: "0901234567",
       vehicle_code_mock: "VF-SF-00789",
       vehicle_model: "VF9",
       intent: "Charging/Battery",
@@ -233,7 +242,9 @@ const DETAILED_TICKETS_MAP: Record<string, TicketDetail> = {
   "CASE-20260924-005": {
     case: {
       id: "CASE-20260924-005",
-      mock_customer_id: "CUST_MOCK_23",
+      mock_customer_id: "VF-CUST-023",
+      customer_name: "Hoàng Gia Bảo",
+      customer_phone: "0918765432",
       vehicle_code_mock: "VF-SF-00612",
       vehicle_model: "VF6",
       intent: "Service/Incident",
@@ -276,6 +287,7 @@ export function TicketDetailPanel({
   onActionComplete,
   onStatusUpdate,
 }: TicketDetailPanelProps) {
+  const { user } = useAuth();
   // Detail Sub-tabs: 3 tabs
   const [detailTab, setDetailTab] = useState<"brief" | "chat" | "dispatch">("brief");
 
@@ -300,6 +312,8 @@ export function TicketDetailPanel({
         case: {
           id: ticket.id,
           mock_customer_id: ticket.mock_customer_id,
+          customer_name: ticket.customer_name,
+          customer_phone: ticket.customer_phone,
           vehicle_code_mock: ticket.vehicle_code_mock,
           vehicle_model: ticket.vehicle_model,
           intent: ticket.intent,
@@ -394,6 +408,8 @@ export function TicketDetailPanel({
             case: {
               id: ticket.id,
               mock_customer_id: ticket.mock_customer_id,
+              customer_name: ticket.customer_name,
+              customer_phone: ticket.customer_phone,
               vehicle_code_mock: ticket.vehicle_code_mock,
               vehicle_model: ticket.vehicle_model,
               intent: ticket.intent,
@@ -472,7 +488,7 @@ export function TicketDetailPanel({
     try {
       await submitStaffAction(ticket.id, {
         action: actionType,
-        staff_id: "STAFF_LE_HOANG_QUAN",
+        staff_id: user?.name || user?.email || "Cố vấn Dịch vụ VinFast",
         updated_status: targetStatus,
         notes: notes || undefined,
       });
@@ -591,7 +607,19 @@ export function TicketDetailPanel({
               <span className="font-medium text-slate-700">{ticket.vehicle_model}</span>
               <span>·</span>
               <span>
-                Khách: <strong className="font-mono text-slate-700">{ticket.mock_customer_id}</strong>
+                Khách:{" "}
+                <strong className="text-slate-700">
+                  {ticket.customer_name ? (
+                    <>
+                      <span>{ticket.customer_name}</span>{" "}
+                      <span className="font-mono text-[11px] text-slate-500 font-normal">
+                        ({ticket.mock_customer_id})
+                      </span>
+                    </>
+                  ) : (
+                    <span className="font-mono">{ticket.mock_customer_id}</span>
+                  )}
+                </strong>
               </span>
               <span>·</span>
               <span className="inline-flex items-center gap-1.5 font-medium">
@@ -611,58 +639,111 @@ export function TicketDetailPanel({
             </div>
           </div>
 
-          {/* Quick Action Buttons: 1 Nút Chính Đặc duy nhất, các nút còn lại viền mảnh */}
+          {/* Quick Action Buttons: Thích ứng động theo trạng thái hồ sơ */}
           <div className="flex items-center gap-2 shrink-0 pt-0.5">
-            {/* Nút Chính Đặc */}
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={() =>
-                executeStaffAction(
-                  "Duyệt phương án & chuyển xưởng",
-                  "APPROVE",
-                  "In Progress"
-                )
-              }
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[12.5px] font-semibold transition shadow-xs active:scale-[0.98] disabled:opacity-50"
-            >
-              {isSubmitting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <CheckCircle2 className="w-3.5 h-3.5" />
-              )}
-              <span>Duyệt & Điều phối</span>
-            </button>
+            {ticket.status === "Resolved" ? (
+              <>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-[12px] font-semibold">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Đã giải quyết</span>
+                </div>
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() =>
+                    executeStaffAction("Đóng hồ sơ (Closed)", "CLOSE", "Closed")
+                  }
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-[12px] font-medium transition active:scale-[0.98] disabled:opacity-50"
+                  title="Đóng lưu trữ hồ sơ"
+                >
+                  <X className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="hidden sm:inline">Đóng hồ sơ</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() =>
+                    executeStaffAction("Mở lại hồ sơ (Reopened)", "REOPEN", "Reopened")
+                  }
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-amber-50 hover:text-amber-700 text-slate-700 text-[12px] font-medium transition active:scale-[0.98] disabled:opacity-50"
+                  title="Mở lại hồ sơ nếu khách cần hỗ trợ thêm"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="hidden sm:inline">Mở lại</span>
+                </button>
+              </>
+            ) : ticket.status === "Closed" ? (
+              <>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 text-[12px] font-semibold">
+                  <Check className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Hồ sơ đã đóng</span>
+                </div>
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() =>
+                    executeStaffAction("Mở lại hồ sơ (Reopened)", "REOPEN", "Reopened")
+                  }
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-amber-50 hover:text-amber-700 text-slate-700 text-[12px] font-medium transition active:scale-[0.98] disabled:opacity-50"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="hidden sm:inline">Mở lại hồ sơ</span>
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Nút Chính Đặc */}
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() =>
+                    executeStaffAction(
+                      "Duyệt phương án & chuyển xưởng",
+                      "APPROVE",
+                      "In Progress"
+                    )
+                  }
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[12.5px] font-semibold transition shadow-xs active:scale-[0.98] disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>Duyệt & Điều phối</span>
+                </button>
 
-            {/* Nút Viền Mảnh: Cần thêm tin */}
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={() =>
-                executeStaffAction(
-                  "Yêu cầu thêm thông tin",
-                  "REQUEST_INFO",
-                  "Needs Information"
-                )
-              }
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[12px] font-medium transition active:scale-[0.98] disabled:opacity-50"
-            >
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-              <span className="hidden sm:inline">Cần thêm tin</span>
-            </button>
+                {/* Nút Viền Mảnh: Cần thêm tin */}
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() =>
+                    executeStaffAction(
+                      "Yêu cầu thêm thông tin",
+                      "REQUEST_INFO",
+                      "Needs Information"
+                    )
+                  }
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[12px] font-medium transition active:scale-[0.98] disabled:opacity-50"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="hidden sm:inline">Cần thêm tin</span>
+                </button>
 
-            {/* Nút Viền Mảnh: Giải quyết */}
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={() =>
-                executeStaffAction("Hoàn tất giải quyết (Resolved)", "RESOLVE", "Resolved")
-              }
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 text-slate-700 text-[12px] font-medium transition active:scale-[0.98] disabled:opacity-50"
-            >
-              <Check className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="hidden sm:inline">Giải quyết</span>
-            </button>
+                {/* Nút Viền Mảnh: Giải quyết */}
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() =>
+                    executeStaffAction("Hoàn tất giải quyết (Resolved)", "RESOLVE", "Resolved")
+                  }
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 text-slate-700 text-[12px] font-medium transition active:scale-[0.98] disabled:opacity-50"
+                >
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="hidden sm:inline">Giải quyết</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
 

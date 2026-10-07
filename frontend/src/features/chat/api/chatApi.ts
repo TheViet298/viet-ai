@@ -11,26 +11,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function getCustomerAuthHeaders(): Promise<Record<string, string>> {
   if (typeof window === "undefined") return {};
-  let token = localStorage.getItem("vf_customer_token");
-  if (!token) {
-    try {
-      const res = await fetch(`${BASE_URL}/api/v1/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: "customer@vinfast.vn",
-          password: "customer123",
-        }),
-      });
-      if (res.ok) {
-        const json = await res.json();
-        token = json?.data?.token;
-        if (token) localStorage.setItem("vf_customer_token", token);
-      }
-    } catch {
-      // Offline fallback
-    }
-  }
+  const token = localStorage.getItem("vf_access_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -223,5 +204,4 @@ export async function getAiSystemStatus(): Promise<{
   }
   return res.json();
 }
-
 

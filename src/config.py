@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -34,6 +34,7 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = "sqlite:///./data/app.db"
+    auth_secret_key: SecretStr = SecretStr("")
 
     # Vector Store
     chroma_persist_dir: str = "./data/chroma"
@@ -45,14 +46,14 @@ class Settings(BaseSettings):
     rag_max_distance: float = Field(default=0.70, ge=0.0)
     rag_context_max_bytes: int = Field(default=6000, gt=0)
     agent_context_max_bytes: int = Field(default=8000, gt=0)
-    customer_demo_token: str = ""
-    staff_demo_token: str = ""
     service_points_file: str = "./fixtures/service_points.demo.json"
 
     @model_validator(mode="after")
     def validate_context_budgets(self):
         if self.rag_context_max_bytes > self.agent_context_max_bytes:
             raise ValueError("RAG evidence budget exceeds prompt budget")
+        if self.app_env == "production" and len(self.auth_secret_key.get_secret_value()) < 32:
+            raise ValueError("AUTH_SECRET_KEY must contain at least 32 characters in production")
         return self
 
 

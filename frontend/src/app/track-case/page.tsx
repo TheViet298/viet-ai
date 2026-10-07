@@ -62,12 +62,12 @@ export interface TrackedCase {
   vehicleModel: string;
   vehicleCode: string;
   status:
-    | "Staff Reviewing"
-    | "Needs Information"
-    | "In Progress"
-    | "Resolved"
-    | "Closed"
-    | "Reopened";
+  | "Staff Reviewing"
+  | "Needs Information"
+  | "In Progress"
+  | "Resolved"
+  | "Closed"
+  | "Reopened";
   priority: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
   createdAt: string;
   issueSummary: string;
@@ -355,7 +355,7 @@ const SAMPLE_CASES: Record<string, TrackedCase> = {
 };
 
 export default function TrackCasePage() {
-  const { user, role, loginAs } = useAuth();
+  const { user, role } = useAuth();
 
   // Tabs: "Yêu cầu của tôi" vs "Tình huống thường gặp"
   const [activeTab, setActiveTab] = useState<"my_cases" | "curated_topics">("my_cases");
@@ -412,7 +412,7 @@ export default function TrackCasePage() {
             setUserCases(res.data.cases);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [role]);
 
@@ -699,11 +699,10 @@ export default function TrackCasePage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("my_cases")}
-                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  activeTab === "my_cases"
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${activeTab === "my_cases"
                     ? "bg-white text-[#1E40AF] font-bold shadow-2xs"
                     : "text-slate-600 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 <Clock className="w-3.5 h-3.5" />
                 <span>Hồ sơ xe</span>
@@ -712,11 +711,10 @@ export default function TrackCasePage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("curated_topics")}
-                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  activeTab === "curated_topics"
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${activeTab === "curated_topics"
                     ? "bg-white text-[#1E40AF] font-bold shadow-2xs"
                     : "text-slate-600 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>Tình huống thường gặp</span>
@@ -818,13 +816,13 @@ export default function TrackCasePage() {
             <div className="space-y-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-[11.5px] font-semibold">
                 <Car className="w-3.5 h-3.5 text-[#1E40AF]" />
-                Chế độ Guest
+                Chưa đăng nhập
               </span>
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                Yêu cầu đăng nhập tài khoản Khách hàng
+                Đăng nhập để theo dõi hồ sơ xe
               </h2>
               <p className="text-[13px] text-slate-500 max-w-lg mx-auto leading-relaxed">
-                Theo tiêu chuẩn phân quyền & bảo mật dữ liệu xe (ADR-005), hồ sơ kỹ thuật và tiến trình xử lý sự cố chỉ dành riêng cho Khách hàng sở hữu xe. Bạn có thể tra cứu cẩm nang công khai hoặc đăng nhập để theo dõi hồ sơ.
+                Để đảm bảo an toàn và bảo mật thông tin phương tiện, vui lòng đăng nhập tài khoản chủ xe để theo dõi tiến trình xử lý sự cố và cập nhật từ xưởng dịch vụ.
               </p>
             </div>
 
@@ -849,14 +847,13 @@ export default function TrackCasePage() {
 
             {/* 2 CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => loginAs("CUSTOMER")}
+              <Link
+                href="/login"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] px-5 py-2.5 text-[13px] font-semibold text-white shadow-2xs transition active:scale-[0.98]"
               >
-                <span>Đăng nhập tài khoản Khách hàng (Demo)</span>
+                <span>Đăng nhập tài khoản Khách hàng</span>
                 <ArrowRight className="w-4 h-4" />
-              </button>
+              </Link>
 
               <button
                 type="button"
@@ -958,21 +955,19 @@ export default function TrackCasePage() {
                         return (
                           <div key={s.step} className="flex flex-col items-center">
                             <div
-                              className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full text-[11.5px] font-bold transition-all ${
-                                isPassed
+                              className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full text-[11.5px] font-bold transition-all ${isPassed
                                   ? "bg-emerald-500 text-white shadow-2xs"
                                   : isCurrent
-                                  ? "bg-[#1E40AF] text-white ring-4 ring-blue-100 shadow-2xs"
-                                  : "bg-white text-slate-400 border border-slate-200"
-                              }`}
+                                    ? "bg-[#1E40AF] text-white ring-4 ring-blue-100 shadow-2xs"
+                                    : "bg-white text-slate-400 border border-slate-200"
+                                }`}
                             >
                               {isPassed ? <Check className="h-4 w-4" /> : s.step}
                             </div>
 
                             <span
-                              className={`mt-1.5 font-semibold text-[11.5px] sm:text-[12px] leading-tight ${
-                                isCurrent ? "text-[#1E40AF]" : isPassed ? "text-slate-800" : "text-slate-400"
-                              }`}
+                              className={`mt-1.5 font-semibold text-[11.5px] sm:text-[12px] leading-tight ${isCurrent ? "text-[#1E40AF]" : isPassed ? "text-slate-800" : "text-slate-400"
+                                }`}
                             >
                               {s.title}
                             </span>
@@ -988,25 +983,22 @@ export default function TrackCasePage() {
                   {/* 3. ĐIỂM NỔI BẬT: BƯỚC TIẾP THEO (Above-the-fold Immediate Answer) */}
                   {nextStepData && (
                     <div
-                      className={`rounded-xl p-3.5 text-[13px] border flex items-start gap-2.5 transition ${
-                        nextStepData.isAlert
+                      className={`rounded-xl p-3.5 text-[13px] border flex items-start gap-2.5 transition ${nextStepData.isAlert
                           ? "bg-red-50/90 border-red-200 text-red-900"
                           : "bg-blue-50/90 border-blue-200/80 text-blue-950"
-                      }`}
+                        }`}
                     >
                       <Sparkles
-                        className={`w-4 h-4 shrink-0 mt-0.5 ${
-                          nextStepData.isAlert ? "text-red-600" : "text-[#1E40AF]"
-                        }`}
+                        className={`w-4 h-4 shrink-0 mt-0.5 ${nextStepData.isAlert ? "text-red-600" : "text-[#1E40AF]"
+                          }`}
                       />
                       <div className="flex-1 space-y-0.5">
                         <div className="flex items-center gap-1.5">
                           <span
-                            className={`font-bold text-[12px] uppercase tracking-wide px-1.5 py-0.2 rounded ${
-                              nextStepData.isAlert
+                            className={`font-bold text-[12px] uppercase tracking-wide px-1.5 py-0.2 rounded ${nextStepData.isAlert
                                 ? "bg-red-200 text-red-800"
                                 : "bg-blue-200 text-[#1E40AF]"
-                            }`}
+                              }`}
                           >
                             {nextStepData.badge}
                           </span>
@@ -1134,13 +1126,12 @@ export default function TrackCasePage() {
                       ).map((msg, idx) => (
                         <div key={idx} className="text-[12.5px] flex items-start gap-2">
                           <span
-                            className={`px-1.5 py-0.2 rounded text-[10px] font-bold font-mono shrink-0 mt-0.5 ${
-                              msg.sender === "CUSTOMER"
+                            className={`px-1.5 py-0.2 rounded text-[10px] font-bold font-mono shrink-0 mt-0.5 ${msg.sender === "CUSTOMER"
                                 ? "bg-blue-100 text-[#1E40AF]"
                                 : msg.sender === "STAFF"
-                                ? "bg-purple-100 text-purple-700"
-                                : "bg-emerald-100 text-emerald-800"
-                            }`}
+                                  ? "bg-purple-100 text-purple-700"
+                                  : "bg-emerald-100 text-emerald-800"
+                              }`}
                           >
                             {msg.sender === "CUSTOMER" ? "BẠN" : msg.sender === "STAFF" ? "KTV" : "AI"}
                           </span>
@@ -1197,11 +1188,10 @@ export default function TrackCasePage() {
                               className="p-1 text-amber-400 hover:scale-110 transition"
                             >
                               <Star
-                                className={`h-5 w-5 ${
-                                  star <= feedbackRating
+                                className={`h-5 w-5 ${star <= feedbackRating
                                     ? "fill-amber-400 text-amber-400"
                                     : "text-slate-300"
-                                }`}
+                                  }`}
                               />
                             </button>
                           ))}
@@ -1209,10 +1199,10 @@ export default function TrackCasePage() {
                             {feedbackRating === 5
                               ? "Rất hài lòng"
                               : feedbackRating === 4
-                              ? "Hài lòng"
-                              : feedbackRating === 3
-                              ? "Bình thường"
-                              : "Chưa hài lòng"}
+                                ? "Hài lòng"
+                                : feedbackRating === 3
+                                  ? "Bình thường"
+                                  : "Chưa hài lòng"}
                           </span>
                         </div>
 
@@ -1267,12 +1257,11 @@ export default function TrackCasePage() {
                   <div className="flex items-center justify-between py-1 border-b border-slate-50">
                     <span className="text-slate-500">Mức pin (SoC):</span>
                     <span
-                      className={`font-semibold ${
-                        String(currentCase.currentSoc).includes("< 10%") ||
-                        String(currentCase.currentSoc).includes("18%")
+                      className={`font-semibold ${String(currentCase.currentSoc).includes("< 10%") ||
+                          String(currentCase.currentSoc).includes("18%")
                           ? "text-amber-600"
                           : "text-slate-900"
-                      }`}
+                        }`}
                     >
                       {currentCase.currentSoc || "Đang xác minh"}
                     </span>
@@ -1308,8 +1297,8 @@ export default function TrackCasePage() {
                           {currentCase.locationConsent === "GRANTED"
                             ? "Đã cấp quyền"
                             : currentCase.locationConsent === "MANUAL"
-                            ? "Nhập thủ công"
-                            : "Chưa bật"}
+                              ? "Nhập thủ công"
+                              : "Chưa bật"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -1439,11 +1428,10 @@ export default function TrackCasePage() {
                     key={c.id}
                     type="button"
                     onClick={() => setTopicCategory(c.id)}
-                    className={`px-3 py-1 rounded-lg text-[12px] font-medium transition ${
-                      topicCategory === c.id
+                    className={`px-3 py-1 rounded-lg text-[12px] font-medium transition ${topicCategory === c.id
                         ? "bg-[#1E40AF] text-white font-semibold"
                         : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                    }`}
+                      }`}
                   >
                     {c.label}
                   </button>
@@ -1477,9 +1465,8 @@ export default function TrackCasePage() {
                       </div>
 
                       <ChevronDown
-                        className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
-                          isOpen ? "rotate-180 text-[#1E40AF]" : ""
-                        }`}
+                        className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180 text-[#1E40AF]" : ""
+                          }`}
                       />
                     </button>
 

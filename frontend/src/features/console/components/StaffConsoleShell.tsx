@@ -194,7 +194,7 @@ export const SAMPLE_CASE_HISTORY: HistoricalCase[] = [
     routedTo: "Charging Operations",
     customerConfirmed: true,
     resolvedAt: "02/10/2026 14:15",
-    staffName: "Lê Hoàng Quân",
+    staffName: "Cố vấn Dịch vụ VinFast",
     vehicleModel: "VinFast VF8",
     vehicleCode: "VF8-PLUS-2023",
     briefSummary: "Trụ số 3 Landmark 81 báo lỗi 0x41 không cấp điện. KTV đã hướng dẫn reset giao thức và xe sạc lại bình thường.",
@@ -211,7 +211,7 @@ export const SAMPLE_CASE_HISTORY: HistoricalCase[] = [
     routedTo: "Service Center",
     customerConfirmed: false,
     resolvedAt: "02/10/2026 11:30",
-    staffName: "Lê Hoàng Quân",
+    staffName: "Cố vấn Dịch vụ VinFast",
     vehicleModel: "VinFast VF5",
     vehicleCode: "VF5-PLUS-2024",
     briefSummary: "Đèn báo rùa vàng do pin SoC xuống dưới 8%. Đã hướng dẫn khách di chuyển chậm tới trạm sạc gần nhất 500m.",
@@ -339,18 +339,24 @@ export function StaffConsoleShell() {
     status: localTicketStatuses[t.id] || t.status,
   }));
 
-  // Lọc hàng đợi xử lý: chỉ tập trung các hồ sơ cần can thiệp
+  // Lọc hàng đợi xử lý: chỉ tập trung các hồ sơ cần can thiệp (chưa giải quyết / chưa đóng)
   const activeQueueTickets = ticketsWithLocalStatus.filter((t) => {
+    // 1. Luôn loại trừ các case đã Giải quyết (Resolved) hoặc Đã đóng (Closed) khỏi Hàng đợi cần xử lý
+    if (t.status === "Resolved" || t.status === "Closed") return false;
+
+    // 2. Lọc nhanh theo pill filter được chọn
     if (queueQuickFilter === "CRITICAL") return t.priority === "CRITICAL";
     if (queueQuickFilter === "Staff Reviewing") return t.status === "Staff Reviewing";
     if (queueQuickFilter === "Needs Information") return t.status === "Needs Information";
     if (queueQuickFilter === "In Progress") return t.status === "In Progress";
 
+    // 3. Mặc định ("ALL" của Hàng đợi): Hiển thị tất cả các ca đang hoạt động cần KTV can thiệp
     return (
       t.status === "Staff Reviewing" ||
       t.status === "Needs Information" ||
       t.status === "In Progress" ||
-      t.priority === "CRITICAL"
+      t.status === "New" ||
+      t.status === "Reopened"
     );
   });
 
@@ -760,12 +766,12 @@ export function StaffConsoleShell() {
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 overflow-hidden">
               <div className="w-8 h-8 rounded-full bg-[#1E40AF] text-white flex items-center justify-center text-xs font-bold shrink-0">
-                {user?.name?.charAt(0) || "Q"}
+                {user?.name?.charAt(0) || "V"}
               </div>
               {!isSidebarCollapsed && (
                 <div className="min-w-0 flex-1 truncate">
                   <div className="text-[12px] font-semibold text-white truncate">
-                    {user?.name || "Lê Hoàng Quân"}
+                    {user?.name || "Cố vấn Dịch vụ VinFast"}
                   </div>
                   <div className="text-[10px] text-slate-400 font-mono truncate">
                     Cố vấn KTV Bậc 4
@@ -967,7 +973,7 @@ export function StaffConsoleShell() {
                                       </span>
                                     ) : isHigh ? (
                                       <span className="px-1.5 py-0.5 rounded text-[10.5px] font-semibold text-amber-700 bg-amber-50">
-                                        Ưu tiên
+                                        Ưu tiên cao
                                       </span>
                                     ) : (
                                       <span className="text-[11px] text-slate-500 font-medium">
@@ -1583,15 +1589,15 @@ export function StaffConsoleShell() {
               <div className="bg-white rounded-3xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.05)] space-y-5">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-2xl bg-[#1E40AF] text-white flex items-center justify-center text-xl font-bold shadow-xs">
-                    {user?.name?.charAt(0) || "Q"}
+                    {user?.name?.charAt(0) || "V"}
                   </div>
                   <div>
-                    <h2 className="text-base font-bold text-slate-900">{user?.name || "Lê Hoàng Quân"}</h2>
+                    <h2 className="text-base font-bold text-slate-900">{user?.name || "Cố vấn Dịch vụ VinFast"}</h2>
                     <div className="text-[12px] text-[#1E40AF] font-semibold">
                       {user?.role === "STAFF" ? "Cố vấn Dịch vụ / Kỹ thuật viên Tiếp nhận HITL" : (user?.role || "Kỹ thuật viên Bậc 4")}
                     </div>
                     <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                      Mã nhân viên: {user?.id || "STAFF-VF-0891"} &bull; {user?.email || "quan.lh@vinfast.vn"}
+                      Mã nhân viên: {user?.id || "STAFF_001"} &bull; {user?.email || "staff@vinfast.vn"}
                     </div>
                   </div>
                 </div>
