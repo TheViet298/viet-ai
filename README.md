@@ -163,7 +163,7 @@ cp .env.example .env
 Mở file `.env` và chọn phương thức cấu hình LLM phù hợp:
 ```env
 # Tùy chọn A: Sử dụng OpenAI-compatible Gateway / LiteLLM (Khuyến nghị)
-OPENAI_BASE_URL=https://litellm.vlearn.dev/v1
+OPENAI_BASE_URL=your_base_url_openai
 OPENAI_API_KEY=your_gateway_key_here
 MODEL=openai/gpt-5.6
 
