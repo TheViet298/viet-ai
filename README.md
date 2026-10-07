@@ -120,12 +120,16 @@ graph TB
     StaffConsole -->|Approve / Edit / Reroute| RelationalDB
 ```
 
-> Chi tiết các sơ đồ kiến trúc chuẩn hóa định dạng SVG có sẵn trong thư mục [`docs/architecture/`](docs/architecture/):
+> ### Sơ đồ Kiến trúc & Luồng Hoạt động Trực quan
+> Hệ thống được tài liệu hóa chi tiết qua 3 sơ đồ hoạt động trực quan trong [`docs/architecture/`](docs/architecture/):
+> - **[Activity Tổng thể MVP Main (Khách hàng — AI LangGraph — Nhân viên)](docs/architecture/Activity%20diagram%20system.jpg)**
+> - **[Sơ đồ Hoạt động Toàn hệ thống (End-to-End System Activity)](docs/architecture/serviceflow-system-activity.png)**
+> - **[Sơ đồ Một lượt Hội thoại Khách hàng](docs/architecture/serviceflow-customer-activity.png)**
+>
+> Cùng các sơ đồ chuẩn hóa kiến trúc SVG:
 > - [Sơ đồ Thành phần Hệ thống (Component Diagram)](docs/architecture/serviceflow-component.svg)
 > - [Sơ đồ Triển khai (Deployment Diagram)](docs/architecture/serviceflow-deployment.svg)
 > - [Sơ đồ Ca sử dụng (Use Case Diagram)](docs/architecture/serviceflow-usecase.svg)
-> - [Sơ đồ Hoạt động Khách hàng (Customer Activity)](docs/architecture/serviceflow-customer-activity.svg)
-> - [Sơ đồ Hoạt động Hệ thống (System Activity)](docs/architecture/serviceflow-system-activity.svg)
 > - [Sơ đồ Trình tự RAG (RAG Sequence Diagram)](docs/architecture/serviceflow-rag-sequence.svg)
 > - [Sơ đồ Cơ sở Dữ liệu (Database Schema)](docs/architecture/database-schema.svg)
 
@@ -135,22 +139,22 @@ graph TB
 
 | Lớp | Công nghệ | Chi tiết sử dụng trong dự án |
 |---|---|---|
-| **AI Agent Orchestration** | LangGraph 0.2 + LangChain 0.3 | Quản lý State Machine: `intake`, `triage`, `clarify`, `rag`, `case_brief`, `cardd_review`, `general` |
-| **LLM Inference** | Google Gemini API (`gemini-2.0-flash`) | Phân loại Intent có cấu trúc (Structured Outputs), tóm tắt Case Brief và đàm thoại |
+| **AI Agent Orchestration** | LangGraph 0.2 + LangChain 0.3 | Quản lý State Machine: `intake`, `safety`, `cardd_review`, `triage`, `clarify`, `rag`, `general`, `case_brief` |
+| **LLM Inference** | Google Gemini (`gemini-2.0-flash`) HOẶC OpenAI Gateway (`gpt-5.6` qua LiteLLM) | Phân loại Intent có cấu trúc (Structured Outputs), tóm tắt Case Brief và đàm thoại. Cấu hình chuyển đổi linh hoạt qua `.env` |
 | **Vision & Image Triage** | Google Gemini Vision & CarDD Runtime | Phân tích ảnh đèn táp-lô, màn hình trụ sạc và nhận diện sơ bộ va chạm ngoại thất xe |
-| **Vector DB (RAG)** | ChromaDB | Lưu trữ vector embeddings cẩm nang sử dụng xe điện, FAQ và chính sách bảo hành VinFast |
+| **Vector DB (RAG) & Embeddings** | ChromaDB + ONNX Quantized Model | Chạy offline hoàn toàn với mô hình `Xenova/multilingual-e5-small` nhúng cục bộ qua `onnxruntime` |
 | **Backend API** | FastAPI 0.115 + Uvicorn | RESTful API, Pydantic v2 validation, xác thực phân quyền Role-Based (Guest, Customer, Staff) |
 | **Database** | SQLite (MVP) / PostgreSQL Ready | SQLAlchemy 2.0 ORM lưu trữ Cases, Messages, Tickets, Attachments, Audit Logs |
 | **Frontend Web** | Next.js 14 (App Router) + React 18 | Giao diện Customer Chat Hub, Quick Replies, Responsive UI, Tailwind CSS, Lucide Icons |
-| **DevOps & Quality** | Docker, Ruff, Pytest 8 | Dockerfile multi-stage, kiểm thử tự động CI qua GitHub Actions, Linting tiêu chuẩn |
+| **DevOps & Containers** | Docker & Docker Compose | Đóng gói toàn diện Full-stack (`frontend` port 3000, `backend` port 8000), tự động nạp model AI khi khởi động |
 
 ---
 
 ## 5. Hướng dẫn Cài đặt & Chạy (Quick Start)
 
 ### Yêu cầu tiên quyết
-- **Python:** 3.11+
-- **Node.js:** 18+ và **npm**
+- **Docker & Docker Compose** (khuyến nghị cho chạy nhanh full-stack)
+- HOẶC **Python 3.11+**, **Node.js 18+ & npm** (cho phát triển cục bộ từng phần)
 - **Git**
 
 ### Bước 1: Clone kho mã nguồn
@@ -159,7 +163,31 @@ git clone https://github.com/AI20K-Build-Phase-Cohort-4/P-142.git
 cd P-142
 ```
 
-### Bước 2: Thiết lập Backend (FastAPI + AI Agent)
+---
+
+### Cách 1: Khởi chạy nhanh bằng Docker Compose (Khuyến nghị)
+
+Chỉ cần một lệnh duy nhất để build và khởi chạy cả Backend (FastAPI + ChromaDB) và Frontend (Next.js):
+
+```bash
+# 1. Tạo file .env từ mẫu (nếu chưa có)
+cp .env.example .env
+
+# 2. Khởi chạy toàn bộ hệ thống bằng Docker Compose
+docker compose up --build -d
+```
+
+> **Ghi chú tự động:** Khi container backend khởi động lần đầu, kịch bản `docker-entrypoint.sh` sẽ tự động kiểm tra và tải mô hình ONNX `multilingual-e5-small` về thư mục `data/models/` nếu chưa có.
+> - **Frontend (Web Support Hub):** `http://localhost:3000`
+> - **Backend API & Swagger Docs:** `http://localhost:8000/docs`
+> - **Kiểm tra trạng thái container:** `docker compose ps`
+> - **Xem nhật ký hoạt động:** `docker compose logs -f`
+
+---
+
+### Cách 2: Khởi chạy thủ công từng phần (Dành cho Lập trình viên)
+
+#### 1. Thiết lập Backend (FastAPI + AI Agent)
 ```bash
 # Tạo và kích hoạt môi trường ảo Python
 python -m venv .venv
@@ -170,41 +198,36 @@ source .venv/bin/activate       # Trên Linux/macOS
 # Cài đặt các thư viện phụ thuộc
 pip install -r requirements.txt
 
+# Tải trước mô hình nhúng cục bộ ONNX (bắt buộc cho RAG)
+python scripts/download_models.py
+
 # Tạo file cấu hình môi trường
 cp .env.example .env
 ```
 
-Mở file `.env` và cấu hình các khóa cần thiết:
+Mở file `.env` và chọn phương thức cấu hình LLM phù hợp:
 ```env
-# Google Gemini API Key
+# Tùy chọn A: Sử dụng OpenAI-compatible Gateway / LiteLLM (Khuyến nghị)
+OPENAI_BASE_URL=https://litellm.vlearn.dev/v1
+OPENAI_API_KEY=your_gateway_key_here
+MODEL=openai/gpt-5.6
+
+# Tùy chọn B: Sử dụng trực tiếp Google Gemini API
 GOOGLE_API_KEY=your_google_gemini_api_key_here
 
-# Khóa ghi log AI học viên (lấy từ dashboard Phoenix)
-AI_LOG_API_KEY=your_phoenix_api_key_here
-
-# Database URL (mặc định dùng SQLite cho MVP)
+# Cấu hình chung
 DATABASE_URL=sqlite:///./data/app.db
 CORS_ORIGINS=http://localhost:3000
 ```
 
-### Bước 3: Cài đặt Hook ghi log AI học viên
-```bash
-# Linux / macOS / Git Bash:
-bash scripts/setup_hooks.sh
-
-# Windows PowerShell:
-powershell -ExecutionPolicy Bypass -File scripts\setup_hooks.ps1
-```
-
-### Bước 4: Khởi chạy Backend Server
+#### 2. Khởi chạy Backend Server
 ```bash
 uvicorn src.main:app --reload --port 8000
 ```
 - API Backend hoạt động tại: `http://localhost:8000`
 - Tài liệu tương tác Swagger UI: `http://localhost:8000/docs`
-- Health check endpoint: `http://localhost:8000/health`
 
-### Bước 5: Khởi chạy Frontend (Next.js Web Support Hub)
+#### 3. Khởi chạy Frontend (Next.js Web Support Hub)
 Mở một cửa sổ dòng lệnh mới:
 ```bash
 cd frontend
@@ -212,8 +235,8 @@ npm install
 npm run dev
 ```
 - Ứng dụng Web hoạt động tại: `http://localhost:3000`
-- Giao diện gồm có:
-  - **Trang chủ & Tra cứu kiến thức (Public):** `http://localhost:3000`
+- Các phân hệ giao diện:
+  - **Trang chủ & Tra cứu kiến thức (Public/Guest):** `http://localhost:3000` (chat tối đa 5 lượt)
   - **Khung Chat & Quản lý Case (Customer):** `http://localhost:3000/chat`
   - **Bàn làm việc Cố vấn Dịch vụ (Staff Console):** `http://localhost:3000/staff`
 

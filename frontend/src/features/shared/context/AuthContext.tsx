@@ -61,7 +61,7 @@ const AuthContext = createContext<AuthContextType>({
   registerCustomer: async () => { throw new Error("AuthProvider is not mounted"); },
   loginDemo: async () => { throw new Error("AuthProvider is not mounted"); },
   updateProfile: async () => { throw new Error("AuthProvider is not mounted"); },
-  logout: () => {},
+  logout: () => { },
   isReady: false,
 });
 
@@ -94,8 +94,8 @@ function mapApiUser(user: ApiUser, profile: Partial<AuthUser> = {}): AuthUser {
     user.phone && user.phone !== "customer" && !user.phone.startsWith("customer")
       ? user.phone
       : localProfile.phone && localProfile.phone !== "customer"
-      ? localProfile.phone
-      : undefined;
+        ? localProfile.phone
+        : undefined;
   return {
     id: user.id,
     role: user.role,
@@ -161,9 +161,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginDemo = async (role: "CUSTOMER" | "STAFF") => {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("Demo sign-in is disabled in production.");
-    }
     const credentials = DEMO_CREDENTIALS[role];
     const authUser = await login(credentials.username, credentials.password);
     if (authUser.role !== role) {

@@ -31,9 +31,6 @@ export default function LoginPage() {
       const saved = localStorage.getItem("vf_last_username");
       if (saved) {
         setRecentUsername(saved);
-        if (activeTab === "CUSTOMER") {
-          setIdentifier(saved);
-        }
       }
     } catch {}
   }, []);
@@ -116,8 +113,6 @@ export default function LoginPage() {
               type="button"
               onClick={() => {
                 setActiveTab("CUSTOMER");
-                const saved = (typeof window !== "undefined" && localStorage.getItem("vf_last_username")) || "";
-                setIdentifier(saved);
                 setErrorMessage("");
               }}
               className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 transition ${
@@ -149,7 +144,7 @@ export default function LoginPage() {
           </div>
 
           {/* Quick 1-Click Demo Box */}
-          {process.env.NODE_ENV !== "production" && <div className="mt-4 rounded-xl border border-[#0D9488]/30 bg-[#F0FDFA] p-3 text-[12px]">
+          <div className="mt-4 rounded-xl border border-[#0D9488]/30 bg-[#F0FDFA] p-3 text-[12px]">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-[#0F172A] flex items-center gap-1.5">
                 <Sparkles className="h-3.5 w-3.5 text-[#0D9488]" /> Thử nghiệm nhanh (Demo):
@@ -168,7 +163,7 @@ export default function LoginPage() {
               <span>Vào ngay với vai trò {activeTab === "STAFF" ? "Kỹ thuật viên (Staff)" : "Chủ xe (Khách hàng)"}</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
-          </div>}
+          </div>
 
           {/* Divider */}
           <div className="my-4 flex items-center gap-3">

@@ -4,8 +4,22 @@ import { useState, useEffect, useRef } from "react";
 import { ChatMessage } from "../types";
 import { sendChatMessage, getCaseStatus, acknowledgeCaseSafety, getSessionHistory } from "../api/chatApi";
 
+function getAuthOwner(): string {
+  if (typeof window === "undefined") return "guest";
+  try {
+    const auth = localStorage.getItem("vf_serviceflow_auth");
+    if (auth) {
+      const parsed = JSON.parse(auth);
+      if (parsed?.id) return `user_${parsed.id}`;
+    }
+    const token = localStorage.getItem("vf_access_token");
+    if (token) return `token_${token.slice(-8)}`;
+  } catch {}
+  return "guest";
+}
+
 function storageKey(kind = "case") {
-  return typeof window === "undefined" ? null : `vf_chat_${kind}:${localStorage.getItem("vf_customer_token") || "guest"}`;
+  return typeof window === "undefined" ? null : `vf_chat_${kind}:${getAuthOwner()}`;
 }
 
 function storedCaseId(): string | null {

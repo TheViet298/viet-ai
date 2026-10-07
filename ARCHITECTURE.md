@@ -4,76 +4,83 @@
 
 VinFast ServiceFlow AI là hệ thống AI Agent tổng đài đa kênh (Web Chat thật, cùng mô phỏng Zalo, Email, Hotline call transcript) hỗ trợ tiếp nhận, phân loại 4 nhóm Intent, làm rõ dữ kiện có ngữ cảnh, tra cứu cẩm nang kỹ thuật & chính sách VinFast, tổng hợp **Case Brief** chuẩn hóa và hỗ trợ Reviewer điều phối (routing) chính xác đến bộ phận tiếp nhận tiếp theo.
 
-## 2. Architecture Diagram
+## 2. Architecture Diagrams & Chi tiết Luồng Hoạt động
+
+Hệ thống được trực quan hóa qua 3 sơ đồ hoạt động chính thức tại thư mục [`docs/architecture/`](docs/architecture/):
+1. **[Activity Tổng thể MVP Main (Khách hàng — Hệ thống AI — Staff)](docs/architecture/Activity%20diagram%20system.jpg):** Thể hiện trọn vẹn luồng từ Web Support Hub, phân tích ảnh, LangGraph state machine, gợi ý điểm dịch vụ đến bảng điều khiển Staff Console và vòng đời ticket.
+2. **[Sơ đồ Hoạt động Toàn hệ thống (End-to-End System Activity)](docs/architecture/serviceflow-system-activity.png):** 3 làn bơi nghiệp vụ mô tả chi tiết từ xác thực RBAC, Guardrails, duyệt Case Brief đến CSAT / Đóng hồ sơ.
+3. **[Sơ đồ Xử lý Một lượt Hội thoại Khách hàng](docs/architecture/serviceflow-customer-activity.png):** Mô tả thứ tự rẽ nhánh xử lý trong một turn chat (`POST /api/v1/customer/chat`).
 
 ```mermaid
 graph TB
-    subgraph Frontend[Frontend Clients]
-        WC[Web Chat Client]
-        Sim[Omnichannel Mock Simulator: Zalo / Email / Hotline]
-        Console[Service Agent Console - Reviewer HITL]
+    subgraph Frontend[Frontend Clients - Next.js 14]
+        WC[Web Chat Client: Khách hàng / Guest tối đa 5 lượt]
+        Console[Service Agent Console: Reviewer HITL]
     end
 
     subgraph Backend[FastAPI & Agent Gateway]
-        API[FastAPI Routes /api/v1/cases]
+        API[FastAPI Routes: /customer, /staff, /auth, /public]
         Agent[LangGraph StateGraph Engine]
-        Guard[Safety, Sensitive Sentiment & Confidence Guardrails]
+        Guard[Safety, PII Sanitizer & Boundary Guardrails]
     end
 
-    subgraph Intelligence[AI Services]
-        LLM[LLM API with Structured Output]
+    subgraph Intelligence[AI Services & Local Models]
+        LLM[LLM API / Gateway: Gemini 2.0 Flash / gpt-5.6]
+        Vision[Gemini Vision & CarDD Runtime]
         RAG[VinFast Knowledge Retrieval Service]
+        LocalONNX[Local ONNX Model: multilingual-e5-small]
     end
 
     subgraph Storage[Data Layer]
-        DB[(Ticket DB: channel, intent, priority, confidence, brief, feedback)]
-        VectorStore[(ChromaDB - VF Manuals, FAQs, Warranty)]
+        DB[(Ticket DB: Users, Sessions, Cases, Messages, Briefs, Audit Logs)]
+        VectorStore[(ChromaDB: VF Manuals, FAQs, Warranty)]
     end
 
-    WC -->|HTTP REST / WebSocket| API
-    Sim -->|API Simulator| API
+    WC -->|HTTP REST| API
     Console -->|HTTP REST| API
     API --> Agent
     Agent --> Guard
     Guard --> LLM
+    API --> Vision
     Agent --> RAG
     RAG --> VectorStore
+    VectorStore <--> LocalONNX
     Agent --> DB
     Agent --> Console
 ```
 
-## 3. Core Components & Intent Routing
+## 3. Core Components & State Machine (`src/agents/graph.py`)
 
 ```mermaid
 graph TD
-    START([Input từ Web Chat hoặc kênh mô phỏng]) --> intake[intake_node: Chuẩn hóa nội dung và context]
-    intake --> triage[triage_node: Intent + Priority + Confidence]
+    START([Bắt đầu lượt chat]) --> intake[intake_node: Chuẩn hóa text & context]
+    intake --> safety[safety_node: Kiểm tra Hard Safety & Policy]
 
-    triage --> safety{Safety trigger, sensitive case hoặc confidence thấp?}
-    safety -- Yes --> hitl[HITL: Escalate reviewer hoặc nhân viên phù hợp]
+    safety -->|is_critical HOẶC vi phạm| case_brief[case_brief_node: Tạo Brief tối thiểu & Hotline]
+    safety -->|Tín hiệu CarDD ngoại thất mới| cardd[cardd_review_node: Đánh giá hư hại & xác nhận]
+    safety -->|Hội thoại thông thường| triage[triage_node: Intent + Priority + Confidence]
 
-    safety -- No --> route{Intent router}
+    cardd -->|Tiếp tục phân loại| triage
+    cardd -->|Hoàn thành phản hồi ảnh| END([Kết thúc lượt])
 
-    route -- Sales --> sales_rag[Sales FAQ hoặc Sales Brief]
-    route -- Charging --> charging_rag[Charging FAQ hoặc Charging Brief]
-    route -- Complaint --> complaint_brief[Complaint Case Brief]
-    route -- Service Incident --> slot{Đủ dữ kiện cần thiết?}
+    triage -->|Out_of_Scope| END
+    triage -->|is_general_query| general[general_node: Trả lời xã giao / chào hỏi]
+    general --> END
 
-    slot -- No --> clarify[Contextual Clarifier]
-    clarify --> wait([Chờ phản hồi khách trên Channel Session])
-    wait --> intake
+    triage -->|is_rag_query| rag[rag_node: Tra cứu ChromaDB & trích dẫn]
+    rag -->|Có nguồn kiểm chứng| END
+    rag -->|is_no_source| case_brief
 
-    slot -- Yes --> service_rag[VinFast Knowledge Retrieval]
-    service_rag --> service_brief[Service Brief Generator]
+    triage -->|Thiếu dữ kiện sự cố & lượt <= 2| clarify[clarify_node: Hỏi gom 1 câu + Quick Replies]
+    clarify -->|Chờ khách bổ sung| END
+    clarify -->|Sau 2 lượt vẫn thiếu (Needs Information)| case_brief
 
-    sales_rag --> case_brief[Case Brief]
-    charging_rag --> case_brief
-    complaint_brief --> case_brief
-    service_brief --> case_brief
+    triage -->|Đủ dữ kiện HOẶC Confidence < 0.60| case_brief
 
-    case_brief --> console[Service Agent Console]
-    console --> reviewer{Approve, Edit hoặc Escalate}
-    reviewer --> dispatch[Routing tới Sales, Service, Charging hoặc CSKH]
+    case_brief --> console[Service Agent Console: Hàng đợi duyệt HITL]
+    console --> reviewer{Reviewer: Approve / Edit / Reroute}
+    reviewer --> dispatch[Điều phối kỹ thuật & Resolve ticket]
+    dispatch --> END
 ```
 
 ### 3.1 Intent Router & Specialized Briefs
