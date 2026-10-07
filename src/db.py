@@ -66,6 +66,12 @@ def ensure_schema() -> None:
                     conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN mock_customer_name VARCHAR(100)")
                 if "mock_customer_phone" not in cases_cols:
                     conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN mock_customer_phone VARCHAR(20)")
+                if "safety_status" not in cases_cols:
+                    conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN safety_status VARCHAR(30) DEFAULT 'unconfirmed'")
+                if "safety_acknowledged_at" not in cases_cols:
+                    conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN safety_acknowledged_at DATETIME")
+                if "incident_version" not in cases_cols:
+                    conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN incident_version INTEGER DEFAULT 1")
 
             # Khởi tạo thông tin hồ sơ mẫu nếu đang bị NULL
             conn.exec_driver_sql(

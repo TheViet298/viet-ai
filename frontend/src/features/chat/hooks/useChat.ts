@@ -335,12 +335,26 @@ export function useChat(context?: ChatUserContext | string) {
         // 3. AI trả lời xuất hiện sau khi suy nghĩ xong
         setMessages((prev) => [...prev, agentMsg]);
       }
-    } catch {
+    } catch (err: any) {
       if (generation !== conversationGeneration.current) return;
+      let errorContent = "Chưa nhận được phản hồi từ hệ thống. Anh/chị vui lòng gửi lại câu hỏi sau ít phút. Lượt gửi này chưa xác nhận tạo hồ sơ hoặc thông báo cứu hộ.";
+      if (err?.message) {
+        try {
+          const match = err.message.match(/Chat API error \(\d+\): (.*)/);
+          if (match && match[1]) {
+            const parsed = JSON.parse(match[1]);
+            if (parsed.detail) {
+              errorContent = parsed.detail;
+            }
+          }
+        } catch {
+          // Keep default message if parsing fails
+        }
+      }
       const errorMsg: ChatMessage = {
         id: `error_${Date.now()}`,
         sender: "AGENT",
-        content: "Chưa nhận được phản hồi từ hệ thống. Anh/chị vui lòng gửi lại câu hỏi sau ít phút. Lượt gửi này chưa xác nhận tạo hồ sơ hoặc thông báo cứu hộ.",
+        content: errorContent,
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMsg]);

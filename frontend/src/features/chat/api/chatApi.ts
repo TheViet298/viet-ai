@@ -66,6 +66,7 @@ export async function sendChatMessage(params: {
       message: params.message,
       attachment_ids: params.attachmentIds || [],
       client_context: params.clientContext || {},
+      guest_session_id: params.sessionId,
     }),
   });
 

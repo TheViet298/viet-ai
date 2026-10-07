@@ -20,9 +20,12 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     cors_origins: str = "http://localhost:3000"
 
-    # LLM Configuration (Google Gemini)
+    # LLM Configuration (OpenAI / LiteLLM Gateway / Gemini)
+    openai_api_key: str = ""
+    openai_base_url: str = ""
     google_api_key: str = ""
-    model_name: str = "gemini-2.0-flash"
+    model: str = ""
+    model_name: str = "openai/gpt-5.6"
     dashboard_vision_enabled: bool = True
     dashboard_vision_model: str = "gemini-3.5-flash"
     dashboard_vision_timeout_s: float = Field(default=25, gt=0, le=60)
@@ -54,6 +57,8 @@ class Settings(BaseSettings):
             raise ValueError("RAG evidence budget exceeds prompt budget")
         if self.app_env == "production" and len(self.auth_secret_key.get_secret_value()) < 32:
             raise ValueError("AUTH_SECRET_KEY must contain at least 32 characters in production")
+        if self.model:
+            self.model_name = self.model
         return self
 
 

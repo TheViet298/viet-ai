@@ -1,8 +1,11 @@
+import logging
 import os
 import re
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Literal
+
+logger = logging.getLogger("customer_api")
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from sqlalchemy import func, update
@@ -281,6 +284,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     - Guest trial: giới hạn 5 lượt/phiên, trả remaining_guest_messages
     """
     if current_user and current_user.role != UserRole.CUSTOMER.value:
+        logger.warning(f"[403 FORBIDDEN] User {current_user.id} role '{current_user.role}' is not CUSTOMER")
         raise HTTPException(status_code=403, detail="Customer account required")
 
     text = sanitize_pii(payload.message.strip())[0]
@@ -295,12 +299,13 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     remaining_guest_msgs: int | None = None
     if not current_user:
         if not payload.guest_session_id:
-            raise HTTPException(401, "Vui lòng đăng nhập hoặc cung cấp guest_session_id.")
+            payload = payload.model_copy(update={"guest_session_id": payload.session_id})
         guest_count = db.query(func.count(Message.id)).filter(
             (Message.session_id == payload.guest_session_id) | (Message.session_id == payload.session_id),
             Message.sender_type == SenderType.CUSTOMER.value,
         ).scalar() or 0
         remaining_guest_msgs = max(0, 5 - guest_count - 1)
+        logger.info(f"[CHAT TRACE] Guest session='{payload.session_id}', guest_count={guest_count}, remaining={remaining_guest_msgs}")
         if classification.is_critical:
             reply = EMERGENCY_SAFE_GUIDANCE + " Vui lòng đăng nhập để tạo và theo dõi hồ sơ hỗ trợ."
             emergency_message = Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='CUSTOMER', content=text,
@@ -314,6 +319,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 show_emergency_banner=True, request_location=True, remaining_guest_messages=remaining_guest_msgs,
             ), error=None)
         if guest_count >= 5:
+            logger.warning(f"[403 FORBIDDEN] Guest session='{payload.session_id}' reached limit: guest_count={guest_count} >= 5")
             raise HTTPException(403, "Bạn đã sử dụng hết 5 lượt chat thử nghiệm. Vui lòng đăng nhập để tiếp tục.")
     mock_cust_id = (current_user.mock_customer_id if current_user and current_user.mock_customer_id else
                     (ctx.mock_customer_id if ctx and ctx.mock_customer_id else f"GUEST_{(payload.guest_session_id or '')[:8]}"))

@@ -18,7 +18,8 @@ _circuits: dict[str, dict] = {}
 
 def circuit_key() -> str:
     s = get_settings()
-    return sha256((str(s.google_api_key) + str(getattr(s, "model_name", "gemini"))).encode()).hexdigest()
+    key_val = s.openai_api_key or s.google_api_key or ""
+    return sha256((str(key_val) + str(getattr(s, "model_name", "model"))).encode()).hexdigest()
 
 
 def open_circuit() -> None:
@@ -57,7 +58,8 @@ def record_outcome(state: AgentState, prompt: str, decision: str, usage: dict | 
 async def structured_call(state: AgentState, prompt: str, schema: type[T]) -> T | None:
     """Optional online generation; deterministic, safe fallback when unavailable."""
     settings = get_settings()
-    if not settings.google_api_key or not settings.agent_llm_enabled:
+    has_key = bool(settings.openai_api_key or settings.google_api_key)
+    if not has_key or not settings.agent_llm_enabled:
         return None
     budget = state.setdefault("llm_budget", {"deadline": time.monotonic() + settings.agent_turn_timeout_s, "attempts": 0})
     remaining = budget["deadline"] - time.monotonic()

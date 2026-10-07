@@ -20,21 +20,27 @@ def resolve_authorized_active_case(db: Session, user: User | None, session_id: s
     if case_id:
         case = db.get(Case, case_id)
         if not case:
-            raise HTTPException(404, 'Không tìm thấy hồ sơ.')
-        if not user or case.user_id != user.id:
+            return None
+        if not user:
+            # Guest: cho phép nếu case thuộc session này hoặc không có user_id
+            if case.session_id == session_id or case.user_id is None:
+                pass
+            else:
+                # Case cũ từ localStorage thuộc user khác -> bỏ qua thay vì bắn lỗi 403 chặn chat
+                return None
+        elif case.user_id and case.user_id != user.id:
             raise HTTPException(403, 'Hồ sơ không thuộc khách hàng này.')
     else:
         case = None
-    # Guard legacy sessions, including closed cases and chats without a case.
-    for existing in db.query(Case).filter_by(session_id=session_id).all():
-        if not user or existing.user_id != user.id:
-            raise HTTPException(403, 'Phiên hội thoại không thuộc khách hàng này.')
-    for message in db.query(Message).filter_by(session_id=session_id, sender_type='CUSTOMER').all():
-        meta = message.msg_metadata or {}
-        if meta.get('user_id') and (not user or meta['user_id'] != user.id):
-            raise HTTPException(403, 'Phiên hội thoại không thuộc khách hàng này.')
-        if meta.get('guest_session_id') and (user or meta['guest_session_id'] != guest_session_id):
-            raise HTTPException(403, 'Phiên hội thoại không thuộc khách hàng này.')
+    # Guard sessions against cross-user tampering: chỉ chặn khi người dùng A cố tình truy cập session của người dùng B khác
+    if user:
+        for existing in db.query(Case).filter_by(session_id=session_id).all():
+            if existing.user_id and existing.user_id != user.id:
+                raise HTTPException(403, 'Phiên hội thoại không thuộc khách hàng này.')
+        for message in db.query(Message).filter_by(session_id=session_id, sender_type='CUSTOMER').all():
+            meta = message.msg_metadata or {}
+            if meta.get('user_id') and meta['user_id'] != user.id:
+                raise HTTPException(403, 'Phiên hội thoại không thuộc khách hàng này.')
     if case:
         # Closed IDs supplied by a stale client cannot silently reopen a case.
         return case if case.status in ACTIVE_CASE_STATUSES else None
