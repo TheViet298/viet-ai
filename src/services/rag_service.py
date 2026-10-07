@@ -109,7 +109,7 @@ def rank_candidates(query: str, rows: list[tuple]) -> list[tuple]:
 
 def requested_source_type(query: str) -> str | None:
     lower = query.lower()
-    if "các dòng xe" in lower:
+    if any(k in lower for k in ["các dòng xe", "dòng xe", "các mẫu xe", "mẫu xe", "dải sản phẩm", "danh mục xe", "chi phí lăn bánh", "lăn bánh"]):
         return "official_catalog"
     if "bảo hành" in lower:
         return "official_policy"
@@ -160,12 +160,13 @@ def valid_citation(citation: dict, model: str | None = None) -> bool:
         expected_date = source["verified_at"]
     if expected_date is None:
         return False
-    if urlparse(citation["url"]).hostname not in {"vinfastauto.com", "om.vinfastauto.com"}:
+    if urlparse(citation["url"]).hostname not in {"vinfastauto.com", "om.vinfastauto.com", "shop.vinfastauto.com"}:
         return False
     if citation.get("status_code") != 200 or citation.get("verified_at") != expected_date:
         return False
     normalized = {re.sub(r"\s+", "", str(m)).upper() for m in citation.get("applicable_models", [])}
-    if model and "ALL" not in normalized and model.upper() not in normalized:
+    normalized_model = re.sub(r"\s+", "", model).upper() if model else None
+    if normalized_model and "ALL" not in normalized and normalized_model not in normalized:
         return False
     if not normalized or not citation.get("relevant_snippet"):
         return False
@@ -305,7 +306,8 @@ class RAGService:
                 passage_variants = set(re.findall(r"\b(?:eco|plus)\b", excerpt.lower()))
                 years = set(re.findall(r"\b20\d{2}\b", excerpt))
                 requested_years = set(re.findall(r"\b20\d{2}\b", query))
-                if (passage_variants and not variant) or (variant and passage_variants != {variant.group().lower()}) or (requested_years and not requested_years <= years):
+                is_catalog_overview = any(term in query.casefold() for term in ("các dòng xe", "dòng xe", "các mẫu xe", "mẫu xe", "dải sản phẩm", "danh mục xe", "lăn bánh"))
+                if not is_catalog_overview and ((passage_variants and not variant) or (variant and passage_variants != {variant.group().lower()}) or (requested_years and not requested_years <= years)):
                     diagnostics.append({"chunk_id": chunk_id, "reason": "unresolved_applicability"})
                     continue
             if utf8_size(excerpt) > budget:

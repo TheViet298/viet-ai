@@ -412,12 +412,15 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         Message.sender_type == SenderType.AGENT.value,
     ).order_by(Message.created_at.desc(), Message.id.desc()).all()
     reply_created_at = datetime.now(UTC)
+    if cust_msg.created_at:
+        cust_at = cust_msg.created_at if cust_msg.created_at.tzinfo else cust_msg.created_at.replace(tzinfo=UTC)
+        reply_created_at = max(reply_created_at, cust_at + timedelta(microseconds=1000))
     if history:
         previous_reply_at = history[0].created_at
         if previous_reply_at.tzinfo is None:
             previous_reply_at = previous_reply_at.replace(tzinfo=UTC)
         # UUIDs do not preserve turn order when the system clock returns a tie.
-        reply_created_at = max(reply_created_at, previous_reply_at + timedelta(microseconds=1))
+        reply_created_at = max(reply_created_at, previous_reply_at + timedelta(microseconds=1000))
     for message in history:
         if vehicle_context.get('scope_changed'):
             break
@@ -1069,7 +1072,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             error=None,
         )
 
-    if not is_technical_incident and any(k in lower_text for k in ["gần tôi", "gần nhất", "tìm trạm", "tìm showroom", "xung quanh đây", "trạm sạc quanh", "xưởng gần"]):
+    if not is_technical_incident and any(k in lower_text for k in ["gần tôi", "gần nhất", "tìm trạm", "tìm showroom", "xung quanh đây", "trạm sạc quanh", "xưởng gần", "xưởng dịch vụ", "danh sách xưởng", "tìm xưởng"]):
         target = "showroom" if "showroom" in lower_text else "xưởng dịch vụ" if "xưởng" in lower_text else "trạm sạc"
         reply = f"Anh/chị vui lòng chia sẻ vị trí để tìm {target} gần mình. Nếu không dùng GPS, anh/chị có thể nhập khu vực hoặc địa chỉ."
         db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,

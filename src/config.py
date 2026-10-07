@@ -20,8 +20,9 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     cors_origins: str = "http://localhost:3000"
 
-    # LLM Configuration (Google Gemini)
+    # LLM Configuration (Google Gemini & OpenAI)
     google_api_key: str = ""
+    openai_api_key: str = ""
     model_name: str = "gemini-2.5-flash"
     dashboard_vision_enabled: bool = True
     dashboard_vision_model: str = "gemini-3.5-flash"

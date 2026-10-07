@@ -58,6 +58,7 @@ out/
 # AI logs — tracked structure, ignored content
 .ai-log/*.jsonl
 .test-runs/
+.test-tmp*/
 .ai-log/archive/
 
 # Superpowers specs & plans

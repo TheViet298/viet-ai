@@ -29,10 +29,13 @@ def answer_section(query: str, text: str) -> str:
     body = normalized(text)
     if any(term in subject for term in ("lai thu", "chay thu")) and not any(term in body for term in ("lai thu", "chay thu")):
         return ""
-    if any(term in subject for term in ("gia xe", "gia lan banh", "chi phi lan banh")):
-        if not any(term in body for term in ("gia", "lan banh", "chi phi")):
+    if any(term in subject for term in ("gia lan banh", "chi phi lan banh")):
+        if not any(term in body for term in ("lan banh", "du toan")):
             return ""
-    if "cac dong xe" in subject and not any(term in body for term in ("vf3", "vf 3", "vf5", "vf 5", "vf6", "vf 6", "vf7", "vf 7", "vf8", "vf 8", "vf9", "vf 9")):
+    elif any(term in subject for term in ("gia xe", "bang gia")):
+        if not any(term in body for term in ("gia", "chi phi")):
+            return ""
+    if any(term in subject for term in ("cac dong xe", "cac mau xe", "mau xe", "dai san pham")) and not any(term in body for term in ("vf3", "vf 3", "vf5", "vf 5", "vf6", "vf 6", "vf7", "vf 7", "vf8", "vf 8", "vf9", "vf 9")):
         return ""
     if is_turtle_question(query):
         subjects = ("rua", "turtle", "gioi han cong suat", "han che cong suat", "limited driving power")
