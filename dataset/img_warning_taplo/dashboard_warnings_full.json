@@ -428,8 +428,8 @@
     "requires_staff_review": true,
     "emergency_escalation": false,
     "display_text": "Cảnh báo rò rỉ lốp / Giảm áp suất đột ngột",
-    "action_summary": "Giữ chắc tay lái, nhả ga từ từ, bật đèn hazard, tấp lề an toàn và gọi cứu hộ 1900 23 23 89.",
-    "source_url": "https://vinfastauto.com/vn_vi/y-nghia-cac-loai-den-canh-bao-tren-o-to-dien"
+    "action_summary": "Giữ vững tay lái, nhả ga, tấp vào lề an toàn và gọi cứu hộ 1900 23 23 89.",
+    "source_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to"
   },
   {
     "id": "vf5-tpms-low-pressure",
@@ -445,7 +445,7 @@
     "emergency_escalation": false,
     "display_text": "Áp suất lốp thấp / Kiểm tra áp suất lốp",
     "action_summary": "Ghé điểm bơm gần nhất bơm đúng 2.2 - 2.4 bar theo tem khung cửa lái.",
-    "source_url": "https://vinfastauto.com/vn_vi/cac-bieu-tuong-bao-loi-tren-xe-o-to"
+    "source_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to"
   },
   {
     "id": "vf5-tpms-over-pressure",
@@ -460,8 +460,8 @@
     "requires_staff_review": false,
     "emergency_escalation": false,
     "display_text": "Áp suất lốp quá cao / Cảnh báo áp suất vượt ngưỡng",
-    "action_summary": "Đỗ nơi râm mát cho lốp nguội tự nhiên, xả bớt khí về mức tiêu chuẩn khi lốp đã nguội.",
-    "source_url": "https://vinfastauto.com/vn_vi/he-thong-den-canh-bao-tren-taplo-o-to"
+    "action_summary": "Đỗ nơi râm mát cho lốp nguội, xả bớt khí về mức tiêu chuẩn khi lốp đã nguội.",
+    "source_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to"
   },
   {
     "id": "vf5-tpms-high-temperature",
@@ -476,8 +476,8 @@
     "requires_staff_review": false,
     "emergency_escalation": false,
     "display_text": "Nhiệt độ lốp cao / Cảnh báo quá nhiệt lốp",
-    "action_summary": "Nghỉ xe bóng mát 30-40 phút cho lốp hạ nhiệt, không dội nước lạnh vào bánh xe.",
-    "source_url": "https://vinfastauto.com/vn_vi/y-nghia-cac-loai-den-canh-bao-tren-o-to-dien"
+    "action_summary": "Nghỉ xe bóng mát 30-40 phút, không dội nước lạnh vào bánh xe.",
+    "source_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to"
   },
   {
     "id": "vf5-tpms-sensor-fault",
@@ -492,8 +492,8 @@
     "requires_staff_review": false,
     "emergency_escalation": false,
     "display_text": "Lỗi cảm biến áp suất lốp / Không nhận cảm biến",
-    "action_summary": "Kiểm tra lốp bằng mắt thường và đặt lịch kiểm tra cảm biến tại xưởng dịch vụ VinFast.",
-    "source_url": "https://vinfastauto.com/vn_vi/cac-bieu-tuong-bao-loi-tren-xe-o-to"
+    "action_summary": "Kiểm tra lốp bằng mắt thường và đặt lịch kiểm tra cảm biến tại xưởng VinFast.",
+    "source_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to"
   },
   {
     "id": "vf5-tpms-sensor-battery-low",
@@ -509,7 +509,7 @@
     "emergency_escalation": false,
     "display_text": "Pin cảm biến lốp thấp",
     "action_summary": "Đăng ký thay pin/cảm biến tại xưởng VinFast trong lần bảo dưỡng tới.",
-    "source_url": "https://vinfastauto.com/vn_vi/cac-bieu-tuong-bao-loi-tren-xe-o-to"
+    "source_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to"
   },
   {
     "id": "vf5-tpms-system-error",
@@ -524,8 +524,8 @@
     "requires_staff_review": false,
     "emergency_escalation": false,
     "display_text": "Kiểm tra hệ thống TPMS / Lỗi hệ thống theo dõi áp suất lốp",
-    "action_summary": "Tắt xe khóa cửa 3 phút khởi động lại; nếu không hết đưa xe đến xưởng VinFast để kiểm tra ECU.",
-    "source_url": "https://vinfastauto.com/vn_vi/he-thong-den-canh-bao-tren-taplo-o-to"
+    "action_summary": "Tắt xe khóa cửa 3 phút khởi động lại; nếu không hết đưa xe đến xưởng VinFast.",
+    "source_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to"
   },
   {
     "id": "vf5-core-brake-failure",
@@ -539,9 +539,9 @@
     "severity": "CRITICAL",
     "requires_staff_review": true,
     "emergency_escalation": true,
-    "display_text": "Lỗi hệ thống phanh / Mất trợ lực phanh / Dừng xe an toàn",
+    "display_text": "Lỗi phanh / Dừng xe an toàn",
     "action_summary": "Dừng xe ngay tại vị trí an toàn, kéo phanh tay, KHÔNG tiếp tục lái và gọi hotline cứu hộ 1900 23 23 89.",
-    "source_url": "https://vinfastauto.com/vn_vi/cac-bieu-tuong-bao-loi-tren-xe-o-to"
+    "source_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to"
   },
   {
     "id": "vf5-core-parking-brake",
@@ -635,9 +635,9 @@
     "severity": "HIGH",
     "requires_staff_review": true,
     "emergency_escalation": false,
-    "display_text": "Hạn chế công suất vận hành / Mức pin rất thấp hoặc động cơ quá nhiệt",
-    "action_summary": "Bật đèn hazard, giảm tốc độ và di chuyển ngay tới trạm sạc gần nhất hoặc nơi đỗ an toàn.",
-    "source_url": "https://vinfastauto.com/vn_vi/y-nghia-cac-loai-den-canh-bao-tren-o-to-dien"
+    "display_text": "Hạn chế công suất vận hành / Mức pin rất thấp",
+    "action_summary": "Bật đèn hazard, giảm tốc độ và di chuyển ngay tới trạm sạc gần nhất.",
+    "source_url": "https://vinfastauto.com/vn_vi/tai-lieu-o-to"
   },
   {
     "id": "vf5-core-hv-battery-fault",

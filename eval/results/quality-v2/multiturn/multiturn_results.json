@@ -1,0 +1,44 @@
+{
+  "total_scenarios": 10,
+  "exit_code": 0,
+  "passed": true,
+  "mode": "offline-regression",
+  "scope": "Real bridge/API and isolated SQLite; network disabled, storage failure injected. Six existing regressions and four new model-correction conversations; not an unseen holdout.",
+  "groups": [
+    {
+      "name": "fact_correction_4_models",
+      "node_id": "tests/test_agents/test_multiturn_quality.py",
+      "cases": 4
+    },
+    {
+      "name": "two_clarification_limit",
+      "node_id": "tests/test_agents/test_complete_agent.py::test_session_retains_facts_and_enforces_two_turns",
+      "cases": 1
+    },
+    {
+      "name": "guest_quota_and_emergency",
+      "node_id": "tests/test_api/test_graph_api_bridge.py::test_guest_quota_cannot_be_reset_with_request_session",
+      "cases": 1
+    },
+    {
+      "name": "staff_in_progress",
+      "node_id": "tests/test_agents/test_complete_agent.py::test_customer_update_preserves_staff_workflow_status",
+      "cases": 1
+    },
+    {
+      "name": "explicit_old_case",
+      "node_id": "tests/test_api/test_graph_api_bridge.py::test_explicit_old_case_is_rejected_instead_of_writing_to_current_case",
+      "cases": 1
+    },
+    {
+      "name": "ownership",
+      "node_id": "tests/test_api/test_graph_api_bridge.py::test_customer_case_is_saved_and_private",
+      "cases": 1
+    },
+    {
+      "name": "storage_failure_emergency",
+      "node_id": "tests/test_api/test_graph_api_bridge.py::test_emergency_alert_survives_storage_unavailability",
+      "cases": 1
+    }
+  ]
+}

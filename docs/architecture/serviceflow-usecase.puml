@@ -1,0 +1,165 @@
+@startuml serviceflow-usecase
+!theme plain
+skinparam shadowing false
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "DejaVu Sans, Arial, sans-serif"
+skinparam defaultFontSize 13
+skinparam defaultFontColor #263747
+skinparam roundcorner 6
+skinparam linetype ortho
+
+' Styling for System Boundary and Packages
+skinparam rectangle {
+    BackgroundColor transparent
+    BorderColor #8E9FAD
+    BorderThickness 1.2
+    FontColor #263747
+    FontStyle bold
+    FontSize 14
+}
+
+skinparam package {
+    BackgroundColor #FAFCFD
+    BorderColor #BAC7D5
+    BorderThickness 1
+    FontColor #3B4B59
+    FontStyle bold
+    FontSize 13
+}
+
+' Styling for Actors
+skinparam actor {
+    BackgroundColor #EAF2FB
+    BorderColor #5B7A9C
+    FontColor #263747
+    FontSize 13
+    FontStyle bold
+}
+
+' Styling for Use Cases
+skinparam usecase {
+    BackgroundColor #EDF1F5
+    BorderColor #8E9FAD
+    BorderThickness 1.2
+    FontColor #263747
+    FontSize 13
+    ArrowColor #506273
+    ArrowThickness 1.2
+}
+
+' Custom stereotypes for color coding
+skinparam usecase<<ai>> {
+    BackgroundColor #F0EDF8
+    BorderColor #9B8EC4
+}
+
+skinparam usecase<<safety>> {
+    BackgroundColor #FBEAEB
+    BorderColor #C4787E
+}
+
+skinparam usecase<<storage>> {
+    BackgroundColor #EDF5EE
+    BorderColor #7EAA89
+}
+
+skinparam usecase<<included>> {
+    BackgroundColor #F4F6F8
+    BorderColor #A3B1BF
+    FontStyle italic
+}
+
+left to right direction
+
+' ==============================================================================
+' ACTORS
+' ==============================================================================
+actor "Khách vãng lai\n(Guest)" as Guest
+actor "Khách hàng\n(Customer)" as Customer
+actor "Nhân viên dịch vụ\n(Staff / Reviewer)" as Staff
+actor "Google Gemini\n<<system>>" as Gemini #F1F2F4
+
+' ==============================================================================
+' SYSTEM BOUNDARY
+' ==============================================================================
+rectangle "Hệ thống VinFast ServiceFlow AI" {
+
+    package "Phân hệ Xác thực & Tri thức Công khai" as PkgAuth {
+        usecase "Xem tài liệu &\nFAQ công khai" as UC_PublicArticles
+        usecase "Đăng ký tài khoản\nkhách hàng" as UC_Register
+        usecase "Đăng nhập hệ thống\n(Cấp JWT Token)" as UC_Login
+        usecase "Xem thông tin\nhồ sơ cá nhân" as UC_Profile
+    }
+
+    package "Phân hệ Tiếp nhận & Xử lý Sự cố (Khách hàng)" as PkgCustomer {
+        usecase "Tải ảnh táp-lô\n& trụ sạc" as UC_UploadAttachment <<storage>>
+        usecase "Trò chuyện hỗ trợ\n& phân loại sự cố" as UC_Chat
+        usecase "Kiểm tra an toàn\n& phân loại Intent" as UC_Triage <<safety>>
+        usecase "Cung cấp hướng dẫn\n& Hotline khẩn cấp" as UC_Emergency <<safety>>
+        usecase "Hỏi làm rõ\nthông tin kỹ thuật" as UC_Clarify
+        usecase "Tra cứu cẩm nang\n& trích dẫn nguồn" as UC_RAG <<ai>>
+        usecase "Tạo hồ sơ hỗ trợ\n& tóm tắt sự cố" as UC_CreateCase <<storage>>
+        usecase "Tổng hợp Case Brief\nchuẩn hóa" as UC_SynthesizeBrief <<ai>>
+        usecase "Theo dõi trạng thái\ntiến độ hồ sơ" as UC_TrackStatus
+        usecase "Xem danh sách\nhồ sơ của mình" as UC_ListCases
+        usecase "Mở lại hồ sơ\nđã giải quyết" as UC_Reopen
+        usecase "Đánh giá chất lượng\nxử lý sự cố (CSAT)" as UC_Feedback
+    }
+
+    package "Phân hệ Bàn Điều phối & Đánh giá (Staff HITL)" as PkgStaff {
+        usecase "Xem hàng đợi\nticket theo bộ lọc" as UC_Queue
+        usecase "Kiểm tra chi tiết hồ sơ\n& lịch sử hội thoại" as UC_TicketDetail
+        usecase "Thực hiện hành động\nxử lý ticket (HITL)" as UC_StaffAction
+        usecase "Duyệt & phân công\nđiều phối hồ sơ" as UC_Approve
+        usecase "Chỉnh sửa tóm tắt\nCase Brief" as UC_EditBrief
+        usecase "Chuyển tuyến\nxử lý hồ sơ" as UC_Reroute
+        usecase "Yêu cầu bổ sung\nthông tin sự cố" as UC_RequestInfo
+        usecase "Giải quyết &\nđóng hồ sơ" as UC_ResolveClose
+        usecase "Ghi nhận nhật ký\nkiểm toán (Audit Log)" as UC_AuditLog <<storage>>
+    }
+}
+
+' ==============================================================================
+' RELATIONSHIPS — ACTORS TO USE CASES
+' ==============================================================================
+Guest --> UC_PublicArticles
+Guest --> UC_Register
+Guest --> UC_Login
+
+Customer --> UC_Login
+Customer --> UC_Profile
+Customer --> UC_UploadAttachment
+Customer --> UC_Chat
+Customer --> UC_TrackStatus
+Customer --> UC_ListCases
+Customer --> UC_Reopen
+Customer --> UC_Feedback
+
+Staff --> UC_Login
+Staff --> UC_Queue
+Staff --> UC_TicketDetail
+Staff --> UC_StaffAction
+
+UC_SynthesizeBrief --> Gemini
+UC_RAG --> Gemini
+
+' ==============================================================================
+' RELATIONSHIPS — INCLUDE & EXTEND
+' ==============================================================================
+UC_Chat ..> UC_Triage : <<include>>
+UC_Emergency ..> UC_Chat : <<extend>>\n(khi có nguy cơ khẩn cấp)
+UC_Clarify ..> UC_Chat : <<extend>>\n(khi thiếu dữ kiện, <=2 lượt)
+UC_RAG ..> UC_Chat : <<extend>>\n(khi truy vấn cẩm nang FAQ)
+
+UC_Chat ..> UC_CreateCase : <<include>>\n(khi đủ dữ kiện / tạo ticket)
+UC_CreateCase ..> UC_SynthesizeBrief : <<include>>
+
+UC_StaffAction <|-- UC_Approve
+UC_StaffAction <|-- UC_EditBrief
+UC_StaffAction <|-- UC_Reroute
+UC_StaffAction <|-- UC_RequestInfo
+UC_StaffAction <|-- UC_ResolveClose
+
+UC_StaffAction ..> UC_AuditLog : <<include>>
+
+@enduml

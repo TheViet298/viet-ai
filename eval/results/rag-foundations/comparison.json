@@ -1,0 +1,261 @@
+{
+  "comparison_kind": "offline_diagnostic",
+  "production_acceptance": false,
+  "runs": {
+    "baseline-eval": {
+      "metrics": {
+        "total_cases": 90,
+        "triage_cases": 60,
+        "rag_cases": 30,
+        "critical_safety_recall": 1.0,
+        "intent_accuracy": 1.0,
+        "routing_accuracy": 0.9333,
+        "top_k_grounded_citation_rate": 0.85,
+        "no_source_compliance": 1.0,
+        "avg_latency_s": 0.117,
+        "staff_review_compliance": 0.9333,
+        "mandatory_review_false_negatives": 0,
+        "denominators": {
+          "critical": 10,
+          "sourced": 20,
+          "no_source": 10,
+          "review": 60
+        }
+      },
+      "metadata": {
+        "mode": "offline",
+        "model": "gemini-3.8-flash",
+        "datasets": {
+          "agent_acceptance_v2.jsonl": "384c0d96c4039d22dcc714c1647f487d22d64167ce6e2d7e917b3f9cf25f2863"
+        },
+        "prompt_hashes": {
+          "case_brief_prompt.md": "bfee9706d317f476e3a72287e072893f79c7851b3541522534f77f10160f7f51",
+          "clarify_prompt.md": "9d0018d94fd6910243feadee0d84a7589fee97f1f1e94a0a21450a0cdae29ebd",
+          "memory_prompt.md": "c6957a6d9db330d4c70b5eca0b27ed6654a3a570203460c2f487c44f3680ea64",
+          "policy_prompt.md": "7851e10dfb3c604edbda79bfdec1e74a92d3ed4630637cf678bfd2e73f818f16",
+          "rag_qa_prompt.md": "e90eac02f8879e72d96d6b3985fd62e9e8aef4f2f3e95646ba3a862b363bc131",
+          "system_prompt.md": "d7eee5412ee3e8961366006b7d27aeedaf5af1370788a4d0d2df9e858f1bc863",
+          "triage_prompt.md": "88484acd74253d0eefa43cefc0289e7c6d8be260f789bf5157f67af558d1bf7d"
+        },
+        "llm_outcomes": {},
+        "coverage_note": "Configured online includes fallback; parsed events are not complete online cases.",
+        "kb_path": "./data/chroma-quality-v4",
+        "kb_content_sha256": "100028ac31524ff40942ab004a9b8e085cda4dad3242522c0a9a972309c8d24a",
+        "kb_sqlite_sha256": "48d7c3a8bab3194c8c776f15ab386a4d90535b0d741bba7ea43a759c2297f4b4",
+        "stage_mean_latency_s": {
+          "safety": 0.0002930877778049358,
+          "case_brief": 0.0004976935483829302,
+          "clarify": 0.0007094066666771445,
+          "rag": 0.14902480540540392,
+          "intake": 0.0003111844444598925,
+          "triage": 0.00034764736845940397
+        },
+        "acceptance_approved": false,
+        "label_status": "pending_independent_review",
+        "kb_version": {
+          "count": 2163,
+          "embedding": "Xenova/multilingual-e5-small@761b726",
+          "metric": "squared L2 normalized vectors",
+          "source_sections": "complete lines; original raw snapshots retained",
+          "supplement": "docs/data-evidence/2026-10-03-source-002-table.json",
+          "direct_refresh": "HTTP 403; no new HTTP 200 claimed",
+          "kb_content_sha256": "100028ac31524ff40942ab004a9b8e085cda4dad3242522c0a9a972309c8d24a",
+          "raw_source_hashes": {
+            "SRC-001.txt": "ebf63a6f53a3aabb89502d58aab00a0b22a3130edd7e34d4761d33a2f1c40e0b",
+            "SRC-002.txt": "27a84e0c7d638c273545faa04f672d0cd1ba47fa0e97e398542598ce0396eae4",
+            "SRC-003.txt": "e86ba244ec6d36e9d169a9fd90d556bea56d04b6aae7e9195644b1a941a6f2ae",
+            "SRC-004.txt": "eac629dd43c27a21c6eeafb5d2fdaea32ffd18536c7636e69e1227e7d0d2ac5d",
+            "SRC-005.txt": "2c36cd2ea07a85ee5a283edc7a10d80a09d9b4e29efeed14698d0c88ee9acc94",
+            "SRC-006.txt": "02ca6bb7977c06b660d85a8f92b81e561093f591d1cba5633bbf22d01f10abe4",
+            "SRC-007.txt": "20b504e6868d2dff27af7f82ebff65e0105d920e1b1a091a0dd8461391e6287a",
+            "SRC-008.txt": "04013af7b52ebd1a253accbdbe5e57d578d4b5493b0c22cd776ebf113d08c413"
+          },
+          "model_onnx_sha256": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193",
+          "tokenizer_sha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39"
+        },
+        "latency_p50_s": 0.05543200000010984,
+        "latency_p95_s": 0.1771030999998402
+      }
+    },
+    "current-eval": {
+      "metrics": {
+        "total_cases": 90,
+        "triage_cases": 60,
+        "rag_cases": 30,
+        "critical_safety_recall": 1.0,
+        "intent_accuracy": 1.0,
+        "routing_accuracy": 0.9333,
+        "top_k_grounded_citation_rate": 0.9,
+        "no_source_compliance": 1.0,
+        "avg_latency_s": 0.043,
+        "staff_review_compliance": 0.95,
+        "mandatory_review_false_negatives": 0,
+        "denominators": {
+          "critical": 10,
+          "sourced": 20,
+          "no_source": 10,
+          "review": 60
+        },
+        "evidence_recall_at_3": null,
+        "evidence_precision_at_3": null,
+        "grounded_answer_rate": 0.9
+      },
+      "metadata": {
+        "mode": "offline",
+        "model": "gemini-3.8-flash",
+        "datasets": {
+          "agent_acceptance_v2.jsonl": "384c0d96c4039d22dcc714c1647f487d22d64167ce6e2d7e917b3f9cf25f2863"
+        },
+        "prompt_hashes": {
+          "case_brief_prompt.md": "bfee9706d317f476e3a72287e072893f79c7851b3541522534f77f10160f7f51",
+          "clarify_prompt.md": "9d0018d94fd6910243feadee0d84a7589fee97f1f1e94a0a21450a0cdae29ebd",
+          "memory_prompt.md": "c6957a6d9db330d4c70b5eca0b27ed6654a3a570203460c2f487c44f3680ea64",
+          "policy_prompt.md": "7851e10dfb3c604edbda79bfdec1e74a92d3ed4630637cf678bfd2e73f818f16",
+          "rag_qa_prompt.md": "e90eac02f8879e72d96d6b3985fd62e9e8aef4f2f3e95646ba3a862b363bc131",
+          "system_prompt.md": "d7eee5412ee3e8961366006b7d27aeedaf5af1370788a4d0d2df9e858f1bc863",
+          "triage_prompt.md": "88484acd74253d0eefa43cefc0289e7c6d8be260f789bf5157f67af558d1bf7d"
+        },
+        "llm_outcomes": {},
+        "coverage_note": "Configured online includes fallback; parsed events are not complete online cases.",
+        "kb_path": "./data/chroma-quality-v4",
+        "kb_content_sha256": "100028ac31524ff40942ab004a9b8e085cda4dad3242522c0a9a972309c8d24a",
+        "kb_sqlite_sha256": "0ae478509b418c1fafa3dbdde5ec418c0bd0c6a380ccb0f48374d2cb934e035a",
+        "stage_mean_latency_s": {
+          "safety": 9.937666670036075e-05,
+          "triage": 0.00014496447369980925,
+          "rag": 0.050181005405303604,
+          "clarify": 0.0002680966665442005,
+          "intake": 0.00013887555553285184,
+          "case_brief": 0.00020053666673144714
+        },
+        "acceptance_approved": false,
+        "label_status": "pending_independent_review",
+        "kb_version": {
+          "count": 2163,
+          "embedding": "Xenova/multilingual-e5-small@761b726",
+          "metric": "squared L2 normalized vectors",
+          "source_sections": "complete lines; original raw snapshots retained",
+          "supplement": "docs/data-evidence/2026-10-03-source-002-table.json",
+          "direct_refresh": "HTTP 403; no new HTTP 200 claimed",
+          "kb_content_sha256": "100028ac31524ff40942ab004a9b8e085cda4dad3242522c0a9a972309c8d24a",
+          "raw_source_hashes": {
+            "SRC-001.txt": "ebf63a6f53a3aabb89502d58aab00a0b22a3130edd7e34d4761d33a2f1c40e0b",
+            "SRC-002.txt": "27a84e0c7d638c273545faa04f672d0cd1ba47fa0e97e398542598ce0396eae4",
+            "SRC-003.txt": "e86ba244ec6d36e9d169a9fd90d556bea56d04b6aae7e9195644b1a941a6f2ae",
+            "SRC-004.txt": "eac629dd43c27a21c6eeafb5d2fdaea32ffd18536c7636e69e1227e7d0d2ac5d",
+            "SRC-005.txt": "2c36cd2ea07a85ee5a283edc7a10d80a09d9b4e29efeed14698d0c88ee9acc94",
+            "SRC-006.txt": "02ca6bb7977c06b660d85a8f92b81e561093f591d1cba5633bbf22d01f10abe4",
+            "SRC-007.txt": "20b504e6868d2dff27af7f82ebff65e0105d920e1b1a091a0dd8461391e6287a",
+            "SRC-008.txt": "04013af7b52ebd1a253accbdbe5e57d578d4b5493b0c22cd776ebf113d08c413"
+          },
+          "model_onnx_sha256": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193",
+          "tokenizer_sha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39"
+        },
+        "latency_p50_s": 0.02119819999916217,
+        "latency_p95_s": 0.04348489999938465,
+        "provenance": {
+          "kb": "100028ac31524ff40942ab004a9b8e085cda4dad3242522c0a9a972309c8d24a",
+          "model": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193",
+          "prompt": "9a9b06acb675deeace6be05c15944be44ca27ef9f3a68a1d0ddfbc961201014b",
+          "dataset": "9b80ffb14bda0ed454dbb5f816ef8480bf0bb9df2fb09037cac241868c8ff8c9",
+          "mapping": "0d609820552da4fe1ee7ef4723dca8336ea9733fbe4286241b8da53acb29f1da",
+          "config": "3a67f72761e1c324d5bac50dce2c3053b0d7a1b567d2949a3b68e890a8d8fa42"
+        }
+      },
+      "coverage": {
+        "critical": 10,
+        "sourced": 20,
+        "no_source": 10,
+        "review": 60,
+        "evidence_labeled": 0
+      }
+    },
+    "candidate-eval": {
+      "metrics": {
+        "total_cases": 90,
+        "triage_cases": 60,
+        "rag_cases": 30,
+        "critical_safety_recall": 1.0,
+        "intent_accuracy": 1.0,
+        "routing_accuracy": 0.9333,
+        "top_k_grounded_citation_rate": 0.9,
+        "no_source_compliance": 1.0,
+        "avg_latency_s": 0.053,
+        "staff_review_compliance": 0.95,
+        "mandatory_review_false_negatives": 0,
+        "denominators": {
+          "critical": 10,
+          "sourced": 20,
+          "no_source": 10,
+          "review": 60
+        },
+        "evidence_recall_at_3": null,
+        "evidence_precision_at_3": null,
+        "grounded_answer_rate": 0.9
+      },
+      "metadata": {
+        "mode": "offline",
+        "model": "gemini-3.8-flash",
+        "datasets": {
+          "agent_acceptance_v2.jsonl": "384c0d96c4039d22dcc714c1647f487d22d64167ce6e2d7e917b3f9cf25f2863"
+        },
+        "prompt_hashes": {
+          "case_brief_prompt.md": "bfee9706d317f476e3a72287e072893f79c7851b3541522534f77f10160f7f51",
+          "clarify_prompt.md": "9d0018d94fd6910243feadee0d84a7589fee97f1f1e94a0a21450a0cdae29ebd",
+          "memory_prompt.md": "c6957a6d9db330d4c70b5eca0b27ed6654a3a570203460c2f487c44f3680ea64",
+          "policy_prompt.md": "7851e10dfb3c604edbda79bfdec1e74a92d3ed4630637cf678bfd2e73f818f16",
+          "rag_qa_prompt.md": "e90eac02f8879e72d96d6b3985fd62e9e8aef4f2f3e95646ba3a862b363bc131",
+          "system_prompt.md": "d7eee5412ee3e8961366006b7d27aeedaf5af1370788a4d0d2df9e858f1bc863",
+          "triage_prompt.md": "88484acd74253d0eefa43cefc0289e7c6d8be260f789bf5157f67af558d1bf7d"
+        },
+        "llm_outcomes": {},
+        "coverage_note": "Configured online includes fallback; parsed events are not complete online cases.",
+        "kb_path": "./data/chroma-rag-foundations-candidate",
+        "kb_content_sha256": "86261b972a5208e05b441e7194307f9ca14f77e286be8516a4a12f63bc7bc50c",
+        "kb_sqlite_sha256": "aebd36074ee10756b51f9732cf838eff380fd4d2dfce0f496c94b167c2c97093",
+        "stage_mean_latency_s": {
+          "case_brief": 0.00020939000002423807,
+          "clarify": 0.00026838999989801476,
+          "rag": 0.07260888918925637,
+          "intake": 0.00013887777779220616,
+          "safety": 0.00010339333336257065,
+          "triage": 0.00014118421056178034
+        },
+        "acceptance_approved": false,
+        "label_status": "pending_independent_review",
+        "kb_version": {
+          "parent_count": 2163,
+          "child_count": 2168,
+          "max_child_tokens": 256,
+          "oversized_parents": 4,
+          "chunking_version": "rag-foundations-v1",
+          "model": "vinfast-multilingual-e5-onnx",
+          "dimension": 384,
+          "metric": "squared L2 over normalized vectors",
+          "source_content_sha256": "100028ac31524ff40942ab004a9b8e085cda4dad3242522c0a9a972309c8d24a",
+          "children_sha256": "992b03d2f45e09409e6e165967b19a48179d46e2eb85222f5227f30ece2777ba",
+          "parent_map_sha256": "7f321ab3b2a5e07d59775f65b5d7a7cd063d9ec72358601d62df2f5ced4373bd",
+          "tokenizer_sha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39",
+          "model_sha256": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193"
+        },
+        "latency_p50_s": 0.021684999999706633,
+        "latency_p95_s": 0.06799020000016753,
+        "provenance": {
+          "kb": "86261b972a5208e05b441e7194307f9ca14f77e286be8516a4a12f63bc7bc50c",
+          "model": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193",
+          "prompt": "9a9b06acb675deeace6be05c15944be44ca27ef9f3a68a1d0ddfbc961201014b",
+          "dataset": "9b80ffb14bda0ed454dbb5f816ef8480bf0bb9df2fb09037cac241868c8ff8c9",
+          "mapping": "7f321ab3b2a5e07d59775f65b5d7a7cd063d9ec72358601d62df2f5ced4373bd",
+          "config": "3a67f72761e1c324d5bac50dce2c3053b0d7a1b567d2949a3b68e890a8d8fa42"
+        }
+      },
+      "coverage": {
+        "critical": 10,
+        "sourced": 20,
+        "no_source": 10,
+        "review": 60,
+        "evidence_labeled": 0
+      }
+    }
+  }
+}

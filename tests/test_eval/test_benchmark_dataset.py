@@ -1,8 +1,7 @@
-import os
 import json
-import pytest
+import os
 
-DATASET_DIR = r"d:\142.AI20K\P-142\eval\datasets"
+DATASET_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "eval", "datasets"))
 
 REQUIRED_TRIAGE_FIELDS = [
     "id",
@@ -32,7 +31,7 @@ def load_jsonl(filename: str):
     path = os.path.join(DATASET_DIR, filename)
     assert os.path.exists(path), f"File {filename} does not exist in {DATASET_DIR}"
     records = []
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         for line in f:
             if line.strip():
                 records.append(json.loads(line))

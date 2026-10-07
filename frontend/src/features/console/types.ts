@@ -13,7 +13,9 @@ export type TicketIntent =
   | "Charging/Battery"
   | "Service/Incident"
   | "Sales"
-  | "Complaint";
+  | "Sales/General Info"
+  | "Complaint"
+  | "Complaint/Feedback";
 
 export interface CaseBrief {
   summary: string;
@@ -34,6 +36,10 @@ export interface TicketItem {
   missing_info_flag: boolean;
   created_at: string;
   confidence_score: number;
+  issue_summary?: string;
+  suggested_action?: string;
+  has_location_consent?: boolean;
+  error_code_short?: string;
 }
 
 export interface TicketDetail {
@@ -60,6 +66,7 @@ export type StaffActionType =
   | "REROUTE"
   | "CLOSE"
   | "REOPEN"
+  | "RESOLVE"
   | "REQUEST_INFO";
 
 export interface StaffActionPayload {
@@ -69,3 +76,20 @@ export interface StaffActionPayload {
   edited_brief?: Partial<CaseBrief> | null;
   notes?: string;
 }
+
+export const VIETNAMESE_STATUS_MAP: Record<string, string> = {
+  "New": "Mới tiếp nhận",
+  "Staff Reviewing": "Chờ duyệt",
+  "Needs Information": "Cần thêm tin",
+  "In Progress": "Đang xử lý",
+  "Resolved": "Đã xử lý",
+  "Closed": "Đã đóng",
+  "Reopened": "Mở lại",
+};
+
+export const VIETNAMESE_PRIORITY_MAP: Record<string, string> = {
+  "CRITICAL": "Khẩn cấp",
+  "HIGH": "Ưu tiên",
+  "MEDIUM": "Tiêu chuẩn",
+  "LOW": "Thấp",
+};

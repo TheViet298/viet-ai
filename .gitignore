@@ -59,6 +59,7 @@ out/
 .ai-log/*
 !.ai-log/.gitkeep
 .test-runs/
+.ai-log/archive/
 
 # Superpowers specs & plans
 docs/superpowers/

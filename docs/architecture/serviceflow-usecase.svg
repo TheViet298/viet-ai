@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1180" width="320mm" height="236mm" xml:lang="vi" role="img" aria-labelledby="title desc">
+<title id="title">ServiceFlow — Sơ đồ Use Case toàn hệ thống</title>
+<desc id="desc">Sơ đồ Use Case thể hiện ranh giới hệ thống VinFast ServiceFlow AI, các tác nhân Guest, Customer, Staff, Google Gemini cùng các quan hệ include, extend và generalization.</desc>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M 0 1 L 9 5 L 0 9" fill="none" stroke="#506273" stroke-width="1.4"/>
+  </marker>
+  <marker id="triangle" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="9" markerHeight="9" orient="auto">
+    <path d="M 1 1 L 11 6 L 1 11 Z" fill="white" stroke="#506273" stroke-width="1.3"/>
+  </marker>
+</defs>
+<rect width="1600" height="1180" fill="white"/>
+<text x="45" y="48" font-family="DejaVu Sans, Arial, sans-serif" font-size="26" font-weight="600" fill="#102a43" text-anchor="start">ServiceFlow · Sơ đồ Use Case toàn hệ thống</text>
+<text x="45" y="78" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="400" fill="#486581" text-anchor="start">Hệ thống VinFast ServiceFlow AI · Tác nhân, ranh giới hệ thống, ca sử dụng nghiệp vụ và quan hệ chuẩn UML 2.5</text>
+<rect x="190" y="105" width="1220" height="990" rx="10" fill="#ffffff" stroke="#7b8e9f" stroke-width="1.5"/>
+<text x="215" y="134" font-family="DejaVu Sans, Arial, sans-serif" font-size="15" font-weight="600" fill="#102a43" text-anchor="start">HỆ THỐNG VINFAST SERVICEFLOW AI</text>
+<text x="1390" y="134" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#627d98" text-anchor="end">Ranh giới ứng dụng chính (FastAPI, SQLite, ChromaDB &amp; Agent Engine)</text>
+<rect x="210" y="145" width="1180" height="140" rx="6" fill="#f8fafc" stroke="#bcccdc" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="225" y="168" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="600" fill="#334e68" text-anchor="start">PHÂN HỆ XÁC THỰC &amp; TRI THỨC CÔNG KHAI</text>
+<rect x="210" y="300" width="740" height="780" rx="6" fill="#f8fafc" stroke="#bcccdc" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="225" y="322" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="600" fill="#334e68" text-anchor="start">PHÂN HỆ TIẾP NHẬN &amp; XỬ LÝ SỰ CỐ KHÁCH HÀNG</text>
+<rect x="970" y="300" width="420" height="780" rx="6" fill="#f8fafc" stroke="#bcccdc" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="985" y="322" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="600" fill="#334e68" text-anchor="start">BÀN ĐIỀU PHỐI &amp; ĐÁNH GIÁ (STAFF HITL)</text>
+<circle cx="90" cy="173" r="14" fill="#eaf2fb" stroke="#5b7a9c" stroke-width="1.8"/>
+<line x1="90" y1="187" x2="90" y2="221" stroke="#5b7a9c" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="68" y1="199" x2="112" y2="199" stroke="#5b7a9c" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="90" y1="221" x2="74" y2="247" stroke="#5b7a9c" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="90" y1="221" x2="106" y2="247" stroke="#5b7a9c" stroke-width="1.8" stroke-linecap="round"/>
+<text x="90" y="267" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#607080" text-anchor="middle">«primary actor»</text>
+<text x="90" y="283" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="600" fill="#263747" text-anchor="middle">Khách vãng lai</text>
+<text x="90" y="300" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" fill="#486581" text-anchor="middle">(Guest)</text>
+<circle cx="90" cy="528" r="14" fill="#eaf2fb" stroke="#5b7a9c" stroke-width="1.8"/>
+<line x1="90" y1="542" x2="90" y2="576" stroke="#5b7a9c" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="68" y1="554" x2="112" y2="554" stroke="#5b7a9c" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="90" y1="576" x2="74" y2="602" stroke="#5b7a9c" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="90" y1="576" x2="106" y2="602" stroke="#5b7a9c" stroke-width="1.8" stroke-linecap="round"/>
+<text x="90" y="622" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#607080" text-anchor="middle">«primary actor»</text>
+<text x="90" y="638" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="600" fill="#263747" text-anchor="middle">Khách hàng</text>
+<text x="90" y="655" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" fill="#486581" text-anchor="middle">(Customer)</text>
+<circle cx="1505" cy="428" r="14" fill="#eaf2fb" stroke="#5b7a9c" stroke-width="1.8"/>
+<line x1="1505" y1="442" x2="1505" y2="476" stroke="#5b7a9c" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1483" y1="454" x2="1527" y2="454" stroke="#5b7a9c" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1505" y1="476" x2="1489" y2="502" stroke="#5b7a9c" stroke-width="1.8" stroke-linecap="round"/>
+<line x1="1505" y1="476" x2="1521" y2="502" stroke="#5b7a9c" stroke-width="1.8" stroke-linecap="round"/>
+<text x="1505" y="522" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#607080" text-anchor="middle">«primary actor»</text>
+<text x="1505" y="538" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="600" fill="#263747" text-anchor="middle">Nhân viên dịch vụ</text>
+<text x="1505" y="555" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" fill="#486581" text-anchor="middle">(Staff / Reviewer)</text>
+<rect x="1473.0" y="814.0" width="64" height="52" rx="6" fill="#f0edf8" stroke="#7d6ba8" stroke-width="1.8"/>
+<line x1="1485" y1="828" x2="1525" y2="828" stroke="#7d6ba8" stroke-width="1.4"/>
+<line x1="1485" y1="840" x2="1525" y2="840" stroke="#7d6ba8" stroke-width="1.4"/>
+<line x1="1485" y1="852" x2="1525" y2="852" stroke="#7d6ba8" stroke-width="1.4"/>
+<circle cx="1519" cy="828" r="2" fill="#7d6ba8"/>
+<circle cx="1519" cy="840" r="2" fill="#7d6ba8"/>
+<circle cx="1519" cy="852" r="2" fill="#7d6ba8"/>
+<text x="1505" y="882" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#607080" text-anchor="middle">«external system»</text>
+<text x="1505" y="898" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" font-weight="600" fill="#263747" text-anchor="middle">Google Gemini</text>
+<text x="1505" y="915" font-family="DejaVu Sans, Arial, sans-serif" font-size="12" font-weight="400" fill="#486581" text-anchor="middle">(LLM Service)</text>
+<ellipse cx="340" cy="215" rx="95" ry="30" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="340" y="210.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">Xem tài liệu &amp;</text>
+<text x="340" y="228.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">FAQ công khai</text>
+<ellipse cx="580" cy="215" rx="95" ry="30" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="580" y="210.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">Đăng ký tài khoản</text>
+<text x="580" y="228.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">khách hàng</text>
+<ellipse cx="830" cy="215" rx="100" ry="30" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="830" y="210.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">Đăng nhập hệ thống</text>
+<text x="830" y="228.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">(Cấp JWT Token)</text>
+<ellipse cx="1100" cy="215" rx="95" ry="30" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="1100" y="210.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">Xem thông tin</text>
+<text x="1100" y="228.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">hồ sơ cá nhân</text>
+<ellipse cx="335" cy="365" rx="95" ry="30" fill="#edf5ee" stroke="#7eaa89" stroke-width="1.3"/>
+<text x="335" y="360.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">Tải ảnh táp-lô</text>
+<text x="335" y="378.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">&amp; trụ sạc</text>
+<ellipse cx="335" cy="465" rx="100" ry="30" fill="#fbebeb" stroke="#c4787e" stroke-width="1.3"/>
+<text x="335" y="460.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">Cung cấp Hotline</text>
+<text x="335" y="478.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">&amp; cứu hộ khẩn cấp</text>
+<ellipse cx="335" cy="640" rx="95" ry="30" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="335" y="635.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">Theo dõi trạng thái</text>
+<text x="335" y="653.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">tiến độ hồ sơ</text>
+<ellipse cx="335" cy="730" rx="95" ry="30" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="335" y="725.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">Xem danh sách</text>
+<text x="335" y="743.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">hồ sơ cá nhân</text>
+<ellipse cx="335" cy="820" rx="95" ry="30" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="335" y="815.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">Mở lại hồ sơ</text>
+<text x="335" y="833.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">đã giải quyết</text>
+<ellipse cx="335" cy="910" rx="95" ry="30" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="335" y="905.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">Đánh giá chất lượng</text>
+<text x="335" y="923.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">xử lý sự cố (CSAT)</text>
+<ellipse cx="580" cy="465" rx="110" ry="36" fill="#eaf2fb" stroke="#627d98" stroke-width="1.3"/>
+<text x="580" y="460.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="600" fill="#263747" text-anchor="middle">Trò chuyện hỗ trợ</text>
+<text x="580" y="478.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="600" fill="#263747" text-anchor="middle">&amp; tiếp nhận sự cố</text>
+<ellipse cx="580" cy="640" rx="110" ry="35" fill="#edf5ee" stroke="#7eaa89" stroke-width="1.3"/>
+<text x="580" y="635.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">Tạo hồ sơ hỗ trợ</text>
+<text x="580" y="653.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">&amp; tóm tắt sự cố</text>
+<ellipse cx="825" cy="375" rx="95" ry="30" fill="#fbebeb" stroke="#c4787e" stroke-width="1.3"/>
+<text x="825" y="370.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle" font-style="italic">Kiểm tra an toàn</text>
+<text x="825" y="388.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle" font-style="italic">&amp; triage Intent</text>
+<ellipse cx="825" cy="465" rx="95" ry="30" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="825" y="460.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">Hỏi làm rõ</text>
+<text x="825" y="478.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">thông tin kỹ thuật</text>
+<ellipse cx="825" cy="550" rx="95" ry="30" fill="#f0edf8" stroke="#9b8ec4" stroke-width="1.3"/>
+<text x="825" y="545.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">Tra cứu cẩm nang</text>
+<text x="825" y="563.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">&amp; trích dẫn RAG</text>
+<ellipse cx="825" cy="640" rx="95" ry="35" fill="#f0edf8" stroke="#9b8ec4" stroke-width="1.3"/>
+<text x="825" y="635.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle" font-style="italic">Tổng hợp Case Brief</text>
+<text x="825" y="653.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle" font-style="italic">chuẩn hóa JSON</text>
+<ellipse cx="1180" cy="365" rx="110" ry="30" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="1180" y="360.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">Xem hàng đợi ticket</text>
+<text x="1180" y="378.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">theo bộ lọc</text>
+<ellipse cx="1180" cy="455" rx="110" ry="30" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="1180" y="450.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">Kiểm tra chi tiết hồ sơ</text>
+<text x="1180" y="468.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle">&amp; lịch sử hội thoại</text>
+<ellipse cx="1180" cy="565" rx="120" ry="36" fill="#eaf2fb" stroke="#627d98" stroke-width="1.3"/>
+<text x="1180" y="560.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="600" fill="#263747" text-anchor="middle">Xử lý &amp; điều phối</text>
+<text x="1180" y="578.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="600" fill="#263747" text-anchor="middle">hồ sơ (HITL Action)</text>
+<ellipse cx="1075" cy="675" rx="75" ry="25" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="1075" y="669.85" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#263747" text-anchor="middle">Duyệt &amp; phân công</text>
+<text x="1075" y="687.85" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#263747" text-anchor="middle">điều phối</text>
+<ellipse cx="1285" cy="675" rx="75" ry="25" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="1285" y="669.85" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#263747" text-anchor="middle">Chỉnh sửa tóm tắt</text>
+<text x="1285" y="687.85" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#263747" text-anchor="middle">Case Brief</text>
+<ellipse cx="1075" cy="745" rx="75" ry="25" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="1075" y="739.85" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#263747" text-anchor="middle">Chuyển tuyến</text>
+<text x="1075" y="757.85" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#263747" text-anchor="middle">xử lý sự cố</text>
+<ellipse cx="1285" cy="745" rx="75" ry="25" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="1285" y="739.85" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#263747" text-anchor="middle">Yêu cầu bổ sung</text>
+<text x="1285" y="757.85" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#263747" text-anchor="middle">thông tin</text>
+<ellipse cx="1180" cy="815" rx="85" ry="25" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.3"/>
+<text x="1180" y="809.85" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#263747" text-anchor="middle">Giải quyết &amp;</text>
+<text x="1180" y="827.85" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#263747" text-anchor="middle">đóng hồ sơ</text>
+<ellipse cx="1180" cy="910" rx="110" ry="32" fill="#edf5ee" stroke="#7eaa89" stroke-width="1.3"/>
+<text x="1180" y="905.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle" font-style="italic">Ghi nhận nhật ký</text>
+<text x="1180" y="923.55" font-family="DejaVu Sans, Arial, sans-serif" font-size="13" font-weight="400" fill="#263747" text-anchor="middle" font-style="italic">kiểm toán (Audit Log)</text>
+<polyline points="135,205 245,215" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="135,195 220,180 470,180 495,205" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="130,185 220,160 720,160 745,205" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="140,520 160,265 810,265 830,245" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="140,510 150,125 1075,125 1100,185" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="140,535 180,385 240,370" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="140,555 220,500 470,475" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="140,575 180,630 240,640" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="140,590 180,720 240,730" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="140,605 180,810 240,820" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="135,620 180,900 240,910" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="1455,420 1430,265 870,265 850,245" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="1455,440 1370,380 1290,370" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="1455,455 1290,455" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="1455,475 1375,545 1300,560" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="1455,835 1420,835 1420,1000 940,1000 940,650 920,645" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="940,650 940,555 920,550" fill="none" stroke="#506273" stroke-width="1.3"/>
+<polyline points="680,435 740,400" fill="none" stroke="#506273" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="715" y="405" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="600" fill="#2b4366" text-anchor="middle" font-style="italic">«include»</text>
+<polyline points="435,465 470,465" fill="none" stroke="#506273" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="452" y="452" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="600" fill="#2b4366" text-anchor="middle" font-style="italic">«extend»</text>
+<text x="452" y="465" font-family="DejaVu Sans, Arial, sans-serif" font-size="9.5" font-weight="400" fill="#556980" text-anchor="middle">nguy cơ khẩn cấp</text>
+<polyline points="730,465 690,465" fill="none" stroke="#506273" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="710" y="452" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="600" fill="#2b4366" text-anchor="middle" font-style="italic">«extend»</text>
+<text x="710" y="465" font-family="DejaVu Sans, Arial, sans-serif" font-size="9.5" font-weight="400" fill="#556980" text-anchor="middle">thiếu dữ kiện, ≤2 lượt</text>
+<polyline points="740,525 675,490" fill="none" stroke="#506273" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="715" y="495" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="600" fill="#2b4366" text-anchor="middle" font-style="italic">«extend»</text>
+<text x="715" y="508" font-family="DejaVu Sans, Arial, sans-serif" font-size="9.5" font-weight="400" fill="#556980" text-anchor="middle">hỏi FAQ cẩm nang</text>
+<polyline points="580,501 580,605" fill="none" stroke="#506273" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="608" y="555" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="600" fill="#2b4366" text-anchor="middle" font-style="italic">«include»</text>
+<text x="608" y="568" font-family="DejaVu Sans, Arial, sans-serif" font-size="9.5" font-weight="400" fill="#556980" text-anchor="middle">khi đủ dữ kiện</text>
+<polyline points="690,640 730,640" fill="none" stroke="#506273" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="710" y="628" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="600" fill="#2b4366" text-anchor="middle" font-style="italic">«include»</text>
+<polyline points="1075,650 1130,600" fill="none" stroke="#506273" stroke-width="1.2" marker-end="url(#triangle)"/>
+<polyline points="1285,650 1230,600" fill="none" stroke="#506273" stroke-width="1.2" marker-end="url(#triangle)"/>
+<polyline points="1090,720 1145,601" fill="none" stroke="#506273" stroke-width="1.2" marker-end="url(#triangle)"/>
+<polyline points="1270,720 1215,601" fill="none" stroke="#506273" stroke-width="1.2" marker-end="url(#triangle)"/>
+<polyline points="1180,790 1180,601" fill="none" stroke="#506273" stroke-width="1.2" marker-end="url(#triangle)"/>
+<polyline points="1295,580 1370,580 1370,910 1290,910" fill="none" stroke="#506273" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<text x="1345" y="750" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="600" fill="#2b4366" text-anchor="middle" font-style="italic">«include»</text>
+<rect x="190" y="1105" width="1220" height="55" rx="6" fill="#f8fafc" stroke="#bcccdc" stroke-width="1"/>
+<ellipse cx="240" cy="1132" rx="20" ry="10" fill="#edf1f5" stroke="#8e9fad" stroke-width="1.2"/>
+<text x="270" y="1136" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#334e68" text-anchor="start">Ca sử dụng nghiệp vụ</text>
+<ellipse cx="430" cy="1132" rx="20" ry="10" fill="#f0edf8" stroke="#9b8ec4" stroke-width="1.2"/>
+<text x="460" y="1136" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#334e68" text-anchor="start">AI / RAG tự động</text>
+<ellipse cx="590" cy="1132" rx="20" ry="10" fill="#fbebeb" stroke="#c4787e" stroke-width="1.2"/>
+<text x="620" y="1136" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#334e68" text-anchor="start">An toàn &amp; Khẩn cấp</text>
+<ellipse cx="770" cy="1132" rx="20" ry="10" fill="#edf5ee" stroke="#7eaa89" stroke-width="1.2"/>
+<text x="800" y="1136" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#334e68" text-anchor="start">Lưu trữ / Hồ sơ</text>
+<line x1="915" y1="1132" x2="945" y2="1132" stroke="#506273" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<text x="955" y="1136" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#334e68" text-anchor="start">«include» (bắt buộc)</text>
+<line x1="1085" y1="1132" x2="1115" y2="1132" stroke="#506273" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<text x="1125" y="1136" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#334e68" text-anchor="start">«extend» (có điều kiện)</text>
+<line x1="1275" y1="1132" x2="1305" y2="1132" stroke="#506273" stroke-width="1.2" marker-end="url(#triangle)"/>
+<text x="1315" y="1136" font-family="DejaVu Sans, Arial, sans-serif" font-size="11" font-weight="400" fill="#334e68" text-anchor="start">Kế thừa / chuyên biệt hóa</text>
+</svg>

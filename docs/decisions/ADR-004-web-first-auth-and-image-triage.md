@@ -6,7 +6,7 @@
 ## Quyết định
 
 * MVP chỉ có Web Support Hub. Đa kênh là Future Scope.
-* Guest xem Landing/FAQ/Policy; phải đăng nhập mới chat.
+* Guest xem Landing/FAQ/Policy và thử chat FAQ/tư vấn tối đa 5 lượt/phiên; phải đăng nhập để tạo/theo dõi case.
 * Customer chat và chỉ xem case của mình. Staff dùng account seed/invite; không đăng ký Staff công khai.
 * Customer gửi text, ảnh cảnh báo/táp-lô hoặc cả hai.
 * OCR/Vision trích xuất cảnh báo, mã lỗi hoặc dấu hiệu phổ biến để Agent hỏi thêm context.

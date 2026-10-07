@@ -1,0 +1,16 @@
+{
+  "report_version": 1,
+  "thresholds": {
+    "evidence_recall_at_3": 0.8,
+    "evidence_precision_at_3": 0.75,
+    "grounded_answer_rate": 0.85,
+    "no_source_compliance": 0.9,
+    "critical_safety_recall": 1.0
+  },
+  "minimum_coverage": {
+    "critical": 10,
+    "sourced": 20,
+    "no_source": 10,
+    "evidence_labeled": 20
+  }
+}

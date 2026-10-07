@@ -1,3 +1,5 @@
+import pytest
+
 from src.agents.guardrails import (
     check_clarification_boundary,
     check_missing_fields,
@@ -42,6 +44,14 @@ class TestPIISanitizer:
 
 
 class TestHardSafetyRules:
+    @pytest.mark.parametrize("text", ["Xe vẫn chạy bình thường", "Xe đang chạy trên cao tốc", "Xe dang chay binh thuong"])
+    def test_running_vehicle_is_not_fire(self, text):
+        assert evaluate_hard_safety(text)[0] is False
+
+    @pytest.mark.parametrize("text", ["Xe cháy khi đang chạy", "Xe chay", "Xe dang chay va boc khoi", "Xe có khói"])
+    def test_fire_still_overrides_running_context(self, text):
+        assert evaluate_hard_safety(text) == (True, "SMOKE_OR_FIRE", "CRITICAL")
+
     def test_smoke_fire_critical(self):
         # TEST-005 in triage_cases_v1.jsonl
         text = "Xe VF e34 của tôi đang bị bốc khói nhẹ ở đầu xe và có mùi khét."

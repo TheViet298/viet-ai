@@ -56,7 +56,7 @@
 ### Các bước thực hiện:
 
 1. **Bước 1 (Customer Intake):**
-   * *User nhập:* `"Xe VF9 của tôi đang chạy trên cao tốc thì hiện biểu tượng rùa vàng và xe bị giật, đạp ga không lên quá 30km/h."`
+   * *User gửi:* ảnh táp-lô kèm: `"Xe VF9 đang chạy trên cao tốc thì hiện biểu tượng rùa vàng và xe bị giảm công suất."`
 2. **Bước 2 (AI Safety Check & Triage):**
    * *Hệ thống kích hoạt Hard Safety Rule:* Phát hiện tổ hợp `"rùa vàng"` + `"trên cao tốc"` (Nguy cơ an toàn giao thông nghiêm trọng).
    * *Priority:* `CRITICAL`.
@@ -64,10 +64,11 @@
    * *AI phản hồi ngay lập tức (bỏ qua hỏi làm rõ):*
      * Hướng dẫn an toàn: *"Anh/chị vui lòng bật đèn khẩn cấp (Hazard), từ từ tấp xe vào làn dừng khẩn cấp an toàn."*
      * Hotline cứu hộ: **1900-232389**.
-     * Tự động tạo Case khẩn cấp: `CASE-20260924-002` (Trạng thái: `Staff Reviewing`, Priority: `CRITICAL`).
+     * Tự động tạo Case khẩn cấp tối thiểu: `CASE-20260924-002` (Trạng thái: `Staff Reviewing`, Priority: `CRITICAL`).
+     * Sau khi case đã tạo, hỏi: `Dùng vị trí hiện tại / Nhập khu vực / Bỏ qua`. Nếu đồng ý, hiển thị map và các điểm hỗ trợ seed gần nhất.
 4. **Bước 4 (Staff Console):**
    * Ticket xuất hiện trên cùng hàng đợi với nhãn đỏ nổi bật **[CRITICAL]**.
-   * Staff nhấn `Reroute` chuyển thẳng Đội Cứu hộ Cao tốc Khu vực lân cận.
+   * Staff xem Case Brief, visual evidence, location consent/source và map preview; nhấn `Reroute` tới nhóm `Emergency Support Demo`. Đây là bàn giao demo, không phải điều cứu hộ thật.
 
 ---
 

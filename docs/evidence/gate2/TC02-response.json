@@ -1,0 +1,208 @@
+{
+  "case_id_label": "TC02",
+  "mode": "operator-directed manual HTTP requests to real local backend; no mocks",
+  "base_url": "http://127.0.0.1:8013",
+  "commit": "3da9eccdedc92bd751b9675f7892951d8394b599",
+  "branch": "feature/agent-long",
+  "configured_model": "gemini-3.8-flash",
+  "requests": [
+    {
+      "captured_at": "2026-10-04T23:23:05.921496+07:00",
+      "method": "POST",
+      "path": "/api/v1/customer/chat",
+      "role": "CUSTOMER",
+      "request_body": {
+        "session_id": "gate2-manual-TC02",
+        "message": "Xe tôi không sạc được.",
+        "case_id": null
+      },
+      "http_status": 200,
+      "elapsed_seconds": 0.016,
+      "response_body": {
+        "success": true,
+        "data": {
+          "visual_evidence": null,
+          "response_type": "CLARIFICATION",
+          "message": "Dạ em ghi nhận xe VF8 đang gặp vấn đề kỹ thuật liên quan đến sạc/vận hành. Anh/chị có thể cho em biết trạm sạc, số trụ hoặc mã lỗi hiển thị trên táp-lô (ví dụ: CC01, 0x41) không ạ? (Anh/chị cũng có thể tải ảnh màn hình để em nhận diện sơ bộ).",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": 1,
+          "max_clarification_turns": 2,
+          "suggested_replies": [
+            "Xem bản đồ trạm sạc ›",
+            "Mã lỗi CC01, trụ P02",
+            "Đèn trụ nháy đỏ"
+          ],
+          "citations": null,
+          "service_handoff": null,
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        },
+        "error": null,
+        "meta": {
+          "timestamp": "2026-10-04T16:23:05.920490+00:00"
+        }
+      }
+    },
+    {
+      "captured_at": "2026-10-04T23:23:33.789474+07:00",
+      "method": "POST",
+      "path": "/api/v1/customer/chat",
+      "role": "CUSTOMER",
+      "request_body": {
+        "session_id": "gate2-manual-TC02",
+        "message": "Xe vẫn không sạc được, tôi chưa biết mã trụ và không nhớ dòng xe.",
+        "case_id": null
+      },
+      "http_status": 200,
+      "elapsed_seconds": 0.016,
+      "response_body": {
+        "success": true,
+        "data": {
+          "visual_evidence": null,
+          "response_type": "CLARIFICATION",
+          "message": "Dạ em ghi nhận xe VF8 đang gặp vấn đề kỹ thuật liên quan đến sạc/vận hành. Anh/chị có thể cho em biết trạm sạc, số trụ hoặc mã lỗi hiển thị trên táp-lô (ví dụ: CC01, 0x41) không ạ? (Anh/chị cũng có thể tải ảnh màn hình để em nhận diện sơ bộ).",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": 2,
+          "max_clarification_turns": 2,
+          "suggested_replies": [
+            "Xem bản đồ trạm sạc ›",
+            "Mã lỗi CC01, trụ P02",
+            "Đèn trụ nháy đỏ"
+          ],
+          "citations": null,
+          "service_handoff": null,
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        },
+        "error": null,
+        "meta": {
+          "timestamp": "2026-10-04T16:23:33.788481+00:00"
+        }
+      }
+    },
+    {
+      "captured_at": "2026-10-04T23:23:33.839285+07:00",
+      "method": "POST",
+      "path": "/api/v1/customer/chat",
+      "role": "CUSTOMER",
+      "request_body": {
+        "session_id": "gate2-manual-TC02",
+        "message": "Xe vẫn không sạc được, tôi vẫn chưa có thêm thông tin.",
+        "case_id": null
+      },
+      "http_status": 200,
+      "elapsed_seconds": 0.031,
+      "response_body": {
+        "success": true,
+        "data": {
+          "visual_evidence": null,
+          "response_type": "CASE_CREATED",
+          "message": "Hệ thống đã tạo hồ sơ ghi nhận (Mã: CASE-20261004-002). Do chưa đủ một số dữ kiện kỹ thuật, hồ sơ được chuyển sang hàng đợi nhân viên hỗ trợ; nhân viên sẽ kiểm tra hoặc gửi yêu cầu bổ sung thông tin cho anh/chị.",
+          "case_id": "CASE-20261004-002",
+          "status": "Needs Information",
+          "priority": "MEDIUM",
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": null,
+          "citations": null,
+          "service_handoff": null,
+          "safe_guidance": "Vui lòng giữ kết nối và theo dõi cập nhật trên giao diện này.",
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        },
+        "error": null,
+        "meta": {
+          "timestamp": "2026-10-04T16:23:33.837288+00:00"
+        }
+      }
+    },
+    {
+      "captured_at": "2026-10-04T23:23:51.627334+07:00",
+      "method": "GET",
+      "path": "/api/v1/staff/tickets/CASE-20261004-002",
+      "role": "STAFF",
+      "request_body": null,
+      "http_status": 200,
+      "elapsed_seconds": 0.031,
+      "response_body": {
+        "success": true,
+        "data": {
+          "case": {
+            "id": "CASE-20261004-002",
+            "mock_customer_id": "G2_DEMO",
+            "vehicle_code_mock": "VF-SF-00231",
+            "vehicle_model": "VF8",
+            "intent": "Service/Incident",
+            "priority": "MEDIUM",
+            "status": "Needs Information"
+          },
+          "case_brief": {
+            "summary": "Yêu cầu hỗ trợ xe VF8 cần bổ sung dữ kiện kỹ thuật chi tiết.",
+            "captured_fields": {
+              "vehicle_model": "VF8",
+              "raw_inquiry": "Xe vẫn không sạc được, tôi vẫn chưa có thêm thông tin.",
+              "missing_fields": [
+                "error_code",
+                "station_id",
+                "current_soc"
+              ],
+              "visual_signals": []
+            },
+            "suggested_action": "Nhân viên hỗ trợ liên hệ hoặc gửi yêu cầu bổ sung thông tin qua ứng dụng.",
+            "confidence_score": 0.65,
+            "is_edited_by_staff": false
+          },
+          "conversation_history": [
+            {
+              "sender": "CUSTOMER",
+              "content": "Xe tôi không sạc được.",
+              "created_at": "2026-10-04T16:23:05.916820+00:00"
+            },
+            {
+              "sender": "AGENT",
+              "content": "Dạ em ghi nhận xe VF8 đang gặp vấn đề kỹ thuật liên quan đến sạc/vận hành. Anh/chị có thể cho em biết trạm sạc, số trụ hoặc mã lỗi hiển thị trên táp-lô (ví dụ: CC01, 0x41) không ạ? (Anh/chị cũng có thể tải ảnh màn hình để em nhận diện sơ bộ).",
+              "created_at": "2026-10-04T16:23:05.918842+00:00"
+            },
+            {
+              "sender": "CUSTOMER",
+              "content": "Xe vẫn không sạc được, tôi chưa biết mã trụ và không nhớ dòng xe.",
+              "created_at": "2026-10-04T16:23:33.779948+00:00"
+            },
+            {
+              "sender": "AGENT",
+              "content": "Dạ em ghi nhận xe VF8 đang gặp vấn đề kỹ thuật liên quan đến sạc/vận hành. Anh/chị có thể cho em biết trạm sạc, số trụ hoặc mã lỗi hiển thị trên táp-lô (ví dụ: CC01, 0x41) không ạ? (Anh/chị cũng có thể tải ảnh màn hình để em nhận diện sơ bộ).",
+              "created_at": "2026-10-04T16:23:33.784107+00:00"
+            },
+            {
+              "sender": "CUSTOMER",
+              "content": "Xe vẫn không sạc được, tôi vẫn chưa có thêm thông tin.",
+              "created_at": "2026-10-04T16:23:33.819751+00:00"
+            },
+            {
+              "sender": "AGENT",
+              "content": "Hệ thống đã tạo hồ sơ ghi nhận (Mã: CASE-20261004-002). Do chưa đủ một số dữ kiện kỹ thuật, hồ sơ được chuyển sang hàng đợi nhân viên hỗ trợ; nhân viên sẽ kiểm tra hoặc gửi yêu cầu bổ sung thông tin cho anh/chị.",
+              "created_at": "2026-10-04T16:23:33.832143+00:00"
+            }
+          ],
+          "attachments": [],
+          "location": null,
+          "updates": []
+        },
+        "error": null,
+        "meta": {
+          "timestamp": "2026-10-04T16:23:51.625306+00:00"
+        }
+      }
+    }
+  ],
+  "agent_trace": []
+}

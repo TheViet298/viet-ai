@@ -21,11 +21,13 @@ graph TD
         StaffAPI["Staff REST Endpoints\n(/api/v1/staff/tickets, /api/v1/staff/actions)"]
         AuthMiddleware["Authentication & Rate Limiter"]
         UploadAPI["Attachment Upload API"]
+        LocationAPI["Location Consent + Service Point API"]
     end
 
     subgraph AgentLayer ["3. AI Agent & Reasoning Layer (Google Gemini)"]
         TriageEngine["Triage & Classifier Engine\n(Intent & Priority & Safety Filter)"]
         VisionEngine["OCR/Vision\n(Tín hiệu ảnh sơ bộ)"]
+        ServicePointEngine["Service Point Suggestion\n(Map / nearby points)"]
         ClarificationEngine["Clarification Generator\n(Hỏi làm rõ có cấu trúc)"]
         BriefGenerator["Case Brief Synthesizer\n(Chuẩn hóa schema nghiệp vụ)"]
         RAGRouter["RAG Query Engine\n(ChromaDB / Vector Search)"]
@@ -42,6 +44,8 @@ graph TD
     CustomerUI -->|Upload ảnh| UploadAPI
     UploadAPI --> AttachmentStore
     UploadAPI --> VisionEngine
+    CustomerUI --> LocationAPI
+    LocationAPI --> ServicePointEngine
     StaffConsole -->|HTTPS / JSON| StaffAPI
 
     CustomerAPI --> AuthMiddleware
@@ -49,6 +53,8 @@ graph TD
 
     AuthMiddleware --> TriageEngine
     VisionEngine --> TriageEngine
+    TriageEngine --> ServicePointEngine
+    ServicePointEngine --> PostgreSQL
     AuthMiddleware --> PostgreSQL
 
     TriageEngine -->|Tra cứu FAQ| RAGRouter
@@ -69,7 +75,8 @@ graph TD
   * Cung cấp giao diện chat trực quan, hiển thị tin nhắn, gợi ý trả lời nhanh (quick replies), màn hình thông tin Ticket & Trạng thái.
   * **Quy tắc an toàn:** Không bao giờ hiển thị suy luận nội bộ (Chain-of-Thought) của AI cho khách hàng.
   * Customer có thể gửi text và/hoặc ảnh. OCR/Vision chỉ tạo dấu hiệu sơ bộ để Agent hỏi thêm context.
-* **Public Knowledge Hub:** Guest chỉ xem Landing, FAQ và chính sách/link nguồn công khai; không được chat.
+* **Public Knowledge Hub:** Guest xem Landing, FAQ và chính sách/link nguồn công khai; có thể thử chat tối đa 5 lượt/phiên.
+* **Location & Map Preview:** Với case/intent cần địa điểm, Customer có thể đồng ý dùng vị trí hoặc nhập khu vực; UI gợi ý điểm dịch vụ phù hợp. Vị trí chỉ hiển thị Staff khi Customer consent.
 * **Service Agent Console (Staff):**
   * Dashboard quản lý ticket theo thời gian thực (Ticket Queue).
   * Chi tiết Ticket (Ticket Detail): Xem Case Brief do AI trích xuất, xem lại đoạn chat của khách, các nút thao tác `Approve`, `Edit`, `Reroute`, `Close`.

@@ -1,0 +1,11 @@
+{
+  "gate_kind": "acceptance",
+  "passed": false,
+  "production_acceptance": false,
+  "failure_reasons": [
+    "labels_not_approved",
+    "coverage:evidence_labeled",
+    "metric:evidence_recall_at_3",
+    "metric:evidence_precision_at_3"
+  ]
+}

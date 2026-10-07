@@ -1,0 +1,3 @@
+version,artifact,change_description,pass_rate,routing_acc,decision,evidence,regression,rollback
+v1.0,prompts/*.md,Initial validated contracts; measurements recorded by evaluation runner,,,investigate,tests/test_agents/test_tiny_eval.py,full pytest suite,previous Git revision
+v1.0,triage_prompt.md + rag_qa_prompt.md,Verified graph integration and boundary regressions; offline benchmark quality below target,1.00,0.60,investigate,eval/results/agent/agent_results.json,82 pytest tests pass,previous Git revision

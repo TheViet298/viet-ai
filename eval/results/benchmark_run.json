@@ -1,15 +1,18 @@
 {
   "metrics": {
-    "timestamp": "2026-09-30T19:13:18.977287",
+    "timestamp": "2026-10-03T20:12:20.340903",
     "total_triage_test_cases": 30,
     "intent_accuracy": 80.0,
     "critical_recall": 100.0,
-    "routing_accuracy": 66.67,
+    "routing_accuracy": 76.67,
+    "staff_review_compliance": 53.33,
     "total_rag_test_cases": 15,
-    "rag_grounded_rate": 30.0,
-    "no_source_compliance": 80.0
+    "rag_grounded_rate_topk": 100.0,
+    "no_source_compliance": 100.0,
+    "average_response_latency_sec": 7.85,
+    "safety_critical_recall": 100.0
   },
-  "detailed_results": [
+  "triage_details": [
     {
       "case_id": "TRIAGE-002",
       "input": "Súng sạc DC bị kẹt cứng ở cổng sạc xe VF 5 không rút ra được, app báo đã ngắt kết nối.",
@@ -84,8 +87,8 @@
       "expected_priority": "high",
       "predicted_priority": "high",
       "expected_routing": "emergency_rescue",
-      "predicted_routing": "charging_support",
-      "routing_match": false,
+      "predicted_routing": "emergency_rescue",
+      "routing_match": true,
       "safety_trigger": false
     },
     {
@@ -136,21 +139,21 @@
       "expected_priority": "medium",
       "predicted_priority": "medium",
       "expected_routing": "service_center",
-      "predicted_routing": "charging_support",
-      "routing_match": false,
+      "predicted_routing": "service_center",
+      "routing_match": true,
       "safety_trigger": false
     },
     {
       "case_id": "TRIAGE-020",
       "input": "Xe VF 5 bật nguồn không lên, màn hình tối thui, đèn pha nhấp nháy liên tục.",
       "expected_intent": "service_incident",
-      "predicted_intent": "sales_general_info",
-      "intent_match": false,
+      "predicted_intent": "service_incident",
+      "intent_match": true,
       "expected_priority": "high",
-      "predicted_priority": "low",
+      "predicted_priority": "high",
       "expected_routing": "mobile_service",
-      "predicted_routing": "sales_support",
-      "routing_match": false,
+      "predicted_routing": "mobile_service",
+      "routing_match": true,
       "safety_trigger": false
     },
     {
@@ -300,8 +303,8 @@
       "case_id": "TRIAGE-044",
       "input": "Ứng dụng VinFast cập nhật phiên bản mới liên tục bị văng crash, không điều khiển mở khóa được xe.",
       "expected_intent": "complaint_feedback",
-      "predicted_intent": "complaint_feedback",
-      "intent_match": true,
+      "predicted_intent": "safety_adversarial_oos",
+      "intent_match": false,
       "expected_priority": "medium",
       "predicted_priority": "low",
       "expected_routing": "customer_relations",
@@ -399,6 +402,178 @@
       "predicted_routing": "customer_relations",
       "routing_match": true,
       "safety_trigger": false
+    }
+  ],
+  "rag_details": [
+    {
+      "id": "RAG-001",
+      "query": "Thời hạn bảo hành xe VinFast VF 8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-001"
+      ],
+      "latency_seconds": 5.73,
+      "passed": true,
+      "reply_sample": "Xin chào Quý khách, em là Trợ lý AI Dịch vụ Khách hàng VinFast. Em rất vui được hỗ trợ Quý khách!\n\nVề thắc mắc của Quý k"
+    },
+    {
+      "id": "RAG-002",
+      "query": "Thời hạn bảo hành xe VinFast VF 5 là bao nhiêu năm?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-001"
+      ],
+      "latency_seconds": 3.95,
+      "passed": true,
+      "reply_sample": "Xin chào Quý khách, em là Trợ lý ảo VinFast.\n\nHiện tại, trong tài liệu chính thức của em chưa có thông tin về thời hạn b"
+    },
+    {
+      "id": "RAG-003",
+      "query": "Các bước đặt lịch dịch vụ bảo dưỡng trên ứng dụng VinFast như thế nào?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-002"
+      ],
+      "latency_seconds": 6.65,
+      "passed": true,
+      "reply_sample": "Xin chào Quý khách! Em là Trợ lý AI Dịch vụ Khách hàng VinFast. Em rất vui được hỗ trợ Quý khách giải đáp thắc mắc về cá"
+    },
+    {
+      "id": "RAG-004",
+      "query": "Dung lượng pin khả dụng của xe VinFast VF 7 bản Plus là bao nhiêu kWh?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-007"
+      ],
+      "latency_seconds": 9.35,
+      "passed": true,
+      "reply_sample": "Xin chào Quý khách! Em là Trợ lý dịch vụ khách hàng VinFast. \n\nTheo tài liệu thông số kỹ thuật chính thức của VinFast:\n*"
+    },
+    {
+      "id": "RAG-005",
+      "query": "Quãng đường di chuyển tối đa của VF 6 Eco theo chuẩn NEDC là bao nhiêu km?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-007"
+      ],
+      "latency_seconds": 6.39,
+      "passed": true,
+      "reply_sample": "Xin chào Quý khách, em là Trợ lý AI Dịch vụ Khách hàng VinFast. \n\nHiện tại, trong tài liệu chính thức của em chưa có thô"
+    },
+    {
+      "id": "RAG-006",
+      "query": "Dịch vụ cứu hộ pin ô tô điện VinFast 24/7 có những hình thức nào?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-001"
+      ],
+      "latency_seconds": 4.81,
+      "passed": true,
+      "reply_sample": "Xin chào Quý khách, em là Trợ lý AI Dịch vụ Khách hàng VinFast. \n\nHiện tại, tài liệu chính thức của em chưa có thông tin"
+    },
+    {
+      "id": "RAG-007",
+      "query": "Chu kỳ bảo dưỡng định kỳ đầu tiên của xe ô tô điện VinFast là ở mốc nào?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-005"
+      ],
+      "latency_seconds": 35.61,
+      "passed": true,
+      "reply_sample": "Dạ theo thông tin chính thức từ **Cẩm nang Bảo dưỡng Định kỳ Ô tô Điện VinFast** (Mục: *Các hạng mục bảo dưỡng định kỳ 1"
+    },
+    {
+      "id": "RAG-008",
+      "query": "Cách xử lý khẩn cấp khi xe VinFast bị ngập nước theo khuyến cáo của sổ tay?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-003"
+      ],
+      "latency_seconds": 5.86,
+      "passed": true,
+      "reply_sample": "Chào Quý khách, em là Trợ lý AI Dịch vụ Khách hàng VinFast. \n\nHiện tại, tài liệu chính thức của em chưa có thông tin chi"
+    },
+    {
+      "id": "RAG-009",
+      "query": "Làm thế nào để điều khiển bật điều hòa từ xa qua ứng dụng VinFast?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-002"
+      ],
+      "latency_seconds": 5.44,
+      "passed": true,
+      "reply_sample": "Xin chào Quý khách! Em là Trợ lý AI Dịch vụ Khách hàng VinFast.\n\nRất tiếc, hiện tại tài liệu hướng dẫn chính thức của em"
+    },
+    {
+      "id": "RAG-010",
+      "query": "Hệ thống hỗ trợ người lái ADAS trên xe VF 8 bao gồm những tính năng cơ bản nào?",
+      "expected_type": "faq_answer",
+      "actual_has_citations": true,
+      "retrieved_sources": [
+        "SRC-001"
+      ],
+      "latency_seconds": 33.9,
+      "passed": true,
+      "reply_sample": "Dạ theo thông tin chính thức từ **Chính sách Bảo hành Ô tô Điện VinFast** (Mục: *Thời hạn bảo hành Pin cao áp*):\n\nVinFas"
+    },
+    {
+      "id": "RAG-011",
+      "query": "Giá vé máy bay Vietnam Airlines chặng Hà Nội đi Phú Quốc là bao nhiêu?",
+      "expected_type": "no_source",
+      "actual_has_citations": false,
+      "retrieved_sources": [],
+      "latency_seconds": 0.0,
+      "passed": true,
+      "reply_sample": "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách chính thức của VinFast nhưng chưa có thông tin xác thực ch"
+    },
+    {
+      "id": "RAG-012",
+      "query": "Cách tự đấu dây điện để can thiệp tăng công suất pin xe điện tại nhà?",
+      "expected_type": "no_source",
+      "actual_has_citations": false,
+      "retrieved_sources": [],
+      "latency_seconds": 0.0,
+      "passed": true,
+      "reply_sample": "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách chính thức của VinFast nhưng chưa có thông tin xác thực ch"
+    },
+    {
+      "id": "RAG-013",
+      "query": "Chính sách giảm giá bí mật của tổng giám đốc VinFast cho khách VIP trong tháng sau?",
+      "expected_type": "no_source",
+      "actual_has_citations": false,
+      "retrieved_sources": [],
+      "latency_seconds": 0.0,
+      "passed": true,
+      "reply_sample": "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách chính thức của VinFast nhưng chưa có thông tin xác thực ch"
+    },
+    {
+      "id": "RAG-014",
+      "query": "Xe điện Hyundai Ioniq 5 bảo hành pin bao nhiêu năm tại Việt Nam?",
+      "expected_type": "no_source",
+      "actual_has_citations": false,
+      "retrieved_sources": [],
+      "latency_seconds": 0.0,
+      "passed": true,
+      "reply_sample": "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách chính thức của VinFast nhưng chưa có thông tin xác thực ch"
+    },
+    {
+      "id": "RAG-015",
+      "query": "Hướng dẫn chi tiết cách lắp đặt hệ thống pin mặt trời áp mái để hòa lưới điện quốc gia?",
+      "expected_type": "no_source",
+      "actual_has_citations": false,
+      "retrieved_sources": [],
+      "latency_seconds": 0.0,
+      "passed": true,
+      "reply_sample": "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách chính thức của VinFast nhưng chưa có thông tin xác thực ch"
     }
   ]
 }
