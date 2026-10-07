@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
@@ -19,16 +20,6 @@ from src.models.db_models import (
     User,
     utcnow,
 )
-from datetime import UTC, datetime
-
-
-def to_iso(dt: datetime | None) -> str:
-    """Đảm bảo chuỗi ISO 8601 có timezone UTC để trình duyệt hiển thị chính xác theo giờ địa phương."""
-    if not dt:
-        return datetime.now(UTC).isoformat()
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=UTC).isoformat()
-    return dt.isoformat()
 from src.models.schemas import (
     ApiResponse,
     AttachmentOut,
@@ -47,6 +38,17 @@ from src.models.schemas import (
     TicketQueueData,
 )
 from src.services.auth import require_staff
+from src.services.chat_turns import safety_fields
+
+
+def to_iso(dt: datetime | None) -> str:
+    """Đảm bảo chuỗi ISO 8601 có timezone UTC để trình duyệt hiển thị chính xác theo giờ địa phương."""
+    if not dt:
+        return datetime.now(UTC).isoformat()
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC).isoformat()
+    return dt.isoformat()
+
 
 router = APIRouter(prefix="/staff", tags=["staff"])
 
@@ -203,7 +205,7 @@ def get_ticket_queue(
             TicketItem(
                 id=c.id,
                 mock_customer_id=c.mock_customer_id or f"CUST_{c.id}",
-                vehicle_model=c.vehicle_model or "VF8",
+                vehicle_model=c.vehicle_model or "Chưa xác định",
                 vehicle_code_mock=c.vehicle_code_mock,
                 intent=c.intent,
                 priority=c.priority,
@@ -262,8 +264,8 @@ def get_ticket_detail(
         )
     else:
         brief_out = CaseBriefOut(
-            summary=f"Hồ sơ sự cố xe {case.vehicle_model or 'VF8'}",
-            captured_fields={"vehicle_model": case.vehicle_model or "VF8"},
+            summary=f"Hồ sơ sự cố xe {case.vehicle_model or 'chưa xác định dòng'}",
+            captured_fields={"vehicle_model": case.vehicle_model},
             suggested_action="Kiểm tra thông tin chi tiết và điều phối kỹ thuật.",
             confidence_score=0.90,
             is_edited_by_staff=False,
@@ -343,10 +345,11 @@ def get_ticket_detail(
         success=True,
         data=TicketDetailData(
             case=TicketDetailCase(
+                **safety_fields(case),
                 id=case.id,
                 mock_customer_id=case.mock_customer_id or f"CUST_{case.id}",
                 vehicle_code_mock=case.vehicle_code_mock,
-                vehicle_model=case.vehicle_model or "VF8",
+                vehicle_model=case.vehicle_model or "Chưa xác định",
                 intent=case.intent,
                 priority=case.priority,
                 status=case.status,

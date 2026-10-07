@@ -10,8 +10,11 @@ def normalized(text: str) -> str:
 
 
 DENIED_REPORT = re.compile(
-    r'(?:không(?: còn)?|chưa)\s+(?:báo|hiện|có|gặp)(?:\s+(?:mã|lỗi|biểu tượng|đèn))*\s+'
-    r'(?:CC\d{2}|E\d{3}|P\d{4}|BMS_\d{3}|0x[0-9a-f]+|rùa vàng|con rùa|đèn đỏ)(?:\s+nữa)?', re.I)
+    r'(?:(?:không(?: còn)?|chưa|hết)\s+(?:báo|hiện|có|gặp|lỗi)?(?:\s+(?:mã|lỗi|biểu tượng|đèn|trụ))*\s+'
+    r'(?:CC\d{2}|E\d{3}|P\d{4}|BMS_\d{3}|0x[0-9a-f]+|rùa vàng|con rùa|đèn đỏ|P\d{2})(?:\s+nữa)?)|'
+    r'(?:(?:không phải|chứ không phải)\s+(?:trụ|mã|lỗi)?\s*(?:CC\d{2}|E\d{3}|P\d{4}|BMS_\d{3}|0x[0-9a-f]+|rùa vàng|con rùa|đèn đỏ|P\d{2}))',
+    re.I
+)
 
 
 def without_denied_reports(text: str) -> str:
@@ -21,7 +24,7 @@ def without_denied_reports(text: str) -> str:
 def denied_reports(text: str) -> list[str]:
     if temporal_context(text) in {'hypothetical', 'knowledge', 'resolved_past'}:
         return []
-    return [m.group(0) for m in DENIED_REPORT.finditer(current_clause(text))]
+    return [m.group(0) for m in DENIED_REPORT.finditer(text)]
 
 
 def current_clause(text: str) -> str:

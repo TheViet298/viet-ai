@@ -15,26 +15,15 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { VehicleModel, UserLocationState } from "../types";
+import { UserLocationState } from "../types";
 import { useChat } from "../hooks/useChat";
 import { EmergencyAlertBanner } from "./EmergencyAlertBanner";
 import { ChatFeed } from "./ChatFeed";
 import { ChatInputBar } from "./ChatInputBar";
 import { LocationConsentCard } from "./LocationConsentCard";
 import { ServiceMapPanel } from "./ServiceMapPanel";
-import { CHAT_SEED_SERVICE_POINTS } from "../constants";
 import { getAiSystemStatus, uploadAttachment } from "../api/chatApi";
 import { useAuth, ProductMark } from "@/features/shared";
-
-const VEHICLE_MODELS: VehicleModel[] = [
-  "VF8",
-  "VF5",
-  "VF3",
-  "VF6",
-  "VF7",
-  "VF9",
-  "e34",
-];
 
 export function CustomerChatContainer() {
   const { user, role, loginAs } = useAuth();
@@ -43,29 +32,27 @@ export function CustomerChatContainer() {
     input,
     setInput,
     loading,
-    selectedModel,
-    setSelectedModel,
     currentCaseId,
     criticalBanner,
     criticalBannerDismissed,
     dismissCriticalBanner,
     restoreCriticalBanner,
+    safetyPending,
+    safetyError,
+    canAcknowledgeSafety,
     requestLocation,
     sendMessage,
     resetChat,
     updateMessageChips,
   } = useChat({
     userName: user?.name,
-    vehicleModel: user?.vehicleModel || "VF8",
   });
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
   const [uploadedAttachmentId, setUploadedAttachmentId] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
-  const [imageKind, setImageKind] = useState<"auto" | "dashboard" | "exterior">("auto");
   const [resolvedImageKind, setResolvedImageKind] = useState<"dashboard" | "charger" | "exterior" | null>(null);
-  const selectedImageFile = useRef<File | null>(null);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const uploadRequestId = useRef(0);
   const [aiStatus, setAiStatus] = useState<string>("Trợ lý VF Serv • Hỗ trợ dịch vụ xe điện VinFast");
@@ -99,7 +86,6 @@ export function CustomerChatContainer() {
   }, [criticalBanner, requestLocation]);
 
   const handleResetAll = () => {
-    selectedImageFile.current = null;
     setResolvedImageKind(null);
     uploadRequestId.current += 1;
     setIsUploadingImage(false);
@@ -134,20 +120,13 @@ export function CustomerChatContainer() {
   useEffect(() => {
     try {
       const savedPrompt = sessionStorage.getItem("vf_initial_prompt");
-      const savedModel = sessionStorage.getItem("vf_initial_model");
+      sessionStorage.removeItem("vf_initial_model");
       const savedImg = sessionStorage.getItem("vf_initial_image");
       const savedImgName = sessionStorage.getItem("vf_initial_image_name");
 
       if (savedPrompt) {
         setInput(savedPrompt);
         sessionStorage.removeItem("vf_initial_prompt");
-      }
-      if (savedModel) {
-        const cleanModel = savedModel.replace("VinFast ", "") as VehicleModel;
-        if (VEHICLE_MODELS.includes(cleanModel)) {
-          setSelectedModel(cleanModel);
-        }
-        sessionStorage.removeItem("vf_initial_model");
       }
       if (savedImg) {
         setImagePreview(savedImg);
@@ -156,7 +135,7 @@ export function CustomerChatContainer() {
         sessionStorage.removeItem("vf_initial_image_name");
       }
     } catch { }
-  }, [setInput, setSelectedModel]);
+  }, [setInput]);
 
   // ===========================================================================
   // LOCATION HANDLERS (Tuân thủ ADR-005: timeout 8s, không lấy GPS nền, 3 lựa chọn)
@@ -220,7 +199,6 @@ export function CustomerChatContainer() {
       status: "MANUAL",
       source: "USER_TEXT",
       label: areaText,
-      coords: { lat: 10.7821, lng: 106.8423 }, // Mặc định ghim khu vực tham chiếu
     });
     setIsMapOpen(true);
   };
@@ -242,8 +220,7 @@ export function CustomerChatContainer() {
     });
   };
 
-  const selectImage = async (file: File, requestedKind: "auto" | "dashboard" | "exterior" = imageKind) => {
-    selectedImageFile.current = file;
+  const selectImage = async (file: File) => {
     setResolvedImageKind(null);
     const requestId = ++uploadRequestId.current;
     setUploadedAttachmentId(null);
@@ -258,12 +235,12 @@ export function CustomerChatContainer() {
     // Upload lên máy chủ backend để OCR/Vision phân tích sơ bộ
     setIsUploadingImage(true);
     try {
-      const res = await uploadAttachment(file, requestedKind);
+      const res = await uploadAttachment(file, "auto");
       if (requestId !== uploadRequestId.current) return;
       if (res?.success && res.data?.attachment_id) {
         const kind = res.data.detected_signals?.image_kind;
         if (kind === "unknown") {
-          setImageUploadError("Chưa xác định chắc loại ảnh. Hãy chọn Táp-lô / trụ sạc hoặc Ngoại thất xe bên dưới; ảnh sẽ được phân tích lại.");
+          setImageUploadError("Chưa xác định chắc loại ảnh. Vui lòng chọn ảnh rõ hơn hoặc xóa ảnh và mô tả bằng chữ.");
         } else {
           setResolvedImageKind(kind === "exterior" ? "exterior" : kind === "charger" ? "charger" : "dashboard");
           setUploadedAttachmentId(res.data.attachment_id);
@@ -300,7 +277,6 @@ export function CustomerChatContainer() {
     setImageName(null);
     setUploadedAttachmentId(null);
     setResolvedImageKind(null);
-    selectedImageFile.current = null;
   };
 
   return (
@@ -311,6 +287,9 @@ export function CustomerChatContainer() {
         isDismissed={criticalBannerDismissed}
         onDismiss={dismissCriticalBanner}
         onRestore={restoreCriticalBanner}
+        pending={safetyPending}
+        error={safetyError}
+        canAcknowledge={canAcknowledgeSafety}
       />
 
       <div
@@ -360,20 +339,6 @@ export function CustomerChatContainer() {
                 <span className="hidden sm:inline">Làm mới</span>
               </button>
 
-              <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-2xs">
-                <span className="text-[10.5px] text-slate-400 font-semibold uppercase mr-1">Xe:</span>
-                <select
-                  value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value as VehicleModel)}
-                  className="bg-transparent text-slate-800 text-[11.5px] font-semibold focus:outline-none cursor-pointer"
-                >
-                  {VEHICLE_MODELS.map((model) => (
-                    <option key={model} value={model} className="bg-white text-slate-900">
-                      {model}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
           </div>
 
@@ -436,15 +401,15 @@ export function CustomerChatContainer() {
                     "Xe không khởi động",
                   ]);
                 }
-                setInput(`Xe ${selectedModel} của tôi đang gặp sự cố kỹ thuật: `);
+                setInput("Xe của tôi đang gặp sự cố kỹ thuật: ");
                 return;
               }
 
               // Điền sẵn câu hỏi vào ô nhập đối với các nhóm chip tư vấn / tra cứu
               const GREETING_PREFILLS: Record<string, string> = {
-                "Tư vấn xe": `Tôi muốn tư vấn thông tin các dòng xe điện VinFast từ VF 3 đến VF 9, giá lăn bánh và đăng ký lái thử cho xe ${selectedModel}.`,
-                "Trạm sạc & ứng dụng": `Hướng dẫn cách sạc pin tại trạm sạc công cộng, biểu phí sạc và tính năng trên App VinFast cho xe ${selectedModel}.`,
-                "Bảo hành & bảo dưỡng": `Chính sách bảo hành pin 10 năm và cẩm nang bảo dưỡng định kỳ 12.000km xe ${selectedModel}.`,
+                "Tư vấn xe": "Tôi muốn tư vấn các dòng xe điện VinFast, giá lăn bánh và đăng ký lái thử.",
+                "Trạm sạc & ứng dụng": "Hướng dẫn cách sạc pin tại trạm sạc công cộng, biểu phí sạc và tính năng trên App VinFast.",
+                "Bảo hành & bảo dưỡng": "Tôi muốn hỏi chính sách bảo hành pin và lịch bảo dưỡng định kỳ.",
               };
 
               if (GREETING_PREFILLS[reply]) {
@@ -481,38 +446,22 @@ export function CustomerChatContainer() {
           )}
 
           {/* Input Bar */}
-          <div className="px-3 py-2 border-t border-slate-200 text-xs text-slate-600">
-            <label className="flex items-center gap-2">
-              Loại ảnh
-              <select aria-label="Loại ảnh" value={imageKind}
-                disabled={loading || isUploadingImage}
-                onChange={(event) => {
-                  const nextKind = event.target.value as "auto" | "dashboard" | "exterior";
-                  setImageKind(nextKind);
-                  if (selectedImageFile.current) void selectImage(selectedImageFile.current, nextKind);
-                }}
-                className="rounded-lg border border-slate-200 bg-white px-2 py-1">
-                <option value="auto">Tự nhận diện loại ảnh</option>
-                <option value="dashboard">Táp-lô / trụ sạc</option>
-                <option value="exterior">Ngoại thất xe — kiểm tra hư hại</option>
-              </select>
-            </label>
-            {isUploadingImage && <p role="status" className="mt-1">Đang tải và phân tích ảnh…</p>}
-            {resolvedImageKind && <p role="status" className="mt-1">{imageKind === "auto" ? "Đã tự nhận diện: " : "Đang dùng: "}{resolvedImageKind === "exterior" ? "Ngoại thất xe — CarDD" : resolvedImageKind === "charger" ? "Trụ sạc — OCR/Vision" : "Táp-lô — OCR/Vision"}</p>}
-            {imageUploadError && <p role="alert" className="mt-1 text-red-700">{imageUploadError}</p>}
-          </div>
+          {(isUploadingImage || resolvedImageKind || imageUploadError) && (
+            <div className="px-3 py-2 border-t border-slate-200 text-xs text-slate-600">
+              {isUploadingImage && <p role="status" className="mt-1">Đang tải và phân tích ảnh…</p>}
+              {resolvedImageKind && <p role="status" className="mt-1">Đã tự nhận diện: {resolvedImageKind === "exterior" ? "Ngoại thất xe — CarDD" : resolvedImageKind === "charger" ? "Trụ sạc — OCR/Vision" : "Táp-lô — OCR/Vision"}</p>}
+              {imageUploadError && <p role="alert" className="mt-1 text-red-700">{imageUploadError}</p>}
+            </div>
+          )}
           <ChatInputBar
             input={input}
             onChangeInput={setInput}
             onSend={submit}
             disabled={loading || isUploadingImage || (!!imagePreview && !uploadedAttachmentId)}
-            vehicleModel={selectedModel}
             imagePreview={imagePreview}
             imageName={imageName}
-            imageKind={imageKind}
             onSelectImage={selectImage}
             onClearImage={() => {
-              selectedImageFile.current = null;
               setResolvedImageKind(null);
               uploadRequestId.current += 1;
               setIsUploadingImage(false);
@@ -540,7 +489,7 @@ export function CustomerChatContainer() {
               isOpen={isMapOpen}
               onClose={() => setIsMapOpen(false)}
               locationState={locationState}
-              servicePoints={CHAT_SEED_SERVICE_POINTS}
+              servicePoints={[]}
               selectedPointId={selectedPointId}
               onSelectPoint={(id) => setSelectedPointId(id)}
               suggestedCategory={suggestedCategory}
@@ -557,7 +506,7 @@ export function CustomerChatContainer() {
           isOpen={isMapOpen}
           onClose={() => setIsMapOpen(false)}
           locationState={locationState}
-          servicePoints={CHAT_SEED_SERVICE_POINTS}
+          servicePoints={[]}
           selectedPointId={selectedPointId}
           onSelectPoint={(id) => setSelectedPointId(id)}
           suggestedCategory={suggestedCategory}
@@ -577,7 +526,7 @@ export function CustomerChatContainer() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1E40AF] hover:bg-[#1D4ED8] text-white font-bold text-[12.5px] shadow-lg active:scale-95 transition"
           >
             <Compass className="w-4 h-4 animate-spin [animation-duration:8s]" />
-            <span>Bản đồ cứu hộ (4 điểm)</span>
+            <span>Bản đồ hỗ trợ</span>
           </button>
         </div>
       )}

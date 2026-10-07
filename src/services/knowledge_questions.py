@@ -15,6 +15,8 @@ def explicit_models(text: str) -> list[str]:
 def sales_parts(text: str, model: str | None) -> list[tuple[str, str, str | None]]:
     lower = text.casefold()
     models = explicit_models(text)
+    if not models and model:
+        models = [model]
     # The model in the test-drive clause must not narrow the whole lineup.
     drive = re.search(r"(?:lái thử|chạy thử|trải nghiệm xe).*?\bvf\s*(e34|[356789])\b", lower)
     drive_model = "VF" + drive.group(1).upper() if drive else (models[0] if len(models) == 1 else model)

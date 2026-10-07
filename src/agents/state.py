@@ -108,6 +108,8 @@ class AgentState(TypedDict, total=False):
     session_id: str
     case_id: str | None
     mock_customer_id: str | None
+    vehicle_context: dict[str, Any]
+    pending_vehicle_context: dict[str, Any] | None
     vehicle_model: str | None  # e.g. "VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"
     vehicle_code_mock: str | None  # e.g. "VF-SF-00231"
 
@@ -169,6 +171,8 @@ class AgentState(TypedDict, total=False):
     llm_budget: dict
     fact_history: list[dict[str, Any]]
     memory_summary: str
+    summary_evidence: list[dict[str, Any]]
+    summary_covered_turn: int
     location: dict[str, Any]
     service_points: list[dict[str, Any]]
     attachment_signals: dict[str, Any]

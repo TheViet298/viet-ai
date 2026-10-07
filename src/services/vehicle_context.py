@@ -51,8 +51,12 @@ def resolve_vehicle_context(text: str, previous: dict | None = None) -> dict:
     slot_answer = bool(previous.get("is_incident") and request_kind == "uncertain"
                        and extracted and not lower.startswith(("còn ", "thế còn ", "vậy còn ")))
     incident_fields = dict(previous.get("incident_fields", {})) if (previous.get("is_incident") or previous.get("owned_model")) and not new_scope else {}
+    denied_extracted = []
     for denied in denied_reports(text):
-        for field, value in extract_fields(denied, asserted_only=False).items():
+        fields = extract_fields(denied, asserted_only=False)
+        if fields:
+            denied_extracted.append(fields)
+        for field, value in fields.items():
             if str(incident_fields.get(field, '')).casefold() == value.casefold():
                 incident_fields.pop(field, None)
 
@@ -71,6 +75,13 @@ def resolve_vehicle_context(text: str, previous: dict | None = None) -> dict:
         re.search(r'(?:biểu tượng này|sự cố này|lỗi này|đây này|đèn này)', lower)
         and re.search(r'rùa|con rùa', prior_topic, re.I)
     )
+    correction = bool(
+        previous.get("is_incident")
+        and (
+            (len(models) == 1 and bool(re.search(r"\b(nham|nhầm|sua|sửa|dinh chinh|đính chính|la|là|chứ|chu)\b", lower)))
+            or bool(re.search(r"\b(khong phai|không phải)\s+(?:vf\s*(?:[356789]|e34)|e34|trụ|tru|mã|lỗi)\b", lower))
+        )
+    )
     incident = (
         failure
         or model_answer
@@ -78,6 +89,7 @@ def resolve_vehicle_context(text: str, previous: dict | None = None) -> dict:
         or safety_update
         or bool(previous.get("is_incident") and soc_match)
         or symbol_reference
+        or correction
     )
 
     if incident:
@@ -120,6 +132,7 @@ def resolve_vehicle_context(text: str, previous: dict | None = None) -> dict:
         "resolved_query": resolved[:1200],
         "source": "customer_message" if MODEL.search(text) else "session_reference",
         "model_source": text[:500] if MODEL.search(text) else previous.get("model_source"),
+        "denied_reports": denied_extracted,
     }
 
 

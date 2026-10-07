@@ -128,3 +128,25 @@ async def test_other_customer_cannot_reuse_exterior_upload(client, customer_db, 
         "attachment_ids": [upload.json()["data"]["attachment_id"]],
     })
     assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_exterior_flow_keeps_vehicle_confirmed_in_chat(client, customer_db, damage_runtime):
+    import json
+
+    from src.models.db_models import ChatSession
+    from src.services.session_store import decode_state
+
+    await client.post("/api/v1/customer/chat", json={
+        "session_id": "owned-photo", "message": "Tôi đang sử dụng xe VF5",
+    })
+    upload = await client.post("/api/v1/customer/attachments", data={"image_kind": "exterior"},
+                               files={"file": ("car.png", photo_bytes(), "image/png")})
+    response = await client.post("/api/v1/customer/chat", json={
+        "session_id": "owned-photo", "message": "Ảnh đây",
+        "attachment_ids": [upload.json()["data"]["attachment_id"]],
+    })
+    assert response.status_code == 200
+    session = customer_db.get(ChatSession, 'owned-photo')
+    state = session.memory_states['cardd:regression-customer:owned-photo']
+    assert decode_state(json.dumps(state))["captured_fields"]["vehicle_model"] == "VF5"

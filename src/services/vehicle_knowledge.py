@@ -7,7 +7,15 @@ from src.services.answer_evidence import normalized
 KNOWLEDGE_NOTE = "Đây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán."
 
 
+def is_vehicle_comparison(text: str) -> bool:
+    lower = normalized(text)
+    return bool(re.search(r"\bvf\s*(?:e34|[356789])\b", lower) and
+                re.search(r"\b(?:so sanh|khac nhau|nen mua|nen chon|vs|versus)\b", lower))
+
+
 def is_general_vehicle_question(text: str) -> bool:
+    if is_vehicle_comparison(text):
+        return False
     lower = normalized(text)
     definition = any(term in lower for term in ("la gi", "y nghia", "nghia la gi", "giai thich", "dinh nghia"))
     generic_definition = (definition and not re.search(r"\bvf\s*(?:e34|[356789])\b|\d", lower)

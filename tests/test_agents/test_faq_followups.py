@@ -1,7 +1,22 @@
 import pytest
+
 from src.agents.chatbot_agent import process_chat_message
 from src.services.rag_service import source_registry
-from src.services.session_store import get_store, decode_state
+from src.services.session_store import decode_state, get_store
+
+
+@pytest.mark.asyncio
+async def test_application_no_source_memory_matches_reply_without_phantom_case(monkeypatch):
+    import src.agents.nodes.rag_node as node
+    async def search(query, **kwargs):
+        return {'status': 'NO_SOURCE', 'citations': []}
+    monkeypatch.setattr(node, 'vinfast_manual_search', search)
+    reply = await process_chat_message('VF8 được bảo hành bao lâu?', session_id='application-memory',
+        user_role='customer', owner='owner', persist_business_case=False)
+    with get_store().connect() as db:
+        state = decode_state(db.execute("SELECT state FROM agent_sessions WHERE id='application-memory'").fetchone()[0])
+        assert db.execute('SELECT count(*) FROM cases').fetchone()[0] == 0
+    assert state['messages'][-1].content == reply['response']
 
 
 @pytest.mark.asyncio

@@ -14,7 +14,7 @@ function harness(sendChatMessage) {
   }).outputText;
   const module = { exports: {} };
   vm.runInNewContext(compiled, {
-    module, exports: module.exports, Date, Math,
+    module, exports: module.exports, Date, Math, crypto: { randomUUID: () => 'test-request' },
     setTimeout: (callback) => callback(),
     require: (id) => {
       if (id === 'react') return {
@@ -26,6 +26,7 @@ function harness(sendChatMessage) {
           }];
         },
         useEffect: () => {},
+        useRef: initial => ({ current: initial }),
       };
       if (id === '../api/chatApi') return { sendChatMessage };
       if (id === '../constants') return { checkHardEmergency: (text) => text.includes('mất phanh') };
@@ -49,9 +50,9 @@ for (const [name, text, transport] of [
     assert.match(reply.content, /chưa nhận được phản hồi/i);
     assert.equal(reply.citations, undefined);
     assert.equal(reply.case_id, undefined);
-    assert.equal(states[5], null, 'must not invent a case');
+    assert.equal(states[4], null, 'must not invent a case');
     assert.equal(states[2], false, 'must clear loading');
-    if (text.includes('mất phanh')) assert.equal(states[6], true, 'keep local emergency banner');
+    assert.equal(states[5], false, 'unconfirmed text must not create a server emergency state');
   });
 }
 
@@ -61,7 +62,7 @@ test('successful API response retains server answer and evidence', async () => {
   await hook.sendMessage('Xe bị lỗi');
   assert.equal(states[0].at(-1).content, data.message);
   assert.equal(states[0].at(-1).citations, data.citations);
-  assert.equal(states[5], 'REAL-123');
+  assert.equal(states[4], 'REAL-123');
 });
 
 test('image-only message shows image while sending routing text and attachment ID to API', async () => {
@@ -88,4 +89,17 @@ test('image message preserves a caption explicitly typed by the user', async () 
   });
   assert.equal(states[0][1].content, 'Vết này là gì?');
   assert.equal(states[0][1].image.name, 'detail.png');
+});
+
+
+test('chat sends no assumed vehicle and welcomes without a default model', async () => {
+  let request;
+  const { hook, states } = harness(async (payload) => {
+    request = payload;
+    return { success: true, data: { message: 'Answer' } };
+  });
+  assert.doesNotMatch(states[0][0].content, /VF8/);
+  await hook.sendMessage('VF5 bảo hành bao lâu?');
+  assert.equal(request.clientContext.vehicle_model, undefined);
+  assert.equal(request.clientContext.vehicle_code_mock, undefined);
 });

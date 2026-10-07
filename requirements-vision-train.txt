@@ -1,6 +1,7 @@
 # Isolated cloud training environment; does not replace backend requirements.
 ultralytics==8.3.235
-numpy>=1.26,<2
+numpy>=1.26,<2; python_version < "3.13"
+numpy>=2.1,<3; python_version >= "3.13"
 pydantic>=2.10,<3
 scikit-learn>=1.5,<2
 # GPU-compatible torch/torchvision supplied by Colab/Kaggle; pip resolves other deps.

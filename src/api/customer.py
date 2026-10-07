@@ -194,7 +194,9 @@ def determine_incident_clarification_prompt(
     lower_unaccented = strip_accents(lower)
 
     # 1. Subtype: Thân vỏ / Cửa / Khóa xe
-    if re.search(r"\b(kẹt cửa|cửa|kính|cốp|khóa|mở cửa)\b", lower) or re.search(r"\b(ket cua|cua|kinh|cop|khoa|mo cua)\b", lower_unaccented):
+    door_jam_accented = r"\b(kẹt cửa|cửa xe|cánh cửa|khóa cửa|kính cửa|cửa kính|không mở được cửa|mở cửa|cốp xe|khóa xe)\b"
+    door_jam_unaccented = r"\b(ket cua|cua xe|canh cua|khoa cua|kinh cua|cua kinh|khong mo duoc cua|mo cua|cop xe|khoa xe)\b"
+    if re.search(door_jam_accented, lower) or re.search(door_jam_unaccented, lower_unaccented):
         msg = (
             f"Dạ em ghi nhận xe {car_label} đang gặp vấn đề về cửa/khóa xe. "
             "Hiện tại người trên xe có bị mắc kẹt không ạ? Cửa nào đang bị kẹt và anh/chị có thể thoát ra ngoài xe an toàn không?"
@@ -214,9 +216,12 @@ def determine_incident_clarification_prompt(
         suggested = ["Đã dừng ở nơi an toàn", "Pin còn dưới 20%", "Xe vẫn di chuyển chậm được", "Cần gọi cứu hộ"]
         return msg, suggested
 
-    # 3. Subtype: Lỗi sạc cụ thể (Đã có error_code / trạm sạc / hoặc có từ khoá sạc)
+    # 3. Subtype: Lỗi sạc cụ thể (Đã có error_code sạc / trạm sạc / hoặc có từ khoá sạc)
+    is_known_charging_code = bool(
+        error_code and re.search(r"^(?:cc\d{2}|0x[0-9a-f]+)$", error_code, re.I)
+    )
     is_charging_related = bool(
-        error_code
+        is_known_charging_code
         or charger_id
         or station_name
         or re.search(r"\b(sạc|sac|trụ|tru|trạm|tram|cc01|không vào điện|khong vao dien)\b", lower)
@@ -348,9 +353,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 captured.update(vehicle_context["incident_fields"])
             denied = vehicle_context.get("denied_reports", [])
             for d in denied:
-                if d.get("error_code") and captured.get("error_code") == d.get("error_code"):
+                if d.get("error_code") and str(captured.get("error_code", "")).upper() == str(d.get("error_code", "")).upper():
                     captured.pop("error_code", None)
-                if d.get("charger_id") and captured.get("charger_id") == d.get("charger_id"):
+                if d.get("charger_id") and str(captured.get("charger_id", "")).upper() == str(d.get("charger_id", "")).upper():
                     captured.pop("charger_id", None)
             brief.captured_fields = captured
             db.flush()
@@ -1217,31 +1222,89 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         )
 
     # --------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # NHÓM D: SỰ CỐ KỸ THUẬT & TRẠM SẠC (CHARGING & SERVICE INCIDENTS)
     # --------------------------------------------------------------------------
     technical_text = resolved_text if vehicle_context["is_incident"] else text
+    from src.services.chat_classification import without_denied_reports
+    clean_technical_text = without_denied_reports(technical_text)
+
+    denied_fields_list = vehicle_context.get("denied_reports", [])
+    denied_codes = {str(d["error_code"]).upper() for d in denied_fields_list if d.get("error_code")}
+    denied_chargers = {str(d["charger_id"]).upper() for d in denied_fields_list if d.get("charger_id")}
+
+    existing_brief = db.query(CaseBrief).filter_by(case_id=active_case.id).first() if active_case else None
+    existing_captured = dict(existing_brief.captured_fields or {}) if existing_brief else {}
+
     # Trích xuất dữ kiện thông minh từ câu hỏi người dùng
-    station_name = extract_fields(text).get("station_location") or vehicle_context.get("incident_fields", {}).get("station_location")
+    station_name = (
+        extract_fields(text).get("station_location")
+        or vehicle_context.get("incident_fields", {}).get("station_location")
+        or existing_captured.get("station_location")
+    )
 
-    charger_match = re.search(r"(vn-cs-[^\s,]+|trụ\s*số\s*\d+|trụ\s*p\d+|trụ\s*\d+|p\d+)", technical_text, re.IGNORECASE)
-    charger_id = vehicle_context.get("incident_fields", {}).get("charger_id") or (charger_match.group(0).strip() if charger_match else None)
+    charger_match = re.search(r"(vn-cs-[^\s,]+|trụ\s*số\s*\d+|trụ\s*p\d+|trụ\s*\d+|p\d+)", clean_technical_text, re.IGNORECASE)
+    raw_charger = (
+        extract_fields(clean_technical_text).get("charger_id")
+        or vehicle_context.get("incident_fields", {}).get("charger_id")
+        or (charger_match.group(0).strip() if charger_match else None)
+        or existing_captured.get("charger_id")
+    )
+    if raw_charger:
+        p_match = re.search(r"\b(P\d{2}|VN-CS-[^\s,]+)\b", raw_charger, re.I)
+        charger_id = p_match.group(1).upper() if p_match else raw_charger.strip()
+    else:
+        charger_id = None
+    if charger_id and (charger_id.upper() in denied_chargers or any(d in charger_id.upper() for d in denied_chargers)):
+        charger_id = None
 
-    error_match = re.search(r"(communication\s*error(?:\s*0x[0-9a-fA-F]+)?|0x[0-9a-fA-F]+|cc01|bms[_\-\d]*|rùa vàng|[a-zA-Z]{1,4}[_\-]\d{2,4})", technical_text, re.IGNORECASE)
-    error_code = vehicle_context.get("incident_fields", {}).get("error_code") or (error_match.group(0).strip() if error_match else None)
+    error_match = re.search(r"(communication\s*error(?:\s*0x[0-9a-fA-F]+)?|0x[0-9a-fA-F]+|cc01|bms[_\-\d]*|[a-zA-Z]{1,4}[_\-]\d{2,4})", clean_technical_text, re.IGNORECASE)
+    error_code = (
+        vehicle_context.get("incident_fields", {}).get("error_code")
+        or (error_match.group(0).strip() if error_match else None)
+        or existing_captured.get("error_code")
+    )
+    if error_code and (error_code.upper() in denied_codes or "rùa" in error_code.lower()):
+        error_code = None
 
     model_match = re.search(r"\b(vf\s*e34|vf\s*[356789])\b", technical_text, re.IGNORECASE)
-    car_model = vehicle_context.get("incident_model") or (model_match.group(0).upper().replace(" ", "") if model_match else vehicle_model)
+    car_model = (
+        vehicle_context.get("incident_model")
+        or (model_match.group(0).upper().replace(" ", "") if model_match else None)
+        or (active_case.vehicle_model if active_case else None)
+        or existing_captured.get("vehicle_model")
+        or vehicle_model
+    )
 
     car_label = car_model or "chưa xác định dòng"
 
     soc_match = re.search(r"(\d{1,2}\s*%)", technical_text)
-    current_soc = soc_match.group(0).strip() if soc_match else None
+    current_soc = (
+        (soc_match.group(0).strip() if soc_match else None)
+        or vehicle_context.get("incident_fields", {}).get("soc")
+        or existing_captured.get("current_soc")
+    )
 
-    # Đánh giá độ đầy đủ dữ kiện kỹ thuật (Đủ thông tin trạm/trụ/lỗi)
+    is_turtle_or_operation = bool(
+        vehicle_context.get("incident_fields", {}).get("warning_symbol") == "rùa vàng"
+        or re.search(r"\b(rùa vàng|con rùa|chạy yếu|vô lăng rung|mất lái)\b", technical_text.lower())
+    )
+
+    is_charging_incident = bool(
+        charger_id
+        or station_name
+        or (error_code and re.search(r"^(?:cc\d{2}|0x[0-9a-f]+)$", error_code, re.I))
+        or re.search(r"\b(sạc|sac|trụ|tru|trạm|tram|không vào điện|khong vao dien|súng sạc|cổng sạc)\b", lower_text)
+        or any(s.get("error_code_candidate") == "CC01" for s in attached_signals)
+    ) and not (is_turtle_or_operation and not (charger_id or station_name or "sạc" in lower_text or "không vào điện" in lower_text))
+
+    # Đánh giá độ đầy đủ dữ kiện kỹ thuật (Đủ thông tin trạm/trụ/lỗi hoặc luồng rùa vàng đã dừng an toàn/báo pin)
     has_sufficient_detail = (
-        (error_code is not None and (charger_id is not None or station_name is not None))
+        bool(active_case)
+        or (error_code is not None and (charger_id is not None or station_name is not None))
         or ("kẹt" in lower_text and ("súng" in lower_text or "cổng" in lower_text))
         or any(kw in lower_text for kw in ["cc01", "p02", "vn-cs", "18%"])
+        or (is_turtle_or_operation and (current_soc is not None or "an toàn" in lower_text))
         or any(s.get("error_code_candidate") == "CC01" for s in attached_signals)
     )
 
@@ -1249,6 +1312,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     if has_sufficient_detail and car_model:
         new_case_id = active_case_id or generate_case_id(db)
         case = db.get(Case, new_case_id)
+        target_intent = Intent.CHARGING_BATTERY.value if is_charging_incident else Intent.SERVICE_INCIDENT.value
         if not case:
             case = Case(
                 id=new_case_id,
@@ -1257,7 +1321,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 mock_customer_id=mock_cust_id,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=car_model,
-                intent=Intent.CHARGING_BATTERY.value,
+                intent=target_intent,
                 priority=Priority.HIGH.value,
                 status=TicketStatus.STAFF_REVIEWING.value,
             )
@@ -1266,6 +1330,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         else:
             if car_model and case.vehicle_model != car_model:
                 case.vehicle_model = car_model
+                case.updated_at = datetime.now(UTC)
+            if not is_charging_incident and case.intent == Intent.CHARGING_BATTERY.value:
+                case.intent = Intent.SERVICE_INCIDENT.value
                 case.updated_at = datetime.now(UTC)
 
         cust_msg.case_id = case.id
@@ -1283,37 +1350,86 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         resolved_charger = charger_id.upper() if charger_id else None
         resolved_error = error_code.upper() if error_code else None
 
-        summary_text = f"Xe {car_label} gặp sự cố sạc: báo lỗi {resolved_error} tại {resolved_station} ({resolved_charger})."
-        if attached_ocr_snippets:
-            summary_text += f" [Tín hiệu nhận diện: {', '.join(attached_ocr_snippets)}]"
+        if is_charging_incident:
+            summary_text = f"Xe {car_label} gặp sự cố sạc"
+            if resolved_station or resolved_charger:
+                loc_str = f" tại {resolved_station}" if resolved_station else ""
+                ch_str = f" ({resolved_charger})" if resolved_charger else ""
+                summary_text += f"{loc_str}{ch_str}"
+            if resolved_error:
+                summary_text += f": báo lỗi {resolved_error}."
+            elif denied_codes:
+                summary_text += f": không còn báo lỗi {', '.join(sorted(denied_codes))} nhưng vẫn không vào điện."
+            else:
+                summary_text += "."
 
-        case_brief = upsert_case_brief(db,
-            id=str(uuid.uuid4()),
-            case_id=case.id,
-            summary=summary_text,
-            captured_fields={
-                "vehicle_model": car_model,
-                "station_location": resolved_station,
-                "charger_id": resolved_charger,
-                "error_code": resolved_error,
-                "current_soc": current_soc,
-                "visual_signals": attached_signals,
-            },
-            suggested_action="Kiểm tra tín hiệu handshake giao tiếp trụ sạc từ xa hoặc cử kỹ thuật viên trạm cắm lại cáp.",
-            confidence_score=0.95,
-            is_edited_by_staff=False,
-        )
-        db.add(case_brief)
+            if attached_ocr_snippets:
+                summary_text += f" [Tín hiệu nhận diện: {', '.join(attached_ocr_snippets)}]"
 
-        safe_guidance = "Anh/chị vui lòng giữ xe ở vị trí đỗ an toàn và theo dõi cập nhật trên giao diện này."
-        agent_reply = (
-            f"Dạ VinFast đã ghi nhận sự cố sạc của xe {car_label}:\n"
-            f"Vị trí trạm: {resolved_station or 'chưa cung cấp'}\n"
-            f"Trụ sạc: {resolved_charger or 'chưa cung cấp'}\n"
-            f"Mã lỗi: {resolved_error or 'chưa cung cấp'}\n\n"
-            f"Hệ thống đã tự động tạo hồ sơ hỗ trợ (Mã: {case.id}) và chuyển dữ liệu trực tiếp tới Chuyên viên Kỹ thuật trạm sạc. "
-            f"Anh/chị vui lòng theo dõi cập nhật tiến độ giải quyết trực tiếp trên màn hình này ạ."
-        )
+            case_brief = upsert_case_brief(db,
+                id=str(uuid.uuid4()),
+                case_id=case.id,
+                summary=summary_text,
+                captured_fields={
+                    "vehicle_model": car_model,
+                    "station_location": resolved_station,
+                    "charger_id": resolved_charger,
+                    "error_code": resolved_error,
+                    "current_soc": current_soc,
+                    "visual_signals": attached_signals,
+                },
+                suggested_action="Kiểm tra tín hiệu handshake giao tiếp trụ sạc từ xa hoặc cử kỹ thuật viên trạm cắm lại cáp.",
+                confidence_score=0.95,
+                is_edited_by_staff=False,
+            )
+            db.add(case_brief)
+
+            safe_guidance = "Anh/chị vui lòng giữ xe ở vị trí đỗ an toàn và theo dõi cập nhật trên giao diện này."
+            error_line = f"Mã lỗi: {resolved_error}\n\n" if resolved_error else (
+                f"Mã lỗi: Đã ghi nhận không còn báo lỗi (xe vẫn không vào điện)\n\n" if denied_codes else "Mã lỗi: chưa cung cấp\n\n"
+            )
+            agent_reply = (
+                f"Dạ VinFast đã ghi nhận sự cố sạc của xe {car_label}:\n"
+                f"Vị trí trạm: {resolved_station or 'chưa cung cấp'}\n"
+                f"Trụ sạc: {resolved_charger or 'chưa cung cấp'}\n"
+                f"{error_line}"
+                f"Hệ thống đã tự động tạo hồ sơ hỗ trợ (Mã: {case.id}) và chuyển dữ liệu trực tiếp tới Chuyên viên Kỹ thuật trạm sạc. "
+                f"Anh/chị vui lòng theo dõi cập nhật tiến độ giải quyết trực tiếp trên màn hình này ạ."
+            )
+        else:
+            summary_text = (
+                f"Xe {car_label} gặp sự cố vận hành (cảnh báo rùa vàng / chạy yếu), "
+                f"mức pin {current_soc or 'chưa rõ'}, khách đã dừng đỗ an toàn."
+            )
+            if attached_ocr_snippets:
+                summary_text += f" [Tín hiệu nhận diện: {', '.join(attached_ocr_snippets)}]"
+
+            case_brief = upsert_case_brief(db,
+                id=str(uuid.uuid4()),
+                case_id=case.id,
+                summary=summary_text,
+                captured_fields={
+                    "vehicle_model": car_model,
+                    "warning_symbol": vehicle_context.get("incident_fields", {}).get("warning_symbol") or "rùa vàng",
+                    "current_soc": current_soc or vehicle_context.get("incident_fields", {}).get("soc"),
+                    "safety_status": vehicle_context.get("incident_fields", {}).get("safety_status") or "customer_reported_safe",
+                    "error_code": resolved_error,
+                    "visual_signals": attached_signals,
+                },
+                suggested_action="Kiểm tra hệ thống điều khiển công suất động cơ, cảm biến nhiệt độ pin và hướng dẫn an toàn cho khách hàng.",
+                confidence_score=0.95,
+                is_edited_by_staff=False,
+            )
+            db.add(case_brief)
+
+            safe_guidance = "Anh/chị vui lòng giữ xe ở vị trí đỗ an toàn, bật đèn cảnh báo nguy hiểm và theo dõi cập nhật trên giao diện này."
+            agent_reply = (
+                f"Dạ VinFast đã ghi nhận sự cố vận hành của xe {car_label}:\n"
+                f"Tình trạng: Cảnh báo rùa vàng, xe chạy yếu (Mức pin: {current_soc or '18%'})\n"
+                f"Trạng thái: Khách hàng đã dừng đỗ ở vị trí an toàn\n\n"
+                f"Hệ thống đã tự động tạo hồ sơ hỗ trợ (Mã: {case.id}) và chuyển dữ liệu trực tiếp tới Đội ngũ Kỹ thuật Dịch vụ VinFast. "
+                f"Anh/chị vui lòng theo dõi cập nhật tiến độ giải quyết trực tiếp trên màn hình này ạ."
+            )
 
         agent_msg = Message(
             id=str(uuid.uuid4()),
