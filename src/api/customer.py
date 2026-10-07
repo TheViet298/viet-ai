@@ -61,6 +61,7 @@ from src.models.schemas import (
     SessionHistoryMessageItem,
     SessionHistoryResponseData,
 )
+from src.config import get_settings
 from src.services.auth import check_case_ownership, get_optional_user, require_customer
 from src.services.chat_cases import (
     clean_case_references,
@@ -76,6 +77,7 @@ from src.services.image_routing import classify_vehicle_image
 from src.services.knowledge_questions import answer_sales_question, sales_parts
 from src.services.vehicle_context import resolve_vehicle_context
 from src.services.vehicle_knowledge import is_general_vehicle_question
+from src.services.vehicle_vision_service import recognize_vehicle_model
 from src.services.vision.cardd_runtime import analyze_exterior_image
 
 
@@ -119,6 +121,7 @@ async def upload_attachment(
     Lưu trữ file tại đường dẫn riêng tư (private storage), trích xuất tín hiệu sơ bộ qua OCR/Vision.
     Cảnh báo: Khách hàng không tải VIN, biển số xe, khuôn mặt hoặc giấy tờ cá nhân.
     """
+    settings = get_settings()
     att_id = f"ATT-{uuid.uuid4().hex}"
     storage_path = f"data/attachments/{att_id}.png"
     file_bytes = await file.read(5 * 1024 * 1024 + 1)
@@ -133,10 +136,23 @@ async def upload_attachment(
     routing = await classify_vehicle_image(clean_bytes, mime_type) if image_kind == "auto" else None
     resolved_kind = routing["image_kind"] if routing else image_kind
     if resolved_kind == "exterior":
-        evidence = await analyze_exterior_image(storage_path, att_id)
-        detected_signals = {"evidence_type": "CARDD", "image_kind": resolved_kind, "vision_evidence": evidence}
-        if evidence["damage"]["status"] == "unavailable":
-            detected_signals["analysis_error"] = evidence["damage"]["reason"]
+        if settings.cardd_enabled:
+            evidence = await analyze_exterior_image(storage_path, att_id)
+            detected_signals = {"evidence_type": "CARDD", "image_kind": resolved_kind, "vision_evidence": evidence}
+            if evidence["damage"]["status"] == "unavailable":
+                detected_signals["analysis_error"] = evidence["damage"]["reason"]
+        else:
+            vehicle_res = await recognize_vehicle_model(clean_bytes, mime_type)
+            top_conf = (vehicle_res.get("candidates") or [{}])[0].get("confidence", 0.0)
+            detected_signals = {
+                "evidence_type": "VEHICLE_MODEL",
+                "image_kind": resolved_kind,
+                "vehicle_model": vehicle_res.get("model_label"),
+                "vehicle_evidence": vehicle_res,
+                "confidence": top_conf,
+            }
+            if vehicle_res.get("status") == "unavailable":
+                detected_signals["analysis_error"] = vehicle_res.get("reason")
     elif resolved_kind in {"dashboard", "charger"}:
         detected_signals = await analyze_dashboard_image(clean_bytes, mime_type)
         detected_signals["image_kind"] = resolved_kind
@@ -379,6 +395,11 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             if att.ocr_text:
                 attached_ocr_snippets.append(att.ocr_text)
 
+    model_signals = [s for s in attached_signals if s.get("evidence_type") == "VEHICLE_MODEL" and s.get("vehicle_model")]
+    if not vehicle_model and model_signals:
+        vehicle_model = model_signals[0]["vehicle_model"]
+        vehicle_label = vehicle_model
+
     # 1. Lưu tin nhắn của Khách hàng vào bảng messages
     cust_msg = Message(
         id=str(uuid.uuid4()),
@@ -550,6 +571,34 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         db.flush()
         return ApiResponse(success=True, data=ChatResponseData(response_type="CLARIFICATION", message=reply,
             case_id=active_case_id, show_emergency_banner=bool(active_case and active_case.priority == "CRITICAL")), error=None)
+
+    if model_signals and not any(s.get("evidence_type") == "CARDD" for s in attached_signals):
+        detected_model = model_signals[0].get("vehicle_model")
+        if detected_model:
+            reply = f"Qua hình ảnh ngoại thất, hệ thống nhận diện đây là mẫu xe VinFast {detected_model} (cần quý khách xác nhận). Anh/chị cần hỗ trợ thông tin gì về dòng xe này ạ?"
+            db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
+                           sender_type=SenderType.AGENT.value, created_at=reply_created_at,
+                           content=reply, msg_metadata={"response_type": "VEHICLE_MODEL_IDENTIFIED", "vehicle_model": detected_model}))
+            db.flush()
+            return ApiResponse(success=True, data=ChatResponseData(
+                response_type="FAQ_ANSWER",
+                message=reply,
+                case_id=active_case_id,
+                remaining_guest_messages=remaining_guest_msgs,
+            ), error=None)
+        elif model_signals[0].get("vehicle_evidence", {}).get("status") in {"unknown", "unavailable"}:
+            reply = "Hệ thống chưa nhận diện rõ mẫu xe VinFast từ ảnh ngoại thất này. Quý khách vui lòng cung cấp thêm thông tin về dòng xe (ví dụ: VF 3, VF 7,...) hoặc chụp góc rõ hơn ạ."
+            db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
+                           sender_type=SenderType.AGENT.value, created_at=reply_created_at,
+                           content=reply, msg_metadata={"response_type": "CLARIFICATION", "image_kind": "exterior"}))
+            db.flush()
+            return ApiResponse(success=True, data=ChatResponseData(
+                response_type="CLARIFICATION",
+                message=reply,
+                case_id=active_case_id,
+                remaining_guest_messages=remaining_guest_msgs,
+            ), error=None)
+
     exterior_signals = [s for s in attached_signals if s.get("evidence_type") == "CARDD"]
     prior_cardd = (history[0].msg_metadata or {}) if history else {}
     continue_cardd = prior_cardd.get("cardd_flow") and prior_cardd.get("user_id") == user_id and not attached_signals and not vehicle_context.get('scope_changed')

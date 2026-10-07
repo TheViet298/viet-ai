@@ -18,6 +18,9 @@ def photo_bytes():
 @pytest.fixture
 def damage_runtime(monkeypatch):
     import src.api.customer as api
+    from src.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "cardd_enabled", True)
 
     async def analyze(path, image_id):
         return {
@@ -78,6 +81,9 @@ async def test_invalid_image_kind_is_rejected(client, customer_db):
 @pytest.mark.asyncio
 async def test_cardd_failure_is_visible_without_dashboard_ocr(client, customer_db, monkeypatch):
     import src.api.customer as api
+    from src.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "cardd_enabled", True)
 
     async def unavailable(path, image_id):
         return {"image_id": image_id, "damage": {"status": "unavailable", "reason": "inference_timeout"}}

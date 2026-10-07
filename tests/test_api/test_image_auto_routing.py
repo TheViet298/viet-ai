@@ -26,9 +26,13 @@ async def test_auto_route_uses_only_selected_analyzer(client, customer_db, monke
         calls.append("exterior")
         return {"schema_version": "1.0", "image_id": image_id,
                 "damage": {"status": "no_detection", "detections": []}}
+    async def vehicle_model(*args):
+        calls.append("exterior")
+        return {"status": "candidate", "model_label": "VF 3", "candidates": [{"label": "VF 3", "confidence": 0.9}]}
     monkeypatch.setattr(api, "classify_vehicle_image", classify, raising=False)
     monkeypatch.setattr(api, "analyze_dashboard_image", dashboard)
     monkeypatch.setattr(api, "analyze_exterior_image", damage)
+    monkeypatch.setattr(api, "recognize_vehicle_model", vehicle_model, raising=False)
     response = await client.post("/api/v1/customer/attachments", data={"image_kind": "auto"},
                                  files={"file": ("random-name.png", picture(), "image/png")})
     assert response.status_code == 200
