@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     google_api_key: str = ""
     openai_api_key: str = ""
     model_name: str = "gemini-2.5-flash"
+    # Vision Configuration (GPT-6-Luna & Google)
+    vision_provider: Literal["openai", "google"] = "openai"
+    vision_model: str = "gpt-6-luna"
+    cardd_enabled: bool = False
     dashboard_vision_enabled: bool = True
     dashboard_vision_model: str = "gemini-3.5-flash"
     dashboard_vision_timeout_s: float = Field(default=25, gt=0, le=60)
