@@ -58,75 +58,30 @@ VinFast ServiceFlow AI mang đến quy trình tiếp nhận và xử lý khép k
 
 ## 3. Kiến trúc Hệ thống (System Architecture)
 
-Hệ thống được thiết kế theo kiến trúc 4 tầng phân lập rõ ràng (theo `docs/architecture/system-overview.md` và `docs/architecture_diagram.md`):
+Hệ thống được thiết kế theo kiến trúc phân tầng khép kín giữa **Web Support Hub (Next.js 14 Frontend)**, **FastAPI Gateway (RBAC, Storage & Session)**, và **AI Agent Core (LangGraph StateGraph, Gemini / GPT Gateway, CarDD & Local RAG)**:
 
-```mermaid
-graph TB
-    subgraph ClientLayer ["1. Client Layer (Next.js 14 Web Support Hub)"]
-        PublicUI["Public Landing / FAQ / Knowledge Hub"]
-        CustomerUI["Customer Chat & Case Tracking\n(Gửi yêu cầu / Quick Replies / Theo dõi tiến độ)"]
-        StaffConsole["Service Agent Console\n(Queue / Ticket Detail / HITL Review / Audit)"]
-    end
+### 1. Sơ đồ Hoạt động Toàn hệ thống (End-to-End System Activity)
+Mô tả quy trình nghiệp vụ 3 làn bơi xuyên suốt từ Khách hàng $\to$ Hệ thống ServiceFlow $\to$ Nhân viên dịch vụ (HITL Review, Điều phối & Đóng hồ sơ):
 
-    subgraph APILayer ["2. API & Gateway Layer (FastAPI)"]
-        AuthMiddleware["Authentication & RBAC Middleware\n(Guest / Customer / Staff)"]
-        CustomerAPI["Customer Endpoints\n(/api/v1/customer/...)"]
-        StaffAPI["Staff Endpoints\n(/api/v1/staff/...)"]
-        UploadAPI["Attachment API (/api/v1/customer/attachments)"]
-        PublicAPI["Public API (/api/v1/public/...)"]
-    end
+![Sơ đồ Hoạt động Toàn hệ thống](docs/architecture/serviceflow-system-activity.png)
 
-    subgraph AgentLayer ["3. AI Agent Core (LangGraph + Google Gemini)"]
-        IntakeNode["intake_node\n(Chuẩn hóa nội dung & context)"]
-        TriageNode["triage_node\n(Phân loại 4 Intent + Priority)"]
-        SafetyGuard{"Hard Safety Guardrails\n(Khẩn cấp / Bốc khói / Mất phanh?)"}
-        VisionModule["Image Routing & Vision Service\n(Tín hiệu táp-lô & CarDD sơ bộ)"]
-        ClarifyNode["clarify_node\n(Hỏi làm rõ max 2 lượt)"]
-        RAGNode["rag_node\n(Tra cứu cẩm nang & chính sách VF)"]
-        BriefNode["case_brief_node\n(Tổng hợp Case Brief chuẩn hóa)"]
-    end
+---
 
-    subgraph DataLayer ["4. Data & Storage Layer"]
-        RelationalDB[("Database (SQLite / PostgreSQL)\nCases, Messages, Tickets, Audit Logs")]
-        VectorStore[("ChromaDB Vector Store\nCẩm nang hướng dẫn & FAQ chính hãng")]
-        AttachmentStore[("Private Attachment Storage\nẢnh sự cố & táp-lô")]
-    end
+### 2. Sơ đồ Pipeline AI & LangGraph State Machine (MVP Main)
+Trực quan hóa chi tiết luồng xử lý của AI Agent qua 8 node nghiệp vụ (`intake`, `safety`, `cardd_review`, `triage`, `clarify`, `rag`, `general`, `case_brief`):
 
-    %% Tương tác luồng dữ liệu
-    CustomerUI -->|Chat & Hỏi đáp| CustomerAPI
-    CustomerUI -->|Upload ảnh| UploadAPI
-    UploadAPI --> AttachmentStore
-    UploadAPI --> VisionModule
-    StaffConsole -->|Duyệt & Điều phối| StaffAPI
-    PublicUI --> PublicAPI
+![Activity Tổng thể MVP Main](docs/architecture/Activity%20diagram%20system.jpg)
 
-    CustomerAPI --> AuthMiddleware
-    StaffAPI --> AuthMiddleware
-    AuthMiddleware --> IntakeNode
-    VisionModule --> IntakeNode
+---
 
-    IntakeNode --> TriageNode
-    TriageNode --> SafetyGuard
+### 3. Sơ đồ Xử lý Một lượt Hội thoại Khách hàng (Customer Chat Turn Activity)
+Mô tả thứ tự rẽ nhánh theo chuỗi điều kiện cascade độc lập khi nhận một request chat qua `/api/v1/customer/chat`:
 
-    SafetyGuard -- "Nguy hiểm (CRITICAL)" --> BriefNode
-    SafetyGuard -- "Bình thường" --> ClarifyNode
-    ClarifyNode -- "Thiếu thông tin (<=2 lượt)" --> CustomerUI
-    ClarifyNode -- "Đủ thông tin" --> RAGNode
-    RAGNode <--> VectorStore
-    RAGNode --> BriefNode
+![Sơ đồ Một lượt Hội thoại Khách hàng](docs/architecture/serviceflow-customer-activity.png)
 
-    BriefNode --> RelationalDB
-    RelationalDB --> StaffConsole
-    StaffConsole -->|Approve / Edit / Reroute| RelationalDB
-```
+---
 
-> ### Sơ đồ Kiến trúc & Luồng Hoạt động Trực quan
-> Hệ thống được tài liệu hóa chi tiết qua 3 sơ đồ hoạt động trực quan trong [`docs/architecture/`](docs/architecture/):
-> - **[Activity Tổng thể MVP Main (Khách hàng — AI LangGraph — Nhân viên)](docs/architecture/Activity%20diagram%20system.jpg)**
-> - **[Sơ đồ Hoạt động Toàn hệ thống (End-to-End System Activity)](docs/architecture/serviceflow-system-activity.png)**
-> - **[Sơ đồ Một lượt Hội thoại Khách hàng](docs/architecture/serviceflow-customer-activity.png)**
->
-> Cùng các sơ đồ chuẩn hóa kiến trúc SVG:
+> **Các Sơ đồ Kiến trúc Chuẩn hóa Bổ sung (Định dạng SVG):**
 > - [Sơ đồ Thành phần Hệ thống (Component Diagram)](docs/architecture/serviceflow-component.svg)
 > - [Sơ đồ Triển khai (Deployment Diagram)](docs/architecture/serviceflow-deployment.svg)
 > - [Sơ đồ Ca sử dụng (Use Case Diagram)](docs/architecture/serviceflow-usecase.svg)
