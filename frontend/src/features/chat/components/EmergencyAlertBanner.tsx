@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { CheckCircle2, ChevronRight, PhoneCall, ShieldAlert } from "lucide-react";
 
 interface EmergencyAlertBannerProps {
@@ -8,6 +7,9 @@ interface EmergencyAlertBannerProps {
   isDismissed?: boolean;
   onDismiss?: () => void;
   onRestore?: () => void;
+  pending?: boolean;
+  error?: string | null;
+  canAcknowledge?: boolean;
 }
 
 export function EmergencyAlertBanner({
@@ -15,20 +17,20 @@ export function EmergencyAlertBanner({
   isDismissed = false,
   onDismiss,
   onRestore,
+  pending = false,
+  error,
+  canAcknowledge = true,
 }: EmergencyAlertBannerProps) {
-  const [localDismissed, setLocalDismissed] = useState(false);
 
   if (!visible) return null;
 
-  const dismissed = isDismissed || localDismissed;
+  const dismissed = isDismissed;
 
   const handleDismiss = () => {
-    setLocalDismissed(true);
     onDismiss?.();
   };
 
   const handleRestore = () => {
-    setLocalDismissed(false);
     onRestore?.();
   };
 
@@ -77,19 +79,20 @@ export function EmergencyAlertBanner({
           <div className="text-[12px] sm:text-[12.5px] leading-snug truncate">
             <strong className="font-bold text-white mr-1.5">Xe đang gặp sự cố?</strong>
             <span className="text-red-100">
-              Bật hazard, tấp lề an toàn, rời khỏi xe và đứng sau hộ lan an toàn.
+              Ưu tiên tới khu vực an toàn nếu có thể và gọi hotline cứu hộ.
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
           <button
+            disabled={pending || !canAcknowledge}
             onClick={handleDismiss}
             className="flex items-center gap-1 px-2.5 py-1 bg-red-700/80 hover:bg-red-800 text-white rounded-lg text-[11px] font-medium border border-red-500/50 transition active:scale-95 whitespace-nowrap"
             title="Thu gọn cảnh báo nếu bạn đã ở vị trí an toàn"
           >
             <CheckCircle2 className="w-3.5 h-3.5 text-red-200" />
-            <span>Đã an toàn</span>
+            <span>{pending ? "Đang lưu..." : "Đã an toàn"}</span>
           </button>
 
           <a
@@ -101,6 +104,7 @@ export function EmergencyAlertBanner({
           </a>
         </div>
       </div>
+      {error && <p role="alert" className="px-4 pb-2 text-xs">{error}</p>}
     </div>
   );
 }

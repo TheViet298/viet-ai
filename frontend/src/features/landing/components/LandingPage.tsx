@@ -34,16 +34,6 @@ import { useAuth } from "@/features/shared/context/AuthContext";
 // DATA CONSTANTS & FALLBACKS
 // =============================================================================
 
-const VEHICLE_OPTIONS = [
-  "VinFast VF8",
-  "VinFast VF5",
-  "VinFast VF3",
-  "VinFast VF6",
-  "VinFast VF7",
-  "VinFast VF9",
-  "VinFast VF e34",
-];
-
 const PLACEHOLDER_EXAMPLES = [
   "Trụ sạc báo đỏ lỗi CC01, không vào điện...",
   "Lịch bảo dưỡng 12.000km xe VF8 gồm những gì?",
@@ -194,7 +184,7 @@ export function LandingPage() {
   // Scroll indicator state
   const [hasScrolled, setHasScrolled] = useState(false);
 
-  // Đồng bộ dòng xe mặc định theo hồ sơ tài khoản (Customer: xe của họ; Guest: để trống để tự chọn)
+  // Đồng bộ dòng xe mặc định theo hồ sơ tài khoản (Customer: xe của họ; Guest: để trống)
   useEffect(() => {
     if (role === "CUSTOMER" && user) {
       const model = user.vehicleModel ? `VinFast ${user.vehicleModel.replace("VinFast ", "")}` : "VinFast VF8";
@@ -499,7 +489,7 @@ export function LandingPage() {
               className="w-full resize-none border-none bg-transparent p-1 text-[13px] sm:text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none leading-relaxed transition-all"
             />
 
-            {/* Bottom Toolbar: Upload button, Model dropdown, Submit button */}
+            {/* Bottom Toolbar: Upload button, Submit button */}
             <div
               onClick={(e) => e.stopPropagation()}
               className="mt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 cursor-default"
@@ -508,10 +498,10 @@ export function LandingPage() {
                 {/* Upload Image button */}
                 <label
                   className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-[12px] font-medium text-slate-700 hover:bg-white hover:border-[#1E40AF] transition shadow-2xs"
-                  title="Tải ảnh táp-lô hoặc trụ sạc"
+                  title="Tải ảnh"
                 >
                   <ImagePlus className="h-4 w-4 text-[#1E40AF]" />
-                  <span className="hidden sm:inline">Tải ảnh táp-lô</span>
+                  <span className="hidden sm:inline">Tải ảnh</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -519,27 +509,6 @@ export function LandingPage() {
                     className="sr-only"
                   />
                 </label>
-
-                {/* Model dropdown: Guest có tùy chọn 'Chọn dòng xe (không bắt buộc)', Customer tự điền xe */}
-                <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-[12px] shadow-2xs">
-                  <Car className="h-3.5 w-3.5 text-[#1E40AF] shrink-0" />
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    className="bg-transparent font-semibold text-slate-800 focus:outline-none text-[12px] cursor-pointer"
-                  >
-                    {role !== "CUSTOMER" && (
-                      <option value="" className="text-slate-500 font-normal">
-                        Chọn dòng xe (không bắt buộc)
-                      </option>
-                    )}
-                    {VEHICLE_OPTIONS.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </div>
 
               {/* Action Submit: Đổi 'Gửi yêu cầu' thành 'Hỏi trợ lý' */}

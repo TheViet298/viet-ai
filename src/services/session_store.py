@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from contextlib import contextmanager
 from datetime import UTC, datetime
@@ -31,6 +32,23 @@ def decode_state(value: str) -> dict:
     data = json.loads(value)
     data["messages"] = messages_from_dict(data.get("messages", []))
     return data
+
+
+def prepare_application_turn(data: dict) -> None:
+    """Application owns business cases; normalize before storing chat memory."""
+    data['case_id'] = None
+    if data.get('is_no_source') or data.get('is_rag_query'):
+        data.update(response_type='FAQ_ANSWER', needs_staff_review=False, case_brief=None)
+        if data.get('is_no_source'):
+            diag = data.get('retrieval_diagnostics') or {}
+            diag_cat = diag.get('category')
+            diag_stage = diag.get('stage')
+            if diag_cat == 'context_budget_exceeded' or diag_stage == 'prompt':
+                data['response'] = 'Tài liệu cần thiết vượt quá giới hạn xử lý hiện tại. Tôi sẽ chuyển chuyên viên kiểm tra đầy đủ điều kiện.'
+            elif diag_stage == 'generation' or diag_cat in ('generation_unavailable', 'provider_error', 'circuit_open', 'rate_limited'):
+                data['response'] = data.get('response') or 'Tôi chưa hoàn tất được việc tạo câu trả lời từ tài liệu đã tìm thấy. Anh/chị vui lòng thử lại; tôi không thể xác nhận nội dung lúc này.'
+            elif not data.get('response') or 'Tôi chưa có nguồn' in data.get('response'):
+                data['response'] = 'Tôi chưa có nguồn đã xác thực cho câu hỏi này. Anh/chị có thể yêu cầu chuyển chuyên viên hỗ trợ.'
 
 
 class SessionStore:
@@ -83,23 +101,70 @@ class SessionStore:
                 raise PermissionError("Session belongs to another principal")
             if role == "guest" and row["guest_turns"] >= 5 and not emergency:
                 raise PermissionError("Guest quota reached; sign in to continue")
-            count, version = row["guest_turns"] + int(role == "guest"), row["version"] + 1
-            db.execute(
-                "UPDATE agent_sessions SET guest_turns=?,version=?,updated_at=? WHERE id=?",
-                (count, version, now(), session_id),
-            )
+            count, version = row["guest_turns"] + int(role == "guest"), row["version"]
             state = decode_state(row["state"])
             state.update(session_id=session_id, user_role=role, guest_turn_count=count)
             return state, version
 
-    def save_turn(self, session_id: str, owner: str, version: int, state: dict) -> dict:
+    def read_existing_state(self, session_id: str, owner: str, role: str) -> dict:
+        """Read-only legacy import; another principal's snapshot is never used."""
+        with self.connect() as db:
+            row = db.execute('SELECT owner,role,state FROM agent_sessions WHERE id=?', (session_id,)).fetchone()
+            if not row or row['owner'] != owner or row['role'] != role:
+                return {}
+            state = decode_state(row['state'])
+            # Legacy valid labels were issued before assertion checks existed.
+            # Retain only observations backed by the customer's actual turn.
+            from src.agents.nodes.triage_node import extract_fields
+            from src.services.chat_classification import denied_reports
+            from src.services.vehicle_context import resolve_vehicle_context
+            observations, context, active = [], {}, {}
+            for message in db.execute("SELECT content FROM messages WHERE session_id=? AND sender_type='CUSTOMER' ORDER BY created_at,id", (session_id,)):
+                context = resolve_vehicle_context(message['content'], context)
+                if context.get('scope_changed'):
+                    active.clear()
+                for denied in denied_reports(message['content']):
+                    for field, value in extract_fields(denied, asserted_only=False).items():
+                        if str(active.get(field, '')).casefold() == value.casefold():
+                            active.pop(field, None)
+                observed = extract_fields(message['content'])
+                if context.get('is_incident'):
+                    observed = {**context.get('incident_fields', {}), **observed}
+                observed.pop('vehicle_model', None)
+                model = context.get('incident_model') if context.get('is_incident') else context.get('owned_model')
+                if model:
+                    observed['vehicle_model'] = model
+                active.update(observed)
+                observations.append(observed)
+            facts, history = dict(state.get('captured_fields', {})), [dict(item) for item in state.get('fact_history', [])]
+            for field, value in list(facts.items()):
+                entry = next((item for item in reversed(history) if item.get('field') == field and item.get('status') == 'valid'), None)
+                source = re.fullmatch(r'(?:user|customer):turn:(\d+)', entry.get('provenance', '')) if entry else None
+                index = int(source[1]) - 1 if source else -1
+                verified = (0 <= index < len(observations) and str(observations[index].get(field, '')).casefold() == str(value).casefold()
+                            and str(active.get(field, '')).casefold() == str(value).casefold())
+                if not verified:
+                    facts.pop(field)
+                    if entry:
+                        entry.update(status='unverified', valid_to=now())
+            state.update(captured_fields=facts, fact_history=history)
+            previous = dict(state.get('vehicle_context') or {})
+            previous['incident_fields'] = {k: v for k, v in previous.get('incident_fields', {}).items() if facts.get(k) == v}
+            if 'vehicle_model' not in facts:
+                previous.update(owned_model=None, incident_model=None)
+            state['vehicle_context'] = previous
+            return state
+
+    def save_turn(self, session_id: str, owner: str, version: int, state: dict, *, persist_business_case: bool = True) -> dict:
         data = dict(state)
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute("SELECT * FROM agent_sessions WHERE id=?", (session_id,)).fetchone()
             if not row or row["owner"] != owner or row["version"] != version:
                 raise SessionConflictError("Session changed during processing; retry the turn")
-            if data.get("case_brief") and data.get("needs_staff_review") and row["role"] == "customer" and (not data.get("is_rag_query") or data.get("is_no_source")):
+            if not persist_business_case:
+                prepare_application_turn(data)
+            if persist_business_case and data.get("case_brief") and data.get("needs_staff_review") and row["role"] == "customer" and (not data.get("is_rag_query") or data.get("is_no_source")):
                 cid = data.get("case_id")
                 existing = db.execute("SELECT * FROM cases WHERE id=?", (cid,)).fetchone() if cid else None
                 if existing and existing["customer_id"] != owner:
@@ -161,7 +226,8 @@ class SessionStore:
                     (uuid4().hex, session_id, data.get("case_id"), sender, content, now()),
                 )
             db.execute(
-                "UPDATE agent_sessions SET state=?,updated_at=? WHERE id=?", (encode_state(data), now(), session_id)
+                "UPDATE agent_sessions SET state=?,guest_turns=guest_turns+?,version=version+1,updated_at=? WHERE id=?",
+                (encode_state(data), int(row['role'] == 'guest'), now(), session_id)
             )
         return data
 

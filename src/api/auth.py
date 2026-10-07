@@ -1,12 +1,16 @@
 import uuid
 from collections import defaultdict, deque
+from dataclasses import dataclass
+from hmac import compare_digest
 from threading import Lock
 from time import monotonic
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from src.config import get_settings
 from src.db import get_db
 from src.models.db_models import User, UserRole
 from src.models.schemas import (
@@ -197,6 +201,9 @@ def update_me(
         ),
         error=None,
     )
+
+
+bearer = HTTPBearer(auto_error=False)
 
 
 # Re-export route dependencies for backward compatibility with existing tests

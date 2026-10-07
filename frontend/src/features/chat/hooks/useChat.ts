@@ -1,9 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ChatMessage, VehicleModel } from "../types";
-import { sendChatMessage } from "../api/chatApi";
-import { checkHardEmergency } from "../constants";
+import { useState, useEffect, useRef } from "react";
+import { ChatMessage } from "../types";
+import { sendChatMessage, getCaseStatus, acknowledgeCaseSafety, getSessionHistory } from "../api/chatApi";
+
+function storageKey(kind = "case") {
+  return typeof window === "undefined" ? null : `vf_chat_${kind}:${localStorage.getItem("vf_customer_token") || "guest"}`;
+}
+
+function storedCaseId(): string | null {
+  try { const key = storageKey(); return key ? localStorage.getItem(key) : null; } catch { return null; }
+}
 
 export interface ChatUserContext {
   userName?: string;
@@ -37,7 +44,7 @@ export function getSalutation(fullName?: string): { title: string; shortName: st
 export function createWelcomeMessage(context?: ChatUserContext | string): ChatMessage {
   const ctx: ChatUserContext =
     typeof context === "string" ? { userName: context } : context || {};
-  const { userName, vehicleModel, caseId } = ctx;
+  const { userName, caseId } = ctx;
   const { title, shortName, pronoun } = getSalutation(userName);
 
   let content: string;
@@ -45,8 +52,6 @@ export function createWelcomeMessage(context?: ChatUserContext | string): ChatMe
     const greetingStart = title ? `Chào ${title} ${shortName}!` : `Chào ${shortName}!`;
     if (caseId) {
       content = `${greetingStart} Hồ sơ ${caseId} đang được kỹ thuật viên kiểm tra. Em giúp gì thêm được cho ${pronoun} hôm nay ạ?`;
-    } else if (vehicleModel) {
-      content = `${greetingStart} Em giúp gì được cho ${pronoun} về chiếc ${vehicleModel} hôm nay ạ?`;
     } else {
       content = `${greetingStart} Em là Trợ lý VF Serv. Em có thể hỗ trợ gì cho ${pronoun} hôm nay ạ?`;
     }
@@ -81,15 +86,99 @@ export function useChat(context?: ChatUserContext | string) {
   const [messages, setMessages] = useState<ChatMessage[]>(() => [createWelcomeMessage(ctx)]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<VehicleModel>(
-    (ctx.vehicleModel as VehicleModel) || "VF8"
-  );
   const [sessionId, setSessionId] = useState(() => `sess_vf_${Math.random().toString(36).substring(2, 9)}`);
-  const [currentCaseId, setCurrentCaseId] = useState<string | null>(ctx.caseId || null);
+  const [currentCaseId, setCurrentCaseId] = useState<string | null>(() => ctx.caseId || null);
+  const [storageRestored, setStorageRestored] = useState(false);
   const [criticalBanner, setCriticalBanner] = useState(false);
   const [criticalBannerDismissed, setCriticalBannerDismissed] = useState(false);
   const [sessionHasCritical, setSessionHasCritical] = useState(false);
   const [requestLocation, setRequestLocation] = useState(false);
+  const [safetyPending, setSafetyPending] = useState(false);
+  const [safetyError, setSafetyError] = useState<string | null>(null);
+  const [incidentVersion, setIncidentVersion] = useState<number | null>(null);
+  const safetyRef = useRef({ caseId: currentCaseId, version: 0, acknowledged: false, epoch: 0 });
+  const failedRequest = useRef<{ key: string; id: string; caseId: string | null } | null>(null);
+  const conversationGeneration = useRef(0);
+
+  const applySafety = (input: { case_id?: string | null; incident_version?: number | null; safety_status?: string; emergency_context?: { case_id: string; incident_version: number; safety_status: string } | null }) => {
+    const data = input.emergency_context || input;
+    const version = data.incident_version || 0;
+    if (data.case_id !== safetyRef.current.caseId) safetyRef.current = { ...safetyRef.current, caseId: data.case_id || null, version: 0, acknowledged: false };
+    if (version < safetyRef.current.version) return false;
+    const acknowledged = data.safety_status === "customer_reported_safe" || (version === safetyRef.current.version && safetyRef.current.acknowledged);
+    safetyRef.current.version = version;
+    safetyRef.current.acknowledged = acknowledged;
+    setIncidentVersion(data.incident_version || null);
+    setCriticalBannerDismissed(acknowledged);
+    return true;
+  };
+
+  useEffect(() => {
+    const savedCase = storedCaseId();
+    if (!ctx.caseId) setCurrentCaseId(savedCase);
+    if (!ctx.caseId || ctx.caseId === savedCase) {
+      try {
+        const key = storageKey("session");
+        const savedSession = key ? localStorage.getItem(key) : null;
+        if (savedSession && /^sess_vf_[a-z0-9_-]+$/.test(savedSession) && savedSession.length <= 64) {
+          setSessionId(savedSession);
+          void (async () => {
+            try {
+              const hist = await getSessionHistory(savedSession);
+              if (hist?.success && hist?.data?.messages && hist.data.messages.length > 0) {
+                const mapped: ChatMessage[] = hist.data.messages.map((m) => ({
+                  id: m.id,
+                  sender: m.sender === "CUSTOMER" ? "CUSTOMER" : "AGENT",
+                  content: m.content,
+                  timestamp: m.timestamp,
+                  response_type: m.response_type,
+                  citations: m.citations,
+                  suggested_replies: m.suggested_replies,
+                  safe_guidance: m.safe_guidance,
+                  case_id: m.case_id,
+                  priority: m.priority,
+                }));
+                setMessages(mapped);
+                if (hist.data.case_id && !ctx.caseId) {
+                  setCurrentCaseId(hist.data.case_id);
+                }
+              }
+            } catch { /* Continue with default welcome message when storage/api unavailable. */ }
+          })();
+        }
+      } catch { /* Continue with a fresh session when storage is unavailable. */ }
+    }
+    setStorageRestored(true);
+  }, []);
+
+  useEffect(() => {
+    if (!storageRestored) return;
+    try { const key = storageKey("session"); if (key) localStorage.setItem(key, sessionId); } catch {}
+  }, [sessionId, storageRestored]);
+
+  useEffect(() => {
+    if (!storageRestored) return;
+    try { const key = storageKey(); if (key) { if (currentCaseId) localStorage.setItem(key, currentCaseId); else localStorage.removeItem(key); } } catch {}
+    if (!currentCaseId) return;
+    let cancelled = false;
+    const refresh = async () => {
+      const epoch = safetyRef.current.epoch;
+      try {
+        const response = await getCaseStatus(currentCaseId);
+        if (cancelled || epoch !== safetyRef.current.epoch || !response.success) return;
+        if (!applySafety(response.data)) return;
+        const active = !["Closed", "Resolved"].includes(response.data.status);
+        const critical = Boolean(response.data.emergency_context || (active && response.data.priority === "CRITICAL"));
+        setCriticalBanner(critical);
+        setSessionHasCritical(critical);
+      } catch { /* Retain the last confirmed state while offline. */ }
+    };
+    void refresh();
+    const timer = setInterval(refresh, 10000);
+    const onFocus = () => { void refresh(); };
+    window.addEventListener("focus", onFocus);
+    return () => { cancelled = true; clearInterval(timer); window.removeEventListener("focus", onFocus); };
+  }, [currentCaseId, storageRestored]);
 
   useEffect(() => {
     setMessages((prev) => {
@@ -98,9 +187,10 @@ export function useChat(context?: ChatUserContext | string) {
       }
       return prev;
     });
-  }, [ctx.userName, ctx.vehicleModel, ctx.caseId]);
+  }, [ctx.userName, ctx.caseId]);
 
   const resetChat = () => {
+    ++conversationGeneration.current;
     setMessages([createWelcomeMessage(ctx)]);
     setInput("");
     setLoading(false);
@@ -110,6 +200,11 @@ export function useChat(context?: ChatUserContext | string) {
     setSessionHasCritical(false);
     setRequestLocation(false);
     setSessionId(`sess_vf_${Math.random().toString(36).substring(2, 9)}`);
+    safetyRef.current = { caseId: null, version: 0, acknowledged: false, epoch: safetyRef.current.epoch + 1 };
+    failedRequest.current = null;
+    setIncidentVersion(null);
+    setSafetyError(null);
+    setSafetyPending(false);
   };
 
   const updateMessageChips = (messageId: string, newChips: string[]) => {
@@ -118,8 +213,22 @@ export function useChat(context?: ChatUserContext | string) {
     );
   };
 
-  const dismissCriticalBanner = () => {
-    setCriticalBannerDismissed(true);
+  const dismissCriticalBanner = async () => {
+    const safetyCaseId = safetyRef.current.caseId;
+    if (!safetyCaseId || !incidentVersion || safetyPending) return;
+    const epoch = ++safetyRef.current.epoch;
+    setSafetyPending(true);
+    setSafetyError(null);
+    try {
+      const response = await acknowledgeCaseSafety(safetyCaseId, incidentVersion);
+      if (!response.success || !response.data) throw new Error("No acknowledgement");
+      if (epoch === safetyRef.current.epoch) {
+        ++safetyRef.current.epoch;
+        applySafety(response.data);
+      }
+    } catch {
+      if (epoch === safetyRef.current.epoch) setSafetyError("Chưa lưu được xác nhận an toàn. Anh/chị vui lòng thử lại.");
+    } finally { setSafetyPending(false); }
   };
 
   const restoreCriticalBanner = () => {
@@ -134,13 +243,12 @@ export function useChat(context?: ChatUserContext | string) {
     const textToSend = messageText || input.trim();
     if (!textToSend || loading) return;
 
-    // Sử dụng bộ từ khóa nguy hiểm đồng bộ 100% với Backend (guardrails.py)
-    // để banner hiện tức thì trước khi backend trả lời (tránh lag giật tâm lý khách hàng).
-    const isHardEmergency = checkHardEmergency(textToSend);
-    if (isHardEmergency) {
-      setCriticalBanner(true);
-      setCriticalBannerDismissed(false);
-    }
+    ++safetyRef.current.epoch;
+    const generation = conversationGeneration.current;
+    const requestKey = JSON.stringify([sessionId, textToSend, attachmentIds || []]);
+    const retry = failedRequest.current?.key === requestKey ? failedRequest.current : null;
+    const request = retry || { key: requestKey, id: crypto.randomUUID(), caseId: currentCaseId };
+    failedRequest.current = request;
 
     const userMsg: ChatMessage = {
       id: `usr_${Date.now()}`,
@@ -154,6 +262,7 @@ export function useChat(context?: ChatUserContext | string) {
     // 1. Xuất hiện câu hỏi của User trước
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
+    setRequestLocation(false);
     // 2. Kích hoạt trạng thái AI đang suy nghĩ
     setLoading(true);
 
@@ -161,14 +270,13 @@ export function useChat(context?: ChatUserContext | string) {
 
     try {
       const response = await sendChatMessage({
+        requestId: request.id,
         sessionId,
         message: textToSend,
-        caseId: currentCaseId,
+        caseId: request.caseId,
         attachmentIds: attachmentIds,
         clientContext: {
           mock_customer_id: "CUST_MOCK_01",
-          vehicle_model: selectedModel,
-          vehicle_code_mock: `VF-${selectedModel}-8899`,
           customer_name: ctx.userName,
         },
       });
@@ -178,6 +286,7 @@ export function useChat(context?: ChatUserContext | string) {
       if (elapsed < 400) {
         await new Promise((resolve) => setTimeout(resolve, 400 - elapsed));
       }
+      if (generation !== conversationGeneration.current) return;
 
       if (!response.success || !response.data) {
         throw new Error("Chat API returned no usable response");
@@ -185,6 +294,9 @@ export function useChat(context?: ChatUserContext | string) {
 
       if (response.success && response.data) {
         const data = response.data;
+        ++safetyRef.current.epoch;
+        failedRequest.current = null;
+        applySafety(data);
         if (data.case_id) {
           setCurrentCaseId(data.case_id);
         }
@@ -208,10 +320,9 @@ export function useChat(context?: ChatUserContext | string) {
         if (isServerCritical) {
           setSessionHasCritical(true);
           setCriticalBanner(true);
-        } else if (sessionHasCritical) {
-          setCriticalBanner(true);
         } else {
           setCriticalBanner(false);
+          setSessionHasCritical(false);
         }
 
         // Backend trả về cờ request_location rõ ràng:
@@ -225,6 +336,7 @@ export function useChat(context?: ChatUserContext | string) {
         setMessages((prev) => [...prev, agentMsg]);
       }
     } catch {
+      if (generation !== conversationGeneration.current) return;
       const errorMsg: ChatMessage = {
         id: `error_${Date.now()}`,
         sender: "AGENT",
@@ -233,7 +345,7 @@ export function useChat(context?: ChatUserContext | string) {
       };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
-      setLoading(false);
+      if (generation === conversationGeneration.current) setLoading(false);
     }
   };
 
@@ -242,8 +354,6 @@ export function useChat(context?: ChatUserContext | string) {
     input,
     setInput,
     loading,
-    selectedModel,
-    setSelectedModel,
     sessionId,
     currentCaseId,
     criticalBanner,
@@ -251,6 +361,9 @@ export function useChat(context?: ChatUserContext | string) {
     criticalBannerDismissed,
     dismissCriticalBanner,
     restoreCriticalBanner,
+    safetyPending,
+    safetyError,
+    canAcknowledgeSafety: Boolean(currentCaseId && incidentVersion),
     sessionHasCritical,
     requestLocation,
     sendMessage,

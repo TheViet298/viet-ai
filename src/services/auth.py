@@ -154,7 +154,7 @@ def require_staff(current_user: User = Depends(get_current_user)) -> User:
 
 
 def check_case_ownership(case: Case, user: User | None = None, session_id: str | None = None) -> None:
-    """Kiểm tra quyền sở hữu Case: Customer sở hữu theo user_id, mock_customer_id hoặc session_id; Staff được xem tất cả."""
+    """Only the authenticated principal owns a case; demo IDs are not credentials."""
     if user and user.role == UserRole.STAFF.value:
         return
     # Customer ownership: match user_id, mock_customer_id hoặc session_id
@@ -162,10 +162,6 @@ def check_case_ownership(case: Case, user: User | None = None, session_id: str |
     if user:
         if case.user_id and case.user_id == user.id:
             is_owner = True
-        elif user.mock_customer_id and case.mock_customer_id == user.mock_customer_id:
-            is_owner = True
-    if not is_owner and session_id and case.session_id == session_id:
-        is_owner = True
 
     if not is_owner:
         raise HTTPException(

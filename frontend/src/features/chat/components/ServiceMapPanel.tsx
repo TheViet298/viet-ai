@@ -191,7 +191,7 @@ export function ServiceMapPanel({
                 ? "📍 Đã ghi nhận vị trí của bạn (GPS)"
                 : locationState.status === "MANUAL"
                 ? `📍 Khu vực: ${locationState.label}`
-                : "4 điểm hỗ trợ seed chính hãng theo tài liệu"}
+                : "Chưa chia sẻ vị trí"}
             </p>
           </div>
         </div>
@@ -223,12 +223,13 @@ export function ServiceMapPanel({
       ───────────────────────────────────────────────────────────── */}
       <div className="relative w-full h-[45%] min-h-[240px] shrink-0 bg-slate-100 border-b border-slate-200 overflow-hidden">
         {/* OpenStreetMap Tile Layer Canvas */}
-        <iframe
+        {hasRealGps && <iframe
           title="OpenStreetMap Viewport"
           src={osmEmbedUrl}
           className="w-full h-full border-none opacity-90 filter contrast-[1.05]"
           loading="lazy"
-        />
+        />}
+        {!hasRealGps && <p className="p-6 text-sm text-slate-600">Anh/chị có thể chia sẻ GPS hoặc tra cứu khu vực đã nhập trên ứng dụng VinFast.</p>}
 
         {/* ─────────────────────────────────────────────────────────────
             LỚP GHIM TƯƠNG TÁC (INTERACTIVE CAR-WEB PINS)
@@ -592,7 +593,7 @@ export function ServiceMapPanel({
             </div>
           ) : (
             <div className="p-4 text-center text-slate-500 text-[12px]">
-              Không có điểm hỗ trợ nào thuộc bộ lọc này.
+              Chưa có dữ liệu điểm hỗ trợ được xác thực cho khu vực này. Anh/chị vui lòng tra cứu trên ứng dụng VinFast hoặc liên hệ hotline.
             </div>
           )}
         </div>

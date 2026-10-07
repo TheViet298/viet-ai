@@ -21,6 +21,10 @@ export interface Citation {
 export type ChatResponseType = "CLARIFICATION" | "FAQ_ANSWER" | "CASE_CREATED";
 
 export interface ChatResponseData {
+  emergency_context?: { case_id: string; incident_version: number; safety_status: string } | null;
+  safety_status?: "unconfirmed" | "customer_reported_safe";
+  safety_acknowledged_at?: string | null;
+  incident_version?: number | null;
   response_type: ChatResponseType;
   message: string;
   response?: string;
