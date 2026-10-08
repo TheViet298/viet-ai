@@ -1,8 +1,8 @@
-import base64
 import hashlib
 import hmac
-import json
-import time
+import jwt
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 
 from fastapi import Depends, Header, HTTPException
 from sqlalchemy.orm import Session
@@ -11,56 +11,72 @@ from src.config import get_settings
 from src.db import get_db
 from src.models.db_models import Case, User, UserRole
 
-SETTINGS = get_settings()
-SECRET_KEY = getattr(SETTINGS, "secret_key", "vinfast-serviceflow-secret-key-2026")
-SALT = "vinfast-salt-2026"
+LEGACY_SALT = "vinfast-salt-2026"
+DEVELOPMENT_SECRET = "serviceflow-local-development-secret-not-for-production"
+TOKEN_ISSUER = "vinfast-serviceflow"
+_password_hasher = PasswordHasher()
+
+
+def _token_secret() -> str:
+    configured = get_settings().auth_secret_key.get_secret_value()
+    if configured:
+        return configured
+    if get_settings().app_env == "production":
+        raise RuntimeError("AUTH_SECRET_KEY must be configured in production")
+    return DEVELOPMENT_SECRET
 
 
 def hash_password(password: str) -> str:
-    """Hash mật khẩu bằng SHA-256 kèm salt."""
-    return hashlib.sha256((SALT + password).encode("utf-8")).hexdigest()
+    """Hash a password with Argon2id and a per-password random salt."""
+    return _password_hasher.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Xác thực mật khẩu."""
-    return hash_password(plain_password) == hashed_password
+    """Verify current Argon2id hashes and legacy demo hashes."""
+    if hashed_password.startswith("$argon2"):
+        try:
+            return _password_hasher.verify(hashed_password, plain_password)
+        except (VerifyMismatchError, VerificationError, InvalidHashError):
+            return False
+    # Existing demo accounts are upgraded to Argon2id at the next successful login.
+    legacy_hash = hashlib.sha256((LEGACY_SALT + plain_password).encode("utf-8")).hexdigest()
+    return hmac.compare_digest(legacy_hash, hashed_password)
+
+
+def needs_password_rehash(hashed_password: str) -> bool:
+    if not hashed_password.startswith("$argon2"):
+        return True
+    try:
+        return _password_hasher.check_needs_rehash(hashed_password)
+    except (VerificationError, InvalidHashError):
+        return True
 
 
 def create_token(user_id: str, role: str, expires_in_seconds: int = 86400 * 7) -> str:
-    """Tạo signed token cho session người dùng."""
+    """Create an HS256 JWT. Authorization always reloads role from the database."""
+    import time
+
+    now = int(time.time())
     payload = {
-        "user_id": user_id,
+        "sub": user_id,
         "role": role,
-        "exp": int(time.time()) + expires_in_seconds,
+        "iat": now,
+        "exp": now + expires_in_seconds,
+        "iss": TOKEN_ISSUER,
     }
-    payload_bytes = json.dumps(payload, sort_keys=True).encode("utf-8")
-    payload_b64 = base64.urlsafe_b64encode(payload_bytes).decode("utf-8").rstrip("=")
-    signature = hmac.new(SECRET_KEY.encode("utf-8"), payload_b64.encode("utf-8"), hashlib.sha256).hexdigest()
-    return f"{payload_b64}.{signature}"
+    return jwt.encode(payload, _token_secret(), algorithm="HS256")
 
 
 def verify_token(token: str) -> dict | None:
-    """Giải mã và kiểm tra tính hợp lệ của token."""
+    """Decode and verify signature, issuer, expiry, and required claims."""
     try:
-        parts = token.split(".")
-        if len(parts) != 2:
-            return None
-        payload_b64, signature = parts
-        # Kiểm tra chữ ký HMAC
-        expected_sig = hmac.new(SECRET_KEY.encode("utf-8"), payload_b64.encode("utf-8"), hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(signature, expected_sig):
-            return None
-
-        # Thêm padding b64 nếu thiếu
-        rem = len(payload_b64) % 4
-        if rem > 0:
-            payload_b64 += "=" * (4 - rem)
-        payload_bytes = base64.urlsafe_b64decode(payload_b64.encode("utf-8"))
-        payload = json.loads(payload_bytes.decode("utf-8"))
-
-        if payload.get("exp", 0) < int(time.time()):
-            return None  # Đã hết hạn
-        return payload
+        return jwt.decode(
+            token,
+            _token_secret(),
+            algorithms=["HS256"],
+            issuer=TOKEN_ISSUER,
+            options={"require": ["sub", "iat", "exp", "iss"]},
+        )
     except Exception:
         return None
 
@@ -92,7 +108,7 @@ def get_current_user(
             detail="Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.",
         )
 
-    user = db.query(User).filter(User.id == payload["user_id"]).first()
+    user = db.query(User).filter(User.id == payload["sub"]).first()
     if not user:
         raise HTTPException(
             status_code=401,
@@ -110,13 +126,16 @@ def get_optional_user(
         return None
     payload = verify_token(token)
     if not payload:
-        return None
-    return db.query(User).filter(User.id == payload["user_id"]).first()
+        raise HTTPException(status_code=401, detail="Invalid or expired bearer token")
+    user = db.query(User).filter(User.id == payload["sub"]).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Account no longer exists")
+    return user
 
 
 def require_customer(current_user: User = Depends(get_current_user)) -> User:
-    """RBAC Dependency: Yêu cầu vai trò CUSTOMER (hoặc STAFF)."""
-    if current_user.role not in (UserRole.CUSTOMER.value, UserRole.STAFF.value):
+    """Require a customer account; staff preview uses the separate agent chat."""
+    if current_user.role != UserRole.CUSTOMER.value:
         raise HTTPException(
             status_code=403,
             detail="Chức năng chỉ dành cho Khách hàng đã đăng nhập.",
@@ -149,4 +168,3 @@ def check_case_ownership(case: Case, user: User | None = None, session_id: str |
             status_code=403,
             detail="Bạn không có quyền truy cập vào hồ sơ này.",
         )
-

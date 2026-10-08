@@ -2,20 +2,27 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShieldAlert, ArrowLeft, KeyRound, Lock, UserCheck, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { ShieldAlert, ArrowLeft, KeyRound, Lock } from "lucide-react";
 import { useAuth } from "@/features/shared";
 
 export function StaffGuardGate() {
   const router = useRouter();
-  const { role, loginAs } = useAuth();
+  const { role, loginDemo } = useAuth();
+  const [errorMessage, setErrorMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleDemoStaffLogin = () => {
-    // 1-Click Demo Login với tài khoản seed KTV chính thức
-    loginAs("STAFF", {
-      id: "STAFF_01",
-      name: "Lê Hoàng Quân (KTV)",
-      email: "quan.lh@vinfast.vn",
-    });
+  const handleDemoStaffLogin = async () => {
+    setSubmitting(true);
+    setErrorMessage("");
+    try {
+      await loginDemo("STAFF");
+      router.push("/console");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Tài khoản demo không khả dụng.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const returnHref = role === "CUSTOMER" ? "/track-case" : "/";
@@ -52,15 +59,19 @@ export function StaffGuardGate() {
 
         {/* Action Buttons */}
         <div className="space-y-3 pt-2">
-          {/* Nút 1: Đăng nhập Staff Demo 1-Click */}
-          <button
-            type="button"
-            onClick={handleDemoStaffLogin}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] px-4 py-3 text-[13px] font-semibold text-white shadow-md transition-all group"
-          >
-            <KeyRound className="w-4 h-4 text-[#A5B4FC] group-hover:rotate-12 transition-transform" />
-            <span>Đăng nhập Staff Demo (KTV Lê Hoàng Quân)</span>
-          </button>
+          {process.env.NODE_ENV !== "production" && (
+            <button
+              type="button"
+              onClick={handleDemoStaffLogin}
+              disabled={submitting}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] px-4 py-3 text-[13px] font-semibold text-white shadow-md transition-all group disabled:opacity-60"
+            >
+              <KeyRound className="w-4 h-4 text-[#A5B4FC] group-hover:rotate-12 transition-transform" />
+              <span>{submitting ? "Đang xác thực…" : "Đăng nhập Staff Demo"}</span>
+            </button>
+          )}
+
+          {errorMessage && <p role="alert" className="text-sm text-red-700">{errorMessage}</p>}
 
           {/* Nút 2: Quay lại trang phù hợp */}
           <Link

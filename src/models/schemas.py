@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any, Generic, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 T = TypeVar("T")
 
@@ -35,17 +35,39 @@ class LoginRequest(BaseModel):
     username: str = Field(..., min_length=1)
     password: str = Field(..., min_length=1)
 
+    @field_validator("username", mode="before")
+    @classmethod
+    def normalize_username(cls, value: str) -> str:
+        return value.strip() if isinstance(value, str) else value
+
 
 class RegisterRequest(BaseModel):
     username: str = Field(..., min_length=3)
-    password: str = Field(..., min_length=6)
-    mock_customer_id: str | None = "CUST_MOCK_01"
+    password: str = Field(..., min_length=8, max_length=128)
+    full_name: str | None = None
+    phone: str | None = None
+    vehicle_model: str | None = None
+    mock_customer_id: str | None = None
+
+    @field_validator("username", mode="before")
+    @classmethod
+    def normalize_username(cls, value: str) -> str:
+        return value.strip() if isinstance(value, str) else value
+
+
+class UpdateProfileRequest(BaseModel):
+    full_name: str | None = None
+    phone: str | None = None
+    vehicle_model: str | None = None
 
 
 class UserOut(BaseModel):
     id: str
     username: str
     role: Literal["CUSTOMER", "STAFF", "GUEST"]
+    full_name: str | None = None
+    phone: str | None = None
+    vehicle_model: str | None = None
     mock_customer_id: str | None = None
 
 
@@ -408,6 +430,8 @@ class PublicSupportInsightsData(BaseModel):
 class TicketItem(BaseModel):
     id: str
     mock_customer_id: str
+    customer_name: str | None = None
+    customer_phone: str | None = None
     vehicle_model: str
     vehicle_code_mock: str | None = None
     intent: str
@@ -447,6 +471,8 @@ class TicketDetailCase(BaseModel):
     incident_version: int = 1
     id: str
     mock_customer_id: str
+    customer_name: str | None = None
+    customer_phone: str | None = None
     vehicle_code_mock: str | None = None
     vehicle_model: str
     intent: str

@@ -85,6 +85,18 @@ async def test_auth_register_and_login(client):
     assert res_me.status_code == 200
     assert res_me.json()["data"]["username"] == unique_user
 
+    # 4. Cập nhật thông tin cá nhân PATCH /auth/me
+    res_patch = await client.patch(
+        "/api/v1/auth/me",
+        headers=headers,
+        json={"full_name": "Nguyen Van B", "vehicle_model": "VF9", "phone": "0988776655"},
+    )
+    assert res_patch.status_code == 200
+    patch_data = res_patch.json()["data"]
+    assert patch_data["full_name"] == "Nguyen Van B"
+    assert patch_data["vehicle_model"] == "VF9"
+    assert patch_data["phone"] == "0988776655"
+
 
 @pytest.mark.asyncio
 async def test_rbac_restrictions(client):

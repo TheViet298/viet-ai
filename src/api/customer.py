@@ -1,8 +1,11 @@
+import logging
 import os
 import re
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Literal
+
+logger = logging.getLogger("customer_api")
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from sqlalchemy import func, update
@@ -29,6 +32,7 @@ from src.models.db_models import (
     StaffAuditLog,
     TicketStatus,
     User,
+    UserRole,
     utcnow,
 )
 from src.models.schemas import (
@@ -295,6 +299,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     - Sinh Case Brief và lưu vết vào Database SQLite
     - Guest trial: giới hạn 5 lượt/phiên, trả remaining_guest_messages
     """
+    if current_user and current_user.role != UserRole.CUSTOMER.value:
+        logger.warning(f"[403 FORBIDDEN] User {current_user.id} role '{current_user.role}' is not CUSTOMER")
+        raise HTTPException(status_code=403, detail="Customer account required")
+
     text = sanitize_pii(payload.message.strip())[0]
     lower_text = text.lower()
     ctx = payload.client_context
@@ -307,12 +315,13 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     remaining_guest_msgs: int | None = None
     if not current_user:
         if not payload.guest_session_id:
-            raise HTTPException(401, "Vui lòng đăng nhập hoặc cung cấp guest_session_id.")
+            payload = payload.model_copy(update={"guest_session_id": payload.session_id})
         guest_count = db.query(func.count(Message.id)).filter(
             (Message.session_id == payload.guest_session_id) | (Message.session_id == payload.session_id),
             Message.sender_type == SenderType.CUSTOMER.value,
         ).scalar() or 0
         remaining_guest_msgs = max(0, 5 - guest_count - 1)
+        logger.info(f"[CHAT TRACE] Guest session='{payload.session_id}', guest_count={guest_count}, remaining={remaining_guest_msgs}")
         if classification.is_critical:
             reply = EMERGENCY_SAFE_GUIDANCE + " Vui lòng đăng nhập để tạo và theo dõi hồ sơ hỗ trợ."
             emergency_message = Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='CUSTOMER', content=text,
@@ -326,6 +335,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 show_emergency_banner=True, request_location=True, remaining_guest_messages=remaining_guest_msgs,
             ), error=None)
         if guest_count >= 5:
+            logger.warning(f"[403 FORBIDDEN] Guest session='{payload.session_id}' reached limit: guest_count={guest_count} >= 5")
             raise HTTPException(403, "Bạn đã sử dụng hết 5 lượt chat thử nghiệm. Vui lòng đăng nhập để tiếp tục.")
     mock_cust_id = (current_user.mock_customer_id if current_user and current_user.mock_customer_id else
                     (ctx.mock_customer_id if ctx and ctx.mock_customer_id else f"GUEST_{(payload.guest_session_id or '')[:8]}"))
@@ -348,10 +358,12 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     vehicle_model = vehicle_context.get("incident_model") if vehicle_context["is_incident"] else (
         vehicle_context["models"][0] if len(vehicle_context["models"]) == 1 else None
     )
-    # Compatibility for clients explicitly supplying a model, never a server default.
+    # Compatibility for clients explicitly supplying a model, or authenticated customer model, never a server default.
     if not vehicle_model and ctx and ctx.vehicle_model and len(vehicle_context["models"]) < 2:
         vehicle_model = ctx.vehicle_model
-    vehicle_code = ctx.vehicle_code_mock if ctx else None
+    elif not vehicle_model and current_user and current_user.vehicle_model:
+        vehicle_model = current_user.vehicle_model
+    vehicle_code = (ctx.vehicle_code_mock if ctx else None) or "VF-SF-00231"
     resolved_text = vehicle_context["resolved_query"]
     vehicle_label = vehicle_model or "chưa xác định dòng"
 
@@ -472,6 +484,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 user_id=user_id,
                 session_id=payload.session_id,
                 mock_customer_id=mock_cust_id,
+                mock_customer_name=current_user.full_name if current_user and current_user.full_name else None,
+                mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=vehicle_model,
                 intent=Intent.SERVICE_INCIDENT.value,
@@ -889,6 +903,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 user_id=user_id,
                 session_id=payload.session_id,
                 mock_customer_id=mock_cust_id,
+                mock_customer_name=current_user.full_name if current_user and current_user.full_name else None,
+                mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=vehicle_model,
                 intent=Intent.COMPLAINT_FEEDBACK.value,
@@ -1371,6 +1387,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 user_id=user_id,
                 session_id=payload.session_id,
                 mock_customer_id=mock_cust_id,
+                mock_customer_name=current_user.full_name if current_user and current_user.full_name else None,
+                mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=car_model,
                 intent=target_intent,
@@ -1594,6 +1612,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             user_id=user_id,
             session_id=payload.session_id,
             mock_customer_id=mock_cust_id,
+            mock_customer_name=current_user.full_name if current_user and current_user.full_name else None,
+            mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
             vehicle_code_mock=vehicle_code,
             vehicle_model=car_model,
             intent=Intent.SERVICE_INCIDENT.value,
@@ -1956,6 +1976,8 @@ def handle_customer_action(
     case = db.get(Case, case_id)
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
+    if current_user and current_user.role != UserRole.CUSTOMER.value:
+        raise HTTPException(status_code=403, detail="Customer account required")
     check_case_ownership(case, current_user, session_id=x_session_id)
 
     actor_id = current_user.id if current_user else f"SESSION_{x_session_id or 'GUEST'}"
@@ -2266,6 +2288,9 @@ def get_customer_case_status(
     case = db.get(Case, case_id)
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
+
+    if current_user and current_user.role != UserRole.CUSTOMER.value:
+        raise HTTPException(status_code=403, detail="Customer account required")
 
     check_case_ownership(case, current_user, session_id=x_session_id)
 

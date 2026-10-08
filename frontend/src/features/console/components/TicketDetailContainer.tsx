@@ -69,7 +69,13 @@ export function TicketDetailContainer({ caseId }: TicketDetailContainerProps) {
                 {detail.case.vehicle_model} ({detail.case.vehicle_code_mock})
               </span>
               <span>•</span>
-              <span>Mã khách: <strong className="font-mono text-[#0F172A]">{detail.case.mock_customer_id}</strong> (No-PII Safe)</span>
+              <span>
+                {detail.case.customer_name ? (
+                  <>Khách: <strong className="text-[#0F172A]">{detail.case.customer_name}</strong> <span className="font-mono text-xs text-[#64748B]">({detail.case.mock_customer_id})</span></>
+                ) : (
+                  <>Mã khách: <strong className="font-mono text-[#0F172A]">{detail.case.mock_customer_id}</strong></>
+                )}
+              </span>
               <span>•</span>
               <span>Ý định: <span className="text-[#0F172A] font-medium">{detail.case.intent}</span></span>
             </div>

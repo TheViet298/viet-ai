@@ -1,5 +1,0 @@
-# Optional isolated inference environment. Install CPU torch separately (see docs).
-ultralytics==8.3.235
-numpy>=1.26,<2
-pydantic>=2.10,<3
-Pillow>=10,<13

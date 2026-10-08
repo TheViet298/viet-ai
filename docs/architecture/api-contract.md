@@ -32,13 +32,26 @@
 
 | Endpoint | Mô tả |
 | :--- | :--- |
-| `POST /api/v1/auth/login` | Đăng nhập account demo Customer hoặc Staff |
-| `POST /api/v1/auth/register` | Chỉ tạo Customer; không public register Staff |
-| `GET /api/v1/auth/me` | Trả role và profile mock tối thiểu |
+| `POST /api/v1/auth/login` | Xác thực username/password từ bảng `users`, trả bearer JWT và profile tối thiểu |
+| `POST /api/v1/auth/register` | Tạo Customer mới bằng username demo/password; backend tự gán role và `mock_customer_id` |
+| `GET /api/v1/auth/me` | Xác thực bearer JWT, trả role/profile người dùng hiện tại |
+| `PATCH /api/v1/auth/me` | Cập nhật thông tin hồ sơ người dùng (họ tên, SĐT, dòng xe) |
 | `GET /api/v1/public/articles` | Landing/FAQ/Policy từ nguồn đã kiểm chứng |
 | `POST /api/v1/customer/attachments` | Upload ảnh riêng tư, trả `attachment_id` |
 
 `POST /customer/attachments` trả `attachment_id`, `analysis_status`, và (nếu Vision được bật) `ocr_text`, `detected_signals`, `vision_confidence`. Đây là quan sát sơ bộ, không phải chẩn đoán.
+
+### Auth request
+
+```json
+POST /api/v1/auth/register
+{
+  "username": "customer_demo_01",
+  "password": "a-demo-password-with-8-or-more-characters"
+}
+```
+
+Đăng ký công khai luôn tạo role `CUSTOMER`; client không được chọn role hoặc `mock_customer_id`. Username chỉ là định danh demo, không dùng tên/SĐT thật. Staff được cấp nội bộ và đăng nhập qua cùng endpoint. Guest không có bearer token hoặc user row. Token được gửi bằng `Authorization: Bearer <token>`; API nghiệp vụ tiếp tục giữ nguyên URL và response envelope.
 
 | Endpoint | Mô tả |
 | :--- | :--- |

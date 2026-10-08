@@ -40,9 +40,61 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False)
 Base = declarative_base()
 
 
+def ensure_schema() -> None:
+    """Tự động đảm bảo bảng và bổ sung cột còn thiếu cho SQLite khi schema cập nhật."""
+    Base.metadata.create_all(bind=engine)
+    if is_sqlite:
+        with engine.begin() as conn:
+            # Bổ sung các cột mới cho users nếu thiếu
+            users_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()}
+            if users_cols:
+                if "full_name" not in users_cols:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN full_name VARCHAR(100)")
+                if "phone" not in users_cols:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN phone VARCHAR(20)")
+                if "vehicle_model" not in users_cols:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN vehicle_model VARCHAR(50)")
+                if "mock_customer_id" not in users_cols:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN mock_customer_id VARCHAR(50)")
+
+            # Bổ sung các cột mới cho cases nếu thiếu
+            cases_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(cases)").fetchall()}
+            if cases_cols:
+                if "user_id" not in cases_cols:
+                    conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN user_id VARCHAR(36)")
+                if "mock_customer_name" not in cases_cols:
+                    conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN mock_customer_name VARCHAR(100)")
+                if "mock_customer_phone" not in cases_cols:
+                    conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN mock_customer_phone VARCHAR(20)")
+                if "safety_status" not in cases_cols:
+                    conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN safety_status VARCHAR(30) DEFAULT 'unconfirmed'")
+                if "safety_acknowledged_at" not in cases_cols:
+                    conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN safety_acknowledged_at DATETIME")
+                if "incident_version" not in cases_cols:
+                    conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN incident_version INTEGER DEFAULT 1")
+
+            # Khởi tạo thông tin hồ sơ mẫu nếu đang bị NULL
+            conn.exec_driver_sql(
+                "UPDATE users SET full_name = 'Nguyễn Văn Tuấn', phone = '0912345678', vehicle_model = 'VF8' "
+                "WHERE username = 'customer@vinfast.vn' AND (full_name IS NULL OR full_name = '')"
+            )
+            conn.exec_driver_sql(
+                "UPDATE users SET full_name = 'Trần Thị Mai', phone = '0987654321', vehicle_model = 'VF5' "
+                "WHERE username = 'customer2@vinfast.vn' AND (full_name IS NULL OR full_name = '')"
+            )
+            conn.exec_driver_sql(
+                "UPDATE users SET full_name = 'Cố vấn Dịch vụ VinFast', phone = '1900232389' "
+                "WHERE username = 'staff@vinfast.vn' AND (full_name IS NULL OR full_name = '')"
+            )
+
+
+
+
+
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+

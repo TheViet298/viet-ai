@@ -11,23 +11,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 async function getStaffAuthHeaders(): Promise<Record<string, string>> {
   if (typeof window === "undefined") return {};
-  let token = localStorage.getItem("vf_staff_token");
-  if (!token) {
-    try {
-      const res = await fetch(`${BASE_URL}/api/v1/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: "staff@vinfast.vn", password: "staff123" }),
-      });
-      if (res.ok) {
-        const json = await res.json();
-        token = json?.data?.token;
-        if (token) localStorage.setItem("vf_staff_token", token);
-      }
-    } catch {
-      // Offline mode
-    }
-  }
+  const token = localStorage.getItem("vf_access_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

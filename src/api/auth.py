@@ -1,9 +1,13 @@
 import uuid
+from collections import defaultdict, deque
 from dataclasses import dataclass
 from hmac import compare_digest
+from threading import Lock
+from time import monotonic
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.config import get_settings
@@ -14,29 +18,66 @@ from src.models.schemas import (
     AuthResponseData,
     LoginRequest,
     RegisterRequest,
+    UpdateProfileRequest,
     UserOut,
 )
 from src.services.auth import (
     create_token,
     get_current_user,
     hash_password,
+    needs_password_rehash,
     verify_password,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+_LOGIN_WINDOW_SECONDS = 300
+_LOGIN_MAX_FAILURES = 20
+_login_failures: dict[str, deque[float]] = defaultdict(deque)
+_login_failures_lock = Lock()
+
+
+def _check_login_rate_limit(request: Request) -> str:
+    client_key = request.client.host if request.client else "unknown"
+    cutoff = monotonic() - _LOGIN_WINDOW_SECONDS
+    with _login_failures_lock:
+        failures = _login_failures[client_key]
+        while failures and failures[0] < cutoff:
+            failures.popleft()
+        if len(failures) >= _LOGIN_MAX_FAILURES:
+            raise HTTPException(status_code=429, detail="Too many failed login attempts. Try again later.")
+    return client_key
+
+
+def _record_login_failure(client_key: str) -> None:
+    with _login_failures_lock:
+        _login_failures[client_key].append(monotonic())
+
+
+def _clear_login_failures(client_key: str) -> None:
+    with _login_failures_lock:
+        _login_failures.pop(client_key, None)
+
 
 @router.post("/login", response_model=ApiResponse[AuthResponseData])
-def login(payload: LoginRequest, db: Session = Depends(get_db)):
+def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)):
     """
     Đăng nhập tài khoản demo Customer hoặc Staff theo api-contract.md Mục 1.1.
     """
+    client_key = _check_login_rate_limit(request)
     user = db.query(User).filter(User.username == payload.username.strip()).first()
     if not user or not verify_password(payload.password, user.password_hash):
+        _record_login_failure(client_key)
         raise HTTPException(
             status_code=401,
             detail="Tên đăng nhập hoặc mật khẩu không chính xác.",
         )
+
+    if needs_password_rehash(user.password_hash):
+        user.password_hash = hash_password(payload.password)
+        db.commit()
+        db.refresh(user)
+    _clear_login_failures(client_key)
 
     token = create_token(user.id, user.role)
     return ApiResponse(
@@ -47,6 +88,9 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
                 id=user.id,
                 username=user.username,
                 role=user.role,
+                full_name=user.full_name,
+                phone=user.phone,
+                vehicle_model=user.vehicle_model,
                 mock_customer_id=user.mock_customer_id,
             ),
         ),
@@ -73,10 +117,17 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         username=username,
         password_hash=hash_password(payload.password),
         role=UserRole.CUSTOMER.value,
-        mock_customer_id=payload.mock_customer_id or f"CUST_MOCK_{uuid.uuid4().hex[:4].upper()}",
+        full_name=payload.full_name.strip() if payload.full_name else None,
+        phone=payload.phone.strip() if payload.phone else None,
+        vehicle_model=payload.vehicle_model.strip() if payload.vehicle_model else None,
+        mock_customer_id=payload.mock_customer_id or f"CUST_MOCK_{uuid.uuid4().hex[:8].upper()}",
     )
     db.add(new_user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=f"Tên tài khoản '{username}' đã tồn tại trên hệ thống.") from exc
     db.refresh(new_user)
 
     token = create_token(new_user.id, new_user.role)
@@ -88,6 +139,9 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
                 id=new_user.id,
                 username=new_user.username,
                 role=new_user.role,
+                full_name=new_user.full_name,
+                phone=new_user.phone,
+                vehicle_model=new_user.vehicle_model,
                 mock_customer_id=new_user.mock_customer_id,
             ),
         ),
@@ -106,45 +160,53 @@ def get_me(current_user: User = Depends(get_current_user)):
             id=current_user.id,
             username=current_user.username,
             role=current_user.role,
+            full_name=current_user.full_name,
+            phone=current_user.phone,
+            vehicle_model=current_user.vehicle_model,
             mock_customer_id=current_user.mock_customer_id,
         ),
         error=None,
     )
 
 
+@router.patch("/me", response_model=ApiResponse[UserOut])
+def update_me(
+    payload: UpdateProfileRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Cập nhật thông tin hồ sơ của người dùng hiện tại (họ và tên, SĐT, dòng xe).
+    """
+    if payload.full_name is not None:
+        current_user.full_name = payload.full_name.strip() or None
+    if payload.phone is not None:
+        current_user.phone = payload.phone.strip() or None
+    if payload.vehicle_model is not None:
+        current_user.vehicle_model = payload.vehicle_model.strip() or None
 
+    db.commit()
+    db.refresh(current_user)
+
+    return ApiResponse(
+        success=True,
+        data=UserOut(
+            id=current_user.id,
+            username=current_user.username,
+            role=current_user.role,
+            full_name=current_user.full_name,
+            phone=current_user.phone,
+            vehicle_model=current_user.vehicle_model,
+            mock_customer_id=current_user.mock_customer_id,
+        ),
+        error=None,
+    )
 
 
 bearer = HTTPBearer(auto_error=False)
 
 
-@dataclass(frozen=True)
-class Principal:
-    id: str
-    role: str
+# Re-export route dependencies for backward compatibility with existing tests
+from src.api.dependencies import Principal, customer, optional_principal, staff  # noqa: E402
 
-
-def optional_principal(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)) -> Principal | None:
-    if credentials is None:
-        return None
-    settings = get_settings()
-    for role, token in (("customer", settings.customer_demo_token), ("staff", settings.staff_demo_token)):
-        if token and compare_digest(credentials.credentials.encode(), token.encode()):
-            return Principal(f"{role}-demo", role)
-    raise HTTPException(status_code=401, detail="Invalid bearer token")
-
-
-def customer(principal: Principal | None = Depends(optional_principal)) -> Principal:
-    if principal is None:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    if principal.role != "customer":
-        raise HTTPException(status_code=403, detail="Customer role required")
-    return principal
-
-
-def staff(principal: Principal | None = Depends(optional_principal)) -> Principal:
-    if principal is None:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    if principal.role != "staff":
-        raise HTTPException(status_code=403, detail="Staff role required")
-    return principal
+__all__ = ["router", "Principal", "customer", "optional_principal", "staff"]

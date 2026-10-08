@@ -26,7 +26,7 @@ import { getAiSystemStatus, uploadAttachment } from "../api/chatApi";
 import { useAuth, ProductMark } from "@/features/shared";
 
 export function CustomerChatContainer() {
-  const { user, role, loginAs } = useAuth();
+  const { user, role } = useAuth();
   const {
     messages,
     input,
@@ -353,14 +353,13 @@ export function CustomerChatContainer() {
                 <span className="text-blue-700 font-medium">Đang tiếp nhận xử lý</span>
               </div>
               {role === "GUEST" ? (
-                <button
-                  type="button"
-                  onClick={() => loginAs("CUSTOMER")}
+                <Link
+                  href="/login"
                   className="text-[#1E40AF] font-bold hover:underline flex items-center gap-0.5 shrink-0 text-[11px]"
                 >
                   <span>Đăng nhập</span>
                   <ArrowRight className="w-3 h-3" />
-                </button>
+                </Link>
               ) : (
                 <Link
                   href="/track-case"

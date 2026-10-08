@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,12 +20,12 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     cors_origins: str = "http://localhost:3000"
 
-    # LLM Configuration (Google Gemini & OpenAI)
-    google_api_key: str = ""
+    # LLM Configuration (OpenAI / LiteLLM Gateway / Gemini)
     openai_api_key: str = ""
     openai_base_url: str = ""
+    google_api_key: str = ""
     model: str = ""
-    model_name: str = "gemini-2.5-flash"
+    model_name: str = "openai/gpt-5.6"
     # Vision Configuration (GPT-6-Luna & Google)
     vision_provider: Literal["openai", "google"] = "openai"
     vision_model: str = "gpt-6-luna"
@@ -41,6 +41,7 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = "sqlite:///./data/app.db"
+    auth_secret_key: SecretStr = SecretStr("")
 
     # Vector Store
     chroma_persist_dir: str = "./data/chroma"
@@ -52,14 +53,14 @@ class Settings(BaseSettings):
     rag_max_distance: float = Field(default=0.70, ge=0.0)
     rag_context_max_bytes: int = Field(default=6000, gt=0)
     agent_context_max_bytes: int = Field(default=8000, gt=0)
-    customer_demo_token: str = ""
-    staff_demo_token: str = ""
     service_points_file: str = "./fixtures/service_points.demo.json"
 
     @model_validator(mode="after")
     def validate_context_budgets(self):
         if self.rag_context_max_bytes > self.agent_context_max_bytes:
             raise ValueError("RAG evidence budget exceeds prompt budget")
+        if self.app_env == "production" and len(self.auth_secret_key.get_secret_value()) < 32:
+            raise ValueError("AUTH_SECRET_KEY must contain at least 32 characters in production")
         if self.model:
             self.model_name = self.model
         return self

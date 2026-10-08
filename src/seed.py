@@ -17,6 +17,7 @@ if hasattr(sys.stdout, "reconfigure"):
         pass
 
 from src.db import Base, SessionLocal, engine
+from src.config import get_settings
 from src.models.db_models import (
     Attachment,
     AttachmentStatus,
@@ -43,6 +44,8 @@ from src.services.auth import hash_password
 
 
 def seed_database() -> None:
+    if get_settings().app_env == "production":
+        raise RuntimeError("Demo seed data is disabled in production")
     # Đảm bảo các bảng SQLite đã được khởi tạo
     Base.metadata.create_all(bind=engine)
 
@@ -77,6 +80,9 @@ def seed_database() -> None:
             username="staff@vinfast.vn",
             password_hash=hash_password("staff123"),
             role=UserRole.STAFF.value,
+            full_name="Cố vấn Dịch vụ VinFast",
+            phone="1900232389",
+            vehicle_model=None,
             mock_customer_id=None,
             created_at=now - timedelta(days=30),
         )
@@ -85,6 +91,9 @@ def seed_database() -> None:
             username="customer@vinfast.vn",
             password_hash=hash_password("customer123"),
             role=UserRole.CUSTOMER.value,
+            full_name="Nguyễn Văn Tuấn",
+            phone="0912345678",
+            vehicle_model="VF8",
             mock_customer_id="CUST_MOCK_01",
             created_at=now - timedelta(days=10),
         )
@@ -93,6 +102,9 @@ def seed_database() -> None:
             username="customer2@vinfast.vn",
             password_hash=hash_password("customer123"),
             role=UserRole.CUSTOMER.value,
+            full_name="Trần Thị Mai",
+            phone="0987654321",
+            vehicle_model="VF5",
             mock_customer_id="CUST_MOCK_02",
             created_at=now - timedelta(days=5),
         )

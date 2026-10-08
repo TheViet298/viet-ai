@@ -99,9 +99,18 @@ export function TicketCard({ ticket }: TicketCardProps) {
 
             <span>•</span>
 
-            <span className="flex items-center gap-1 font-mono text-[11px]">
+            <span className="flex items-center gap-1 text-[11px]">
               <User className="w-3 h-3 text-[#64748B]" />
-              {ticket.mock_customer_id}
+              {ticket.customer_name ? (
+                <span className="font-medium text-[#0F172A]">
+                  {ticket.customer_name}
+                  <span className="text-[#64748B] font-mono text-[10px] ml-1">
+                    ({ticket.mock_customer_id})
+                  </span>
+                </span>
+              ) : (
+                <span className="font-mono">{ticket.mock_customer_id}</span>
+              )}
             </span>
 
             <span>•</span>

@@ -1,0 +1,595 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1660 1180" width="1660" height="1180" style="background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Soft Workbench Drop Shadow -->
+    <filter id="card-shadow" x="-4%" y="-3%" width="108%" height="110%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="1.5" dy="3" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.12" />
+    </filter>
+    <!-- Standard Workbench Blue Header Gradient -->
+    <linearGradient id="header-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#7fa9d6" />
+      <stop offset="100%" stop-color="#4b7eb7" />
+    </linearGradient>
+    <!-- Core Hub Header Gradient (Deceper Blue) -->
+    <linearGradient id="header-grad-core" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6ea2db" />
+      <stop offset="100%" stop-color="#3573ba" />
+    </linearGradient>
+  </defs>
+
+  <!-- Clean Workbench Grid Pattern -->
+  <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f1f5f9" stroke-width="1" />
+  </pattern>
+  <rect width="1660" height="1180" fill="url(#grid)" />
+
+  <!-- Main Header Section (README Style) -->
+  <g transform="translate(60, 42)">
+    <text x="0" y="24" font-size="28" font-weight="700" fill="#154c79" letter-spacing="-0.5">Database</text>
+    <line x1="0" y1="36" x2="1540" y2="36" stroke="#d0d7de" stroke-width="1.5" />
+    <text x="0" y="56" font-size="13" fill="#57606a">VinFast ServiceFlow AI (P-142) • Relational Physical Schema (SQLAlchemy/SQLite) • 9 Tables • Crow's Foot EER</text>
+  </g>
+
+  <!-- ========================================================================= -->
+  <!-- RELATIONSHIP CONNECTORS (100% Solid & Continuous, Zero Line Crossings)     -->
+  <!-- ========================================================================= -->
+  <g id="connectors">
+
+    <!-- 1. users (1) -> cases (N) [Vertical straight down: Col 2 Top -> Col 2 Middle] -->
+    <path d="M 790 278 L 790 350" stroke="#335577" stroke-width="1.8" fill="none" />
+    <line x1="783" y1="288" x2="797" y2="288" stroke="#335577" stroke-width="2" />
+    <line x1="783" y1="294" x2="797" y2="294" stroke="#335577" stroke-width="2" />
+    <line x1="783" y1="338" x2="797" y2="338" stroke="#335577" stroke-width="1.8" />
+    <line x1="782" y1="340" x2="790" y2="350" stroke="#335577" stroke-width="1.8" />
+    <line x1="798" y1="340" x2="790" y2="350" stroke="#335577" stroke-width="1.8" />
+
+    <!-- 2. cases (1) -> case_updates (N) [Vertical straight down: Col 2 Middle -> Col 2 Bottom] -->
+    <path d="M 790 688 L 790 760" stroke="#335577" stroke-width="1.8" fill="none" />
+    <line x1="783" y1="698" x2="797" y2="698" stroke="#335577" stroke-width="2" />
+    <line x1="783" y1="704" x2="797" y2="704" stroke="#335577" stroke-width="2" />
+    <line x1="783" y1="748" x2="797" y2="748" stroke="#335577" stroke-width="1.8" />
+    <line x1="782" y1="750" x2="790" y2="760" stroke="#335577" stroke-width="1.8" />
+    <line x1="798" y1="750" x2="790" y2="760" stroke="#335577" stroke-width="1.8" />
+
+    <!-- 3. messages (1) -> attachments (N) [Vertical straight down: Col 1 Middle -> Col 1 Bottom] -->
+    <path d="M 235 628 L 235 700" stroke="#335577" stroke-width="1.8" fill="none" />
+    <line x1="228" y1="638" x2="242" y2="638" stroke="#335577" stroke-width="2" />
+    <line x1="228" y1="644" x2="242" y2="644" stroke="#335577" stroke-width="2" />
+    <line x1="228" y1="688" x2="242" y2="688" stroke="#335577" stroke-width="1.8" />
+    <line x1="227" y1="690" x2="235" y2="700" stroke="#335577" stroke-width="1.8" />
+    <line x1="243" y1="690" x2="235" y2="700" stroke="#335577" stroke-width="1.8" />
+
+    <!-- 4. cases (1) -> messages (N) [Horizontal direct: Col 2 Middle -> Col 1 Middle] -->
+    <path d="M 610 494 L 400 494" stroke="#335577" stroke-width="1.8" fill="none" />
+    <line x1="600" y1="487" x2="600" y2="501" stroke="#335577" stroke-width="2" />
+    <line x1="594" y1="487" x2="594" y2="501" stroke="#335577" stroke-width="2" />
+    <line x1="412" y1="487" x2="412" y2="501" stroke="#335577" stroke-width="1.8" />
+    <line x1="410" y1="486" x2="400" y2="494" stroke="#335577" stroke-width="1.8" />
+    <line x1="410" y1="502" x2="400" y2="494" stroke="#335577" stroke-width="1.8" />
+
+    <!-- 5. cases (1) -> case_locations (1:1 Unique) [Elbow: Col 2 Middle -> Col 1 Top] -->
+    <path d="M 610 380 L 530 380 L 530 164 L 400 164" stroke="#335577" stroke-width="1.8" fill="none" />
+    <line x1="600" y1="373" x2="600" y2="387" stroke="#335577" stroke-width="2" />
+    <line x1="594" y1="373" x2="594" y2="387" stroke="#335577" stroke-width="2" />
+    <line x1="410" y1="157" x2="410" y2="171" stroke="#335577" stroke-width="2" />
+    <line x1="416" y1="157" x2="416" y2="171" stroke="#335577" stroke-width="2" />
+
+    <!-- 6. cases (1) -> attachments (N) [Elbow: Col 2 Middle -> Col 1 Bottom] -->
+    <path d="M 610 640 L 530 640 L 530 764 L 400 764" stroke="#335577" stroke-width="1.8" fill="none" />
+    <line x1="600" y1="633" x2="600" y2="647" stroke="#335577" stroke-width="2" />
+    <line x1="594" y1="633" x2="594" y2="647" stroke="#335577" stroke-width="2" />
+    <line x1="412" y1="757" x2="412" y2="771" stroke="#335577" stroke-width="1.8" />
+    <line x1="410" y1="756" x2="400" y2="764" stroke="#335577" stroke-width="1.8" />
+    <line x1="410" y1="772" x2="400" y2="764" stroke="#335577" stroke-width="1.8" />
+
+    <!-- 7. cases (1) -> case_briefs (1:1 Unique) [Elbow: Col 2 Middle -> Col 3 Top] -->
+    <path d="M 970 380 L 1050 380 L 1050 164 L 1180 164" stroke="#335577" stroke-width="1.8" fill="none" />
+    <line x1="980" y1="373" x2="980" y2="387" stroke="#335577" stroke-width="2" />
+    <line x1="986" y1="373" x2="986" y2="387" stroke="#335577" stroke-width="2" />
+    <line x1="1170" y1="157" x2="1170" y2="171" stroke="#335577" stroke-width="2" />
+    <line x1="1164" y1="157" x2="1164" y2="171" stroke="#335577" stroke-width="2" />
+
+    <!-- 8. cases (1) -> staff_audit_logs (N) [Horizontal direct: Col 2 Middle -> Col 3 Middle] -->
+    <path d="M 970 484 L 1180 484" stroke="#335577" stroke-width="1.8" fill="none" />
+    <line x1="980" y1="477" x2="980" y2="491" stroke="#335577" stroke-width="2" />
+    <line x1="986" y1="477" x2="986" y2="491" stroke="#335577" stroke-width="2" />
+    <line x1="1168" y1="477" x2="1168" y2="491" stroke="#335577" stroke-width="1.8" />
+    <line x1="1170" y1="476" x2="1180" y2="484" stroke="#335577" stroke-width="1.8" />
+    <line x1="1170" y1="492" x2="1180" y2="484" stroke="#335577" stroke-width="1.8" />
+
+    <!-- 9. cases (1) -> customer_feedback (N) [Elbow: Col 2 Middle -> Col 3 Bottom] -->
+    <path d="M 970 640 L 1050 640 L 1050 794 L 1180 794" stroke="#335577" stroke-width="1.8" fill="none" />
+    <line x1="980" y1="633" x2="980" y2="647" stroke="#335577" stroke-width="2" />
+    <line x1="986" y1="633" x2="986" y2="647" stroke="#335577" stroke-width="2" />
+    <line x1="1168" y1="787" x2="1168" y2="801" stroke="#335577" stroke-width="1.8" />
+    <line x1="1170" y1="786" x2="1180" y2="794" stroke="#335577" stroke-width="1.8" />
+    <line x1="1170" y1="802" x2="1180" y2="794" stroke="#335577" stroke-width="1.8" />
+  </g>
+
+  <!-- TABLE: users -->
+  <g id="table-users" transform="translate(610, 100)" filter="url(#card-shadow)">
+    <rect width="360" height="178" rx="3" ry="3" fill="#ffffff" stroke="#7599c2" stroke-width="1.2" />
+    <!-- Header Bar with MySQL Workbench Gradient -->
+    <path d="M 0 3 Q 0 0 3 0 L 357 0 Q 360 0 360 3 L 360 28 L 0 28 Z" fill="url(#header-grad)" />
+    <text x="12" y="19" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.2">users</text>
+    <!-- Header Chevron Down Icon -->
+    <path d="M 342 12 L 350 12 L 346 17 Z" fill="#ffffff" opacity="0.9" />
+    <!-- Table Columns Body -->
+    <g transform="translate(0, 28)">
+      <!-- row id -->
+      <g transform="translate(10, 6)"><circle cx="4" cy="4" r="3.2" fill="#f1c40f" stroke="#b7950b" stroke-width="0.8"/><circle cx="4" cy="4" r="1.2" fill="#ffffff"/><rect x="6.5" y="3" width="5.5" height="2" fill="#f1c40f"/><rect x="9.5" y="5" width="2" height="2" fill="#f1c40f"/></g>
+      <text x="24" y="16" font-size="11" font-weight="bold" fill="#111111">id</text>
+      <text x="348" y="16" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(36)</text>
+      <!-- row username -->
+      <polygon points="14,29 18,33 14,37 10,33" fill="#2980b9" stroke="#1f618d" stroke-width="0.8" />
+      <text x="24" y="36" font-size="11" font-weight="600" fill="#222222">username</text>
+      <text x="348" y="36" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(100)</text>
+      <!-- row password_hash -->
+      <polygon points="14,49 18,53 14,57 10,53" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="56" font-size="11" font-weight="normal" fill="#333333">password_hash</text>
+      <text x="348" y="56" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(256)</text>
+      <!-- row role -->
+      <polygon points="14,69 18,73 14,77 10,73" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="76" font-size="11" font-weight="normal" fill="#333333">role</text>
+      <text x="348" y="76" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(20)</text>
+      <!-- row mock_customer_id -->
+      <polygon points="14,89 18,93 14,97 10,93" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="96" font-size="11" font-weight="normal" fill="#333333">mock_customer_id</text>
+      <text x="348" y="96" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(50)</text>
+      <!-- row created_at -->
+      <polygon points="14,109 18,113 14,117 10,113" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="116" font-size="11" font-weight="normal" fill="#333333">created_at</text>
+      <text x="348" y="116" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">DATETIME</text>
+    </g>
+    <!-- Indexes Section -->
+    <line x1="0" y1="156" x2="360" y2="156" stroke="#cfdceb" stroke-width="1" />
+    <rect x="0" y="156" width="360" height="22" rx="0" fill="#eaf1f8" />
+    <path d="M 12 164 L 18 164 L 15 169 Z" fill="#668ebc" />
+    <text x="24" y="171" font-size="10.5" font-weight="600" fill="#446688">Indexes</text>
+  </g>
+
+  <!-- TABLE: cases -->
+  <g id="table-cases" transform="translate(610, 350)" filter="url(#card-shadow)">
+    <rect width="360" height="338" rx="3" ry="3" fill="#ffffff" stroke="#7599c2" stroke-width="1.2" />
+    <!-- Header Bar with MySQL Workbench Gradient -->
+    <path d="M 0 3 Q 0 0 3 0 L 357 0 Q 360 0 360 3 L 360 28 L 0 28 Z" fill="url(#header-grad-core)" />
+    <text x="12" y="19" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.2">cases</text>
+    <!-- Header Chevron Down Icon -->
+    <path d="M 342 12 L 350 12 L 346 17 Z" fill="#ffffff" opacity="0.9" />
+    <!-- Table Columns Body -->
+    <g transform="translate(0, 28)">
+      <!-- row id -->
+      <g transform="translate(10, 6)"><circle cx="4" cy="4" r="3.2" fill="#f1c40f" stroke="#b7950b" stroke-width="0.8"/><circle cx="4" cy="4" r="1.2" fill="#ffffff"/><rect x="6.5" y="3" width="5.5" height="2" fill="#f1c40f"/><rect x="9.5" y="5" width="2" height="2" fill="#f1c40f"/></g>
+      <text x="24" y="16" font-size="11" font-weight="bold" fill="#111111">id</text>
+      <text x="348" y="16" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(32)</text>
+      <!-- row user_id -->
+      <polygon points="14,29 18,33 14,37 10,33" fill="#e67e22" stroke="#d35400" stroke-width="0.8" />
+      <text x="24" y="36" font-size="11" font-weight="600" fill="#222222">user_id</text>
+      <text x="348" y="36" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(36)</text>
+      <!-- row session_id -->
+      <polygon points="14,49 18,53 14,57 10,53" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="56" font-size="11" font-weight="normal" fill="#333333">session_id</text>
+      <text x="348" y="56" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(64)</text>
+      <!-- row mock_customer_id -->
+      <polygon points="14,69 18,73 14,77 10,73" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="76" font-size="11" font-weight="normal" fill="#333333">mock_customer_id</text>
+      <text x="348" y="76" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(50)</text>
+      <!-- row mock_customer_name -->
+      <polygon points="14,89 18,93 14,97 10,93" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="96" font-size="11" font-weight="normal" fill="#333333">mock_customer_name</text>
+      <text x="348" y="96" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(100)</text>
+      <!-- row mock_customer_phone -->
+      <polygon points="14,109 18,113 14,117 10,113" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="116" font-size="11" font-weight="normal" fill="#333333">mock_customer_phone</text>
+      <text x="348" y="116" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(20)</text>
+      <!-- row vehicle_code_mock -->
+      <polygon points="14,129 18,133 14,137 10,133" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="136" font-size="11" font-weight="normal" fill="#333333">vehicle_code_mock</text>
+      <text x="348" y="136" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(50)</text>
+      <!-- row vehicle_model -->
+      <polygon points="14,149 18,153 14,157 10,153" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="156" font-size="11" font-weight="normal" fill="#333333">vehicle_model</text>
+      <text x="348" y="156" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(50)</text>
+      <!-- row intent -->
+      <polygon points="14,169 18,173 14,177 10,173" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="176" font-size="11" font-weight="normal" fill="#333333">intent</text>
+      <text x="348" y="176" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(50)</text>
+      <!-- row priority -->
+      <polygon points="14,189 18,193 14,197 10,193" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="196" font-size="11" font-weight="normal" fill="#333333">priority</text>
+      <text x="348" y="196" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(20)</text>
+      <!-- row status -->
+      <polygon points="14,209 18,213 14,217 10,213" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="216" font-size="11" font-weight="normal" fill="#333333">status</text>
+      <text x="348" y="216" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(30)</text>
+      <!-- row assigned_staff_id -->
+      <polygon points="14,229 18,233 14,237 10,233" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="236" font-size="11" font-weight="normal" fill="#333333">assigned_staff_id</text>
+      <text x="348" y="236" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(50)</text>
+      <!-- row created_at -->
+      <polygon points="14,249 18,253 14,257 10,253" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="256" font-size="11" font-weight="normal" fill="#333333">created_at</text>
+      <text x="348" y="256" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">DATETIME</text>
+      <!-- row updated_at -->
+      <polygon points="14,269 18,273 14,277 10,273" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="276" font-size="11" font-weight="normal" fill="#333333">updated_at</text>
+      <text x="348" y="276" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">DATETIME</text>
+    </g>
+    <!-- Indexes Section -->
+    <line x1="0" y1="316" x2="360" y2="316" stroke="#cfdceb" stroke-width="1" />
+    <rect x="0" y="316" width="360" height="22" rx="0" fill="#eaf1f8" />
+    <path d="M 12 324 L 18 324 L 15 329 Z" fill="#668ebc" />
+    <text x="24" y="331" font-size="10.5" font-weight="600" fill="#446688">Indexes</text>
+  </g>
+
+  <!-- TABLE: case_updates -->
+  <g id="table-case_updates" transform="translate(610, 760)" filter="url(#card-shadow)">
+    <rect width="360" height="218" rx="3" ry="3" fill="#ffffff" stroke="#7599c2" stroke-width="1.2" />
+    <!-- Header Bar with MySQL Workbench Gradient -->
+    <path d="M 0 3 Q 0 0 3 0 L 357 0 Q 360 0 360 3 L 360 28 L 0 28 Z" fill="url(#header-grad)" />
+    <text x="12" y="19" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.2">case_updates</text>
+    <!-- Header Chevron Down Icon -->
+    <path d="M 342 12 L 350 12 L 346 17 Z" fill="#ffffff" opacity="0.9" />
+    <!-- Table Columns Body -->
+    <g transform="translate(0, 28)">
+      <!-- row id -->
+      <g transform="translate(10, 6)"><circle cx="4" cy="4" r="3.2" fill="#f1c40f" stroke="#b7950b" stroke-width="0.8"/><circle cx="4" cy="4" r="1.2" fill="#ffffff"/><rect x="6.5" y="3" width="5.5" height="2" fill="#f1c40f"/><rect x="9.5" y="5" width="2" height="2" fill="#f1c40f"/></g>
+      <text x="24" y="16" font-size="11" font-weight="bold" fill="#111111">id</text>
+      <text x="348" y="16" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(36)</text>
+      <!-- row case_id -->
+      <polygon points="14,29 18,33 14,37 10,33" fill="#e67e22" stroke="#d35400" stroke-width="0.8" />
+      <text x="24" y="36" font-size="11" font-weight="600" fill="#222222">case_id</text>
+      <text x="348" y="36" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(32)</text>
+      <!-- row author_type -->
+      <polygon points="14,49 18,53 14,57 10,53" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="56" font-size="11" font-weight="normal" fill="#333333">author_type</text>
+      <text x="348" y="56" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(20)</text>
+      <!-- row status_after_update -->
+      <polygon points="14,69 18,73 14,77 10,73" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="76" font-size="11" font-weight="normal" fill="#333333">status_after_update</text>
+      <text x="348" y="76" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(30)</text>
+      <!-- row customer_message -->
+      <polygon points="14,89 18,93 14,97 10,93" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="96" font-size="11" font-weight="normal" fill="#333333">customer_message</text>
+      <text x="348" y="96" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">TEXT</text>
+      <!-- row next_step -->
+      <polygon points="14,109 18,113 14,117 10,113" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="116" font-size="11" font-weight="normal" fill="#333333">next_step</text>
+      <text x="348" y="116" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">TEXT</text>
+      <!-- row awaiting_confirmation -->
+      <polygon points="14,129 18,133 14,137 10,133" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="136" font-size="11" font-weight="normal" fill="#333333">awaiting_confirmation</text>
+      <text x="348" y="136" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">BOOLEAN</text>
+      <!-- row created_at -->
+      <polygon points="14,149 18,153 14,157 10,153" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="156" font-size="11" font-weight="normal" fill="#333333">created_at</text>
+      <text x="348" y="156" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">DATETIME</text>
+    </g>
+    <!-- Indexes Section -->
+    <line x1="0" y1="196" x2="360" y2="196" stroke="#cfdceb" stroke-width="1" />
+    <rect x="0" y="196" width="360" height="22" rx="0" fill="#eaf1f8" />
+    <path d="M 12 204 L 18 204 L 15 209 Z" fill="#668ebc" />
+    <text x="24" y="211" font-size="10.5" font-weight="600" fill="#446688">Indexes</text>
+  </g>
+
+  <!-- TABLE: case_locations -->
+  <g id="table-case_locations" transform="translate(70, 100)" filter="url(#card-shadow)">
+    <rect width="330" height="258" rx="3" ry="3" fill="#ffffff" stroke="#7599c2" stroke-width="1.2" />
+    <!-- Header Bar with MySQL Workbench Gradient -->
+    <path d="M 0 3 Q 0 0 3 0 L 327 0 Q 330 0 330 3 L 330 28 L 0 28 Z" fill="url(#header-grad)" />
+    <text x="12" y="19" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.2">case_locations</text>
+    <!-- Header Chevron Down Icon -->
+    <path d="M 312 12 L 320 12 L 316 17 Z" fill="#ffffff" opacity="0.9" />
+    <!-- Table Columns Body -->
+    <g transform="translate(0, 28)">
+      <!-- row id -->
+      <g transform="translate(10, 6)"><circle cx="4" cy="4" r="3.2" fill="#f1c40f" stroke="#b7950b" stroke-width="0.8"/><circle cx="4" cy="4" r="1.2" fill="#ffffff"/><rect x="6.5" y="3" width="5.5" height="2" fill="#f1c40f"/><rect x="9.5" y="5" width="2" height="2" fill="#f1c40f"/></g>
+      <text x="24" y="16" font-size="11" font-weight="bold" fill="#111111">id</text>
+      <text x="318" y="16" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(36)</text>
+      <!-- row case_id -->
+      <polygon points="14,29 18,33 14,37 10,33" fill="#2980b9" stroke="#1f618d" stroke-width="0.8" />
+      <text x="24" y="36" font-size="11" font-weight="600" fill="#222222">case_id</text>
+      <text x="318" y="36" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(32)</text>
+      <!-- row status -->
+      <polygon points="14,49 18,53 14,57 10,53" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="56" font-size="11" font-weight="normal" fill="#333333">status</text>
+      <text x="318" y="56" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(20)</text>
+      <!-- row source -->
+      <polygon points="14,69 18,73 14,77 10,73" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="76" font-size="11" font-weight="normal" fill="#333333">source</text>
+      <text x="318" y="76" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(20)</text>
+      <!-- row location_label -->
+      <polygon points="14,89 18,93 14,97 10,93" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="96" font-size="11" font-weight="normal" fill="#333333">location_label</text>
+      <text x="318" y="96" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(255)</text>
+      <!-- row latitude -->
+      <polygon points="14,109 18,113 14,117 10,113" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="116" font-size="11" font-weight="normal" fill="#333333">latitude</text>
+      <text x="318" y="116" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">FLOAT</text>
+      <!-- row longitude -->
+      <polygon points="14,129 18,133 14,137 10,133" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="136" font-size="11" font-weight="normal" fill="#333333">longitude</text>
+      <text x="318" y="136" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">FLOAT</text>
+      <!-- row precision -->
+      <polygon points="14,149 18,153 14,157 10,153" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="156" font-size="11" font-weight="normal" fill="#333333">precision</text>
+      <text x="318" y="156" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(20)</text>
+      <!-- row share_with_staff -->
+      <polygon points="14,169 18,173 14,177 10,173" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="176" font-size="11" font-weight="normal" fill="#333333">share_with_staff</text>
+      <text x="318" y="176" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">BOOLEAN</text>
+      <!-- row created_at -->
+      <polygon points="14,189 18,193 14,197 10,193" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="196" font-size="11" font-weight="normal" fill="#333333">created_at</text>
+      <text x="318" y="196" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">DATETIME</text>
+    </g>
+    <!-- Indexes Section -->
+    <line x1="0" y1="236" x2="330" y2="236" stroke="#cfdceb" stroke-width="1" />
+    <rect x="0" y="236" width="330" height="22" rx="0" fill="#eaf1f8" />
+    <path d="M 12 244 L 18 244 L 15 249 Z" fill="#668ebc" />
+    <text x="24" y="251" font-size="10.5" font-weight="600" fill="#446688">Indexes</text>
+  </g>
+
+  <!-- TABLE: messages -->
+  <g id="table-messages" transform="translate(70, 430)" filter="url(#card-shadow)">
+    <rect width="330" height="198" rx="3" ry="3" fill="#ffffff" stroke="#7599c2" stroke-width="1.2" />
+    <!-- Header Bar with MySQL Workbench Gradient -->
+    <path d="M 0 3 Q 0 0 3 0 L 327 0 Q 330 0 330 3 L 330 28 L 0 28 Z" fill="url(#header-grad)" />
+    <text x="12" y="19" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.2">messages</text>
+    <!-- Header Chevron Down Icon -->
+    <path d="M 312 12 L 320 12 L 316 17 Z" fill="#ffffff" opacity="0.9" />
+    <!-- Table Columns Body -->
+    <g transform="translate(0, 28)">
+      <!-- row id -->
+      <g transform="translate(10, 6)"><circle cx="4" cy="4" r="3.2" fill="#f1c40f" stroke="#b7950b" stroke-width="0.8"/><circle cx="4" cy="4" r="1.2" fill="#ffffff"/><rect x="6.5" y="3" width="5.5" height="2" fill="#f1c40f"/><rect x="9.5" y="5" width="2" height="2" fill="#f1c40f"/></g>
+      <text x="24" y="16" font-size="11" font-weight="bold" fill="#111111">id</text>
+      <text x="318" y="16" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(36)</text>
+      <!-- row case_id -->
+      <polygon points="14,29 18,33 14,37 10,33" fill="#e67e22" stroke="#d35400" stroke-width="0.8" />
+      <text x="24" y="36" font-size="11" font-weight="600" fill="#222222">case_id</text>
+      <text x="318" y="36" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(32)</text>
+      <!-- row session_id -->
+      <polygon points="14,49 18,53 14,57 10,53" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="56" font-size="11" font-weight="normal" fill="#333333">session_id</text>
+      <text x="318" y="56" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(64)</text>
+      <!-- row sender_type -->
+      <polygon points="14,69 18,73 14,77 10,73" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="76" font-size="11" font-weight="normal" fill="#333333">sender_type</text>
+      <text x="318" y="76" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(20)</text>
+      <!-- row content -->
+      <polygon points="14,89 18,93 14,97 10,93" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="96" font-size="11" font-weight="normal" fill="#333333">content</text>
+      <text x="318" y="96" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">TEXT</text>
+      <!-- row metadata -->
+      <polygon points="14,109 18,113 14,117 10,113" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="116" font-size="11" font-weight="normal" fill="#333333">metadata</text>
+      <text x="318" y="116" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">JSON</text>
+      <!-- row created_at -->
+      <polygon points="14,129 18,133 14,137 10,133" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="136" font-size="11" font-weight="normal" fill="#333333">created_at</text>
+      <text x="318" y="136" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">DATETIME</text>
+    </g>
+    <!-- Indexes Section -->
+    <line x1="0" y1="176" x2="330" y2="176" stroke="#cfdceb" stroke-width="1" />
+    <rect x="0" y="176" width="330" height="22" rx="0" fill="#eaf1f8" />
+    <path d="M 12 184 L 18 184 L 15 189 Z" fill="#668ebc" />
+    <text x="24" y="191" font-size="10.5" font-weight="600" fill="#446688">Indexes</text>
+  </g>
+
+  <!-- TABLE: attachments -->
+  <g id="table-attachments" transform="translate(70, 700)" filter="url(#card-shadow)">
+    <rect width="330" height="258" rx="3" ry="3" fill="#ffffff" stroke="#7599c2" stroke-width="1.2" />
+    <!-- Header Bar with MySQL Workbench Gradient -->
+    <path d="M 0 3 Q 0 0 3 0 L 327 0 Q 330 0 330 3 L 330 28 L 0 28 Z" fill="url(#header-grad)" />
+    <text x="12" y="19" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.2">attachments</text>
+    <!-- Header Chevron Down Icon -->
+    <path d="M 312 12 L 320 12 L 316 17 Z" fill="#ffffff" opacity="0.9" />
+    <!-- Table Columns Body -->
+    <g transform="translate(0, 28)">
+      <!-- row id -->
+      <g transform="translate(10, 6)"><circle cx="4" cy="4" r="3.2" fill="#f1c40f" stroke="#b7950b" stroke-width="0.8"/><circle cx="4" cy="4" r="1.2" fill="#ffffff"/><rect x="6.5" y="3" width="5.5" height="2" fill="#f1c40f"/><rect x="9.5" y="5" width="2" height="2" fill="#f1c40f"/></g>
+      <text x="24" y="16" font-size="11" font-weight="bold" fill="#111111">id</text>
+      <text x="318" y="16" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(36)</text>
+      <!-- row case_id -->
+      <polygon points="14,29 18,33 14,37 10,33" fill="#e67e22" stroke="#d35400" stroke-width="0.8" />
+      <text x="24" y="36" font-size="11" font-weight="600" fill="#222222">case_id</text>
+      <text x="318" y="36" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(32)</text>
+      <!-- row message_id -->
+      <polygon points="14,49 18,53 14,57 10,53" fill="#e67e22" stroke="#d35400" stroke-width="0.8" />
+      <text x="24" y="56" font-size="11" font-weight="600" fill="#222222">message_id</text>
+      <text x="318" y="56" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(36)</text>
+      <!-- row storage_key -->
+      <polygon points="14,69 18,73 14,77 10,73" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="76" font-size="11" font-weight="normal" fill="#333333">storage_key</text>
+      <text x="318" y="76" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(255)</text>
+      <!-- row mime_type -->
+      <polygon points="14,89 18,93 14,97 10,93" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="96" font-size="11" font-weight="normal" fill="#333333">mime_type</text>
+      <text x="318" y="96" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(50)</text>
+      <!-- row analysis_status -->
+      <polygon points="14,109 18,113 14,117 10,113" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="116" font-size="11" font-weight="normal" fill="#333333">analysis_status</text>
+      <text x="318" y="116" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(20)</text>
+      <!-- row ocr_text -->
+      <polygon points="14,129 18,133 14,137 10,133" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="136" font-size="11" font-weight="normal" fill="#333333">ocr_text</text>
+      <text x="318" y="136" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">TEXT</text>
+      <!-- row detected_signals -->
+      <polygon points="14,149 18,153 14,157 10,153" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="156" font-size="11" font-weight="normal" fill="#333333">detected_signals</text>
+      <text x="318" y="156" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">JSON</text>
+      <!-- row vision_confidence -->
+      <polygon points="14,169 18,173 14,177 10,173" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="176" font-size="11" font-weight="normal" fill="#333333">vision_confidence</text>
+      <text x="318" y="176" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">FLOAT</text>
+      <!-- row created_at -->
+      <polygon points="14,189 18,193 14,197 10,193" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="196" font-size="11" font-weight="normal" fill="#333333">created_at</text>
+      <text x="318" y="196" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">DATETIME</text>
+    </g>
+    <!-- Indexes Section -->
+    <line x1="0" y1="236" x2="330" y2="236" stroke="#cfdceb" stroke-width="1" />
+    <rect x="0" y="236" width="330" height="22" rx="0" fill="#eaf1f8" />
+    <path d="M 12 244 L 18 244 L 15 249 Z" fill="#668ebc" />
+    <text x="24" y="251" font-size="10.5" font-weight="600" fill="#446688">Indexes</text>
+  </g>
+
+  <!-- TABLE: case_briefs -->
+  <g id="table-case_briefs" transform="translate(1180, 100)" filter="url(#card-shadow)">
+    <rect width="330" height="218" rx="3" ry="3" fill="#ffffff" stroke="#7599c2" stroke-width="1.2" />
+    <!-- Header Bar with MySQL Workbench Gradient -->
+    <path d="M 0 3 Q 0 0 3 0 L 327 0 Q 330 0 330 3 L 330 28 L 0 28 Z" fill="url(#header-grad)" />
+    <text x="12" y="19" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.2">case_briefs</text>
+    <!-- Header Chevron Down Icon -->
+    <path d="M 312 12 L 320 12 L 316 17 Z" fill="#ffffff" opacity="0.9" />
+    <!-- Table Columns Body -->
+    <g transform="translate(0, 28)">
+      <!-- row id -->
+      <g transform="translate(10, 6)"><circle cx="4" cy="4" r="3.2" fill="#f1c40f" stroke="#b7950b" stroke-width="0.8"/><circle cx="4" cy="4" r="1.2" fill="#ffffff"/><rect x="6.5" y="3" width="5.5" height="2" fill="#f1c40f"/><rect x="9.5" y="5" width="2" height="2" fill="#f1c40f"/></g>
+      <text x="24" y="16" font-size="11" font-weight="bold" fill="#111111">id</text>
+      <text x="318" y="16" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(36)</text>
+      <!-- row case_id -->
+      <polygon points="14,29 18,33 14,37 10,33" fill="#2980b9" stroke="#1f618d" stroke-width="0.8" />
+      <text x="24" y="36" font-size="11" font-weight="600" fill="#222222">case_id</text>
+      <text x="318" y="36" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(32)</text>
+      <!-- row summary -->
+      <polygon points="14,49 18,53 14,57 10,53" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="56" font-size="11" font-weight="normal" fill="#333333">summary</text>
+      <text x="318" y="56" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">TEXT</text>
+      <!-- row captured_fields -->
+      <polygon points="14,69 18,73 14,77 10,73" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="76" font-size="11" font-weight="normal" fill="#333333">captured_fields</text>
+      <text x="318" y="76" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">JSON</text>
+      <!-- row suggested_action -->
+      <polygon points="14,89 18,93 14,97 10,93" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="96" font-size="11" font-weight="normal" fill="#333333">suggested_action</text>
+      <text x="318" y="96" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">TEXT</text>
+      <!-- row confidence_score -->
+      <polygon points="14,109 18,113 14,117 10,113" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="116" font-size="11" font-weight="normal" fill="#333333">confidence_score</text>
+      <text x="318" y="116" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">FLOAT</text>
+      <!-- row is_edited_by_staff -->
+      <polygon points="14,129 18,133 14,137 10,133" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="136" font-size="11" font-weight="normal" fill="#333333">is_edited_by_staff</text>
+      <text x="318" y="136" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">BOOLEAN</text>
+      <!-- row generated_at -->
+      <polygon points="14,149 18,153 14,157 10,153" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="156" font-size="11" font-weight="normal" fill="#333333">generated_at</text>
+      <text x="318" y="156" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">DATETIME</text>
+    </g>
+    <!-- Indexes Section -->
+    <line x1="0" y1="196" x2="330" y2="196" stroke="#cfdceb" stroke-width="1" />
+    <rect x="0" y="196" width="330" height="22" rx="0" fill="#eaf1f8" />
+    <path d="M 12 204 L 18 204 L 15 209 Z" fill="#668ebc" />
+    <text x="24" y="211" font-size="10.5" font-weight="600" fill="#446688">Indexes</text>
+  </g>
+
+  <!-- TABLE: staff_audit_logs -->
+  <g id="table-staff_audit_logs" transform="translate(1180, 420)" filter="url(#card-shadow)">
+    <rect width="330" height="218" rx="3" ry="3" fill="#ffffff" stroke="#7599c2" stroke-width="1.2" />
+    <!-- Header Bar with MySQL Workbench Gradient -->
+    <path d="M 0 3 Q 0 0 3 0 L 327 0 Q 330 0 330 3 L 330 28 L 0 28 Z" fill="url(#header-grad)" />
+    <text x="12" y="19" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.2">staff_audit_logs</text>
+    <!-- Header Chevron Down Icon -->
+    <path d="M 312 12 L 320 12 L 316 17 Z" fill="#ffffff" opacity="0.9" />
+    <!-- Table Columns Body -->
+    <g transform="translate(0, 28)">
+      <!-- row id -->
+      <g transform="translate(10, 6)"><circle cx="4" cy="4" r="3.2" fill="#f1c40f" stroke="#b7950b" stroke-width="0.8"/><circle cx="4" cy="4" r="1.2" fill="#ffffff"/><rect x="6.5" y="3" width="5.5" height="2" fill="#f1c40f"/><rect x="9.5" y="5" width="2" height="2" fill="#f1c40f"/></g>
+      <text x="24" y="16" font-size="11" font-weight="bold" fill="#111111">id</text>
+      <text x="318" y="16" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(36)</text>
+      <!-- row case_id -->
+      <polygon points="14,29 18,33 14,37 10,33" fill="#e67e22" stroke="#d35400" stroke-width="0.8" />
+      <text x="24" y="36" font-size="11" font-weight="600" fill="#222222">case_id</text>
+      <text x="318" y="36" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(32)</text>
+      <!-- row staff_id -->
+      <polygon points="14,49 18,53 14,57 10,53" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="56" font-size="11" font-weight="normal" fill="#333333">staff_id</text>
+      <text x="318" y="56" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(50)</text>
+      <!-- row action -->
+      <polygon points="14,69 18,73 14,77 10,73" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="76" font-size="11" font-weight="normal" fill="#333333">action</text>
+      <text x="318" y="76" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(30)</text>
+      <!-- row previous_state -->
+      <polygon points="14,89 18,93 14,97 10,93" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="96" font-size="11" font-weight="normal" fill="#333333">previous_state</text>
+      <text x="318" y="96" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">JSON</text>
+      <!-- row new_state -->
+      <polygon points="14,109 18,113 14,117 10,113" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="116" font-size="11" font-weight="normal" fill="#333333">new_state</text>
+      <text x="318" y="116" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">JSON</text>
+      <!-- row notes -->
+      <polygon points="14,129 18,133 14,137 10,133" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="136" font-size="11" font-weight="normal" fill="#333333">notes</text>
+      <text x="318" y="136" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">TEXT</text>
+      <!-- row created_at -->
+      <polygon points="14,149 18,153 14,157 10,153" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="156" font-size="11" font-weight="normal" fill="#333333">created_at</text>
+      <text x="318" y="156" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">DATETIME</text>
+    </g>
+    <!-- Indexes Section -->
+    <line x1="0" y1="196" x2="330" y2="196" stroke="#cfdceb" stroke-width="1" />
+    <rect x="0" y="196" width="330" height="22" rx="0" fill="#eaf1f8" />
+    <path d="M 12 204 L 18 204 L 15 209 Z" fill="#668ebc" />
+    <text x="24" y="211" font-size="10.5" font-weight="600" fill="#446688">Indexes</text>
+  </g>
+
+  <!-- TABLE: customer_feedback -->
+  <g id="table-customer_feedback" transform="translate(1180, 730)" filter="url(#card-shadow)">
+    <rect width="330" height="158" rx="3" ry="3" fill="#ffffff" stroke="#7599c2" stroke-width="1.2" />
+    <!-- Header Bar with MySQL Workbench Gradient -->
+    <path d="M 0 3 Q 0 0 3 0 L 327 0 Q 330 0 330 3 L 330 28 L 0 28 Z" fill="url(#header-grad)" />
+    <text x="12" y="19" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.2">customer_feedback</text>
+    <!-- Header Chevron Down Icon -->
+    <path d="M 312 12 L 320 12 L 316 17 Z" fill="#ffffff" opacity="0.9" />
+    <!-- Table Columns Body -->
+    <g transform="translate(0, 28)">
+      <!-- row id -->
+      <g transform="translate(10, 6)"><circle cx="4" cy="4" r="3.2" fill="#f1c40f" stroke="#b7950b" stroke-width="0.8"/><circle cx="4" cy="4" r="1.2" fill="#ffffff"/><rect x="6.5" y="3" width="5.5" height="2" fill="#f1c40f"/><rect x="9.5" y="5" width="2" height="2" fill="#f1c40f"/></g>
+      <text x="24" y="16" font-size="11" font-weight="bold" fill="#111111">id</text>
+      <text x="318" y="16" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(36)</text>
+      <!-- row case_id -->
+      <polygon points="14,29 18,33 14,37 10,33" fill="#e67e22" stroke="#d35400" stroke-width="0.8" />
+      <text x="24" y="36" font-size="11" font-weight="600" fill="#222222">case_id</text>
+      <text x="318" y="36" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">VARCHAR(32)</text>
+      <!-- row rating -->
+      <polygon points="14,49 18,53 14,57 10,53" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="56" font-size="11" font-weight="normal" fill="#333333">rating</text>
+      <text x="318" y="56" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">INT(11)</text>
+      <!-- row comment -->
+      <polygon points="14,69 18,73 14,77 10,73" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="76" font-size="11" font-weight="normal" fill="#333333">comment</text>
+      <text x="318" y="76" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">TEXT</text>
+      <!-- row created_at -->
+      <polygon points="14,89 18,93 14,97 10,93" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8" />
+      <text x="24" y="96" font-size="11" font-weight="normal" fill="#333333">created_at</text>
+      <text x="318" y="96" text-anchor="end" font-size="10.5" font-family="Consolas, Monaco, monospace" fill="#50667e">DATETIME</text>
+    </g>
+    <!-- Indexes Section -->
+    <line x1="0" y1="136" x2="330" y2="136" stroke="#cfdceb" stroke-width="1" />
+    <rect x="0" y="136" width="330" height="22" rx="0" fill="#eaf1f8" />
+    <path d="M 12 144 L 18 144 L 15 149 Z" fill="#668ebc" />
+    <text x="24" y="151" font-size="10.5" font-weight="600" fill="#446688">Indexes</text>
+  </g>
+
+  <!-- Diagram Legend & Crow's Foot Notation -->
+  <g transform="translate(1180, 920)" filter="url(#card-shadow)">
+    <rect width="330" height="95" rx="3" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="12" y="18" font-size="11.5" font-weight="700" fill="#334155">Legend &amp; Notation</text>
+    <circle cx="20" cy="35" r="3.2" fill="#f1c40f" stroke="#b7950b" stroke-width="0.8"/>
+    <circle cx="20" cy="35" r="1.2" fill="#ffffff"/>
+    <rect x="22.5" y="34" width="4.5" height="2" fill="#f1c40f"/>
+    <text x="34" y="38" font-size="10.5" fill="#475569">Primary Key (PK)</text>
+    <polygon points="135,31 139,35 135,39 131,35" fill="#e67e22" stroke="#d35400" stroke-width="0.8"/>
+    <text x="145" y="38" font-size="10.5" fill="#475569">Foreign Key (FK)</text>
+    <polygon points="20,53 24,57 20,61 16,57" fill="#2980b9" stroke="#1f618d" stroke-width="0.8"/>
+    <text x="34" y="60" font-size="10.5" fill="#475569">Unique Key (UQ)</text>
+    <polygon points="135,53 139,57 135,61 131,57" fill="#ffffff" stroke="#7f8c8d" stroke-width="0.8"/>
+    <text x="145" y="60" font-size="10.5" fill="#475569">Standard Column</text>
+    <line x1="16" y1="76" x2="60" y2="76" stroke="#335577" stroke-width="1.8" />
+    <line x1="28" y1="70" x2="28" y2="82" stroke="#335577" stroke-width="2" />
+    <line x1="34" y1="70" x2="34" y2="82" stroke="#335577" stroke-width="2" />
+    <line x1="50" y1="71" x2="60" y2="76" stroke="#335577" stroke-width="1.8" />
+    <line x1="50" y1="81" x2="60" y2="76" stroke="#335577" stroke-width="1.8" />
+    <text x="70" y="79" font-size="10" fill="#64748b">Relational (1:1 / 1:N Crow's Foot)</text>
+  </g>
+</svg>

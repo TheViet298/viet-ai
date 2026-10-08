@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from src.agents.chatbot_agent import process_chat_message
 from src.agents.guardrails import EMERGENCY_SAFE_GUIDANCE, evaluate_hard_safety
-from src.api.auth import Principal, optional_principal
+from src.api.dependencies import Principal, optional_principal
 from src.models.schemas import ChatRequest, ChatResponse
 from src.services.session_store import SessionConflictError, decode_state, get_store
 
