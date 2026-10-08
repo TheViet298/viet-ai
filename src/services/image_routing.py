@@ -18,13 +18,16 @@ class ImageRoute(BaseModel):
 
 
 @lru_cache(maxsize=1)
-def _cached_async_openai(api_key: str) -> AsyncOpenAI:
-    return AsyncOpenAI(api_key=api_key)
+def _cached_async_openai(api_key: str, base_url: str | None = None) -> AsyncOpenAI:
+    kwargs = {"api_key": api_key}
+    if base_url:
+        kwargs["base_url"] = base_url
+    return AsyncOpenAI(**kwargs)
 
 
 def get_async_openai_client() -> AsyncOpenAI:
     settings = get_settings()
-    return _cached_async_openai(settings.openai_api_key)
+    return _cached_async_openai(settings.openai_api_key, settings.openai_base_url or None)
 
 
 async def classify_vehicle_image(data: bytes, mime_type: str) -> dict:
@@ -65,8 +68,7 @@ async def classify_vehicle_image(data: bytes, mime_type: str) -> dict:
                             ],
                         }
                     ],
-                    max_tokens=512,
-                    temperature=0,
+                    max_completion_tokens=512,
                 )
                 choice = res.choices[0]
                 if choice.finish_reason not in ("stop", None):

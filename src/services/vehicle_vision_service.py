@@ -85,8 +85,7 @@ async def recognize_vehicle_model(data: bytes, mime_type: str) -> dict:
                         ],
                     }
                 ],
-                max_tokens=512,
-                temperature=0,
+                max_completion_tokens=512,
             )
             choice = res.choices[0]
             if choice.finish_reason not in ("stop", None):

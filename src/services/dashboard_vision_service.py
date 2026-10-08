@@ -79,8 +79,7 @@ async def analyze_dashboard_image(data: bytes, mime_type: str) -> dict:
                         ],
                     }
                 ],
-                max_tokens=4096,
-                temperature=0,
+                max_completion_tokens=4096,
             )
             choice = res.choices[0]
             if choice.finish_reason not in ("stop", None):

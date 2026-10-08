@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     # LLM Configuration (Google Gemini & OpenAI)
     google_api_key: str = ""
     openai_api_key: str = ""
+    openai_base_url: str = ""
+    model: str = ""
     model_name: str = "gemini-2.5-flash"
     # Vision Configuration (GPT-6-Luna & Google)
     vision_provider: Literal["openai", "google"] = "openai"
@@ -58,6 +60,8 @@ class Settings(BaseSettings):
     def validate_context_budgets(self):
         if self.rag_context_max_bytes > self.agent_context_max_bytes:
             raise ValueError("RAG evidence budget exceeds prompt budget")
+        if self.model:
+            self.model_name = self.model
         return self
 
 

@@ -10,24 +10,28 @@ _client_lock = RLock()
 
 
 @lru_cache(maxsize=4)
-def _client(model: str, google_key: str, openai_key: str, temperature: float, transport_timeout: float):
-    if model.startswith("gpt") or (openai_key and not google_key):
-        return ChatOpenAI(
+def _client(model: str, google_key: str, openai_key: str, base_url: str, temperature: float, transport_timeout: float):
+    if "gemini" in model.lower() and google_key and not openai_key:
+        return ChatGoogleGenerativeAI(
             model=model,
-            api_key=openai_key,
+            google_api_key=google_key,
             temperature=temperature,
             max_retries=0,
+            # Provider rejects transport deadlines below ten seconds. The caller's
+            # asyncio deadline still enforces the configured foreground budget.
             timeout=transport_timeout,
         )
-    return ChatGoogleGenerativeAI(
-        model=model,
-        google_api_key=google_key,
-        temperature=temperature,
-        max_retries=0,
-        # Provider rejects transport deadlines below ten seconds. The caller's
-        # asyncio deadline still enforces the configured foreground budget.
-        timeout=transport_timeout,
-    )
+    kwargs = {
+        "model": model,
+        "temperature": temperature,
+        "max_retries": 1,
+        "timeout": transport_timeout,
+    }
+    if openai_key:
+        kwargs["api_key"] = openai_key
+    if base_url:
+        kwargs["base_url"] = base_url
+    return ChatOpenAI(**kwargs)
 
 
 def get_llm():
@@ -37,6 +41,7 @@ def get_llm():
             settings.model_name,
             settings.google_api_key,
             settings.openai_api_key,
+            settings.openai_base_url,
             settings.llm_temperature,
             max(10.0, settings.agent_llm_timeout_s),
         )
