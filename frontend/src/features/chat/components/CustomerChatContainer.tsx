@@ -23,6 +23,7 @@ import { ChatInputBar } from "./ChatInputBar";
 import { LocationConsentCard } from "./LocationConsentCard";
 import { ServiceMapPanel } from "./ServiceMapPanel";
 import { getAiSystemStatus, uploadAttachment } from "../api/chatApi";
+import { getUploadError } from "../uploadState";
 import { useAuth, ProductMark } from "@/features/shared";
 
 export function CustomerChatContainer() {
@@ -221,6 +222,10 @@ export function CustomerChatContainer() {
   };
 
   const selectImage = async (file: File) => {
+    if (role !== "CUSTOMER") {
+      setImageUploadError("Vui lòng đăng nhập tài khoản khách hàng để tải ảnh.");
+      return;
+    }
     setResolvedImageKind(null);
     const requestId = ++uploadRequestId.current;
     setUploadedAttachmentId(null);
@@ -239,8 +244,9 @@ export function CustomerChatContainer() {
       if (requestId !== uploadRequestId.current) return;
       if (res?.success && res.data?.attachment_id) {
         const kind = res.data.detected_signals?.image_kind;
-        if (kind === "unknown") {
-          setImageUploadError("Chưa xác định chắc loại ảnh. Vui lòng chọn ảnh rõ hơn hoặc xóa ảnh và mô tả bằng chữ.");
+        const error = getUploadError(res.data);
+        if (error) {
+          setImageUploadError(error);
         } else {
           setResolvedImageKind(kind === "exterior" ? "exterior" : kind === "charger" ? "charger" : "dashboard");
           setUploadedAttachmentId(res.data.attachment_id);
@@ -449,7 +455,7 @@ export function CustomerChatContainer() {
           {(isUploadingImage || resolvedImageKind || imageUploadError) && (
             <div className="px-3 py-2 border-t border-slate-200 text-xs text-slate-600">
               {isUploadingImage && <p role="status" className="mt-1">Đang tải và phân tích ảnh…</p>}
-              {resolvedImageKind && <p role="status" className="mt-1">Đã tự nhận diện: {resolvedImageKind === "exterior" ? "Ngoại thất xe — CarDD" : resolvedImageKind === "charger" ? "Trụ sạc — OCR/Vision" : "Táp-lô — OCR/Vision"}</p>}
+              {resolvedImageKind && <p role="status" className="mt-1">Đã tự nhận diện: {resolvedImageKind === "exterior" ? "Ngoại thất xe" : resolvedImageKind === "charger" ? "Trụ sạc" : "Táp-lô"}</p>}
               {imageUploadError && <p role="alert" className="mt-1 text-red-700">{imageUploadError}</p>}
             </div>
           )}
@@ -458,6 +464,9 @@ export function CustomerChatContainer() {
             onChangeInput={setInput}
             onSend={submit}
             disabled={loading || isUploadingImage || (!!imagePreview && !uploadedAttachmentId)}
+            uploadDisabled={loading || isUploadingImage || role !== "CUSTOMER"}
+            uploadHint={role !== "CUSTOMER" ? "Đăng nhập tài khoản khách hàng để tải ảnh" : undefined}
+            imageReady={!!uploadedAttachmentId}
             imagePreview={imagePreview}
             imageName={imageName}
             onSelectImage={selectImage}

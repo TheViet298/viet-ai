@@ -5,6 +5,9 @@ interface ChatInputBarProps {
   onChangeInput: (val: string) => void;
   onSend: () => void;
   disabled?: boolean;
+  uploadDisabled?: boolean;
+  uploadHint?: string;
+  imageReady?: boolean;
   imagePreview?: string | null;
   imageName?: string | null;
   imageKind?: "auto" | "dashboard" | "exterior";
@@ -17,6 +20,9 @@ export function ChatInputBar({
   onChangeInput,
   onSend,
   disabled,
+  uploadDisabled,
+  uploadHint,
+  imageReady = true,
   imagePreview,
   imageName,
   imageKind = "auto",
@@ -39,7 +45,7 @@ export function ChatInputBar({
             </p>
             <p className="text-[11px] text-[#1E40AF] flex items-center gap-1 font-medium">
               <Sparkles className="w-3 h-3" />
-              <span>Sẵn sàng để AI phân tích triệu chứng</span>
+              <span>{imageReady ? "Ảnh đã sẵn sàng để gửi" : "Ảnh chưa sẵn sàng để gửi"}</span>
             </p>
           </div>
           <button
@@ -57,12 +63,12 @@ export function ChatInputBar({
       <div className="flex items-center gap-2">
         <label
           className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-500 hover:text-[#1E40AF] transition shadow-2xs"
-          title={imageKind === "auto" ? "Tải ảnh xe — tự nhận diện loại ảnh" : imageKind === "exterior" ? "Tải ảnh ngoại thất xe" : "Tải ảnh cảnh báo táp-lô hoặc trụ sạc"}
+          title={uploadHint || (imageKind === "auto" ? "Tải ảnh xe — tự nhận diện loại ảnh" : imageKind === "exterior" ? "Tải ảnh ngoại thất xe" : "Tải ảnh cảnh báo táp-lô hoặc trụ sạc")}
         >
           <ImagePlus className="h-4 w-4" />
           <input
             type="file"
-            disabled={disabled}
+            disabled={uploadDisabled ?? disabled}
             accept="image/*"
             className="sr-only"
             onChange={(event) => {

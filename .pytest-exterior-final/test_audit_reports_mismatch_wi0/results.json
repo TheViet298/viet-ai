@@ -1,0 +1,1 @@
+{"cases": [{"id": "A", "kind": "triage", "intent_true": "service_incident", "intent_pred": "sales_general_info"}]}

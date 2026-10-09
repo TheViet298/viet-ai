@@ -25,17 +25,21 @@ export default function LoginPage() {
   const [password, setPassword] = useState("••••••••");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim()) {
       setErrorMessage("Vui lòng nhập số điện thoại hoặc mã định danh.");
       return;
     }
 
-    loginAs(activeTab, {
+    const authenticated = await loginAs(activeTab, {
       id: identifier,
       name: activeTab === "STAFF" ? "Lê Hoàng Quân (KTV)" : "Nguyễn Văn An",
     });
+    if (!authenticated) {
+      setErrorMessage("Không thể đăng nhập. Vui lòng thử lại.");
+      return;
+    }
 
     if (activeTab === "STAFF") {
       router.push("/console");
@@ -44,8 +48,11 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickDemoLogin = (role: "CUSTOMER" | "STAFF") => {
-    loginAs(role);
+  const handleQuickDemoLogin = async (role: "CUSTOMER" | "STAFF") => {
+    if (!await loginAs(role)) {
+      setErrorMessage("Không thể đăng nhập. Vui lòng thử lại.");
+      return;
+    }
     if (role === "STAFF") {
       router.push("/console");
     } else {
