@@ -1,24 +1,223 @@
+"""Fail-open Langfuse contexts; business decisions remain with callers."""
 from __future__ import annotations
 
+import asyncio
+import functools
+import inspect
 import os
+import re
+from contextlib import contextmanager, nullcontext
+from contextvars import ContextVar
+from hashlib import sha256
+from pathlib import Path
 from typing import Any
+
+_client: Any = None
+_root: ContextVar[Any] = ContextVar('lf_root', default=None)
+_identity: ContextVar[dict] = ContextVar('lf_identity', default={})
+_validation: ContextVar[dict] = ContextVar('lf_validation', default={})
+_PRIVATE = {'authorization', 'password', 'secret_key', 'public_key', 'api_key', 'token',
+            'access_token', 'headers', 'image_url', 'inlinedata', 'inline_data', 'image',
+            'error', 'exception', 'stacktrace', 'captured_fields', 'memory_states', 'state'}
+_META = {'run_id', 'test_case_id', 'fault_injected', 'correlation_id', 'route', 'provider',
+         'attempt', 'outcome', 'session_id', 'environment', 'release', 'usage_status'}
+
+
+def mask_telemetry(*, data: Any, **kwargs: Any) -> Any:
+    from src.agents.guardrails import sanitize_pii
+
+    def clean(value, depth=0):
+        if depth > 12:
+            return '[REDACTED_DEPTH]'
+        if isinstance(value, dict):
+            if 'messages' in value and ('captured_fields' in value or 'user_role' in value):
+                return {k: clean(value[k], depth + 1) for k in ('session_id', 'turn') if k in value}
+            return {str(k): '[REDACTED]' if str(k).lower() in _PRIVATE or
+                    any(term in str(k).lower() for term in ('api_key', 'secret', 'password'))
+                    else clean(v, depth + 1) for k, v in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [clean(v, depth + 1) for v in value[:100]]
+        if isinstance(value, str):
+            value = re.sub(r'data:image/[^\s"\']+', '[REDACTED_IMAGE]', value)
+            value = re.sub(r'(?i)(?:sk-[\w-]+|pk-lf-[\w-]+|AIza[\w-]+|Bearer\s+\S+)', '[REDACTED_KEY]', value)
+            return sanitize_pii(value[:12000])[0]
+        if value is None or isinstance(value, (int, float, bool)):
+            return value
+        if hasattr(value, 'content'):
+            return {'type': getattr(value, 'type', 'message'), 'content': clean(value.content, depth + 1)}
+        return '[REDACTED_OBJECT]'
+
+    return clean(data)
+
+
+def initialize_observability() -> bool:
+    global _client
+    if os.getenv('LANGFUSE_TRACING_ENABLED', '').lower() == 'false':
+        return False
+    if _client is not None:
+        return True
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parents[2] / '.env', override=False)
+    if not os.getenv('LANGFUSE_PUBLIC_KEY') or not os.getenv('LANGFUSE_SECRET_KEY'):
+        return False
+    try:
+        from langfuse import Langfuse
+        _client = Langfuse(public_key=os.environ['LANGFUSE_PUBLIC_KEY'], secret_key=os.environ['LANGFUSE_SECRET_KEY'],
+                           base_url=os.getenv('LANGFUSE_BASE_URL', 'https://cloud.langfuse.com'),
+                           environment=os.getenv('LANGFUSE_TRACING_ENVIRONMENT', os.getenv('APP_ENV', 'development')),
+                           release=os.getenv('LANGFUSE_RELEASE'), mask=mask_telemetry,
+                           additional_headers={'x-langfuse-ingestion-version': '4'})
+        return True
+    except Exception:
+        return False
 
 
 def is_langfuse_available() -> bool:
-    return bool(os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY"))
+    return _client is not None
 
 
-def get_tracer_callbacks(
-    session_id: str | None = None,
-    user_id: str | None = None,
-    tags: list[str] | None = None,
-    metadata: dict | None = None,
-) -> list[Any]:
-    if not is_langfuse_available():
+def update_observation(handle: Any, **fields: Any) -> None:
+    if handle is not None:
+        try:
+            handle.update(**{k: mask_telemetry(data=v) if k in {'input', 'output', 'metadata'} else v
+                             for k, v in fields.items()})
+        except Exception:
+            pass
+
+
+def current_trace_id() -> str | None:
+    return getattr(_root.get(), 'trace_id', None)
+
+
+def update_trace_identity(*, session_id: str | None, user_id: str | None) -> None:
+    identity = dict(_identity.get())
+    if session_id:
+        identity['session_id'] = session_id
+    if user_id:
+        identity['user_id'] = sha256(user_id.encode()).hexdigest()
+    _identity.set(identity)
+    if _root.get() is not None:
+        try:
+            _root.get().update_trace(**identity)
+        except Exception:
+            pass
+
+
+@contextmanager
+def validation_context(run_id: str, case_id: str, *, fault_injected: bool = False):
+    token = _validation.set({'run_id': run_id, 'test_case_id': case_id,
+                             'fault_injected': str(fault_injected).lower()})
+    try:
+        yield
+    finally:
+        _validation.reset(token)
+
+
+@contextmanager
+def bind_trace_attributes(*, session_id=None, user_id=None, tags=None, metadata=None):
+    identity = dict(_identity.get())
+    if session_id:
+        identity['session_id'] = session_id
+    if user_id:
+        identity['user_id'] = sha256(user_id.encode()).hexdigest()
+    attrs = {k: str(v) for k, v in {**_validation.get(), **(metadata or {})}.items() if k in _META}
+    ctx = nullcontext()
+    if _client is not None:
+        try:
+            from langfuse import propagate_attributes
+            ctx = propagate_attributes(**identity, metadata=attrs, tags=tags)
+            ctx.__enter__()
+        except Exception:
+            ctx = nullcontext()
+            ctx.__enter__()
+    else:
+        ctx.__enter__()
+    try:
+        yield
+    finally:
+        try:
+            ctx.__exit__(None, None, None)
+        except Exception:
+            pass
+
+
+@contextmanager
+def observation(name: str, *, as_type='span', metadata=None, model=None):
+    ctx, handle = None, None
+    parent = _root.get()
+    identity_token = _identity.set(dict(_identity.get()))
+    merged = {**_validation.get(), **_identity.get(), **(metadata or {})}
+    merged.pop('user_id', None)
+    if _client is not None:
+        try:
+            ctx = _client.start_as_current_observation(name=name, as_type=as_type,
+                                                       metadata=mask_telemetry(data=merged), model=model)
+            handle = ctx.__enter__()
+        except Exception:
+            ctx = None
+    root_token = _root.set(handle if parent is None else parent)
+    try:
+        with bind_trace_attributes():
+            yield handle
+    except BaseException as exc:
+        from src.services.agent_llm import classify_provider_error
+        outcome = 'cancelled' if isinstance(exc, asyncio.CancelledError) else classify_provider_error(exc)
+        update_observation(handle, level='ERROR', status_message=outcome,
+                           metadata={**merged, 'outcome': outcome})
+        raise
+    finally:
+        _root.reset(root_token)
+        _identity.reset(identity_token)
+        if ctx is not None:
+            try:
+                ctx.__exit__(None, None, None)
+            except Exception:
+                pass
+
+
+def get_tracer_callbacks(session_id=None, user_id=None, tags=None, metadata=None) -> list[Any]:
+    if _client is None:
         return []
     try:
         from langfuse.langchain import CallbackHandler
-
-        return [CallbackHandler()]
+        return [CallbackHandler(public_key=os.getenv('LANGFUSE_PUBLIC_KEY'), update_trace=False)]
     except Exception:
         return []
+
+
+def trace_endpoint(name: str):
+    def decorate(function):
+        @functools.wraps(function)
+        async def wrapped(*args, **kwargs):
+            with observation(name, metadata={'route': name}) as root:
+                arguments = inspect.signature(function).bind_partial(*args, **kwargs).arguments
+                payload = arguments.get('payload')
+                user = arguments.get('current_user')
+                if payload is not None:
+                    update_trace_identity(session_id=getattr(payload, 'session_id', None),
+                                          user_id=getattr(user, 'id', None))
+                result = await function(*args, **kwargs)
+                data = getattr(result, 'data', result)
+                update_observation(root, output=data.model_dump() if hasattr(data, 'model_dump') else data,
+                                   metadata={**_validation.get(), 'route': name, 'outcome': 'completed'})
+                return result
+        return wrapped
+    return decorate
+
+
+async def flush_observability(*, shutdown: bool = False) -> None:
+    global _client
+    client = _client
+    if client is None:
+        return
+    try:
+        await asyncio.to_thread(client.flush)
+    except Exception:
+        pass
+    finally:
+        if shutdown:
+            try:
+                await asyncio.to_thread(client.shutdown)
+            except Exception:
+                pass
+            _client = None

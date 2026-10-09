@@ -105,6 +105,7 @@ from src.services.vehicle_context import resolve_vehicle_context
 from src.services.vehicle_knowledge import is_general_vehicle_question
 from src.services.vehicle_vision_service import recognize_vehicle_model
 from src.services.vision.cardd_runtime import analyze_exterior_image
+from src.services.observability import trace_endpoint, update_trace_identity, observation
 
 
 def to_iso(dt: datetime | None) -> str:
@@ -136,6 +137,7 @@ def generate_attachment_id(db: Session) -> str:
 
 
 @router.post("/attachments", response_model=ApiResponse[AttachmentOut])
+@trace_endpoint('p142.upload')
 async def upload_attachment(
     file: UploadFile = File(...),
     image_kind: Literal["auto", "dashboard", "exterior"] = Form("dashboard"),
@@ -147,6 +149,7 @@ async def upload_attachment(
     Lưu trữ file tại đường dẫn riêng tư (private storage), trích xuất tín hiệu sơ bộ qua OCR/Vision.
     Cảnh báo: Khách hàng không tải VIN, biển số xe, khuôn mặt hoặc giấy tờ cá nhân.
     """
+    update_trace_identity(session_id=None, user_id=current_user.id)
     settings = get_settings()
     att_id = f"ATT-{uuid.uuid4().hex}"
     storage_path = f"data/attachments/{att_id}.png"
@@ -206,8 +209,9 @@ async def upload_attachment(
         created_at=utcnow(),
     )
     db.add(attachment)
-    db.commit()
-    db.refresh(attachment)
+    with observation('attachment.persist'):
+        db.commit()
+        db.refresh(attachment)
 
     return ApiResponse(
         success=True,
@@ -304,6 +308,7 @@ def determine_incident_clarification_prompt(
 
 
 @router.post("/chat", response_model=ApiResponse[ChatResponseData])
+@trace_endpoint('p142.chat.customer')
 async def customer_chat(
     payload: CustomerChatRequest,
     current_user: User | None = Depends(get_optional_user),

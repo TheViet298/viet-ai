@@ -13,6 +13,7 @@ from src.api.routes import router
 from src.api.staff import router as staff_router
 from src.config import get_settings
 from src.db import Base, engine
+from src.services.observability import initialize_observability, flush_observability
 
 
 @asynccontextmanager
@@ -22,8 +23,12 @@ async def lifespan(app: FastAPI):
     os.makedirs("data/attachments", exist_ok=True)
     Base.metadata.create_all(bind=engine)
     print(f"Starting {settings.app_name} in {settings.app_env} mode")
-    yield
-    print("Shutting down...")
+    initialize_observability()
+    try:
+        yield
+    finally:
+        await flush_observability(shutdown=True)
+        print("Shutting down...")
 
 
 app = FastAPI(
