@@ -9,6 +9,7 @@ from openai import APIStatusError, APITimeoutError, AsyncOpenAI
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from src.config import get_settings
+from src.services.observability_usage import provider_generation
 
 
 class ImageRoute(BaseModel):
@@ -53,7 +54,8 @@ async def classify_vehicle_image(data: bytes, mime_type: str) -> dict:
             if use_openai:
                 client = get_async_openai_client()
                 b64 = base64.b64encode(data).decode("ascii")
-                res = await client.chat.completions.create(
+                res = await provider_generation('vision.route', 'openai', settings.vision_model,
+                                                lambda: client.chat.completions.create(
                     model=settings.vision_model,
                     **({"reasoning_effort": "none"} if settings.vision_model.startswith("gpt-6-luna") else {}),
                     response_format={"type": "json_object"},
@@ -67,7 +69,7 @@ async def classify_vehicle_image(data: bytes, mime_type: str) -> dict:
                         }
                     ],
                     max_completion_tokens=2048,
-                )
+                ))
                 choice = res.choices[0]
                 if choice.finish_reason not in ("stop", None):
                     return {**unknown, "reason": "routing_incomplete"}
@@ -84,10 +86,11 @@ async def classify_vehicle_image(data: bytes, mime_type: str) -> dict:
                     },
                 }
                 async with AsyncClient(timeout=settings.image_routing_timeout_s) as client:
-                    response = await client.post(
+                    response = await provider_generation('vision.route', 'google', settings.dashboard_vision_model,
+                                                         lambda: client.post(
                         f"https://generativelanguage.googleapis.com/v1beta/models/{settings.dashboard_vision_model}:generateContent",
                         headers={"x-goog-api-key": settings.google_api_key}, json=payload,
-                    )
+                    ))
                     response.raise_for_status()
                 candidate = response.json()["candidates"][0]
                 if candidate.get("finishReason") != "STOP":

@@ -32,6 +32,8 @@ def record_trace_step(
     cost: float | None = None,
     metadata: dict | None = None,
 ) -> dict:
+    from src.services.observability import current_trace_id
+    trace_id = current_trace_id()
     event = {
         "timestamp_ms": int(time.time() * 1000),
         "session_id": session_id,
@@ -42,7 +44,7 @@ def record_trace_step(
         "tokens_in": tokens_in,
         "tokens_out": tokens_out,
         "cost": cost,
-        "metadata": sanitized_snapshot(metadata or {}),
+        "metadata": sanitized_snapshot({**(metadata or {}), **({'correlation_id': trace_id} if trace_id else {})}),
     }
     get_store().record_trace(event)
     return event

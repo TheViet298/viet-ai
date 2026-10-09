@@ -15,6 +15,7 @@ from src.models.schemas import ApiResponse, ChatResponseData, EmergencyContext
 from src.services.application_memory import accept_application_memory
 from src.services.chat_cases import resolve_authorized_active_case
 from src.services.session_store import encode_state, get_store
+from src.services.observability import observation
 
 _LOCKS: WeakValueDictionary = WeakValueDictionary()
 
@@ -113,7 +114,8 @@ async def run_chat_turn(payload, user, db, handler):
                                   .values(lease_token=None, lease_until=None), execution_options={'synchronize_session': False})
             if released.rowcount != 1:
                 raise HTTPException(409, 'Phiên đã thay đổi trong lúc xử lý. Vui lòng thử lại.')
-            db.commit()
+            with observation('business.persist'):
+                db.commit()
             return response
         except BaseException:
             db.info.pop('chat_turn_customer_id', None)

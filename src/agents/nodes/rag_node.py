@@ -13,6 +13,7 @@ from src.config import get_settings
 from src.services.agent_llm import structured_call
 from src.services.answer_evidence import is_turtle_question
 from src.services.rag_service import RAGService, select_supported_evidence, valid_citation
+from src.services.observability import observation, update_observation
 
 
 class GroundedAnswer(BaseModel):
@@ -29,8 +30,12 @@ async def rag_node(state: AgentState) -> dict:
     if not unsupported and remaining > 0:
         try:
             search_query = query + " chỉ báo giới hạn công suất" if is_turtle_question(query) else query
-            retrieval = await asyncio.wait_for(vinfast_manual_search(search_query, vehicle_model=state.get("vehicle_model")),
-                                               timeout=min(remaining, get_settings().rag_retrieval_timeout_s))
+            with observation('retrieval', as_type='retriever') as span:
+                retrieval = await asyncio.wait_for(vinfast_manual_search(search_query, vehicle_model=state.get("vehicle_model")),
+                                                   timeout=min(remaining, get_settings().rag_retrieval_timeout_s))
+                update_observation(span, output={'status': retrieval.get('status'),
+                                                 'source_count': len(retrieval.get('citations', [])),
+                                                 'source_ids': [c.get('source_id') for c in retrieval.get('citations', [])]})
         except TimeoutError:
             retrieval = RAGService.failure("TIMEOUT", "timeout")
         except Exception:
