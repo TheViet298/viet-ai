@@ -486,7 +486,7 @@ export function LandingPage() {
                 }
               }}
               placeholder={PLACEHOLDER_EXAMPLES[placeholderIndex]}
-              className="w-full resize-none border-none bg-transparent p-1 text-[13px] sm:text-[14px] text-slate-900 placeholder-slate-400 focus:outline-none leading-relaxed transition-all"
+              className="w-full resize-none border-0 border-none bg-transparent p-1 text-[13px] sm:text-[14px] text-slate-900 placeholder-slate-400 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 shadow-none leading-relaxed transition-all"
             />
 
             {/* Bottom Toolbar: Upload button, Submit button */}
