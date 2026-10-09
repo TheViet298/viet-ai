@@ -5,7 +5,7 @@ from functools import lru_cache
 from typing import Literal
 
 from httpx import AsyncClient, HTTPError
-from openai import AsyncOpenAI
+from openai import APIStatusError, APITimeoutError, AsyncOpenAI
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from src.config import get_settings
@@ -19,7 +19,7 @@ class ImageRoute(BaseModel):
 
 @lru_cache(maxsize=1)
 def _cached_async_openai(api_key: str, base_url: str | None = None) -> AsyncOpenAI:
-    kwargs = {"api_key": api_key}
+    kwargs: dict = {"api_key": api_key, "max_retries": 0, "timeout": 30.0}
     if base_url:
         kwargs["base_url"] = base_url
     return AsyncOpenAI(**kwargs)
@@ -58,6 +58,7 @@ async def classify_vehicle_image(data: bytes, mime_type: str) -> dict:
                 b64 = base64.b64encode(data).decode("ascii")
                 res = await client.chat.completions.create(
                     model=settings.vision_model,
+                    **({"reasoning_effort": "none"} if settings.vision_model.startswith("gpt-6-luna") else {}),
                     response_format={"type": "json_object"},
                     messages=[
                         {
@@ -68,7 +69,7 @@ async def classify_vehicle_image(data: bytes, mime_type: str) -> dict:
                             ],
                         }
                     ],
-                    max_completion_tokens=512,
+                    max_completion_tokens=2048,
                 )
                 choice = res.choices[0]
                 if choice.finish_reason not in ("stop", None):
@@ -100,5 +101,19 @@ async def classify_vehicle_image(data: bytes, mime_type: str) -> dict:
             if route["confidence"] < settings.image_routing_min_confidence or route["image_kind"] == "unknown":
                 return {**route, "image_kind": "unknown", "reason": "routing_uncertain"}
             return route
-    except (TimeoutError, HTTPError, ValidationError, ValueError, KeyError, IndexError, TypeError, Exception):
+    except (TimeoutError, APITimeoutError):
+        return {**unknown, "reason": "routing_timeout"}
+    except APIStatusError as error:
+        reason = {401: "routing_authentication_failed", 403: "routing_authentication_failed",
+                  429: "routing_rate_limited"}.get(error.status_code, "routing_request_failed")
+        result = {**unknown, "reason": reason}
+        # Keep only known diagnostic identifiers, never raw provider messages.
+        body = error.body if isinstance(error.body, dict) else {}
+        if body.get("code") in {"unsupported_parameter", "unsupported_value", "invalid_image",
+                                 "invalid_image_format", "image_too_large", "model_not_found"}:
+            result["provider_code"] = body["code"]
+        if body.get("param") in {"model", "max_tokens", "max_completion_tokens", "temperature", "messages", "response_format"}:
+            result["provider_parameter"] = body["param"]
+        return result
+    except (HTTPError, ValidationError, ValueError, KeyError, IndexError, TypeError, Exception):
         return unknown

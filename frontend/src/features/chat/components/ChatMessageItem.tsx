@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { ExternalLink, FileText, Check } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ChatMessage } from "../types";
 import { ClarificationChips } from "./ClarificationChips";
@@ -87,6 +87,7 @@ export function ChatMessageItem({
         ) : (
           <div className="chat-markdown-body text-[13px] leading-relaxed text-slate-800">
             <ReactMarkdown
+              urlTransform={(url) => /^tel:\+?\d+$/.test(url) ? url : defaultUrlTransform(url)}
               remarkPlugins={[remarkGfm]}
               allowedElements={[
                 "p",
@@ -143,7 +144,7 @@ export function ChatMessageItem({
         )}
 
         {/* Chỉ dẫn an toàn: gộp trực tiếp vào bong bóng dạng chữ đậm, KHÔNG TẠO HỘP VÀNG */}
-        {message.safe_guidance && message.priority !== "CRITICAL" && (
+        {message.safe_guidance && (
           <div className="mt-2 pt-1.5 border-t border-slate-200/60 text-[12px] text-amber-950 font-medium">
             <strong>Chỉ dẫn: </strong>
             <span>{message.safe_guidance}</span>

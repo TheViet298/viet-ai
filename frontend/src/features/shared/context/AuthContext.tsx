@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 
 export type UserRole = "GUEST" | "CUSTOMER" | "STAFF";
 export type AuthenticatedRole = Exclude<UserRole, "GUEST">;
@@ -49,6 +49,7 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<AuthUser>;
   registerCustomer: (username: string, password: string, profile?: Pick<AuthUser, "name" | "vehicleModel" | "phone">) => Promise<AuthUser>;
   loginDemo: (role: "CUSTOMER" | "STAFF") => Promise<AuthUser>;
+  loginAs: (role: "CUSTOMER" | "STAFF", customData?: Partial<AuthUser>) => Promise<boolean>;
   updateProfile: (payload: UpdateProfilePayload) => Promise<AuthUser>;
   logout: () => void;
   isReady: boolean;
@@ -60,6 +61,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => { throw new Error("AuthProvider is not mounted"); },
   registerCustomer: async () => { throw new Error("AuthProvider is not mounted"); },
   loginDemo: async () => { throw new Error("AuthProvider is not mounted"); },
+  loginAs: async () => false,
   updateProfile: async () => { throw new Error("AuthProvider is not mounted"); },
   logout: () => { },
   isReady: false,
@@ -68,9 +70,15 @@ const AuthContext = createContext<AuthContextType>({
 const STORAGE_KEY = "vf_serviceflow_auth";
 const TOKEN_KEY = "vf_access_token";
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 const DEMO_CREDENTIALS: Record<"CUSTOMER" | "STAFF", { username: string; password: string }> = {
   CUSTOMER: { username: "customer@vinfast.vn", password: "customer123" },
   STAFF: { username: "staff@vinfast.vn", password: "staff123" },
+};
+
+const DEMO_PROFILES: Record<"CUSTOMER" | "STAFF", Partial<AuthUser>> = {
+  CUSTOMER: { id: "CUST_MOCK_01", name: "Nguyễn Văn An", role: "CUSTOMER", email: "customer@vinfast.vn", vehicleModel: "VF 8" },
+  STAFF: { id: "STAFF_01", name: "Lê Hoàng Quân (KTV)", role: "STAFF", email: "staff@vinfast.vn" },
 };
 
 function savedProfile(): Partial<AuthUser> {
@@ -116,12 +124,14 @@ function clearLegacyTokens() {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const loginGeneration = useRef(0);
 
   const acceptAuthResponse = (response: AuthResponse, localProfile: Partial<AuthUser> = {}) => {
     const authUser = mapApiUser(response.data.user, localProfile);
     localStorage.setItem(TOKEN_KEY, response.data.token);
+    const tokenKey = authUser.role === "STAFF" ? "vf_staff_token" : "vf_customer_token";
+    localStorage.setItem(tokenKey, response.data.token);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
-    clearLegacyTokens();
     setUser(authUser);
     return authUser;
   };
@@ -170,6 +180,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return authUser;
   };
 
+  const loginAs = async (role: "CUSTOMER" | "STAFF", customData?: Partial<AuthUser>): Promise<boolean> => {
+    const generation = ++loginGeneration.current;
+    const base = DEMO_CREDENTIALS[role];
+    const profileBase = DEMO_PROFILES[role];
+    const newUser: AuthUser = {
+      id: profileBase.id || (role === "STAFF" ? "STAFF_01" : "CUST_MOCK_01"),
+      name: profileBase.name || (role === "STAFF" ? "Lê Hoàng Quân (KTV)" : "Nguyễn Văn An"),
+      email: profileBase.email || base.username,
+      role,
+      vehicleModel: profileBase.vehicleModel,
+      ...customData,
+    };
+    try {
+      const username = base.username;
+      const password = base.password;
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${baseUrl}/api/v1/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!response.ok) return false;
+      const json = await response.json();
+      if (!json?.data?.token || generation !== loginGeneration.current) return false;
+      const token = json.data.token;
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(role === "STAFF" ? "vf_staff_token" : "vf_customer_token", token);
+      localStorage.removeItem(role === "STAFF" ? "vf_customer_token" : "vf_staff_token");
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
+      setUser(newUser);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const updateProfile = async (payload: UpdateProfilePayload) => {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) throw new Error("Chưa đăng nhập.");
@@ -204,21 +250,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
+    loginGeneration.current++;
     setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(TOKEN_KEY);
-    clearLegacyTokens();
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem("vf_staff_token");
+      localStorage.removeItem("vf_customer_token");
+    } catch {}
   };
 
   useEffect(() => {
     let cancelled = false;
-    const token = localStorage.getItem(TOKEN_KEY);
-    clearLegacyTokens();
-    if (!token) {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const customerToken = localStorage.getItem("vf_customer_token");
+      const staffToken = localStorage.getItem("vf_staff_token");
+      const accessToken = localStorage.getItem(TOKEN_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const token = parsed.role === "STAFF" ? (staffToken || accessToken) : (customerToken || accessToken);
+        if (["CUSTOMER", "STAFF"].includes(parsed.role) && token) {
+          setUser(parsed);
+        } else {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      }
+    } catch {
       localStorage.removeItem(STORAGE_KEY);
+    } finally {
       setIsReady(true);
-      return () => { cancelled = true; };
     }
+
+    const token = localStorage.getItem(TOKEN_KEY) || localStorage.getItem("vf_customer_token") || localStorage.getItem("vf_staff_token");
+    if (!token) return;
 
     fetch(`${BASE_URL}/api/v1/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then(async (response) => {
@@ -233,14 +298,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       })
       .catch(() => {
-        if (!cancelled) {
-          localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem(STORAGE_KEY);
-          setUser(null);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsReady(true);
+        // offline or unauthenticated fallback
       });
 
     return () => { cancelled = true; };
@@ -249,7 +307,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const role: UserRole = user?.role || "GUEST";
 
   return (
-    <AuthContext.Provider value={{ user, role, login, registerCustomer, loginDemo, updateProfile, logout, isReady }}>
+    <AuthContext.Provider value={{ user, role, login, registerCustomer, loginDemo, loginAs, updateProfile, logout, isReady }}>
       {children}
     </AuthContext.Provider>
   );

@@ -6,7 +6,7 @@ import pytest
 from PIL import Image
 
 from src.config import get_settings
-from src.models.db_models import Attachment, User
+from src.models.db_models import Attachment, Case, User
 
 pytest_plugins = ["tests.test_api.test_customer_chat_regressions"]
 
@@ -67,6 +67,131 @@ async def test_image_content_drives_upload_and_chat(client, customer_db, gemini)
     assert data["citations"][0]["source_id"] == "vfe34-tpms-low-pressure"
     assert "Tire pressure low" in data["message"]
     assert "sau bên phải" in data["message"]
+
+
+@pytest.mark.asyncio
+async def test_brake_text_and_visible_icons_are_reported_without_vehicle_model(client, customer_db, gemini):
+    result, _ = gemini
+    result.update(ocr_text="Lỗi hệ thống trợ lực phanh thủy lực\nLái xe an toàn",
+                  symptom_keys=[], wheel_position="unknown", visible_warnings=[
+                      {"kind": kind, "color": "yellow", "confidence": .96}
+                      for kind in ["turtle", "abs", "brake", "esc", "general_warning"]])
+    att = (await client.post("/api/v1/customer/attachments", files={
+        "file": ("photo.png", image_bytes(), "image/png"),
+    })).json()["data"]
+    assert "brake_system_fault" in att["detected_signals"]["symptom_keys"]
+    response = await client.post("/api/v1/customer/chat", json={
+        "session_id": "brake-image", "message": "Tôi gửi ảnh cảnh báo táp-lô",
+        "attachment_ids": [att["attachment_id"]],
+    })
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["priority"] is None
+    assert not data["case_id"]
+    assert not data["show_emergency_banner"]
+    assert not data["request_location"]
+    assert data["suggested_replies"] == ["Xe đang gặp sự cố", "Giải thích về lỗi được nhận diện"]
+    assert customer_db.query(Case).count() == 0
+    for label in ["trợ lực phanh thủy lực", "rùa", "ABS", "phanh", "xe trượt", "Tam giác"]:
+        assert label in data["message"]
+    assert "chưa xác định nguyên nhân" in data["message"]
+    assert "nội dung chữ, biểu tượng và màu đèn" not in data["message"]
+    assert data["safe_guidance"] == "Nếu xe có dấu hiệu nguy hiểm, hãy dừng tại nơi an toàn và liên hệ cứu hộ."
+    for question, expected in [
+        ("Giải thích về lỗi được nhận diện", "trợ lực phanh"),
+        ("biểu tượng rùa vàng là gì", "hạn chế công suất"),
+        ("lỗi hệ thống trợ lực phanh thuỷ lực", "lực đạp"),
+    ]:
+        answer = (await client.post("/api/v1/customer/chat", json={
+            "session_id": "brake-image", "message": question,
+        })).json()["data"]
+        assert expected in answer["message"]
+        assert not answer["case_id"]
+        assert not answer["show_emergency_banner"]
+        assert not answer["request_location"]
+        assert customer_db.query(Case).count() == 0
+    incident = (await client.post("/api/v1/customer/chat", json={
+        "session_id": "brake-image", "message": "Xe đang gặp sự cố",
+    })).json()["data"]
+    assert incident["priority"] == "CRITICAL"
+    assert incident["case_id"]
+    assert incident["show_emergency_banner"]
+    assert incident["request_location"]
+    assert incident["message"] == "**Hotline cứu hộ VinFast:** [1900-232389](tel:1900232389)"
+    assert incident["safe_guidance"] == "Nếu xe có dấu hiệu nguy hiểm, hãy dừng tại nơi an toàn và liên hệ cứu hộ."
+    assert not incident["citations"]
+    assert customer_db.get(Attachment, att["attachment_id"]).case_id == incident["case_id"]
+    # Explaining an already-open incident must not lose its binding or create
+    # another incident when the customer selects support again.
+    await client.post("/api/v1/customer/chat", json={
+        "session_id": "brake-image", "message": "Giải thích về lỗi được nhận diện",
+    })
+    repeated = (await client.post("/api/v1/customer/chat", json={
+        "session_id": "brake-image", "message": "Xe đang gặp sự cố",
+    })).json()["data"]
+    assert repeated["case_id"] == incident["case_id"]
+    assert customer_db.query(Case).count() == 1
+
+
+@pytest.mark.asyncio
+async def test_uncertain_icons_and_parking_brake_do_not_become_brake_fault(client, customer_db, gemini):
+    result, _ = gemini
+    result.update(ocr_text="READY", symptom_keys=["brake_system_fault"], visible_warnings=[
+        {"kind": "parking_brake", "color": "red", "confidence": .99},
+        {"kind": "turtle", "color": "yellow", "confidence": .3},
+    ])
+    att = (await client.post("/api/v1/customer/attachments", files={
+        "file": ("photo.png", image_bytes(), "image/png"),
+    })).json()["data"]
+    assert att["detected_signals"]["symptom_keys"] == []
+    data = (await client.post("/api/v1/customer/chat", json={
+        "session_id": "parking-image", "message": "Xem ảnh", "attachment_ids": [att["attachment_id"]],
+    })).json()["data"]
+    assert not data["case_id"]
+    assert "rùa" not in data["message"]
+    assert "phanh đỗ" in data["message"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("danger", ["Chân phanh bị kẹt", "Phanh sát sàn", "Xe bị nổ lốp"])
+async def test_image_choices_do_not_suppress_live_danger(client, customer_db, gemini, danger):
+    att = (await client.post("/api/v1/customer/attachments", files={
+        "file": ("photo.png", image_bytes(), "image/png"),
+    })).json()["data"]
+    await client.post("/api/v1/customer/chat", json={
+        "session_id": "image-danger", "message": "Xem ảnh", "attachment_ids": [att["attachment_id"]],
+    })
+    data = (await client.post("/api/v1/customer/chat", json={
+        "session_id": "image-danger", "message": danger,
+    })).json()["data"]
+    assert data["priority"] == "CRITICAL"
+    assert data["case_id"]
+    assert data["show_emergency_banner"]
+
+
+def test_unrelated_explanation_does_not_reuse_image():
+    from src.services.dashboard_conversation import dashboard_question
+    assert not dashboard_question("Giải thích chính sách bảo hành")
+    assert not dashboard_question("Giải thích giá thuê pin")
+    assert not dashboard_question("VF 8 có ABS tiêu chuẩn không?")
+    assert not dashboard_question("Giá thay má phanh bao nhiêu?")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("text", ["Không có lỗi hệ thống trợ lực phanh",
+                                   "Lỗi hệ thống trợ lực phanh không còn",
+                                   "No brake system fault"])
+async def test_negated_warning_text_does_not_create_fault(client, customer_db, gemini, text):
+    result, _ = gemini
+    result.update(ocr_text=text, symptom_keys=["brake_system_fault"], wheel_position="unknown")
+    att = (await client.post("/api/v1/customer/attachments", files={
+        "file": ("photo.png", image_bytes(), "image/png"),
+    })).json()["data"]
+    assert att["detected_signals"]["symptom_keys"] == []
+    data = (await client.post("/api/v1/customer/chat", json={
+        "session_id": "no-fault-image", "message": "Xem ảnh", "attachment_ids": [att["attachment_id"]],
+    })).json()["data"]
+    assert not data["case_id"]
 
 
 @pytest.mark.asyncio
@@ -189,8 +314,9 @@ async def test_transient_overload_retries_then_reads_image(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_analyze_dashboard_image_openai_provider(monkeypatch):
-    import src.services.dashboard_vision_service as dash_mod
     from unittest.mock import AsyncMock, MagicMock
+
+    import src.services.dashboard_vision_service as dash_mod
 
     settings = get_settings()
     monkeypatch.setattr(settings, "agent_llm_enabled", True)

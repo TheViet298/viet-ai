@@ -1,0 +1,20 @@
+{
+  "gate_kind": "engineering",
+  "production_acceptance": false,
+  "passed": true,
+  "checks": {
+    "sourced": true,
+    "wrong_model": true,
+    "wrong_variant": true,
+    "unsafe": true,
+    "budget": true,
+    "negation": true,
+    "parent": true,
+    "wrong_number": true,
+    "metric_contract": true
+  },
+  "failure_reasons": [],
+  "fixture_version": 1,
+  "fixture_sha256": "825fa5aa53242f31cd4d8e4d7ba7f08327ec2ede85396242139ddbeecae20c2f",
+  "note": "Public synthetic fixture; no private KB, model download, or provider call."
+}

@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     dashboard_vision_model: str = "gemini-3.5-flash"
     dashboard_vision_timeout_s: float = Field(default=25, gt=0, le=60)
     image_routing_timeout_s: float = Field(default=12, gt=0, le=30)
+    exterior_vision_timeout_s: float = Field(default=25, gt=0, le=60)
     image_routing_min_confidence: float = Field(default=.8, ge=0, le=1)
     cardd_python_executable: str = ""
     cardd_inference_timeout_s: float = Field(default=45, gt=0, le=60)

@@ -69,3 +69,8 @@ docs/reviews/2026-10-05*
 docs/reviews/2026-10-06*
 docs/vehicles-*.md
 docs/architecture/vehicle-conversation-context.md
+# Local review reports and evidence
+docs/reviews/
+
+# Local ZIP exports
+*.zip

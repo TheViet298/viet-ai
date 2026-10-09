@@ -11,7 +11,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function getCustomerAuthHeaders(): Promise<Record<string, string>> {
   if (typeof window === "undefined") return {};
-  const token = localStorage.getItem("vf_access_token");
+  const token = localStorage.getItem("vf_access_token") || localStorage.getItem("vf_customer_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -20,6 +20,7 @@ export async function getCustomerAuthHeaders(): Promise<Record<string, string>> 
  */
 export async function uploadAttachment(file: File, imageKind: "auto" | "dashboard" | "exterior" = "auto"): Promise<ApiResponse<AttachmentOut>> {
   const authHeaders = await getCustomerAuthHeaders();
+  if (!authHeaders.Authorization) throw new Error("Vui lòng đăng nhập để tải ảnh.");
   const formData = new FormData();
   formData.append("file", file);
   formData.append("image_kind", imageKind);
@@ -58,10 +59,11 @@ export async function sendChatMessage(params: {
       "Content-Type": "application/json",
       ...authHeaders,
     },
-    signal: AbortSignal.timeout(8000),
+    signal: typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(8000) : undefined,
     body: JSON.stringify({
       request_id: params.requestId,
       session_id: params.sessionId,
+      ...(!authHeaders.Authorization ? { guest_session_id: params.sessionId } : {}),
       case_id: params.caseId || null,
       message: params.message,
       attachment_ids: params.attachmentIds || [],
