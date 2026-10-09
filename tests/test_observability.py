@@ -99,3 +99,38 @@ def test_exporter_failure_does_not_change_business_result(monkeypatch):
         obs.update_observation(handle, output={'ok': True})
         result = 42
     assert result == 42
+
+
+def test_callback_never_exports_raw_error_payload(monkeypatch):
+    import langfuse.langchain
+    capture = []
+    class BoundaryCallback:
+        def __init__(self, **kwargs):
+            pass
+        def on_llm_error(self, error, **kwargs):
+            capture.append(str(error))
+        on_chain_error = on_tool_error = on_retriever_error = on_llm_error
+    monkeypatch.setattr(langfuse.langchain, 'CallbackHandler', BoundaryCallback)
+    monkeypatch.setattr(obs, '_client', FakeClient())
+    callback = obs.get_tracer_callbacks()[0]
+    for name in ['on_llm_error', 'on_chain_error', 'on_tool_error', 'on_retriever_error']:
+        getattr(callback, name)(RuntimeError('sk-test-secret test@example.invalid'), run_id='fixture')
+    assert capture == ['provider_error'] * 4
+
+
+def test_callback_masks_images_before_sdk_can_process_media(monkeypatch):
+    import langfuse.langchain
+    from langchain_core.messages import HumanMessage
+    captured = []
+    class BoundaryCallback:
+        def __init__(self, **kwargs):
+            pass
+        def on_chat_model_start(self, serialized, messages, **kwargs):
+            captured.append(messages[0][0].content)
+    monkeypatch.setattr(langfuse.langchain, 'CallbackHandler', BoundaryCallback)
+    monkeypatch.setattr(obs, '_client', FakeClient())
+    callback = obs.get_tracer_callbacks()[0]
+    callback.on_chat_model_start({}, [[HumanMessage(content=[
+        {'type': 'image_url', 'image_url': {'url': 'data:image/png;base64,c2VjcmV0'}}])]], run_id='fixture')
+    assert 'base64' not in str(captured)
+    assert 'image_url' not in str(captured)

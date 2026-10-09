@@ -29,6 +29,13 @@ def evaluate_case(case_id: str, http_status: int, response: dict, observations: 
     data = response.get('data', response)
     generations = [o for o in observations if o.get('type') == 'GENERATION']
     successful = [o for o in generations if o.get('level') != 'ERROR' and o.get('endTime')]
+    if case_id in {'LF-01', 'LF-02', 'LF-10'}:
+        outcomes = [(o.get('metadata') or {}).get('outcome', o.get('statusMessage'))
+                    for o in observations if o.get('name') == 'llm.outcome']
+        if not outcomes:
+            return {'status': 'BLOCKED', 'reasons': ['application_parse_evidence_missing']}
+        if any(value != 'parsed' for value in outcomes):
+            reasons.append('application_generation_not_parsed')
     if case_id in {'LF-01', 'LF-02', 'LF-06', 'LF-07', 'LF-10'} and not successful:
         return {'status': 'BLOCKED', 'reasons': ['successful_live_generation_missing']}
     if case_id == 'LF-02' and not data.get('citations'):

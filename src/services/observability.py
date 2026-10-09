@@ -30,6 +30,8 @@ def mask_telemetry(*, data: Any, **kwargs: Any) -> Any:
         if depth > 12:
             return '[REDACTED_DEPTH]'
         if isinstance(value, dict):
+            if value.get('type') in {'image_url', 'input_image', 'input_audio'}:
+                return {'type': 'text', 'text': '[REDACTED_IMAGE]'}
             if 'messages' in value and ('captured_fields' in value or 'user_role' in value):
                 return {k: clean(value[k], depth + 1) for k in ('session_id', 'turn') if k in value}
             return {str(k): '[REDACTED]' if str(k).lower() in _PRIVATE or
@@ -61,6 +63,7 @@ def initialize_observability() -> bool:
     if not os.getenv('LANGFUSE_PUBLIC_KEY') or not os.getenv('LANGFUSE_SECRET_KEY'):
         return False
     try:
+        os.environ['LANGFUSE_MEDIA_UPLOAD_ENABLED'] = 'false'
         from langfuse import Langfuse
         _client = Langfuse(public_key=os.environ['LANGFUSE_PUBLIC_KEY'], secret_key=os.environ['LANGFUSE_SECRET_KEY'],
                            base_url=os.getenv('LANGFUSE_BASE_URL', 'https://cloud.langfuse.com'),
@@ -182,7 +185,8 @@ def get_tracer_callbacks(session_id=None, user_id=None, tags=None, metadata=None
         return []
     try:
         from langfuse.langchain import CallbackHandler
-        return [CallbackHandler(public_key=os.getenv('LANGFUSE_PUBLIC_KEY'), update_trace=False)]
+        from src.services.langfuse_callback import safe_callback
+        return [safe_callback(CallbackHandler)(public_key=os.getenv('LANGFUSE_PUBLIC_KEY'), update_trace=False)]
     except Exception:
         return []
 

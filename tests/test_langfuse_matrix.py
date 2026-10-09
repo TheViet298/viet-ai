@@ -47,3 +47,18 @@ def test_validation_user_passes_real_upload_rbac(tmp_path):
         user = seed_validation_user(db)
         assert require_customer(user).id == 'lf-synthetic-user'
     engine.dispose()
+
+
+def test_completed_provider_with_parse_error_cannot_pass_live_case():
+    from scripts.langfuse_matrix_cases import evaluate_case
+    evidence = [{'id': 'r', 'type': 'SPAN', 'isRootObservation': True},
+                {'id': 'g', 'type': 'GENERATION', 'endTime': 'now', 'level': 'DEFAULT'},
+                {'id': 'o', 'name': 'llm.outcome', 'metadata': {'outcome': 'parse_error'}}]
+    assert evaluate_case('LF-01', 200, {'response': 'fallback'}, evidence)['status'] == 'FAIL'
+
+
+def test_live_chat_requires_application_parse_evidence():
+    from scripts.langfuse_matrix_cases import evaluate_case
+    evidence = [{'id': 'r', 'isRootObservation': True},
+                {'id': 'g', 'type': 'GENERATION', 'endTime': 'now', 'level': 'DEFAULT'}]
+    assert evaluate_case('LF-01', 200, {}, evidence)['status'] == 'BLOCKED'

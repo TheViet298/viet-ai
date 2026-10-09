@@ -66,8 +66,12 @@ def summarize_trace(observations: list[dict]) -> dict:
     missing_usage = missing_cost = 0
     for gen in generations.values():
         usage = gen.get('usageDetails') or {}
-        input_tokens = usage.get('input', gen.get('inputUsage'))
-        output_tokens = usage.get('output', gen.get('outputUsage'))
+        input_tokens = gen.get('inputUsage')
+        output_tokens = gen.get('outputUsage')
+        if input_tokens is None:
+            input_tokens = sum(v for k, v in usage.items() if k == 'input' or k.startswith('input_'))
+        if output_tokens is None:
+            output_tokens = sum(v for k, v in usage.items() if k == 'output' or k.startswith('output_'))
         total = usage.get('total', gen.get('totalUsage'))
         reported = bool(usage) or (gen.get('metadata') or {}).get('usage_status') == 'reported'
         if reported and isinstance(total, (int, float)):
@@ -94,4 +98,11 @@ def write_evidence(output_dir: Path, results: list[dict]) -> Path:
     from src.services.observability import mask_telemetry
     target = output_dir / 'results.json'
     target.write_text(json.dumps(mask_telemetry(data=results), ensure_ascii=False, indent=2), encoding='utf-8')
+    return target
+
+
+def write_observations(output_dir: Path, rows: list[dict]) -> Path:
+    from src.services.observability import mask_telemetry
+    target = output_dir / 'observations.json'
+    target.write_text(json.dumps([mask_telemetry(data=row) for row in rows], ensure_ascii=False, indent=2), encoding='utf-8')
     return target

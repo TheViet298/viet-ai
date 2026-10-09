@@ -40,3 +40,22 @@ async def test_cloud_reader_does_not_treat_http_410_as_empty_success():
         lambda _: httpx.Response(410, json={'message': 'private-provider-message'}))) as client:
         with pytest.raises(CloudEvidenceError, match='cloud_http_410'):
             await collect_observations('run', timeout_s=0, client=client)
+
+
+def test_summary_counts_aggregate_input_including_cached_buckets():
+    from scripts.langfuse_cloud_evidence import summarize_trace
+    row = {'id': 'g', 'type': 'GENERATION', 'usageDetails': {
+        'input': 60, 'input_cache_read': 40, 'output': 10, 'output_reasoning': 10, 'total': 120},
+        'inputUsage': 100, 'outputUsage': 20, 'totalUsage': 120, 'totalCost': .001}
+    result = summarize_trace([row])
+    assert result['known_input_tokens'] == 100
+    assert result['known_output_tokens'] == 20
+    assert result['known_total_tokens'] == 120
+
+
+def test_evidence_writer_keeps_more_than_one_hundred_rows(tmp_path):
+    from scripts.langfuse_cloud_evidence import write_observations
+    import json
+    rows = [{'id': str(i)} for i in range(136)]
+    path = write_observations(tmp_path, rows)
+    assert len(json.loads(path.read_text(encoding='utf-8'))) == 136

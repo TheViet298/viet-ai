@@ -144,7 +144,7 @@ async def run_matrix(output: Path, run_id: str) -> dict:
     from src.services.session_store import get_store
     from src.services.agent_llm import reset_circuits
     from scripts.langfuse_matrix_cases import matrix_cases, evaluate_case
-    from scripts.langfuse_cloud_evidence import collect_observations, summarize_trace, write_evidence, CloudEvidenceError
+    from scripts.langfuse_cloud_evidence import collect_observations, summarize_trace, write_evidence, write_observations, CloudEvidenceError
     import src.services.llm as llm_module
     import httpx
     fixture = seed_rag_fixture()
@@ -221,7 +221,7 @@ async def run_matrix(output: Path, run_id: str) -> dict:
         result['trace_urls'] = [f'https://cloud.langfuse.com/project/{checks["project_id"]}/traces/{tid}'
                                 for tid in summary['trace_ids']]
     write_evidence(output, results)
-    (output / 'observations.json').write_text(json.dumps(obs.mask_telemetry(data=rows), ensure_ascii=False, indent=2), encoding='utf-8')
+    write_observations(output, rows)
     manifest = {'run_id': run_id, 'started_at': started, 'finished_at': datetime.now(UTC).isoformat(),
                 'release': release, 'dirty_at_run': bool(subprocess.check_output(['git', '-C', str(ROOT), 'status', '--porcelain'], text=True)),
                 'preflight': checks, 'isolation': paths, 'rag_fixture': fixture,

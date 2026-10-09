@@ -24,15 +24,21 @@ def normalize_openai_usage(usage: Any) -> dict[str, int] | None:
     result = _counts(usage, {'prompt_tokens': 'input', 'completion_tokens': 'output', 'total_tokens': 'total'})
     value = usage.model_dump() if hasattr(usage, 'model_dump') else usage
     if result is not None and isinstance(value, dict):
-        result.update(_counts(value.get('prompt_tokens_details'), {'cached_tokens': 'input_cached_tokens'}) or {})
-        result.update(_counts(value.get('completion_tokens_details'), {'reasoning_tokens': 'output_reasoning_tokens'}) or {})
+        result.update(_counts(value.get('prompt_tokens_details'), {'cached_tokens': 'input_cache_read'}) or {})
+        result.update(_counts(value.get('completion_tokens_details'), {'reasoning_tokens': 'output_reasoning'}) or {})
+        for parent, detail in [('input', 'input_cache_read'), ('output', 'output_reasoning')]:
+            if parent in result and detail in result:
+                result[parent] = max(0, result[parent] - result[detail])
     return result
 
 
 def normalize_google_usage(usage: dict | None) -> dict[str, int] | None:
-    return _counts(usage, {'promptTokenCount': 'input', 'candidatesTokenCount': 'output',
-                           'totalTokenCount': 'total', 'cachedContentTokenCount': 'input_cached_tokens',
-                           'thoughtsTokenCount': 'output_reasoning_tokens'})
+    result = _counts(usage, {'promptTokenCount': 'input', 'candidatesTokenCount': 'output',
+                           'totalTokenCount': 'total', 'cachedContentTokenCount': 'input_cache_read',
+                           'thoughtsTokenCount': 'output_reasoning'})
+    if result and 'input' in result and 'input_cache_read' in result:
+        result['input'] = max(0, result['input'] - result['input_cache_read'])
+    return result
 
 
 async def provider_generation(name: str, provider: str, model: str, call, *, attempt: int = 1):
@@ -40,7 +46,12 @@ async def provider_generation(name: str, provider: str, model: str, call, *, att
                      metadata={'provider': provider, 'attempt': attempt}) as span:
         result = await call()
         if provider == 'google':
-            body = result.json()
+            try:
+                body = result.json()
+            except (ValueError, TypeError):
+                body = {}
+            if not isinstance(body, dict):
+                body = {}
             usage = normalize_google_usage(body.get('usageMetadata'))
             failed = result.status_code >= 400
         else:
