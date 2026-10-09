@@ -27,13 +27,15 @@ async def test_usage_survives_consumer_parse_failure(monkeypatch):
     async def call():
         return SimpleNamespace(usage={'prompt_tokens': 12, 'completion_tokens': 5, 'total_tokens': 17})
 
-    with obs.observation('root'):
-        await provider_generation('vision.exterior', 'openai', 'actual-model', call)
-        with pytest.raises(ValueError):
-            raise ValueError('parse failed afterwards')
+    with obs.validation_context('fixture-run', 'LF-06'):
+        with obs.observation('root'):
+            await provider_generation('vision.exterior', 'openai', 'actual-model', call)
+            with pytest.raises(ValueError):
+                raise ValueError('parse failed afterwards')
     generation = capture.records[1]
     assert generation.fields['usage_details'] == {'input': 12, 'output': 5, 'total': 17}
     assert generation.fields['model'] == 'actual-model'
+    assert generation.fields['metadata']['run_id'] == 'fixture-run'
     assert 'cost_details' not in generation.fields
 
 

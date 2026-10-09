@@ -79,6 +79,8 @@ def is_langfuse_available() -> bool:
 def update_observation(handle: Any, **fields: Any) -> None:
     if handle is not None:
         try:
+            if 'metadata' in fields:
+                fields['metadata'] = {**_validation.get(), **fields['metadata']}
             handle.update(**{k: mask_telemetry(data=v) if k in {'input', 'output', 'metadata'} else v
                              for k, v in fields.items()})
         except Exception:
