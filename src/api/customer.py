@@ -5,8 +5,6 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 
-logger = logging.getLogger("customer_api")
-
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from sqlalchemy import func, update
 from sqlalchemy.orm import Session, joinedload
@@ -79,8 +77,10 @@ from src.services.chat_cases import (
     resolve_authorized_active_case,
     upsert_case_brief,
 )
-from src.services.chat_classification import classify_chat_context
+from src.services.chat_classification import classify_chat_context, normalized
 from src.services.chat_turns import run_chat_turn, safety_fields, session_emergency_context
+from src.services.conversation_context import ConversationContext, TurnUnderstanding
+from src.services.conversation_progress import build_reply_constraints, derive_progress, progress_reply
 from src.services.dashboard_conversation import (
     DASHBOARD_CHOICES,
     DASHBOARD_SAFE_GUIDANCE,
@@ -105,11 +105,13 @@ from src.services.exterior_conversation import (
 )
 from src.services.image_routing import classify_vehicle_image
 from src.services.knowledge_questions import answer_sales_question, sales_parts
+from src.services.observability import observation, trace_endpoint, update_trace_identity
 from src.services.vehicle_context import resolve_vehicle_context
 from src.services.vehicle_knowledge import is_general_vehicle_question
 from src.services.vehicle_vision_service import recognize_vehicle_model
 from src.services.vision.cardd_runtime import analyze_exterior_image
-from src.services.observability import trace_endpoint, update_trace_identity, observation
+
+logger = logging.getLogger("customer_api")
 
 
 def to_iso(dt: datetime | None) -> str:
@@ -396,6 +398,16 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             exterior_image_context = metadata.get("exterior_image_context", {})
             break
     vehicle_context = resolve_vehicle_context(text, previous_context)
+    understood = db.info.get('conversation_turn') or {}
+    conversation = ConversationContext.model_validate(understood.get('context') or {})
+    turn_understanding = TurnUnderstanding.model_validate(understood.get('understanding') or {
+        'original_text': text, 'resolved_query': text,
+    })
+    if (turn_understanding.move in {'correct', 'verify_claim'} and conversation.active_goal != 'incident'
+            and not classification.is_critical):
+        vehicle_context['is_incident'] = False
+    if conversation.subject and not vehicle_context['models'] and turn_understanding.move != 'new_incident':
+        vehicle_context['models'] = [conversation.subject]
     if vehicle_context.get('scope_changed') or ('incident_case_id' in previous_context and vehicle_context['is_incident']):
         bound_case_id = vehicle_context.get('incident_case_id')
         active_case = resolve_authorized_active_case(db, current_user, payload.session_id, bound_case_id, payload.guest_session_id) if bound_case_id else None
@@ -411,6 +423,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         vehicle_model = current_user.vehicle_model
     vehicle_code = (ctx.vehicle_code_mock if ctx else None) or "VF-SF-00231"
     resolved_text = vehicle_context["resolved_query"]
+    if conversation.active_goal and turn_understanding.move not in {'new_incident', 'new_question'}:
+        resolved_text = turn_understanding.resolved_query
     vehicle_label = vehicle_model or "chưa xác định dòng"
 
     if active_case:
@@ -1228,17 +1242,55 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     elif classification.request_kind == "incident":
         is_technical_incident = True
 
+    if not classification.is_critical and not payload.attachment_ids:
+        case_snapshot = None
+        if active_case:
+            brief = db.query(CaseBrief).filter_by(case_id=active_case.id).first()
+            case_snapshot = {'id': active_case.id, 'status': active_case.status,
+                             'facts': dict(brief.captured_fields or {}) if brief else {}}
+        progress = derive_progress(conversation, {}, case_snapshot, None)
+        reply_constraints = build_reply_constraints(turn_understanding, conversation, progress)
+        reply = progress_reply(turn_understanding, conversation, progress, case_snapshot)
+        if reply:
+            db.info['conversation_route'] = 'progress'
+            db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
+                           sender_type=SenderType.AGENT.value, content=reply, created_at=reply_created_at,
+                           msg_metadata={'user_id': user_id, 'response_type': 'FAQ_ANSWER'}))
+            db.flush()
+            return ApiResponse(success=True, data=ChatResponseData(
+                response_type='FAQ_ANSWER', message=reply, case_id=active_case_id,
+                remaining_guest_messages=remaining_guest_msgs,
+            ), error=None)
+        if conversation.active_goal in {'quote', 'test_drive', 'maintenance', 'warranty', 'range', 'charging', 'capacity', 'concept'}:
+            is_technical_incident = False
+
     # --------------------------------------------------------------------------
     # NHÓM A: CHÀO HỎI & GIAO TIẾP XÃ GIAO (GREETINGS)
     # --------------------------------------------------------------------------
-    greeting_keywords = ["xin chào", "chào em", "chào bạn", "chào bot", "chào trợ lý", "hello", "hi vinfast", "chào", "hi"]
-    is_greeting = any(lower_text == kw or lower_text.startswith(f"{kw} ") for kw in greeting_keywords) and not is_technical_incident
+    intro_text = re.sub(r"\s+", " ", normalized(text)).strip()
+    greeting_pattern = r"^(?:xin chao(?: ban|em|bot|tro ly)?|chao(?: ban|em|bot|tro ly)?|hello|hi(?: vinfast)?)\b[\s,.!?;:]*"
+    greeting = re.match(greeting_pattern, intro_text)
+    question = intro_text[greeting.end():] if greeting else intro_text
+    question = question.strip(" .,!?:;")
+    is_greeting = bool(greeting) and not question and not is_technical_incident
+    is_capabilities = not is_technical_incident and bool(re.fullmatch(
+        r"(?:(?:ban|em|bot|tro ly) )?(?:co the )?"
+        r"(?:(?:ho tro|giup)(?: toi|minh|khach hang)? (?:nhung gi|gi|duoc gi)"
+        r"(?: cho (?:toi|minh|khach hang))?|"
+        r"lam (?:duoc )?(?:nhung )?gi|co (?:nhung )?chuc nang (?:gi|nao))", question,
+    ))
 
-    if is_greeting:
+    if is_greeting or is_capabilities:
         customer_name = payload.client_context.customer_name if payload.client_context else None
         short_name = customer_name.strip().split()[-1] if (customer_name and customer_name.strip()) else None
 
-        if short_name:
+        if is_capabilities:
+            greeting_reply = (
+                "Chào bạn! Tôi có thể hỗ trợ tìm hiểu xe VinFast, tra cứu bảo hành và bảo dưỡng, "
+                "hướng dẫn về sạc và ứng dụng, tiếp nhận sự cố kỹ thuật hoặc khiếu nại, "
+                "và theo dõi hồ sơ hỗ trợ. Bạn muốn được hỗ trợ nội dung nào?"
+            )
+        elif short_name:
             full_lower = customer_name.lower()
             is_female = "thị" in full_lower or any(
                 short_name.lower() == fn
@@ -1269,7 +1321,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             session_id=payload.session_id,
             sender_type=SenderType.AGENT.value,
             content=greeting_reply,
-            msg_metadata={"type": "GREETING", "suggested_replies": suggested_replies},
+            msg_metadata={"type": "CAPABILITIES" if is_capabilities else "GREETING", "suggested_replies": suggested_replies},
         )
         db.add(agent_msg)
         if active_case:
@@ -1293,6 +1345,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     # NHÓM B: TƯ VẤN BÁN HÀNG, LÁI THỬ & GIÁ XE (SALES & SERVICES)
     # --------------------------------------------------------------------------
     knowledge_parts = sales_parts(resolved_text, vehicle_model) if not is_technical_incident else []
+    if conversation.active_goal and conversation.active_goal not in {'quote', 'test_drive'} and turn_understanding.move != 'new_question':
+        knowledge_parts = []
 
     # --------------------------------------------------------------------------
     # NHÓM B2: BIỂU TƯỢNG RÙA VÀNG TRÊN XE HIỆN TẠI (ACTIVE TURTLE ON VEHICLE)
@@ -1391,8 +1445,13 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             None if len(models_in_question) > 1 else vehicle_model
         )
         if knowledge_parts:
-            ai_res = await answer_sales_question(resolved_text, knowledge_model, payload.session_id)
+            db.info['conversation_route'] = 'sales'
+            ai_res = await answer_sales_question(resolved_text, knowledge_model, payload.session_id,
+                                                conversation_context=conversation.model_dump(),
+                                                turn_understanding=turn_understanding.model_dump(),
+                                                llm_budget=understood.get('budget'))
         else:
+            db.info['conversation_route'] = 'knowledge'
             ai_res = await process_chat_message(
                 resolved_text, session_id=payload.session_id,
                 user_role="customer" if current_user else "guest",
@@ -1403,6 +1462,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                     "vehicle_model": knowledge_model,
                     "vehicle_context": vehicle_context,
                     "original_user_message": text,
+                    "conversation_context": conversation.model_dump(),
+                    "turn_understanding": turn_understanding.model_dump(),
+                    "llm_budget": understood.get('budget'),
+                    "reply_constraints": reply_constraints if not payload.attachment_ids else {},
                     "reset_faq_context": bool(history and "citations" not in (history[0].msg_metadata or {})),
                 },
             )
@@ -1411,6 +1474,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             "quản lý tình trạng xe và đặt lịch dịch vụ trực tiếp trên Ứng dụng VinFast.\n\n"
             "Anh/chị cần em hỗ trợ thao tác cụ thể nào không ạ?"
         )
+        db.info['conversation_claims'] = ai_res.get('answer_claims', [])
+        db.info['conversation_retrieval'] = ai_res.get('retrieval_diagnostics', {})
         if isinstance(agent_reply, list):
             agent_reply = "".join(
                 b.get("text", "") if isinstance(b, dict) else getattr(b, "text", str(b))
@@ -1419,7 +1484,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         elif not isinstance(agent_reply, str):
             agent_reply = str(agent_reply)
         agent_reply = clean_case_references(agent_reply, active_case_id)
-        if ai_res.get("is_no_source") and not knowledge_parts:
+        if (ai_res.get("is_no_source") and not knowledge_parts
+                and turn_understanding.move not in {'elaborate', 'ask_status', 'ask_next_step', 'verify_claim'}):
             diag = ai_res.get("retrieval_diagnostics") or {}
             diag_cat = diag.get("category")
             diag_stage = diag.get("stage")

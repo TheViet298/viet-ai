@@ -1,6 +1,125 @@
 """Select complete answer sections and reject descriptions posing as procedures."""
 import re
 import unicodedata
+from datetime import date
+from decimal import Decimal, InvalidOperation
+
+from pydantic import BaseModel, Field
+
+
+class AnswerClaim(BaseModel):
+    claim_key: str
+    value: str
+    unit: str
+    subject: str
+    conditions: list[str] = Field(default_factory=list)
+    source_ids: list[str] = Field(default_factory=list)
+
+
+QUANTITY = re.compile(r'(\d+(?:[.,]\d+)*(?:\s*[-–]\s*\d+(?:[.,]\d+)*)?)\s*((?:tỷ|triệu)\s*đồng|km|kwh|phút|năm|vnđ|vnd|đồng|%)(?!\w)', re.I)
+
+
+def numeric_value(value: str) -> Decimal | tuple | None:
+    value = value.strip()
+    if re.search(r'[-–]', value):
+        endpoints = tuple(numeric_value(v) for v in re.split(r'[-–]', value))
+        return endpoints if len(endpoints) == 2 and all(isinstance(v, Decimal) for v in endpoints) else None
+    if re.fullmatch(r'\d{1,3}(?:[.,]\d{3})+', value):
+        value = value.replace('.', '').replace(',', '')
+    else:
+        value = value.replace(',', '.')
+    try:
+        return Decimal(value)
+    except InvalidOperation:
+        return None
+
+
+def battery_condition(text: str) -> str | None:
+    body = normalized(text)
+    if re.search(r'khong (?:bao gom|kem|gom) pin|chua (?:bao gom|kem) pin', body):
+        return 'pin_excluded'
+    if re.search(r'mua (?:kem|dut) pin|bao gom pin|gia.*kem pin', body):
+        return 'pin_included'
+    if 'thue pin' in body:
+        return 'battery_rental'
+    return None
+
+
+def validate_answer_claims(claims: list[AnswerClaim], citations: list[dict], prior_claims: list[AnswerClaim]) -> dict:
+    unsupported, conflicts = [], []
+    keywords = {'range': ('quang duong', 'mot lan sac', 'pham vi'),
+                'warranty': ('bao hanh',), 'charging_time': ('sac',),
+                'capacity': ('dung luong',), 'price': ('gia',)}
+    for claim in claims:
+        supported = False
+        for citation in citations:
+            if citation.get('source_id') not in claim.source_ids:
+                continue
+            # Validate one sentence/line, so an unrelated number in the same
+            # document cannot certify a claim about another component.
+            for section in re.split(r'\n|(?<=[.!?])\s+', citation.get('relevant_snippet', '')):
+                body = normalized(section)
+                target = numeric_value(claim.value)
+                if target is None or not any(numeric_value(m[1]) == target and normalized(m[2]) == normalized(claim.unit)
+                                             for m in QUANTITY.finditer(section)):
+                    continue
+                subjects = re.findall(r'vf\s*(?:e34|[356789])|plus|eco|pin cao ap|\bpin\b|ac quy|soh|soc', normalized(claim.subject))
+                if any(re.sub(r'\s', '', subject) not in re.sub(r'\s', '', body) for subject in subjects):
+                    continue
+                policy_duration = (claim.claim_key == 'warranty' and 'bao hanh' in normalized(citation.get('title', ''))
+                                   and normalized(claim.unit) in {'nam', 'km'})
+                if not policy_duration and not any(word in body for word in keywords.get(claim.claim_key, (claim.claim_key,))):
+                    continue
+                if claim.claim_key == 'range' and any(term in body for term in ('lich su', 'da chay', 'bao duong', 'bao hanh')):
+                    continue
+                if claim.claim_key == 'warranty' and ('khong bao hanh' in body or 'khong ap dung' in body):
+                    continue
+                battery_requirements = [c for c in claim.conditions if c in {'pin_included', 'pin_excluded', 'battery_rental'}]
+                if battery_requirements and battery_condition(section) not in battery_requirements:
+                    continue
+                if any(normalized(condition) not in body for condition in claim.conditions if condition not in battery_requirements):
+                    continue
+                if claim.claim_key == 'price':
+                    if 'tu ' in body and 'tu' not in [normalized(c) for c in claim.conditions]:
+                        continue
+                    if any(term in body for term in ('uu dai', 'sau giam', 'lan banh')) and not any(normalized(c) in body for c in claim.conditions if normalized(c) in {'uu dai', 'lan banh'}):
+                        continue
+                    years = [int(y) for y in re.findall(r'\b20\d{2}\b', body)]
+                    if years and max(years) < date.today().year - 1:
+                        continue
+                supported = True
+        if not supported:
+            unsupported.append(claim.model_dump())
+        for old in prior_claims:
+            if old.claim_key == claim.claim_key and old.subject == claim.subject and old.value != claim.value:
+                conflicts.append({'prior': old.model_dump(), 'current': claim.model_dump(),
+                                  'same_conditions': old.conditions == claim.conditions})
+    return {'supported': not unsupported, 'unsupported_claims': unsupported, 'conflicts': conflicts}
+
+
+def extract_numeric_claims(answer: str, citations: list[dict], subject: str = '', query: str = '') -> list[AnswerClaim]:
+    """Also inspect answer text: omitted structured claims cannot bypass checks."""
+    claims = []
+    for section in re.split(r'\n|(?<=[.!?])\s+', answer):
+        body = normalized(section)
+        for match in QUANTITY.finditer(section):
+            value, unit = match.groups()
+            key = ('price' if normalized(unit) in {'vnd', 'dong', 'ty dong', 'trieu dong'} else
+                   'capacity' if unit.casefold() == 'kwh' else
+                   'charging_time' if normalized(unit) == 'phut' else
+                   'warranty' if 'bao hanh' in body or 'bao hanh' in normalized(query) else 'range' if unit.casefold() == 'km' else 'capacity')
+            conditions = [term for term in ('WLTP', 'NEDC', 'từ', 'ưu đãi', 'lăn bánh') if normalized(term) in body]
+            battery = battery_condition(section)
+            if key == 'price' and battery:
+                conditions.append(battery)
+            claim_subject = subject
+            if not re.search(r'plus|eco|\bpin\b|ac quy', normalized(subject)):
+                model_version = re.search(r'vf\s*(e34|[356789])\s*(plus|eco)?', body)
+                if model_version:
+                    claim_subject = 'VF' + model_version[1].upper() + (' ' + model_version[2].title() if model_version[2] else '')
+            claims.append(AnswerClaim(claim_key=key, value=value, unit=unit, subject=claim_subject,
+                                      conditions=conditions, source_ids=[c['source_id'] for c in citations]))
+    return claims
 
 
 def normalized(text: str) -> str:

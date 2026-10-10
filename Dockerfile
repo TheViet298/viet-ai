@@ -21,7 +21,8 @@ RUN useradd -m appuser
 COPY . .
 
 # Setup entrypoint and permissions
-RUN chmod +x /app/scripts/docker-entrypoint.sh \
+RUN sed -i 's/\r$//' /app/scripts/docker-entrypoint.sh \
+    && chmod +x /app/scripts/docker-entrypoint.sh \
     && mkdir -p /app/data && chown -R appuser:appuser /app
 
 USER appuser

@@ -49,7 +49,7 @@ async def case_brief_node(state: AgentState) -> dict:
     guest = state.get("user_role", "guest") != "customer"
     # Only the bridge can claim successful case creation after its DB transaction.
     if state.get("is_rag_query"):
-        faq_note = "Hệ thống đã ghi nhận câu hỏi để chuyên viên dịch vụ kiểm tra và phản hồi sớm nhất đến anh/chị."
+        faq_note = 'Anh/chị có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.'
         reply = state.get("response", "") + ("\n\n" + faq_note if state.get("response") else faq_note)
     else:
         reply = "Đã ghi nhận yêu cầu để chuyên viên dịch vụ tiếp nhận. " + STANDARD_SAFE_GUIDANCE

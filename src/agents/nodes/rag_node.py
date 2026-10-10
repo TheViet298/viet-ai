@@ -11,15 +11,16 @@ from src.agents.state import AgentState
 from src.agents.tools.vinfast_tools import vinfast_manual_search
 from src.config import get_settings
 from src.services.agent_llm import structured_call
-from src.services.answer_evidence import is_turtle_question
-from src.services.rag_service import RAGService, select_supported_evidence, valid_citation
+from src.services.answer_evidence import AnswerClaim, extract_numeric_claims, is_turtle_question, validate_answer_claims
 from src.services.observability import observation, update_observation
+from src.services.rag_service import RAGService, select_supported_evidence, valid_citation
 
 
 class GroundedAnswer(BaseModel):
     answer: str = Field(max_length=3000)
     source_ids: list[str]
     supported: bool
+    claims: list[AnswerClaim] = Field(default_factory=list)
 
 
 async def rag_node(state: AgentState) -> dict:
@@ -62,8 +63,9 @@ async def rag_node(state: AgentState) -> dict:
         reply = "Tài liệu cần thiết vượt giới hạn xử lý hiện tại. Tôi sẽ chuyển chuyên viên kiểm tra đầy đủ điều kiện."
     generated = None
     if citations and state.get("confidence_score", 0) >= 0.60:
-        generated = await structured_call({**state, "rag_citations": citations}, "rag_qa", GroundedAnswer)
-        if generated is None and get_settings().agent_llm_enabled:
+        public_price = retrieval.get('diagnostics', {}).get('category') == 'verified_public_price_snapshot'
+        generated = None if public_price else await structured_call({**state, "rag_citations": citations}, "rag_qa", GroundedAnswer)
+        if generated is None and get_settings().agent_llm_enabled and not public_price:
             citations = []
             reply = "Tôi chưa hoàn tất được việc tạo câu trả lời từ tài liệu đã tìm thấy. Anh/chị vui lòng thử lại; tôi không thể xác nhận nội dung lúc này."
             retrieval = {**retrieval, "status": "ERROR", "diagnostics": {
@@ -80,12 +82,47 @@ async def rag_node(state: AgentState) -> dict:
                 **retrieval.get("diagnostics", {}), "stage": "generation", "category": "unsupported_answer"}}
     else:
         citations = []
+    claim_check = {'supported': True, 'conflicts': []}
+    answer_claims = []
+    if citations:
+        candidate = generated.answer if generated else '\n\n'.join(c['relevant_snippet'] for c in citations)
+        fact_context = (state.get('conversation_context') or {}).get('facts', {})
+        version = (fact_context.get('version') or {}).get('value') or ''
+        subject = f'{state.get("vehicle_model") or ""} {version}'.strip()
+        if 'bảo hành' in query.casefold() and 'pin' in query.casefold():
+            subject += ' ' + ((fact_context.get('component') or {}).get('value') or ('pin cao áp' if 'pin cao áp' in query.casefold() else 'pin'))
+        answer_claims = [*(generated.claims if generated else []),
+                         *extract_numeric_claims(candidate, citations, subject, query)]
+        prior = [AnswerClaim.model_validate(c) for entry in (state.get('conversation_context') or {}).get('last_answer', [])
+                 for c in entry.get('claims', [])]
+        claim_check = validate_answer_claims(answer_claims, citations, prior)
+        if not claim_check['supported']:
+            citations = []
+            reply = 'Em chưa có bằng chứng phù hợp để xác nhận số liệu cho đúng xe và điều kiện đang hỏi. Anh/chị cho biết phiên bản và đời xe để đối chiếu nhé.'
+            retrieval = {**retrieval, 'status': 'NO_SOURCE', 'diagnostics': {
+                **retrieval.get('diagnostics', {}), 'category': 'unsupported_numeric_claim', 'claim_check': claim_check}}
     if not citations:
         if retrieval.get("status") == "SUCCESS":
             retrieval = {**retrieval, "status": "NO_SOURCE", "diagnostics": {
                 **retrieval.get("diagnostics", {}), "category": "missing_answer_evidence"}}
         if is_turtle_question(query) and retrieval.get("status") == "NO_SOURCE":
             reply = "Tôi chưa tìm được đoạn tài liệu xác thực giải thích biểu tượng con rùa vàng cho mẫu xe này. Anh/chị vui lòng cho biết mẫu xe, đời xe hoặc gửi ảnh biểu tượng để đối chiếu đúng cảnh báo."
+        understanding = state.get('turn_understanding') or {}
+        goal = understanding.get('goal')
+        if understanding.get('move') == 'verify_claim':
+            reply = ('Em chưa có nguồn đủ để xác nhận số nào đúng cho xe đang hỏi. '
+                     'Nếu câu trả lời trước đưa số chưa có nguồn thì em xin đính chính: số đó chưa được xác thực. '
+                     'Cần đối chiếu phiên bản, đời xe và chuẩn đo trong nguồn; anh/chị cho biết phiên bản và đời xe nhé.')
+        elif understanding.get('move') in {'elaborate', 'ask_status', 'ask_next_step'}:
+            reasons = {
+                'warranty': 'Thời hạn phụ thuộc hạng mục, đời xe, phương án pin và điều kiện sử dụng. Cần đối chiếu chính sách đúng xe; anh/chị cho biết đời xe và loại sử dụng nhé.',
+                'range': 'Quãng đường phụ thuộc phiên bản, đời xe và chuẩn đo như WLTP/NEDC; thực tế còn phụ thuộc tốc độ, nhiệt độ và mức tiêu thụ. Anh/chị cho biết phiên bản và đời xe để đối chiếu nhé.',
+                'charging': 'Thời gian sạc phụ thuộc loại trụ/công suất, mức pin đầu–cuối và nhiệt độ pin. Anh/chị cho biết trụ AC hay DC và công suất trụ nhé.',
+                'capacity': 'Dung lượng cần đúng phiên bản và đời xe; dung lượng danh định khác dung lượng sử dụng được, SOC và SOH. Nếu chưa biết phiên bản, anh/chị có thể xem hồ sơ xe hoặc nhờ showroom kiểm tra.',
+                'maintenance': 'Mốc bảo dưỡng cần đối chiếu sổ bảo dưỡng đúng đời xe và điều kiện sử dụng, không tự chọn một số km chung. Anh/chị cho biết đời xe và số km hiện tại nhé.',
+            }
+            if goal in reasons:
+                reply = 'Em chưa có nguồn đủ để xác nhận thông tin cụ thể. ' + reasons[goal]
         return {
             "is_no_source": True,
             "retrieval_status": retrieval.get("status", "NO_SOURCE"),
@@ -105,8 +142,13 @@ async def rag_node(state: AgentState) -> dict:
         citation["relevant_snippet"] = sanitize_pii(citation["relevant_snippet"])[0]
     answer = sanitize_pii(generated.answer if generated else "\n\n".join(c["relevant_snippet"] for c in citations))[0]
     reply = f"Theo tài liệu VinFast:\n\n{answer}"
+    if (state.get('turn_understanding') or {}).get('move') == 'verify_claim':
+        reply += '\nCon số được đối chiếu với nguồn đang dẫn. Cần dùng đúng phiên bản, đời xe và điều kiện đo của nguồn, tránh so sánh các số theo chuẩn khác nhau.'
+    if claim_check['conflicts']:
+        reply += '\n\nSố liệu này khác câu trả lời trước. Cần đối chiếu điều kiện áp dụng trong nguồn; em đính chính theo nguồn đang dẫn và chưa xác nhận các điều kiện là tương đương.'
     return {
         "is_no_source": False,
+        'answer_claims': [c.model_dump() for c in answer_claims],
         "retrieval_status": "SUCCESS",
         "retrieval_diagnostics": retrieval.get("diagnostics", {}),
         "is_rag_query": True,

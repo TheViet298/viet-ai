@@ -13,7 +13,7 @@ from src.agents.graph import agent
 from src.agents.guardrails import evaluate_hard_safety, sanitize_pii
 from src.services.agent_llm import structured_call
 from src.services.memory_buffer import compact_memory
-from src.services.observability import get_tracer_callbacks, bind_trace_attributes, observation
+from src.services.observability import bind_trace_attributes, get_tracer_callbacks, observation
 from src.services.session_store import decode_state, encode_state, get_store, prepare_application_turn
 from src.services.tracer import sanitized_snapshot
 
@@ -84,6 +84,9 @@ async def process_chat_message(
         if context.get("vehicle_context"):
             state['pending_vehicle_context'] = context['vehicle_context']
         original_message = context.get("original_user_message") or user_message
+        for field in ('conversation_context', 'turn_understanding', 'llm_budget', 'reply_constraints'):
+            if field in context:
+                state[field] = context[field]
         state.update(query=sanitize_pii(original_message)[0], latest_user_message=sanitize_pii(original_message)[0])
         # Server-side AI evidence only; never read this from arbitrary client_context.
         state['pending_cardd_signal'] = make_cardd_signal(damage_evidence,state.get('turn',0)+1) if damage_evidence is not None else None
@@ -132,6 +135,7 @@ async def process_chat_message(
             "is_no_source": saved.get("is_no_source", False),
             "retrieval_diagnostics": saved.get("retrieval_diagnostics", {}),
             "retrieval_status": saved.get("retrieval_status"),
+            "answer_claims": saved.get('answer_claims', []),
             "citations": saved.get("rag_citations", []),
             "suggested_replies": saved.get("suggested_replies", []),
             "case_brief": saved.get("case_brief"),
