@@ -134,6 +134,16 @@ def generate_attachment_id(db: Session) -> str:
     return f"{prefix}{count + 1:03d}"
 
 
+def elevate_priority_one_level(current_priority: str | None) -> str:
+    """Nâng ưu tiên lên 1 bậc khi khách mở lại ca (LOW -> MEDIUM -> HIGH -> CRITICAL)."""
+    p = (current_priority or "LOW").upper()
+    if p == Priority.LOW.value:
+        return Priority.MEDIUM.value
+    elif p == Priority.MEDIUM.value:
+        return Priority.HIGH.value
+    return Priority.CRITICAL.value
+
+
 # ==============================================================================
 # 1. ATTACHMENT UPLOAD API — Nguồn: api-contract.md 1.1 & ADR-004
 # ==============================================================================
@@ -1687,10 +1697,12 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             db.add(case_brief)
 
             safe_guidance = "Anh/chị vui lòng giữ xe ở vị trí đỗ an toàn, bật đèn cảnh báo nguy hiểm và theo dõi cập nhật trên giao diện này."
+            soc_display = f"{current_soc}%" if current_soc and not str(current_soc).endswith("%") else (current_soc or "chưa rõ")
             agent_reply = (
-                f"Dạ VinFast đã ghi nhận sự cố vận hành của xe {car_label}:\n"
-                f"Tình trạng: Cảnh báo rùa vàng, xe chạy yếu (Mức pin: {current_soc or '18%'})\n"
-                f"Trạng thái: Khách hàng đã dừng đỗ ở vị trí an toàn\n\n"
+                f"Dạ VinFast đã ghi nhận sự cố vận hành của xe {car_label}:\n\n"
+                f"- **Tình trạng:** Cảnh báo rùa vàng, xe chạy yếu\n"
+                f"- **Mức pin:** {soc_display}\n"
+                f"- **Trạng thái:** Anh/chị đã dừng đỗ ở vị trí an toàn\n\n"
                 f"Hệ thống đã tự động tạo hồ sơ hỗ trợ (Mã: {case.id}) và chuyển dữ liệu trực tiếp tới Đội ngũ Kỹ thuật Dịch vụ VinFast. "
                 f"Anh/chị vui lòng theo dõi cập nhật tiến độ giải quyết trực tiếp trên màn hình này ạ."
             )
@@ -2083,7 +2095,7 @@ def confirm_customer_case_resolution(
             action=StaffAction.CLOSE.value,
             previous_state={"status": prev_status},
             new_state={"status": TicketStatus.CLOSED.value},
-            notes=f"Khách hàng xác nhận đã được hỗ trợ thỏa đáng. {payload.feedback_note or ''}".strip(),
+            notes=f"[ACTOR: CUSTOMER] Khách hàng ({current_user.full_name or current_user.username}) xác nhận đã được hỗ trợ thỏa đáng. {payload.feedback_note or ''}".strip(),
             created_at=utcnow(),
         )
         db.add(audit)
@@ -2091,7 +2103,7 @@ def confirm_customer_case_resolution(
         update = CaseUpdate(
             id=str(uuid.uuid4()),
             case_id=case.id,
-            author_type=AuthorType.SYSTEM.value,
+            author_type=AuthorType.CUSTOMER.value,
             status_after_update=TicketStatus.CLOSED.value,
             customer_message="Cảm ơn quý khách đã xác nhận. Hồ sơ sự cố đã được đóng thành công.",
             next_step="Cảm ơn quý khách đã tin tưởng và đồng hành cùng VinFast.",
@@ -2114,7 +2126,13 @@ def confirm_customer_case_resolution(
     else:
         prev_status = case.status
         case.status = TicketStatus.REOPENED.value
+        case.priority = elevate_priority_one_level(case.priority)
         case.updated_at = utcnow()
+
+        if case.brief:
+            fields = dict(case.brief.captured_fields or {})
+            fields["reopen_reason"] = payload.feedback_note or "Khách hàng báo chưa được khắc phục triệt để"
+            case.brief.captured_fields = fields
 
         audit = StaffAuditLog(
             id=str(uuid.uuid4()),
@@ -2123,7 +2141,7 @@ def confirm_customer_case_resolution(
             action=StaffAction.REOPEN.value,
             previous_state={"status": prev_status},
             new_state={"status": TicketStatus.REOPENED.value},
-            notes=f"Khách hàng báo vẫn chưa được giải quyết xong: {payload.feedback_note or ''}".strip(),
+            notes=f"[ACTOR: CUSTOMER] Khách hàng báo vẫn chưa được giải quyết xong: {payload.feedback_note or ''}".strip(),
             created_at=utcnow(),
         )
         db.add(audit)
@@ -2131,7 +2149,7 @@ def confirm_customer_case_resolution(
         update = CaseUpdate(
             id=str(uuid.uuid4()),
             case_id=case.id,
-            author_type=AuthorType.SYSTEM.value,
+            author_type=AuthorType.CUSTOMER.value,
             status_after_update=TicketStatus.REOPENED.value,
             customer_message="Hệ thống ghi nhận sự cố chưa được khắc phục hoàn toàn và đã chuyển lại hồ sơ sang hàng đợi chuyên viên kỹ thuật.",
             next_step="Chuyên viên dịch vụ sẽ liên hệ lại quý khách trong thời gian sớm nhất.",
@@ -2231,7 +2249,13 @@ def handle_customer_action(
     elif payload.action == "REOPEN":
         prev_status = case.status
         case.status = TicketStatus.REOPENED.value
+        case.priority = elevate_priority_one_level(case.priority)
         case.updated_at = utcnow()
+
+        if case.brief:
+            fields = dict(case.brief.captured_fields or {})
+            fields["reopen_reason"] = payload.reason or payload.feedback_note or "Khách hàng yêu cầu kiểm tra lại"
+            case.brief.captured_fields = fields
 
         audit = StaffAuditLog(
             id=str(uuid.uuid4()),
@@ -2590,41 +2614,101 @@ def reopen_customer_case(
     )
 
 
-@router.post("/cases/{case_id}/feedback", response_model=ApiResponse[CustomerFeedbackResponseData])
-def submit_customer_feedback(
-    case_id: str,
+def _handle_submit_feedback(
+    target_case_id: str,
     payload: CustomerFeedbackPayload,
-    current_user: User = Depends(require_customer),
-    db: Session = Depends(get_db),
-):
-    """
-    Khách hàng gửi đánh giá và nhận xét sau khi xử lý hồ sơ theo api-contract.md Mục 2.3.
-    """
-    case = db.get(Case, case_id)
+    current_user: User | None,
+    x_session_id: str | None,
+    db: Session,
+) -> ApiResponse[CustomerFeedbackResponseData]:
+    if not target_case_id:
+        raise HTTPException(status_code=400, detail="Mã hồ sơ (case_id) không được để trống.")
+
+    case = db.get(Case, target_case_id)
     if not case:
-        raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {target_case_id}")
 
-    check_case_ownership(case, current_user)
+    # Kiểm tra quyền sở hữu chặt chẽ: chỉ chủ sở hữu tài khoản hoặc guest session tạo ca mới có quyền đánh giá
+    check_case_ownership(case, current_user, session_id=x_session_id)
 
-    feedback = CustomerFeedback(
-        id=str(uuid.uuid4()),
-        case_id=case.id,
-        rating=payload.rating,
-        comment=payload.comment,
-        created_at=utcnow(),
-    )
-    db.add(feedback)
-    db.commit()
+    if case.status not in (TicketStatus.RESOLVED.value, TicketStatus.CLOSED.value):
+        raise HTTPException(
+            status_code=409,
+            detail=f"Hồ sơ ở trạng thái '{case.status}' chưa thể đánh giá dịch vụ. Chỉ có thể đánh giá khi ca đã được giải quyết (Resolved) hoặc đóng (Closed).",
+        )
+
+    # Ràng buộc Unique / Upsert: Nếu khách đã gửi feedback trước đó thì cập nhật
+    existing = db.query(CustomerFeedback).filter(CustomerFeedback.case_id == case.id).first()
+    if existing:
+        # Giới hạn thời gian cho phép chỉnh sửa: tối đa 7 ngày kể từ lần gửi đầu
+        if existing.created_at and (utcnow() - existing.created_at) > timedelta(days=7):
+            raise HTTPException(
+                status_code=400,
+                detail="Đã quá thời hạn 7 ngày cho phép chỉnh sửa đánh giá dịch vụ.",
+            )
+        existing.rating = payload.rating
+        existing.comment = payload.comment
+        existing.reason_tags = payload.reason_tags
+        existing.updated_at = utcnow()
+        db.commit()
+        feedback_id = existing.id
+    else:
+        now_ts = utcnow()
+        feedback = CustomerFeedback(
+            id=str(uuid.uuid4()),
+            case_id=case.id,
+            rating=payload.rating,
+            comment=payload.comment,
+            reason_tags=payload.reason_tags,
+            created_at=now_ts,
+            updated_at=now_ts,
+        )
+        db.add(feedback)
+        db.commit()
+        feedback_id = feedback.id
 
     return ApiResponse(
         success=True,
         data=CustomerFeedbackResponseData(
             success=True,
-            feedback_id=feedback.id,
+            feedback_id=feedback_id,
             case_id=case.id,
+            rating=payload.rating,
+            reason_tags=payload.reason_tags,
         ),
         error=None,
     )
+
+
+@router.post("/cases/{case_id}/feedback", response_model=ApiResponse[CustomerFeedbackResponseData])
+def submit_customer_feedback(
+    case_id: str,
+    payload: CustomerFeedbackPayload,
+    current_user: User | None = Depends(get_optional_user),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    db: Session = Depends(get_db),
+):
+    """
+    Khách hàng gửi đánh giá và nhận xét sau khi xử lý hồ sơ theo api-contract.md Mục 2.3.
+    Hỗ trợ cả người dùng đã đăng nhập hoặc khách vãng lai (qua header X-Session-Id).
+    """
+    return _handle_submit_feedback(case_id, payload, current_user, x_session_id, db)
+
+
+@router.post("/feedback", response_model=ApiResponse[CustomerFeedbackResponseData])
+def submit_customer_feedback_alias(
+    payload: CustomerFeedbackPayload,
+    current_user: User | None = Depends(get_optional_user),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    db: Session = Depends(get_db),
+):
+    """
+    Endpoint alias: Nhận đánh giá dịch vụ với case_id truyền trong body.
+    Bắt buộc kiểm tra quyền sở hữu như endpoint chính.
+    """
+    if not payload.case_id:
+        raise HTTPException(status_code=400, detail="Trường 'case_id' trong nội dung gửi là bắt buộc.")
+    return _handle_submit_feedback(payload.case_id, payload, current_user, x_session_id, db)
 
 
 @router.post("/cases/{case_id}/safety-acknowledgement", response_model=ApiResponse[SafetyAcknowledgementData])
@@ -2636,7 +2720,7 @@ def acknowledge_safety(case_id: str, payload: SafetyAcknowledgementPayload,
     check_case_ownership(case, current_user)
     if case.incident_version != payload.incident_version:
         raise HTTPException(409, "Tình trạng sự cố đã thay đổi. Vui lòng tải lại.")
-    if case.priority != "CRITICAL" or case.status in {"Closed", "Resolved"}:
+    if case.priority not in {"CRITICAL", "HIGH"} or case.status in {"Closed", "Resolved"}:
         raise HTTPException(409, "Hồ sơ không có cảnh báo khẩn cấp đang mở.")
     changed = db.execute(update(Case).where(Case.id == case_id,
         Case.incident_version == payload.incident_version, Case.safety_status == "unconfirmed")

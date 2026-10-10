@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
@@ -38,6 +38,7 @@ from src.models.schemas import (
     TicketQueueData,
 )
 from src.services.auth import require_staff
+from src.services.case_lifecycle import AUTO_CLOSE_HOURS, process_auto_close_expired_cases
 from src.services.chat_turns import safety_fields
 
 
@@ -165,13 +166,22 @@ def get_ticket_queue(
     Lấy danh sách Ticket trong hàng đợi Service Agent Console theo api-contract.md Mục 3.1.
     RBAC: Chỉ nhân viên (Staff) mới có quyền truy cập.
     """
-    query = db.query(Case).options(joinedload(Case.brief), joinedload(Case.messages), joinedload(Case.user))
+    query = db.query(Case).options(
+        joinedload(Case.brief),
+        joinedload(Case.messages),
+        joinedload(Case.user),
+        joinedload(Case.feedback),
+        joinedload(Case.audit_logs),
+    )
 
     if status and status != "ALL":
         query = query.filter(Case.status == status)
 
     if priority and priority != "ALL":
         query = query.filter(Case.priority == priority.upper())
+
+    # ── Auto-close Rule: Các ca Resolved quá 72h khách không phản hồi tự động đóng ──
+    process_auto_close_expired_cases(db, AUTO_CLOSE_HOURS)
 
     cases = query.order_by(Case.created_at.desc()).all()
 
@@ -206,6 +216,13 @@ def get_ticket_queue(
         raw_cust_id = c.mock_customer_id or f"CUST_{c.id}"
         clean_cust_id = raw_cust_id.replace("CUST_MOCK_", "VF-CUST-") if "CUST_MOCK_" in raw_cust_id else raw_cust_id
 
+        fb_score: int | None = c.feedback[0].rating if c.feedback else None
+        fb_comment: str | None = c.feedback[0].comment if c.feedback else None
+        fb_tags: list[str] = (c.feedback[0].reason_tags if (c.feedback and c.feedback[0].reason_tags) else [])
+        is_auto = (c.status == TicketStatus.CLOSED.value) and any(
+            getattr(a, "staff_id", None) == "SYSTEM_AUTO_CLOSE" for a in (c.audit_logs or [])
+        )
+
         items.append(
             TicketItem(
                 id=c.id,
@@ -224,6 +241,12 @@ def get_ticket_queue(
                 suggested_action=suggested,
                 has_location_consent=has_loc,
                 error_code_short=err_code,
+                safety_status=c.safety_status,
+                safety_acknowledged_at=to_iso(c.safety_acknowledged_at) if c.safety_acknowledged_at else None,
+                customer_feedback_score=fb_score,
+                customer_feedback_comment=fb_comment,
+                customer_feedback_tags=fb_tags,
+                is_auto_closed=is_auto,
             )
         )
 

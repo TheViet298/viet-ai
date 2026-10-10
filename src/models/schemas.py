@@ -34,6 +34,8 @@ class ApiResponse(BaseModel, Generic[T]):
 class LoginRequest(BaseModel):
     username: str = Field(..., min_length=1)
     password: str = Field(..., min_length=1)
+    session_id: str | None = None
+    guest_session_id: str | None = None
 
     @field_validator("username", mode="before")
     @classmethod
@@ -47,7 +49,6 @@ class RegisterRequest(BaseModel):
     full_name: str | None = None
     phone: str | None = None
     vehicle_model: str | None = None
-    mock_customer_id: str | None = None
 
     @field_validator("username", mode="before")
     @classmethod
@@ -298,14 +299,18 @@ class CustomerCaseListData(BaseModel):
 
 
 class CustomerFeedbackPayload(BaseModel):
+    case_id: str | None = None
     rating: int = Field(..., ge=1, le=5, description="Đánh giá từ 1 đến 5 sao")
     comment: str | None = None
+    reason_tags: list[str] = Field(default_factory=list, description="Danh sách tag lý do nhanh khi đánh giá 1-2 sao")
 
 
 class CustomerFeedbackResponseData(BaseModel):
     success: bool = True
     feedback_id: str
     case_id: str
+    rating: int | None = None
+    reason_tags: list[str] = Field(default_factory=list)
 
 
 class ReopenCaseResponseData(BaseModel):
@@ -394,7 +399,7 @@ class CustomerActionResponseData(BaseModel):
 class CaseUpdateOut(BaseModel):
     id: str
     case_id: str
-    author_type: Literal["STAFF", "SYSTEM"]
+    author_type: Literal["STAFF", "SYSTEM", "CUSTOMER"] = "STAFF"
     status_after_update: str
     customer_message: str
     next_step: str | None = None
@@ -444,6 +449,12 @@ class TicketItem(BaseModel):
     suggested_action: str | None = None
     has_location_consent: bool = False
     error_code_short: str | None = None
+    safety_status: str | None = None
+    safety_acknowledged_at: str | None = None
+    customer_feedback_score: int | None = None
+    customer_feedback_comment: str | None = None
+    customer_feedback_tags: list[str] = Field(default_factory=list)
+    is_auto_closed: bool = False
 
 
 class TicketQueueData(BaseModel):

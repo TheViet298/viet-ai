@@ -64,6 +64,7 @@ class AuthorType(StrEnum):
 
     STAFF = "STAFF"
     SYSTEM = "SYSTEM"
+    CUSTOMER = "CUSTOMER"
 
 
 class ConfirmationChoice(StrEnum):
@@ -336,10 +337,12 @@ class CustomerFeedback(Base):
     __tablename__ = "customer_feedback"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    case_id: Mapped[str] = mapped_column(String(32), ForeignKey("cases.id"), nullable=False, index=True)
+    case_id: Mapped[str] = mapped_column(String(32), ForeignKey("cases.id"), nullable=False, unique=True, index=True)
     rating: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-5 sao
     comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reason_tags: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
     case: Mapped["Case"] = relationship(back_populates="feedback")
 

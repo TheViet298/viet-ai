@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     app_host: str = "0.0.0.0"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     cors_origins: str = "http://localhost:3000"
+    enable_demo_auth_fallback: bool = True
 
     # LLM Configuration (OpenAI / LiteLLM Gateway / Gemini)
     openai_api_key: str = ""
