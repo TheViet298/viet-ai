@@ -14,7 +14,6 @@ export interface AuthUser {
   vehicleModel?: string;
   mockCustomerId?: string;
   avatar?: string;
-  isDemo?: boolean;
 }
 
 interface ApiUser {
@@ -49,8 +48,6 @@ interface AuthContextType {
   role: UserRole;
   login: (username: string, password: string) => Promise<AuthUser>;
   registerCustomer: (username: string, password: string, profile?: Pick<AuthUser, "name" | "vehicleModel" | "phone">) => Promise<AuthUser>;
-  loginDemo: (role: "CUSTOMER" | "STAFF") => Promise<AuthUser>;
-  loginAs: (role: "CUSTOMER" | "STAFF", customData?: Partial<AuthUser>) => Promise<boolean>;
   updateProfile: (payload: UpdateProfilePayload) => Promise<AuthUser>;
   logout: () => void;
   isReady: boolean;
@@ -61,8 +58,6 @@ const AuthContext = createContext<AuthContextType>({
   role: "GUEST",
   login: async () => { throw new Error("AuthProvider is not mounted"); },
   registerCustomer: async () => { throw new Error("AuthProvider is not mounted"); },
-  loginDemo: async () => { throw new Error("AuthProvider is not mounted"); },
-  loginAs: async () => false,
   updateProfile: async () => { throw new Error("AuthProvider is not mounted"); },
   logout: () => { },
   isReady: false,
@@ -71,20 +66,6 @@ const AuthContext = createContext<AuthContextType>({
 const STORAGE_KEY = "vf_serviceflow_auth";
 const TOKEN_KEY = "vf_access_token";
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-const DEMO_ENABLED =
-  process.env.NEXT_PUBLIC_ENABLE_DEMO === "true" ||
-  process.env.NODE_ENV !== "production";
-
-const DEMO_CREDENTIALS: Record<"CUSTOMER" | "STAFF", { username: string; password: string }> = {
-  CUSTOMER: { username: "customer@vinfast.vn", password: "customer123" },
-  STAFF: { username: "staff@vinfast.vn", password: "staff123" },
-};
-
-const DEMO_PROFILES: Record<"CUSTOMER" | "STAFF", Partial<AuthUser>> = {
-  CUSTOMER: { id: "CUST_MOCK_01", name: "Nguyễn Văn An", role: "CUSTOMER", email: "customer@vinfast.vn", vehicleModel: "VF 8", isDemo: true },
-  STAFF: { id: "STAFF_01", name: "Lê Hoàng Quân (KTV)", role: "STAFF", email: "staff@vinfast.vn", isDemo: true },
-};
 
 function savedProfile(): Partial<AuthUser> {
   try {
@@ -109,9 +90,6 @@ function mapApiUser(user: ApiUser, profile: Partial<AuthUser> = {}): AuthUser {
       : localProfile.phone && localProfile.phone !== "customer"
         ? localProfile.phone
         : undefined;
-  const isDemo =
-    localProfile.isDemo ??
-    (user.username === "customer@vinfast.vn" || user.username === "staff@vinfast.vn");
   return {
     id: user.id,
     role: user.role,
@@ -121,7 +99,6 @@ function mapApiUser(user: ApiUser, profile: Partial<AuthUser> = {}): AuthUser {
     vehicleModel: vehicleModel || undefined,
     mockCustomerId: user.mock_customer_id || undefined,
     avatar: localProfile.avatar,
-    isDemo,
   };
 }
 
@@ -138,18 +115,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const acceptAuthResponse = (
     response: { data: { token: string; user?: ApiUser } },
     localProfile: Partial<AuthUser> = {},
-    fallbackRole: AuthenticatedRole = "CUSTOMER",
   ) => {
-    const authUser: AuthUser = response.data.user
-      ? mapApiUser(response.data.user, localProfile)
-      : {
-        id: localProfile.id || DEMO_PROFILES[fallbackRole]?.id || "CUST_MOCK_01",
-        name: localProfile.name || DEMO_PROFILES[fallbackRole]?.name || "Nguyễn Văn An",
-        email: DEMO_PROFILES[fallbackRole]?.email || "customer@vinfast.vn",
-        role: fallbackRole,
-        vehicleModel: localProfile.vehicleModel || DEMO_PROFILES[fallbackRole]?.vehicleModel,
-        ...localProfile,
-      };
+    if (!response.data.user) {
+      throw new Error("Phản hồi xác thực không hợp lệ từ máy chủ.");
+    }
+    const authUser: AuthUser = mapApiUser(response.data.user, localProfile);
 
     localStorage.setItem(TOKEN_KEY, response.data.token);
     const tokenKey = authUser.role === "STAFF" ? "vf_staff_token" : "vf_customer_token";
@@ -175,15 +145,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = async (username: string, password: string) => {
+    const generation = ++loginGeneration.current;
     const json = await requestLogin(username, password);
+    if (generation !== loginGeneration.current) {
+      throw new Error("Phiên đăng nhập đã bị hủy.");
+    }
     if (!json.data.user) {
       throw new Error("Phản hồi đăng nhập không hợp lệ từ máy chủ.");
     }
     localStorage.setItem("vf_last_username", username.trim());
-    return acceptAuthResponse(json, savedProfile(), json.data.user.role);
+    return acceptAuthResponse(json, savedProfile());
   };
 
   const registerCustomer: AuthContextType["registerCustomer"] = async (username, password, profile) => {
+    const generation = ++loginGeneration.current;
     const response = await fetch(`${BASE_URL}/api/v1/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -196,39 +171,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }),
     });
     const json = await response.json().catch(() => null);
+    if (generation !== loginGeneration.current) {
+      throw new Error("Phiên đăng nhập đã bị hủy.");
+    }
     if (!response.ok || !json?.data?.token || !json?.data?.user) {
       throw new Error(json?.detail || json?.error || "Không thể tạo tài khoản. Vui lòng thử lại.");
     }
     localStorage.setItem("vf_last_username", username.trim());
-    return acceptAuthResponse(json, profile, "CUSTOMER");
-  };
-
-  const loginDemo = async (role: "CUSTOMER" | "STAFF") => {
-    if (!DEMO_ENABLED) throw new Error("Tài khoản demo không khả dụng ở môi trường này.");
-    const credentials = DEMO_CREDENTIALS[role];
-    const authUser = await login(credentials.username, credentials.password);
-    if (authUser.role !== role) {
-      logout();
-      throw new Error("Tài khoản demo không đúng vai trò được cấu hình.");
-    }
-    return authUser;
-  };
-
-  const loginAs = async (role: "CUSTOMER" | "STAFF", customData?: Partial<AuthUser>): Promise<boolean> => {
-    if (!DEMO_ENABLED) return false;
-    const generation = ++loginGeneration.current;
-    try {
-      const { username, password } = DEMO_CREDENTIALS[role];
-      const json = await requestLogin(username, password);
-      if (generation !== loginGeneration.current) return false;
-
-      // Bảo vệ: không cho phép ghi đè id, role, email từ customData
-      const { id: _ignoredId, role: _ignoredRole, email: _ignoredEmail, ...safeCustom } = customData ?? {};
-      acceptAuthResponse(json, safeCustom, role);
-      return true;
-    } catch {
-      return false;
-    }
+    return acceptAuthResponse(json, profile);
   };
 
   const updateProfile = async (payload: UpdateProfilePayload) => {
@@ -326,7 +276,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const role: UserRole = user?.role || "GUEST";
 
   return (
-    <AuthContext.Provider value={{ user, role, login, registerCustomer, loginDemo, loginAs, updateProfile, logout, isReady }}>
+    <AuthContext.Provider value={{ user, role, login, registerCustomer, updateProfile, logout, isReady }}>
       {children}
     </AuthContext.Provider>
   );

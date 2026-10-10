@@ -201,72 +201,7 @@ export interface HistoricalCase {
   staffUpdateNotes: string;
 }
 
-export const SAMPLE_CASE_HISTORY: HistoricalCase[] = [
-  {
-    id: "CASE-20260924-001",
-    intent: "Charging/Battery",
-    status: "Closed",
-    routedTo: "Charging Operations",
-    customerConfirmed: true,
-    resolvedAt: "02/10/2026 14:15",
-    staffName: "Cố vấn Dịch vụ VinFast",
-    vehicleModel: "VinFast VF8",
-    vehicleCode: "VF8-PLUS-2023",
-    briefSummary: "Trụ số 3 Landmark 81 báo lỗi 0x41 không cấp điện. KTV đã hướng dẫn reset giao thức và xe sạc lại bình thường.",
-    hasLocationConsent: true,
-    locationName: "Vincom Landmark 81, P.22, Bình Thạnh, TP.HCM",
-    customerFeedbackScore: 5,
-    customerFeedbackComment: "Hỗ trợ rất nhanh, AI nhận diện đúng mã lỗi táp-lô nên không phải nói lại nhiều.",
-    staffUpdateNotes: "Trụ DC 250kW đã khởi động lại firmware, thông số sạc đạt 180kW ổn định.",
-  },
-  {
-    id: "CASE-20260924-002",
-    intent: "Service/Incident",
-    status: "Resolved",
-    routedTo: "Service Center",
-    customerConfirmed: false,
-    resolvedAt: "02/10/2026 11:30",
-    staffName: "Cố vấn Dịch vụ VinFast",
-    vehicleModel: "VinFast VF5",
-    vehicleCode: "VF5-PLUS-2024",
-    briefSummary: "Đèn báo rùa vàng do pin SoC xuống dưới 8%. Đã hướng dẫn khách di chuyển chậm tới trạm sạc gần nhất 500m.",
-    hasLocationConsent: true,
-    locationName: "Trạm sạc Vincom Metropolis, Liễu Giai, Hà Nội",
-    staffUpdateNotes: "Khách đã cắm súng sạc thành công, theo dõi pin tăng lên 25%. Chờ khách xác nhận.",
-  },
-  {
-    id: "CASE-20260923-088",
-    intent: "Complaint/Feedback",
-    status: "Reopened",
-    routedTo: "Customer Care",
-    customerConfirmed: false,
-    resolvedAt: "01/10/2026 18:20",
-    staffName: "Nguyễn Mai Anh",
-    vehicleModel: "VinFast VF e34",
-    vehicleCode: "VFe34-2022",
-    briefSummary: "Khách phản ánh xe xăng chiếm 2 vị trí sạc tại hầm TTTM khiến không thể cắm dây.",
-    hasLocationConsent: false,
-    reopenReason: "Bảo vệ hầm chưa nhắc nhở xe xăng, khách quay lại vẫn không có chỗ sạc.",
-    staffUpdateNotes: "Đã liên hệ ban quản lý tòa nhà cử bảo vệ giải tỏa vị trí sạc.",
-  },
-  {
-    id: "CASE-20260922-045",
-    intent: "Sales/General Info",
-    status: "Closed",
-    routedTo: "Sales Advisor",
-    customerConfirmed: true,
-    resolvedAt: "30/09/2026 16:45",
-    staffName: "Phạm Quốc Hưng",
-    vehicleModel: "VinFast VF7",
-    vehicleCode: "VF7-ECO-2024",
-    briefSummary: "Khách đăng ký lái thử VF7 Plus tại Showroom Times City vào 10:00 thứ Bảy.",
-    hasLocationConsent: true,
-    locationName: "Showroom VinFast Times City, Hai Bà Trưng, Hà Nội",
-    customerFeedbackScore: 5,
-    customerFeedbackComment: "Tư vấn rõ ràng thông số 349 mã lực và tầm hoạt động.",
-    staffUpdateNotes: "Đã xếp xe lái thử màu Trắng ngọc trai cho khách hàng.",
-  },
-];
+export const SAMPLE_CASE_HISTORY: HistoricalCase[] = [];
 
 export function StaffConsoleShell() {
   const { user, logout } = useAuth();
@@ -723,9 +658,7 @@ export function StaffConsoleShell() {
         } as HistoricalCase;
       });
 
-    const dbIds = new Set(fromDb.map((c) => c.id));
-    const samples = SAMPLE_CASE_HISTORY.filter((s) => !dbIds.has(s.id));
-    return [...fromDb, ...samples];
+    return fromDb;
   }, [allTicketsWithLocalStatus, user?.name]);
 
   // Filtered History list
@@ -1674,13 +1607,13 @@ export function StaffConsoleShell() {
                     scope: item.summary || item.category,
                   }))
                   : [
-                    { id: "SRC-001", title: "Chính sách Bảo hành Ô tô Điện VinFast", url: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-xe-dien", scope: "VF 8 (10 năm/200.000km, pin mua đứt không giới hạn km)" },
+                    { id: "SRC-001", title: "Chính sách Bảo hành Ô tô Điện VinFast", url: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto", scope: "VF 8 (10 năm/200.000km, pin mua đứt không giới hạn km)" },
                     { id: "SRC-002", title: "Hướng dẫn sử dụng Ứng dụng VinFast", url: "https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast", scope: "Đặt lịch xưởng, theo dõi dung lượng pin" },
-                    { id: "SRC-003", title: "Thông tin Cứu hộ Khẩn cấp & Cứu hộ Pin 24/7", url: "https://vinfastauto.com/vn_vi/dich-vu-cuu-ho-24-7", scope: "Hotline 1900-232389, cứu hộ pin lưu động" },
-                    { id: "SRC-004", title: "Biểu phí & Chính sách Sạc tại Trạm Công cộng", url: "https://vinfastauto.com/vn_vi/chinh-sach-bieu-phi-sac-xe-dien", scope: "Đơn giá kWh, phí chiếm trụ 1.000đ/phút sau 10 phút" },
-                    { id: "SRC-005", title: "Cẩm nang Bảo dưỡng Định kỳ 12.000 km", url: "https://vinfastauto.com/vn_vi/lich-bao-duong-dinh-ky-xe-dien", scope: "6 hạng mục kiểm tra tiêu chuẩn pack pin, phanh, gầm" },
-                    { id: "SRC-006", title: "Danh mục Sản phẩm & Chính sách Bán hàng", url: "https://vinfastauto.com/vn_vi/cac-dong-xe-o-to", scope: "Dải xe điện VF 3, VF 5, VF 6, VF 7, VF 8, VF 9" },
-                    { id: "SRC-007", title: "Thông số Kỹ thuật Chi tiết Catalog", url: "https://vinfastauto.com/vn_vi/thong-so-ky-thuat-o-to-dien", scope: "VF 7 Plus 349HP AWD vs Eco 201HP FWD, kích thước VF 9" },
+                    { id: "SRC-003", title: "Thông tin Cứu hộ Khẩn cấp & Cứu hộ Pin 24/7", url: "https://vinfastauto.com/vn_vi/thong-tin-cuu-ho-oto", scope: "Hotline 1900-232389, cứu hộ pin lưu động" },
+                    { id: "SRC-004", title: "Biểu phí & Chính sách Sạc tại Trạm Công cộng", url: "https://vinfastauto.com/vn_vi/chinh-sach-va-bieu-phi-sac-pin-cong-cong", scope: "Đơn giá kWh, phí chiếm trụ 1.000đ/phút sau 10 phút" },
+                    { id: "SRC-005", title: "Cẩm nang Bảo dưỡng Định kỳ 12.000 km", url: "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto", scope: "6 hạng mục kiểm tra tiêu chuẩn pack pin, phanh, gầm" },
+                    { id: "SRC-006", title: "Danh mục Sản phẩm & Chính sách Bán hàng", url: "https://vinfastauto.com/vn_vi/", scope: "Dải xe điện VF 3, VF 5, VF 6, VF 7, VF 8, VF 9" },
+                    { id: "SRC-007", title: "Sổ tay Hướng dẫn Sử dụng VF 8", url: "https://om.vinfastauto.com/vi_vn/detail?car=VF8&year=2026", scope: "Sổ tay điện tử hướng dẫn chi tiết vận hành VF 8" },
                   ]
                 ).map((item) => (
                   <div key={item.id} className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] space-y-2">

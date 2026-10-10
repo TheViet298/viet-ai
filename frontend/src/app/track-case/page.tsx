@@ -188,7 +188,7 @@ const CURATED_TOPICS: CuratedTopic[] = [
     ],
     suggestedPrompt: "Xe VF5 của tôi hiện biểu tượng rùa vàng trên đường Nguyễn Trãi, pin còn dưới 10%.",
     citationTitle: "Sổ tay an toàn vận hành xe điện VinFast - Chương 6 Đèn chỉ báo táp-lô",
-    citationUrl: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-va-cuu-ho-xe-dien",
+    citationUrl: "https://om.vinfastauto.com/vi_vn/detail?car=VF8&year=2026",
   },
   {
     id: "topic-03",
@@ -226,142 +226,11 @@ const CURATED_TOPICS: CuratedTopic[] = [
     ],
     suggestedPrompt: "Lốp xe VF6 báo tụt áp suất còn 1.8 bar, cần tìm xưởng VinFast gần nhất.",
     citationTitle: "Quy chuẩn bảo dưỡng lốp và cân bằng động xe điện VinFast",
-    citationUrl: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-va-cuu-ho-xe-dien",
+    citationUrl: "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
   },
 ];
 
-const SAMPLE_CASES: Record<string, TrackedCase> = {
-  "CASE-20260924-001": {
-    id: "CASE-20260924-001",
-    vehicleModel: "VF8 Plus",
-    vehicleCode: "VF-SF-00231",
-    status: "Staff Reviewing",
-    priority: "HIGH",
-    createdAt: "15:30 24/09/2026",
-    issueSummary: "Trụ P02 Vincom Metropolis lỗi CC01 không sạc được DC",
-    suggestedAction:
-      "Kiểm tra tín hiệu handshake giao tiếp trụ P02 từ xa hoặc cử nhân viên trạm khởi động lại module giao thức trụ sạc.",
-    reviewerNotes:
-      "Cố vấn Lê Hoàng Quân đang phối hợp cùng Đội Vận Hành Trạm Sạc để ping kiểm tra cổng giao tiếp.",
-    assignedTo: "Vũ Hoàng Long (Charging Ops)",
-    stationLocation: "Vincom Metropolis Liễu Giai, Ba Đình, HN",
-    chargerId: "Trụ P02 (DC 250kW)",
-    errorCode: "CC01",
-    currentSoc: "18%",
-    locationConsent: "GRANTED",
-    chatSnippet: [
-      { sender: "CUSTOMER", text: "Xe VF8 của tôi không nhận sạc ở trạm Metropolis, trụ báo đèn đỏ.", time: "15:30" },
-      { sender: "AGENT", text: "Dạ em đã ghi nhận xe VF8 lỗi cổng sạc trụ P02 và tạo hồ sơ hỗ trợ CASE-20260924-001.", time: "15:31" },
-      { sender: "STAFF", text: "Kỹ thuật viên trạm đang kiểm tra module điều khiển trụ P02, anh/chị vui lòng chờ ít phút.", time: "15:35" },
-    ],
-    suggestedServicePoints: [SEED_SERVICE_POINTS[2], SEED_SERVICE_POINTS[1]],
-  },
-  "CASE-20260924-002": {
-    id: "CASE-20260924-002",
-    vehicleModel: "VF8 Eco",
-    vehicleCode: "VF-SF-99120",
-    status: "In Progress",
-    priority: "CRITICAL",
-    createdAt: "15:35 24/09/2026",
-    issueSummary: "Cảnh báo rùa vàng & mất trợ lực lái nhẹ trên cao tốc Long Thành - Dầu Giây",
-    suggestedAction:
-      "Kích hoạt quy trình Cứu hộ Khẩn cấp 24/7. Hướng dẫn tài xế đứng sau rào hộ lan an toàn và cử xe cứu hộ gần nhất.",
-    reviewerNotes:
-      "Đội phản ứng nhanh Cao Tốc VinFast đã điều xe cẩu cứu hộ xuất phát từ nút giao Km 20.",
-    assignedTo: "Đội Cứu hộ Cao Tốc Long Thành",
-    stationLocation: "Km 24+500 Cao Tốc Long Thành - Dầu Giây",
-    errorCode: "TURTLE_WARN",
-    currentSoc: "34%",
-    locationConsent: "GRANTED",
-    chatSnippet: [
-      { sender: "CUSTOMER", text: "Cứu tôi với, xe tôi đang chạy trên cao tốc Long Thành thì hiện rùa vàng, tay lái nặng hơn!", time: "15:35" },
-      { sender: "AGENT", text: "Anh/chị hãy bình tĩnh, bật ngay đèn hazard và tấp xe vào làn khẩn cấp. Mọi người đã ra sau hộ lan an toàn chưa ạ?", time: "15:35" },
-      { sender: "CUSTOMER", text: "Tôi vừa tấp vào lề rồi, mọi người đã xuống xe đứng sau rào chắn. Km 24 cao tốc.", time: "15:36" },
-      { sender: "STAFF", text: "Đội cứu hộ cao tốc đã tiếp nhận tọa độ GPS khẩn cấp và đang di chuyển đến vị trí của anh/chị.", time: "15:37" },
-    ],
-    suggestedServicePoints: [SEED_SERVICE_POINTS[3]],
-  },
-  "CASE-20260924-003": {
-    id: "CASE-20260924-003",
-    vehicleModel: "VF5 Plus",
-    vehicleCode: "VF-SF-00445",
-    status: "Needs Information",
-    priority: "MEDIUM",
-    createdAt: "15:40 24/09/2026",
-    issueSummary: "Đèn cảnh báo rùa vàng do dung lượng pin dưới 10% khi đang đi phố",
-    suggestedAction:
-      "Gửi tin nhắn yêu cầu khách chụp ảnh táp-lô và kiểm tra dung lượng pin còn lại trên ứng dụng VinFast.",
-    reviewerNotes:
-      "Đang chờ khách chụp lại ảnh đồng hồ táp-lô để xác nhận biểu tượng pin trước khi điều phối xưởng.",
-    assignedTo: "Trần Đình Triển (Service Center)",
-    stationLocation: "Đường Nguyễn Trãi, Thanh Xuân, HN",
-    errorCode: "TURTLE_WARN",
-    currentSoc: "< 10%",
-    locationConsent: "PENDING",
-    chatSnippet: [
-      { sender: "CUSTOMER", text: "Màn hình xe VF5 của tôi tự nhiên hiện con rùa màu vàng là sao vậy em?", time: "15:40" },
-      { sender: "AGENT", text: "Dạ biểu tượng rùa vàng là chế độ giới hạn công suất bảo vệ pin. Anh/chị kiểm tra vạch pin còn bao nhiêu % ạ?", time: "15:40" },
-    ],
-    suggestedServicePoints: [SEED_SERVICE_POINTS[1], SEED_SERVICE_POINTS[0]],
-  },
-  "CASE-20260924-004": {
-    id: "CASE-20260924-004",
-    vehicleModel: "VF9 Plus",
-    vehicleCode: "VF-SF-00789",
-    status: "In Progress",
-    priority: "LOW",
-    createdAt: "14:15 24/09/2026",
-    issueSummary: "Bộ sạc tại nhà 7.4kW tự động ngắt sau 2 tiếng sạc ban đêm",
-    suggestedAction:
-      "Tư vấn kiểm tra aptomat nguồn và thông gió phòng kỹ thuật; hẹn kỹ thuật viên lưu động kiểm tra nhiệt độ dây nguồn.",
-    reviewerNotes:
-      "Đã lên lịch kỹ thuật viên lưu động ghé kiểm tra tiếp địa và đường dây vào 10:00 ngày mai.",
-    assignedTo: "Vũ Hoàng Long (Charging Ops)",
-    stationLocation: "Vinhomes Riverside, Long Biên, HN",
-    chargerId: "Bộ sạc Wallbox 7.4kW",
-    errorCode: "AC_THERMAL",
-    currentSoc: "62%",
-    locationConsent: "GRANTED",
-    chatSnippet: [
-      { sender: "CUSTOMER", text: "Bộ sạc tại nhà 7.4kW của tôi sạc được 2 tiếng thì tự ngắt, dây hơi ấm.", time: "14:15" },
-      { sender: "STAFF", text: "Em đã phân công kỹ thuật viên lưu động ghé kiểm tra aptomat và đường dây vào sáng mai ạ.", time: "14:20" },
-    ],
-    suggestedServicePoints: [SEED_SERVICE_POINTS[0]],
-  },
-  "CASE-20260924-005": {
-    id: "CASE-20260924-005",
-    vehicleModel: "VF6 Plus",
-    vehicleCode: "VF-SF-00612",
-    status: "Resolved",
-    priority: "HIGH",
-    createdAt: "06:45 24/09/2026",
-    issueSummary: "Cảnh báo áp suất lốp TPMS bánh sau bên phụ giảm dưới 2.0 bar",
-    suggestedAction:
-      "Khách đã ghé xưởng VinFast Trần Duy Hưng bơm lốp lên 2.4 bar tiêu chuẩn và cân bằng động.",
-    reviewerNotes:
-      "Khách đã hoàn tất nghiệm thu và hài lòng với chất lượng phục vụ.",
-    assignedTo: "Trần Đình Triển (Cố vấn Dịch vụ)",
-    stationLocation: "VinFast Trần Duy Hưng, Cầu Giấy, HN",
-    errorCode: "TPMS_LOW",
-    currentSoc: "78%",
-    locationConsent: "GRANTED",
-    customerUpdate: {
-      resolvedAt: "08:15 24/09/2026",
-      staffName: "Trần Đình Triển (Cố vấn Dịch vụ)",
-      resolutionSummary:
-        "Kỹ thuật viên xưởng Trần Duy Hưng đã kiểm tra lốp, vá lỗ đinh vi mô mặt gai và bơm khí Nitơ đạt chuẩn 2.4 bar.",
-      nextStepGuidance:
-        "Anh/chị có thể an tâm tiếp tục hành trình. Khuyến nghị kiểm tra lại áp suất lạnh sau 1 tuần.",
-      customerConfirmed: false,
-    },
-    chatSnippet: [
-      { sender: "CUSTOMER", text: "Lốp xe VF6 của tôi báo tụt còn 1.8 bar, có cần vào xưởng ngay không?", time: "06:45" },
-      { sender: "STAFF", text: "Dạ xưởng Trần Duy Hưng cách anh 1.2km đã sẵn sàng cầu nâng hỗ trợ anh ngay ạ.", time: "06:47" },
-      { sender: "STAFF", text: "Xe đã hoàn tất xử lý lốp và cân bằng động thành công!", time: "08:15" },
-    ],
-    suggestedServicePoints: [SEED_SERVICE_POINTS[1]],
-  },
-};
+const SAMPLE_CASES: Record<string, TrackedCase> = {};
 
 export default function TrackCasePage() {
   const { user, role } = useAuth();
@@ -369,11 +238,9 @@ export default function TrackCasePage() {
   // Tabs: "Yêu cầu của tôi" vs "Tình huống thường gặp"
   const [activeTab, setActiveTab] = useState<"my_cases" | "curated_topics">("my_cases");
 
-  // Active selected case - Defaults immediately to the latest active case without needing manual search
-  const [selectedCaseId, setSelectedCaseId] = useState<string>("CASE-20260924-001");
-  const [currentCase, setCurrentCase] = useState<TrackedCase | null>(
-    SAMPLE_CASES["CASE-20260924-001"]
-  );
+  // Active selected case - Loads dynamically from customer cases or search
+  const [selectedCaseId, setSelectedCaseId] = useState<string>("");
+  const [currentCase, setCurrentCase] = useState<TrackedCase | null>(null);
 
   // Quick search box toggle
   const [isSearchingCustom, setIsSearchingCustom] = useState<boolean>(false);
@@ -430,11 +297,6 @@ export default function TrackCasePage() {
     setFeedbackSubmitted(false);
     setConfirmStatus("IDLE");
     setShowAllChat(false);
-
-    if (SAMPLE_CASES[caseId]) {
-      setCurrentCase(SAMPLE_CASES[caseId]);
-      return;
-    }
 
     setSearchLoading(true);
     try {
@@ -763,41 +625,6 @@ export default function TrackCasePage() {
         isAlert: false,
       };
     }
-    if (c.id === "CASE-20260924-001") {
-      return {
-        highlight: "Kỹ thuật viên trạm đang kiểm tra trụ P02. Dự kiến phản hồi trong ít phút.",
-        badge: "Bước tiếp theo",
-        isAlert: false,
-      };
-    }
-    if (c.id === "CASE-20260924-002") {
-      return {
-        highlight: "Đội cứu hộ cao tốc đã xuất phát từ Km 20 và đang di chuyển đến vị trí xe (Km 24+500). Vui lòng đứng an toàn sau hộ lan.",
-        badge: "Khẩn cấp 24/7",
-        isAlert: true,
-      };
-    }
-    if (c.id === "CASE-20260924-003") {
-      return {
-        highlight: "Cố vấn dịch vụ cần anh/chị chụp ảnh màn hình táp-lô gửi qua Chat để xác minh biểu tượng pin.",
-        badge: "Cần bổ sung ảnh",
-        isAlert: true,
-      };
-    }
-    if (c.id === "CASE-20260924-004") {
-      return {
-        highlight: "Kỹ thuật viên lưu động sẽ liên hệ và ghé kiểm tra aptomat sạc nhà vào 10:00 sáng mai.",
-        badge: "Hẹn kỹ thuật viên",
-        isAlert: false,
-      };
-    }
-    if (c.id === "CASE-20260924-005") {
-      return {
-        highlight: "Sự cố đã được xưởng xử lý xong. Anh/chị vui lòng bấm 'Đã được hỗ trợ' để xác nhận và đóng ca.",
-        badge: "Chờ xác nhận",
-        isAlert: false,
-      };
-    }
     if (c.status === "Staff Reviewing") {
       return {
         highlight: "Chuyên viên dịch vụ đang phân tích dữ liệu sự cố. Dự kiến phản hồi trong 3–5 phút.",
@@ -921,7 +748,7 @@ export default function TrackCasePage() {
                               </option>
                             );
                           })}
-                          {selectedCaseId && !userCases.some((uc) => uc.id === selectedCaseId) && !SAMPLE_CASES[selectedCaseId] && (
+                          {selectedCaseId && !userCases.some((uc) => uc.id === selectedCaseId) && (
                             <option value={selectedCaseId}>
                               {currentCase?.vehicleModel || "VF"} · {getStatusLabel((currentCase?.status as any) || "Staff Reviewing")} ({selectedCaseId.length > 18 ? selectedCaseId.slice(0, 15) + "..." : selectedCaseId})
                             </option>
@@ -929,16 +756,13 @@ export default function TrackCasePage() {
                         </>
                       ) : (
                         <>
-                          {selectedCaseId && !SAMPLE_CASES[selectedCaseId] && (
+                          {selectedCaseId ? (
                             <option value={selectedCaseId}>
                               {currentCase?.vehicleModel || "VF"} · {getStatusLabel((currentCase?.status as any) || "Staff Reviewing")} ({selectedCaseId.length > 18 ? selectedCaseId.slice(0, 15) + "..." : selectedCaseId})
                             </option>
+                          ) : (
+                            <option value="">Chưa có hồ sơ xe</option>
                           )}
-                          <option value="CASE-20260924-001">VF8 Plus · Lỗi sạc CC01 (Đang xác minh)</option>
-                          <option value="CASE-20260924-002">VF8 Eco · Cứu hộ cao tốc (Đang xử lý)</option>
-                          <option value="CASE-20260924-003">VF5 Plus · Rùa vàng & Pin (Đang xác minh)</option>
-                          <option value="CASE-20260924-004">VF9 Plus · Sạc tại nhà 7.4kW (Đang xử lý)</option>
-                          <option value="CASE-20260924-005">VF6 Plus · Lỗi áp suất lốp (Đã xử lý xong)</option>
                         </>
                       )}
                     </select>
@@ -1060,6 +884,40 @@ export default function TrackCasePage() {
               >
                 <BookOpen className="w-4 h-4 text-slate-500" />
                 <span>Xem Tình huống thường gặp</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Chế độ CUSTOMER: Khi chưa có hồ sơ nào */}
+        {activeTab === "my_cases" && role !== "GUEST" && !currentCase && !searchLoading && (
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-8 sm:p-12 text-center max-w-xl mx-auto my-6 animate-fadeIn space-y-5">
+            <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto text-[#1E40AF]">
+              <Car className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                Chưa có hồ sơ sự cố nào
+              </h2>
+              <p className="text-[13px] text-slate-500 max-w-md mx-auto leading-relaxed">
+                Tài khoản của bạn hiện chưa ghi nhận sự cố xe nào đang xử lý. Bạn có thể trò chuyện với Trợ lý AI để yêu cầu hỗ trợ kỹ thuật hoặc tra cứu bằng mã hồ sơ cụ thể.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <Link
+                href="/chat"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] px-5 py-2.5 text-[13px] font-semibold text-white shadow-2xs transition"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Phản ánh sự cố xe với AI</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setIsSearchingCustom(true)}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 hover:bg-slate-200 px-5 py-2.5 text-[13px] font-medium text-slate-700 transition"
+              >
+                <Search className="w-4 h-4" />
+                <span>Tra cứu mã hồ sơ</span>
               </button>
             </div>
           </div>
