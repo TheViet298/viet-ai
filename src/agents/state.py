@@ -184,3 +184,7 @@ class AgentState(TypedDict, total=False):
     policy_blocked: bool
     login_required: bool
     remaining_guest_messages: int
+    conversation_context: dict[str, Any]
+    turn_understanding: dict[str, Any]
+    answer_claims: list[dict[str, Any]]
+    reply_constraints: dict[str, Any]

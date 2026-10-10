@@ -15,6 +15,8 @@ class ConversationalAnswer(BaseModel):
 
 async def general_node(state: AgentState) -> dict:
     text = state.get("latest_user_message", "").casefold()
+    if (state.get('conversation_context') or {}).get('active_goal') == 'concept':
+        text = (state.get('turn_understanding') or {}).get('resolved_query', text).casefold()
     # Resolve only short conceptual references; never inherit a repair request.
     if (re.match(r"^(?:nó|cái đó|hệ thống đó)\b", text) and len(text) < 120
             and re.search(r"là gì|nghĩa|tác dụng|khác|hoạt động|dùng để", text)):

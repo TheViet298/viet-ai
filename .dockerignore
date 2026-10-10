@@ -20,3 +20,18 @@ data/
 .dockerignore
 Dockerfile
 docker-compose.yml
+
+# Keep runtime source registry while excluding local documents and test runs
+!docs/
+docs/*
+!docs/data-sources.md
+!docs/data-source-url-verification.json
+.test-runs/
+.test-tmp*/
+.pytest-*/
+.superpowers/
+.agents/
+.ai-log/
+scratch/
+tests/
+chroma/
