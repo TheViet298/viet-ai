@@ -1,10 +1,10 @@
 # Project guide
 
-- Bắt đầu từ `.agents/memory/INDEX.md`; chỉ nạp memory và tài liệu được chỉ tới cho task hiện tại. Đọc README.md khi onboarding, khi cần overview, hoặc khi memory không khớp repo.
-- Không đọc đệ quy toàn bộ Markdown/codebase. Với hành vi hiện tại, kiểm tra code và test liên quan; memory và tài liệu chỉ là chỉ đường hoặc ghi nhận quyết định.
-- Trước mọi thao tác Git: báo branch, upstream và `git status --short --branch`.
-- Trước khi nhận định có conflict: xác định branch đích và cập nhật remote ref nếu được phép.
-- Phân biệt file cùng thay đổi với conflict được Git xác nhận.
-- Khi worktree có thay đổi chưa commit, không tự merge, reset, stash hoặc chuyển branch.
-- Không đưa secret, log cá nhân hay dữ liệu nhạy cảm vào tài liệu/memory.
-- Khi kết thúc task: ghi rõ file đã sửa, kiểm thử, commit và push đã thực hiện hay chưa.
+- Start from `.agents/memory/INDEX.md`; only load the memory and documents specifically relevant to the current task. Read `README.md` during onboarding, when an overview is needed, or when the memory does not match the repository.
+- Do not recursively read the entire Markdown/codebase. For the current behavior, inspect only the relevant code and tests; memory and documentation should serve only as guidance or to record decisions.
+- Before any Git operation, report the branch, upstream, and `git status --short --branch`.
+- Before concluding that there is a conflict, identify the target branch and update the remote refs if permitted.
+- Distinguish between files changed together and conflicts confirmed by Git.
+- When the worktree has uncommitted changes, do not merge, reset, stash, or switch branches on your own.
+- Do not add secrets, personal logs, or sensitive data to documentation or memory.
+- At the end of the task, clearly record which files were modified, what tests were run, and whether commit and push were completed.
