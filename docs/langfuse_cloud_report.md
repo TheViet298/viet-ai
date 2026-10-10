@@ -63,37 +63,31 @@ Chi phí trên là số Langfuse tính theo model được ánh xạ trong proje
 
 ## 4. Hình ảnh bằng chứng
 
-Năm ảnh dưới đây thuộc run `p142-20261009T153831-bcfd92`, chụp toàn viewport 1453 × 994 px với sidebar thu gọn. Ảnh giữ nguyên nội dung hiển thị trên Cloud.
+Bốn ảnh dưới đây thuộc run `p142-20261009T153831-bcfd92`, chụp toàn viewport 1453 × 994 px với sidebar thu gọn. Ảnh giữ nguyên nội dung hiển thị trên Cloud.
 
 ### 4.1. Danh sách 10 root trace
 
 Bảng có Total 10, gồm tám request chat và hai request upload trong environment `p142-validation`.
 
-![10 root trace của run cuối](assets/2026-10-09-langfuse-validation/01-final-run-roots.jpg)
+![10 root trace của run cuối](https://github.com/user-attachments/assets/4b5ab78f-2654-4fe1-97ce-3e35b50001db)
 
 ### 4.2. Bảy generation với model, token và chi phí
 
 Cloud hiển thị năm generation ChatOpenAI và hai generation Vision, kèm input/output/total token và chi phí từng lời gọi.
 
-![7 generation, model, token và chi phí](assets/2026-10-09-langfuse-validation/02-generation-model-cost.jpg)
+![7 generation, model, token và chi phí](https://github.com/user-attachments/assets/831c0cb0-de49-4f86-a8f1-34178cadd069)
 
 ### 4.3. Vision dashboard và token reasoning
 
 Trace có `vision.dashboard` và `attachment.persist` dưới cùng root. Usage breakdown xác nhận 1.568 input token, 170 output token và tổng 1.738 token.
 
-![Cây Vision và phân tách token](assets/2026-10-09-langfuse-validation/03-vision-tree-token-breakdown.jpg)
+![Cây Vision và phân tách token](https://github.com/user-attachments/assets/65848d66-f707-40f8-8c8f-41d7b91833c1)
 
-### 4.4. RAG có truy xuất nguồn và câu trả lời
-
-Cây trace có retrieval và generation ChatOpenAI; kết quả trả lời cùng citations được lưu trong root request.
-
-![Cây RAG và kết quả trả lời](assets/2026-10-09-langfuse-validation/04-rag-tree-response.jpg)
-
-### 4.5. Phản hồi fallback của ca timeout
+### 4.4. Phản hồi fallback của ca timeout
 
 Ảnh thể hiện nhánh `llm.outcome` và phản hồi fallback của LF-09. Giá trị `outcome=timeout` được ghi trong JSON observation tương ứng.
 
-![Timeout chủ động và fallback](assets/2026-10-09-langfuse-validation/05-injected-timeout.jpg)
+![Timeout chủ động và fallback](https://github.com/user-attachments/assets/fca3251b-4103-4840-8f25-8d7cd81d1532)
 
 ## 5. Kết quả kiểm thử và bằng chứng đối chiếu
 
@@ -101,9 +95,9 @@ Bộ kiểm thử đạt **561 test và 6 subtest**, có bốn cảnh báo Depre
 
 | Bằng chứng | Nội dung |
 |---|---|
-| [Manifest](assets/2026-10-09-langfuse-validation/manifest.json) | Run ID, phiên bản mã nguồn, thời gian và số liệu tổng hợp |
-| [Kết quả từng ca](assets/2026-10-09-langfuse-validation/results.json) | Phản hồi, trạng thái PASS/FAIL/BLOCKED, usage, chi phí và trace URL |
-| [Observation đã lọc](assets/2026-10-09-langfuse-validation/observations.json) | 136 observation của run cuối |
-| [Log kiểm thử](assets/2026-10-09-langfuse-validation/pytest-final.txt) | Kết quả 561 test và 6 subtest |
+| Manifest | Run ID, phiên bản mã nguồn, thời gian và số liệu tổng hợp |
+| Kết quả từng ca | Phản hồi, trạng thái PASS/FAIL/BLOCKED, usage, chi phí và trace URL |
+| Observation đã lọc | 136 observation của run cuối |
+| Log kiểm thử | Kết quả 561 test và 6 subtest |
 
 Phạm vi kết luận là 10 ca đã chạy. Ma trận 44 ca chưa được kiểm chứng đầy đủ; memory compaction, tải đồng thời, sự cố Google live, prompt rollback và chất lượng tư vấn/nhận diện trên dữ liệu có nhãn chưa có kết quả trong đợt này. Bằng chứng shutdown không bao gồm kill cưỡng bức hoặc mất điện.
