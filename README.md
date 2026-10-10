@@ -1,11 +1,13 @@
 # VFO2O-18 VinFast ServiceFlow AI
+ 
+> **Link web demo:** https://vfserv-ai.vercel.app/ (Use for test) 
 
-> **Web Support Hub** tiếp nhận yêu cầu khách hàng xe điện VinFast, phân loại chính xác 4 nhóm Intent, tự động hỏi làm rõ dữ kiện có ngữ cảnh, tra cứu cẩm nang kỹ thuật & chính sách VinFast qua RAG, tổng hợp **Case Brief** chuẩn hóa và hỗ trợ Reviewer điều phối (Routing) đúng bộ phận dịch vụ.
+> **Web Support Hub - VFServ** là Web tiếp nhận yêu cầu của khách hàng dùng xe ô tô điện VinFast, hỗ trợ khách hàng giải đáp các thắc mắc thường gặp (thông tin xe, hướng dẫn sử dụng, chính sách bảo hành, sạc pin, các vấn đề kỹ thuật). Đồng thời, VFServ có thể phân loại chính xác 4 nhóm Intent(đã được nhóm nghiên cứu ideas và pain point), tự động hỏi làm rõ dữ kiện có ngữ cảnh, tra cứu cẩm nang kỹ thuật & chính sách VinFast qua RAG, tổng hợp **Case Brief** chuẩn hóa và hỗ trợ Staff điều phối (Routing) đúng bộ phận dịch vụ.
 
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI%200.115-009688?logo=fastapi)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js%2014-black?logo=next.js)](https://nextjs.org/)
 [![LangGraph](https://img.shields.io/badge/Agent-LangGraph%200.2-blue)](https://langchain-ai.github.io/langgraph/)
-[![Google Gemini](https://img.shields.io/badge/LLM-Gemini%202.0%20Flash-orange?logo=google)](https://ai.google.dev/)
+[![LLM](https://img.shields.io/badge/LLM-gpt--5.6%20via%20LiteLLM-orange)](https://docs.litellm.ai/)
 [![ChromaDB](https://img.shields.io/badge/VectorDB-ChromaDB-purple)](https://www.trychroma.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -14,7 +16,7 @@
 ## 1. Vấn đề (Problem Statement)
 
 ### Ai đang gặp vấn đề?
-- **Khách hàng xe điện VinFast (VF3, VF5, VF6, VF7, VF8, VF9, VF e34, tài xế Xanh SM/GSM):** Khi gặp sự cố kỹ thuật, trục trặc trụ sạc, hoặc thắc mắc bảo hành, khách hàng thường mô tả qua hội thoại tự do, thiếu các dữ kiện kỹ thuật then chốt (dòng xe, dung lượng pin %, mã lỗi táp-lô, vị trí trạm sạc, ngữ cảnh phát sinh).
+- **Khách hàng xe điện VinFast (VF3, VF5, VF6, VF7, VF8, VF9, VF e34, tài xế Xanh SM/GSM):** Khi gặp sự cố kỹ thuật, trục trặc trụ sạc hoặc thắc mắc bảo hành, khách hàng thường mô tả qua hội thoại tự do, hoặc có thể qua ít nhất là 2 kênh để được yêu cầu hỗ trợ, bên cạnh đó còn thiếu các dữ kiện kỹ thuật then chốt (dòng xe, dung lượng pin %, mã lỗi táp-lô, vị trí trạm sạc, ngữ cảnh phát sinh), nhân viên chưa thể xác định được chính xác
 - **Nhân viên CSKH & Cố vấn dịch vụ (Service Staff):** Mất nhiều lượt chat/gọi điện hỏi lặp đi lặp lại để lấy đủ thông tin cơ bản; việc bàn giao ca trực hoặc chuyển phiếu sang bộ phận kỹ thuật dễ bị thất lạc hoặc sai lệch dữ liệu.
 - **Reviewer / Service Manager:** Thiếu màn hình kiểm soát tập trung để rà soát các trường hợp nhạy cảm, sự cố khẩn cấp (chập cháy, mất phanh, rủi ro an toàn) hoặc các case có độ tự tin phân loại thấp trước khi điều phối thực tế.
 
@@ -28,7 +30,7 @@
 
 ## 2. Giải pháp (Solution)
 
-VinFast ServiceFlow AI mang đến quy trình tiếp nhận và xử lý khép kín:
+VFServ mang đến quy trình tiếp nhận và xử lý khép kín:
 
 ### Feature 1: Web Intake & 4-Intent Triage
 - Khách hàng gửi yêu cầu qua giao diện **Web Chat** (hỗ trợ cả văn bản và hình ảnh cảnh báo/ngoại thất xe).
@@ -46,7 +48,8 @@ VinFast ServiceFlow AI mang đến quy trình tiếp nhận và xử lý khép k
 
 ### Feature 3: Case Brief & Human-in-the-Loop (HITL) Dispatching
 - Agent tổng hợp toàn bộ diễn biến thành **Case Brief** chuẩn hóa: *Vấn đề chính, Thông số xe (Model, Pin %), Mã lỗi/Hiện tượng, Mức độ ưu tiên, Hành động đề xuất*.
-- **Reviewer là người quyết định cuối cùng (ADR-005):** Agent không tự ý dispatch. Case Brief được chuyển lên **Service Agent Console** để nhân viên rà soát, Duyệt (`Approve`), Chỉnh sửa (`Edit`), Điều phối lại (`Reroute`), hoặc Đóng (`Close`).
+- **Reviewer là người quyết định cuối cùng (ADR-005):** Agent không tự ý dispatch. Case Brief được chuyển lên **Service Agent Console** để nhân viên rà soát, Duyệt (`Approve`), Chỉnh sửa (`Edit`), Điều phối lại (`Reroute`), Yêu cầu bổ sung (`Request Info`), Giải quyết (`Resolve`), Đóng (`Close`) hoặc Mở lại (`Reopen`).
+- **Xác nhận, CSAT & tự động đóng sau 72h:** Sau khi nhân viên `Resolve`, khách xác nhận `Đã được hỗ trợ` $\rightarrow$ `Closed` kèm đánh giá CSAT 1–5 sao (1–2 sao có thể chọn tag lý do), hoặc báo `Vẫn chưa giải quyết` $\rightarrow$ `Reopened` và quay lại hàng đợi Staff. Case `Resolved` mà khách không phản hồi quá 72 giờ được job nền tự động đóng và ghi vết `[SYSTEM AUTO-CLOSE]` trong audit log.
 - **An toàn là trên hết (Hard Safety Guardrails):** Khi phát hiện nguy cơ an toàn (chập điện, bốc khói, mất phanh, rùa vàng nghiêm trọng), hệ thống lập tức hiển thị cảnh báo an toàn kèm hotline cứu hộ khẩn cấp 24/7 và tạo case ưu tiên `CRITICAL`.
 
 ### Feature 4: Sơ bộ Tín hiệu Hình ảnh (Image Triage & CarDD)
@@ -58,7 +61,7 @@ VinFast ServiceFlow AI mang đến quy trình tiếp nhận và xử lý khép k
 
 ## 3. Kiến trúc Hệ thống (System Architecture)
 
-Hệ thống được thiết kế theo kiến trúc phân tầng khép kín giữa **Web Support Hub (Next.js 14 Frontend)**, **FastAPI Gateway (RBAC, Storage & Session)**, và **AI Agent Core (LangGraph StateGraph, Gemini / GPT Gateway, CarDD & Local RAG)**:
+Hệ thống được thiết kế theo kiến trúc phân tầng khép kín giữa **Web Support Hub (Next.js 14 Frontend)**, **FastAPI Gateway (RBAC, Storage & Session)**, và **AI Agent Core (LangGraph StateGraph, LLM Gateway `openai/gpt-5.6` qua LiteLLM, CarDD & Local RAG)**:
 
 ### 1. Sơ đồ Hoạt động Toàn hệ thống (End-to-End System Activity)
 Mô tả quy trình nghiệp vụ 3 làn bơi xuyên suốt từ Khách hàng $\to$ Hệ thống ServiceFlow $\to$ Nhân viên dịch vụ (HITL Review, Điều phối & Đóng hồ sơ):
@@ -81,13 +84,14 @@ Mô tả thứ tự rẽ nhánh theo chuỗi điều kiện cascade độc lập
 
 ---
 
-> **Các Sơ đồ Kiến trúc Chuẩn hóa Bổ sung (Định dạng SVG):**
-> - [Sơ đồ Thành phần Hệ thống (Component Diagram)](docs/architecture/serviceflow-component.svg)
+> **Các sơ đồ kiến trúc hệ thống bổ sung:**
+> - [Sơ đồ Thành phần Hệ thống (Component Diagram)](docs\architecture\serviceflow-component.jpg)
 > - [Sơ đồ Triển khai (Deployment Diagram)](docs/architecture/serviceflow-deployment.svg)
-> - [Sơ đồ Ca sử dụng (Use Case Diagram)](docs/architecture/serviceflow-usecase.svg)
-> - [Sơ đồ Trình tự RAG (RAG Sequence Diagram)](docs/architecture/serviceflow-rag-sequence.svg)
+> - [Sơ đồ Ca sử dụng (Use Case Diagram)](docs/architecture/serviceflow-usecase.jpg)
+> - [Sơ đồ Trình tự (Sequence Diagram)](docs/architecture/sequence-diagram.jpg)
 > - [Sơ đồ Cơ sở Dữ liệu (Database Schema)](docs/architecture/database-schema.svg)
-
+> - [ER Diagram – Main Application Database (app.db)](docs/architecture/ER-diagram-appdb.jpg)
+> - [ER Diagram – Agent Session Database (agent.db)](docs/architecture/ER-diagram-agentdb.jpg)
 ---
 
 ## 4. Công nghệ & Thành phần AI (Tech Stack)
@@ -95,10 +99,10 @@ Mô tả thứ tự rẽ nhánh theo chuỗi điều kiện cascade độc lập
 | Lớp | Công nghệ | Chi tiết sử dụng trong dự án |
 |---|---|---|
 | **AI Agent Orchestration** | LangGraph 0.2 + LangChain 0.3 | Quản lý State Machine: `intake`, `safety`, `cardd_review`, `triage`, `clarify`, `rag`, `general`, `case_brief` |
-| **LLM Inference** | Google Gemini (`gemini-2.0-flash`) HOẶC OpenAI Gateway (`gpt-5.6` qua LiteLLM) | Phân loại Intent có cấu trúc (Structured Outputs), tóm tắt Case Brief và đàm thoại. Cấu hình chuyển đổi linh hoạt qua `.env` |
-| **Vision & Image Triage** | Google Gemini Vision & CarDD Runtime | Phân tích ảnh đèn táp-lô, màn hình trụ sạc và nhận diện sơ bộ va chạm ngoại thất xe |
+| **LLM Inference** | OpenAI-compatible Gateway (`openai/gpt-5.6` qua LiteLLM, mặc định trong `src/config.py`); tùy chọn Google Gemini trực tiếp | Phân loại Intent có cấu trúc (Structured Outputs), tóm tắt Case Brief và đàm thoại. Cấu hình qua `.env` (`OPENAI_BASE_URL`, `OPENAI_API_KEY`, `MODEL_NAME`/`MODEL`) |
+| **Vision & Image Triage** | Vision model `gpt-6-luna` (`VISION_PROVIDER=openai`, mặc định) hoặc Gemini (`gemini-3.5-flash` cho Dashboard Vision); CarDD Runtime (mặc định tắt, bật bằng `CARDD_ENABLED=true`) | Phân tích ảnh đèn táp-lô, màn hình trụ sạc và nhận diện sơ bộ va chạm ngoại thất xe |
 | **Vector DB (RAG) & Embeddings** | ChromaDB + ONNX Quantized Model | Chạy offline hoàn toàn với mô hình `Xenova/multilingual-e5-small` nhúng cục bộ qua `onnxruntime` |
-| **Backend API** | FastAPI 0.115 + Uvicorn | RESTful API, Pydantic v2 validation, xác thực phân quyền Role-Based (Guest, Customer, Staff) |
+| **Backend API** | FastAPI 0.115 + Uvicorn | RESTful API, Pydantic v2 validation, xác thực JWT và phân quyền Role-Based (Guest, Customer, Staff), job nền `case_lifecycle` tự đóng case `Resolved` quá 72h |
 | **Database** | SQLite (MVP) / PostgreSQL Ready | SQLAlchemy 2.0 ORM lưu trữ Cases, Messages, Tickets, Attachments, Audit Logs |
 | **Frontend Web** | Next.js 14 (App Router) + React 18 | Giao diện Customer Chat Hub, Quick Replies, Responsive UI, Tailwind CSS, Lucide Icons |
 | **DevOps & Containers** | Docker & Docker Compose | Đóng gói toàn diện Full-stack (`frontend` port 3000, `backend` port 8000), tự động nạp model AI khi khởi động |
@@ -132,7 +136,7 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-> **Ghi chú tự động:** Khi container backend khởi động lần đầu, kịch bản `docker-entrypoint.sh` sẽ tự động kiểm tra và tải mô hình ONNX `multilingual-e5-small` về thư mục `data/models/` nếu chưa có.
+> **Ghi chú tự động:** Khi container backend khởi động lần đầu, kịch bản `scripts/docker-entrypoint.sh` (gọi `scripts/download_models.py`) sẽ tự động kiểm tra và tải mô hình ONNX `multilingual-e5-small` về thư mục `data/models/` nếu chưa có.
 > - **Frontend (Web Support Hub):** `http://localhost:3000`
 > - **Backend API & Swagger Docs:** `http://localhost:8000/docs`
 > - **Kiểm tra trạng thái container:** `docker compose ps`
@@ -162,18 +166,37 @@ cp .env.example .env
 
 Mở file `.env` và chọn phương thức cấu hình LLM phù hợp:
 ```env
-# Tùy chọn A: Sử dụng OpenAI-compatible Gateway / LiteLLM (Khuyến nghị)
+# Tùy chọn A: OpenAI-compatible Gateway / LiteLLM (Khuyến nghị, là mặc định trong src/config.py)
 OPENAI_BASE_URL=your_base_url_openai
 OPENAI_API_KEY=your_gateway_key_here
-MODEL=openai/gpt-5.6
+MODEL_NAME=openai/gpt-5.6        # hoặc dùng MODEL=...; nếu đặt MODEL thì MODEL ghi đè MODEL_NAME
+VISION_PROVIDER=openai
+VISION_MODEL=gpt-6-luna
 
-# Tùy chọn B: Sử dụng trực tiếp Google Gemini API
+# Tùy chọn B: Sử dụng trực tiếp Google Gemini API (phải để TRỐNG OPENAI_API_KEY)
 GOOGLE_API_KEY=your_google_gemini_api_key_here
+MODEL_NAME=gemini-2.5-flash
+VISION_PROVIDER=google
+DASHBOARD_VISION_MODEL=gemini-3.5-flash
 
 # Cấu hình chung
 DATABASE_URL=sqlite:///./data/app.db
 CORS_ORIGINS=http://localhost:3000
+AUTH_SECRET_KEY=                 # bắt buộc khi APP_ENV=production, tối thiểu 32 ký tự ngẫu nhiên
 ```
+
+> **Lưu ý:** Backend chỉ dùng Gemini trực tiếp khi tên model chứa `gemini` **và** API key bắt đầu bằng `AIza`. Key được lấy theo thứ tự `OPENAI_API_KEY` rồi `GOOGLE_API_KEY`, nên nếu `OPENAI_API_KEY` còn giá trị mẫu (`sk-...`) thì request vẫn đi qua OpenAI client.
+
+#### 1b. Tạo tài khoản Staff
+Khách hàng tự đăng ký tại `/register`. Tài khoản Staff không đăng ký công khai, tạo bằng một trong hai cách:
+```bash
+# Triển khai thật: tạo 1 tài khoản Staff, mật khẩu nhập tương tác (lưu dạng hash Argon2id)
+python -m src.create_staff staff@example.com
+
+# Chỉ môi trường dev/test: tạo tài khoản Staff mặc định và các ca mẫu (--reset xóa sạch DB trước khi seed)
+python -m src.seed [--reset]
+```
+Với Docker: `docker compose exec backend python -m src.create_staff staff@example.com`.
 
 #### 2. Khởi chạy Backend Server
 ```bash
@@ -192,29 +215,46 @@ npm run dev
 - Ứng dụng Web hoạt động tại: `http://localhost:3000`
 - Các phân hệ giao diện:
   - **Trang chủ & Tra cứu kiến thức (Public/Guest):** `http://localhost:3000` (chat tối đa 5 lượt)
-  - **Khung Chat & Quản lý Case (Customer):** `http://localhost:3000/chat`
-  - **Bàn làm việc Cố vấn Dịch vụ (Staff Console):** `http://localhost:3000/staff`
+  - **Đăng nhập / Đăng ký:** `http://localhost:3000/login`, `http://localhost:3000/register`
+  - **Khung Chat (Customer):** `http://localhost:3000/chat`
+  - **Theo dõi hồ sơ, xác nhận kết quả, mở lại, đánh giá CSAT (Customer):** `http://localhost:3000/track-case`
+  - **Bàn làm việc Cố vấn Dịch vụ (Staff Console):** `http://localhost:3000/console`
 
 ---
 
 ## 6. Danh mục API Endpoints Chính
 
+> Base URL `/api/v1` (trừ `/health`). Danh sách đầy đủ kèm schema xem Swagger tại `http://localhost:8000/docs`; đặc tả chi tiết tại [`docs/architecture/api-contract.md`](docs/architecture/api-contract.md).
+
 | Phân hệ | Phương thức | Endpoint | Mô tả chức năng |
 |---|---|---|---|
 | **Hệ thống** | `GET` | `/health` | Kiểm tra tình trạng hoạt động (Health check) |
-| **Xác thực** | `POST` | `/api/v1/auth/otp/send` | Gửi mã OTP demo cho số điện thoại khách hàng |
-| | `POST` | `/api/v1/auth/otp/verify` | Xác thực OTP và cấp session truy cập |
-| **Customer** | `POST` | `/api/v1/customer/sessions` | Khởi tạo phiên trò chuyện mới cho khách hàng |
-| | `POST` | `/api/v1/customer/chat` | Gửi tin nhắn đến Agent (tiếp nhận văn bản & xử lý hội thoại) |
-| | `POST` | `/api/v1/customer/attachments` | Tải ảnh sự cố táp-lô / thân vỏ lên hệ thống |
-| | `GET` | `/api/v1/customer/cases` | Danh sách các case thuộc về khách hàng hiện tại |
-| | `GET` | `/api/v1/customer/cases/{id}` | Chi tiết tiến độ, Case Brief và lịch sử chat của case |
-| | `POST` | `/api/v1/customer/cases/{id}/confirm` | Khách xác nhận: `Đã được hỗ trợ` hoặc `Vẫn chưa giải quyết` |
-| **Staff Console** | `GET` | `/api/v1/staff/dashboard/summary` | Thống kê tổng quan số lượng case theo mức ưu tiên và trạng thái |
-| | `GET` | `/api/v1/staff/tickets` | Danh sách hàng đợi ticket cần duyệt hoặc đang xử lý |
-| | `GET` | `/api/v1/staff/tickets/{id}` | Chi tiết Case Brief, dữ liệu trích xuất và ảnh đính kèm |
-| | `PATCH`| `/api/v1/staff/tickets/{id}/review` | Reviewer thao tác: `Approve`, `Edit`, `Reroute`, `Escalate`, `Close` |
-| **Public Hub** | `GET` | `/api/v1/public/articles` | Danh sách bài viết hướng dẫn sử dụng và chính sách công khai |
+| | `GET` | `/api/v1/status` | Trạng thái AI Agent & Knowledge Base (frontend hiển thị ở khung chat) |
+| **Xác thực** | `POST` | `/api/v1/auth/register` | Đăng ký tài khoản Customer (username + mật khẩu), trả JWT |
+| | `POST` | `/api/v1/auth/login` | Đăng nhập (Customer hoặc Staff), trả JWT |
+| | `GET` / `PATCH` | `/api/v1/auth/me` | Xem / cập nhật hồ sơ người dùng hiện tại |
+| **Public Hub** | `GET` | `/api/v1/public/articles` | Bài viết hướng dẫn sử dụng và chính sách công khai |
+| | `GET` | `/api/v1/public/support-insights` | Tình huống thường gặp đã biên soạn, ẩn danh |
+| **Customer** | `POST` | `/api/v1/customer/chat` | Gửi tin nhắn đến Agent (Guest tối đa 5 lượt, Customer đã đăng nhập) |
+| | `POST` | `/api/v1/customer/attachments` | Tải ảnh táp-lô / thân vỏ lên hệ thống |
+| | `POST` | `/api/v1/customer/location` | Gửi vị trí (consent hoặc tự nhập) cho case |
+| | `GET` | `/api/v1/customer/cases` | Danh sách case của khách (lọc `query`, `status`) |
+| | `GET` | `/api/v1/customer/cases/{id}` | Chi tiết case: Case Brief, timeline cập nhật, ảnh, lịch sử chat |
+| | `GET` | `/api/v1/customer/cases/{id}/status` | Trạng thái hiện tại và thông điệp cho khách |
+| | `GET` | `/api/v1/customer/cases/{id}/service-points` | Điểm dịch vụ / trạm sạc gợi ý theo vị trí |
+| | `POST` | `/api/v1/customer/cases/{id}/confirmation` | Xác nhận `RESOLVED_CONFIRMED` (`Closed`) hoặc `STILL_UNRESOLVED` (`Reopened`) |
+| | `POST` | `/api/v1/customer/cases/{id}/actions` | Hành động của khách: `CONFIRM_RESOLUTION` hoặc `REOPEN` (hỗ trợ cả Guest qua header `X-Session-Id`) |
+| | `POST` | `/api/v1/customer/cases/{id}/reopen` | Mở lại case đang `Resolved` / `Closed` |
+| | `POST` | `/api/v1/customer/cases/{id}/feedback` | Gửi / cập nhật đánh giá CSAT 1–5 sao (case `Resolved`/`Closed`) |
+| | `POST` | `/api/v1/customer/cases/{id}/safety-acknowledgement` | Khách xác nhận đã ở vị trí an toàn (case khẩn cấp đang mở) |
+| | `GET` | `/api/v1/customer/sessions/{session_id}/history` | Lịch sử hội thoại của một phiên chat |
+| **Staff Console** | `GET` | `/api/v1/staff/dashboard` | Thống kê số lượng case theo mức ưu tiên và trạng thái |
+| | `GET` | `/api/v1/staff/routing-directory` | Danh sách bộ phận tiếp nhận để điều phối |
+| | `GET` | `/api/v1/staff/tickets` | Hàng đợi ticket (lọc `status`, `priority`) |
+| | `GET` | `/api/v1/staff/tickets/{id}` | Chi tiết Case Brief, dữ liệu trích xuất, ảnh, CSAT, vị trí |
+| | `POST` | `/api/v1/staff/tickets/{id}/actions` | Reviewer thao tác: `APPROVE`, `EDIT_BRIEF`, `REROUTE`, `REQUEST_INFO`, `RESOLVE`, `CLOSE`, `REOPEN` |
+
+> Ngoài các route trên, backend còn có `POST /api/v1/chat`, `POST /api/v1/public/chat`, nhóm `/api/v1/agent/*` và `/api/v1/cases` (tag `cases-legacy`). Đây là các route tương thích, không thuộc luồng chính của frontend (trừ `/status`) nên không liệt kê ở đây.
 
 ---
 
@@ -224,11 +264,12 @@ npm run dev
 P-142/
 ├── frontend/                       # Web Support Hub (Next.js 14 App Router)
 │   ├── src/
-│   │   ├── app/                    # Routing pages (/, /chat, /staff)
+│   │   ├── app/                    # Routing pages (/, /login, /register, /chat, /track-case, /console)
 │   │   └── features/
-│   │       ├── auth/               # Xác thực SĐT & OTP demo
-│   │       ├── chat/               # Giao diện chat, Quick Prompts, Emergency Banner
-│   │       └── staff/              # Service Agent Console, Ticket Queue, Review Modal
+│   │       ├── landing/            # Landing page, điểm vào Guest chat
+│   │       ├── chat/               # Giao diện chat, Quick Replies, Emergency Banner
+│   │       ├── console/            # Service Agent Console, Ticket Queue, Ticket Detail Panel
+│   │       └── shared/             # AuthContext, UserProfileModal, component dùng chung
 │   └── package.json
 ├── src/                            # Mã nguồn Backend (FastAPI + LangGraph)
 │   ├── agents/                     # LangGraph AI Agent Core
@@ -239,20 +280,24 @@ P-142/
 │   ├── api/                        # FastAPI Route Controllers
 │   │   ├── customer.py             # Customer Chat & Case APIs
 │   │   ├── staff.py                # Staff Service Console APIs
-│   │   ├── auth.py                 # Xác thực & Phân quyền
+│   │   ├── auth.py                 # Đăng nhập, đăng ký, hồ sơ người dùng (JWT)
+│   │   ├── routes.py               # /chat, /public/chat, /status (chat tương thích)
 │   │   └── public.py               # Public Articles & Knowledge Hub
 │   ├── services/                   # Các dịch vụ nền tảng
 │   │   ├── rag_service.py          # Tra cứu tài liệu ChromaDB
+│   │   ├── case_lifecycle.py       # Job nền tự động đóng case Resolved quá 72h
 │   │   ├── dashboard_vision_service.py # Phân tích ảnh táp-lô qua Gemini Vision
 │   │   ├── image_routing.py        # Phân loại tự động định tuyến loại ảnh
 │   │   └── vision/                 # Module CarDD nhận diện va chạm ngoại thất
-│   ├── models/schemas.py           # Pydantic Schemas cho API & Case Brief
+│   ├── models/                     # db_models.py (SQLAlchemy) & schemas.py (Pydantic API / Case Brief)
 │   ├── db.py                       # Cấu hình SQLAlchemy & Session
 │   ├── config.py                   # Cấu hình Settings qua Pydantic
-│   └── main.py                     # Entry point khởi chạy ứng dụng FastAPI
+│   ├── seed.py / create_staff.py   # Seed dữ liệu dev; tạo tài khoản Staff
+│   └── main.py                     # Entry point FastAPI, khởi động job auto-close
 ├── tests/                          # Bộ kiểm thử tự động (pytest)
 │   ├── test_agents/                # Unit test Guardrails, Triage, RAG, Clarify
-│   └── test_api/                   # Integration test API Customer & Staff
+│   ├── test_api/                   # Integration test API Customer & Staff
+│   └── test_eval/                  # Test bộ benchmark, chất lượng RAG
 ├── docs/                           # Tài liệu kỹ thuật, kiến trúc & thẩm định
 │   ├── architecture/               # Toàn bộ sơ đồ kiến trúc chuẩn hóa (SVG & Markdown)
 │   ├── decisions/                  # Kiến trúc quyết định (ADR-001 đến ADR-005)
@@ -268,7 +313,7 @@ P-142/
 
 ## 8. Kết quả Thử nghiệm & Đánh giá (Evaluation Evidence)
 
-Theo quy định đánh giá định kỳ của chương trình VinUni AI20K:
+Theo quy định đánh giá của chương trình nhóm đã thực hiện:
 - **Báo cáo chi tiết Gate 2:** Được ghi nhận đầy đủ tại [`docs/eval_evidences.md`](docs/eval_evidences.md).
 - **Phương pháp thực hiện:** Chạy 5 tình huống thực tế (TC01 đến TC05) qua API backend với dữ liệu thật, không mock phản hồi, kiểm tra toàn bộ luồng tạo case, hỏi làm rõ, kích hoạt an toàn và duyệt điều phối.
 
@@ -299,13 +344,13 @@ Theo quy định đánh giá định kỳ của chương trình VinUni AI20K:
 
 ---
 
-## 10. Đội ngũ Phát triển (Team VFO2O-18)
+## 10. Đội ngũ Phát triển (Team T-142)
 
 | Thành viên | Vai trò chính | Mã học viên | Trách nhiệm chính |
 |---|---|---|---|
 | **Ngô Thế Việt** | Project Manager, Product Lead, Frontend Engineer | `2A202602594` | Quản lý tiến độ, thiết kế UX/UI, hiện thực giao diện Web Support Hub & Staff Console |
 | **Bùi Đăng Khôi** | AI Engineer, Data & Benchmark | `2A202602434` | Thu thập dữ liệu, xây dựng bộ benchmark kiểm thử và đánh giá độ chính xác mô hình |
-| **Đức Long** | AI Engineer, Workflow & RAG | `2A202602633` | Hiện thực LangGraph Agent, Hard Safety Guardrails, ChromaDB RAG & Vision Triage |
+| **Đức Long** | AI Engineer, Workflow & RAG | `2A202602633` | Hiện thực LangGraph Agent, Hard Safety Guardrails, ChromaDB RAG & Vision Triage, Đánh giá metric + Langfuse DB |
 | **Trọng Triển** | Backend Engineer, Database & APIs | `2A202602837` | Xây dựng kiến trúc API FastAPI, Database ORM, xác thực phân quyền và nghiệp vụ Case |
 
 ---

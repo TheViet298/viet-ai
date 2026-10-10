@@ -1,7 +1,7 @@
 # API Contract Specification (Customer & Staff)
 
-> **Người phụ trách chính:** Triển (Backend Lead)  
-> **Cập nhật lần cuối:** 2026-10-02  
+> **Người phụ trách chính:** Triển (Backend) - Việt
+> **Cập nhật lần cuối:** 2026-10-10 (đồng bộ với Swagger `/docs` v1.1.0)  
 > **Trạng thái:** In Review (Đã chuẩn hóa No-PII Schema, Distinct State Rules và Safe Guidance)
 
 ---
@@ -22,10 +22,10 @@
 }
 ```
 * **Bảo mật & Quyền riêng tư (Privacy Guardrail):**
-  * Tuyệt đối không yêu cầu khách hàng nhập thông tin định danh cá nhân (PII) thật (Họ tên, SĐT thật, CCCD, Biển số thật).
-  * Sử dụng định danh phiên: `session_id`, `mock_customer_id` (nếu có profile giả lập), `vehicle_model`, `vehicle_code_mock`.
-* **Quy tắc An toàn:** Tuyệt đối không trả về Chain-of-Thought (suy luận nội bộ của LLM) trong response của Customer API.
-* **RBAC:** Guest chỉ gọi public APIs; Customer chỉ gọi chat/case của mình; Staff mới gọi `/staff/*`. Backend trả `401` khi chưa đăng nhập và `403` khi sai role/ownership.
+  * Nhóm thiết kế theo chuẩn đề bài là **Không yêu cầu khách hàng nhập thông tin định danh cá nhân (PII) thật** (Họ tên, SĐT thật, CCCD, Biển số thật).
+  * Sử dụng định danh phiên: `session_id`, `mock_customer_id` (mã khách hàng nội bộ do backend tự gán khi đăng ký, không phải dữ liệu thật), `vehicle_model`, `vehicle_code_mock`.
+* **Quy tắc An toàn:** Không trả về Chain-of-Thought (suy luận nội bộ của LLM) trong response của Customer API. **Dữ liệu khách hàng/CSKH phải được mã hoá an toàn (ví dụ: AES-256), không được để ở dạng plain text trong các trường như notes, chat log...**
+* **RBAC:** Guest gọi được `/public/*`, `/customer/chat` (tối đa 5 lượt) và một số endpoint gắn với phiên qua header `X-Session-Id` (`feedback`, `actions`, `sessions/{id}/history`); Customer chỉ gọi chat/case của mình (kiểm tra `case.user_id == user.id` hoặc `case.session_id` khớp phiên guest); Staff mới gọi `/staff/*` và được bypass ownership. Backend trả `401` khi chưa đăng nhập, `403` khi sai role/ownership, `404` khi không thấy case, `409` khi trạng thái case không cho phép thao tác.
 * **Guest trial:** `guest_session_id` được giới hạn 5 lượt chat; response trả `remaining_guest_messages`. Guest vẫn nhận FAQ/citation nhưng phải login để theo dõi case.
 
 ## 1.1. Auth, Public Content & Attachment APIs
@@ -33,7 +33,7 @@
 | Endpoint | Mô tả |
 | :--- | :--- |
 | `POST /api/v1/auth/login` | Xác thực username/password từ bảng `users`, trả bearer JWT và profile tối thiểu |
-| `POST /api/v1/auth/register` | Tạo Customer mới bằng username demo/password; backend tự gán role và `mock_customer_id` |
+| `POST /api/v1/auth/register` | Tạo Customer mới bằng username/password (>= 8 ký tự); backend tự gán role và `mock_customer_id` |
 | `GET /api/v1/auth/me` | Xác thực bearer JWT, trả role/profile người dùng hiện tại |
 | `PATCH /api/v1/auth/me` | Cập nhật thông tin hồ sơ người dùng (họ tên, SĐT, dòng xe) |
 | `GET /api/v1/public/articles` | Landing/FAQ/Policy từ nguồn đã kiểm chứng |
@@ -51,13 +51,26 @@ POST /api/v1/auth/register
 }
 ```
 
-Đăng ký công khai luôn tạo role `CUSTOMER`; client không được chọn role hoặc `mock_customer_id`. Username chỉ là định danh demo, không dùng tên/SĐT thật. Staff được cấp nội bộ và đăng nhập qua cùng endpoint. Guest không có bearer token hoặc user row. Token được gửi bằng `Authorization: Bearer <token>`; API nghiệp vụ tiếp tục giữ nguyên URL và response envelope.
+Đăng ký công khai luôn tạo role `CUSTOMER`; client không được chọn role hoặc `mock_customer_id`. Username chỉ là định danh đăng nhập, không bắt buộc dùng tên/SĐT thật. Staff được cấp nội bộ và đăng nhập qua cùng endpoint. Guest không có bearer token hoặc user row. Token được gửi bằng `Authorization: Bearer <token>`; API nghiệp vụ tiếp tục giữ nguyên URL và response envelope.
 
 | Endpoint | Mô tả |
 | :--- | :--- |
 | `POST /api/v1/customer/location` | Customer consent vị trí hiện tại hoặc nhập khu vực cho case |
 | `GET /api/v1/customer/cases/{case_id}/service-points` | Lấy điểm dịch vụ/trạm sạc/showroom gợi ý cho case |
-| `POST /api/v1/customer/cases/{case_id}/confirmation` | Customer chọn `RESOLVED_CONFIRMED` hoặc `STILL_UNRESOLVED` |
+| `POST /api/v1/customer/cases/{case_id}/confirmation` | Customer chọn `RESOLVED_CONFIRMED` hoặc `STILL_UNRESOLVED` (chỉ khi case đang `Resolved`) |
+| `POST /api/v1/customer/cases/{case_id}/actions` | Hành động của khách (`CONFIRM_RESOLUTION` / `REOPEN`), hỗ trợ cả Guest qua `X-Session-Id` |
+| `POST /api/v1/customer/cases/{case_id}/safety-acknowledgement` | Khách xác nhận đã ở vị trí an toàn cho case khẩn cấp đang mở |
+| `GET /api/v1/customer/sessions/{session_id}/history` | Lịch sử hội thoại của một phiên chat |
+
+### 1.2. System & Chat endpoints khác
+
+| Endpoint | Mô tả |
+| :--- | :--- |
+| `GET /health` | Health check (nằm ngoài prefix `/api/v1`) |
+| `GET /api/v1/status` | Trạng thái AI Agent & Knowledge Base; frontend dùng để hiển thị chỉ báo trạng thái ở khung chat |
+| `POST /api/v1/chat`, `POST /api/v1/public/chat` | Chat tương thích dùng `ChatRequest`/`ChatResponse` riêng (xem `src/api/routes.py`); frontend chính dùng `POST /customer/chat` |
+| `POST /api/v1/agent/*`, `GET /api/v1/agent/*` | Bộ route song song dùng `session_store` thay vì DB; **không thuộc contract này** và frontend không gọi |
+| `GET /api/v1/cases`, `GET /api/v1/cases/{case_id}` | Route cũ gắn tag `cases-legacy` trong Swagger |
 
 ---
 
@@ -190,9 +203,43 @@ POST /api/v1/auth/register
 | `GET /api/v1/customer/cases?query={query}&status={status}` | Tìm case của chính Customer theo Case ID/từ khóa/trạng thái |
 | `GET /api/v1/customer/cases/{case_id}` | Case Detail: brief an toàn, timeline, Customer Update, attachment và lịch sử chat đã được ownership check |
 | `POST /api/v1/customer/cases/{case_id}/reopen` | Mở lại case đã Resolved/Closed |
-| `POST /api/v1/customer/cases/{case_id}/feedback` | Gửi rating/feedback sau xử lý |
+| `POST /api/v1/customer/cases/{case_id}/feedback` | Gửi hoặc cập nhật đánh giá CSAT sau xử lý (xem 2.4) |
+| `POST /api/v1/customer/feedback` | Alias của endpoint trên, truyền `case_id` trong body |
 | `POST /api/v1/customer/cases/{case_id}/confirmation` | Xác nhận đã được hỗ trợ hoặc mở lại case |
 | `GET /api/v1/public/support-insights` | Thư viện tình huống thường gặp đã biên soạn/ẩn danh; không trả raw case của Customer |
+
+### 2.4. Xác nhận, Mở lại, CSAT & Cảnh báo an toàn
+
+**Xác nhận kết quả** — `POST /api/v1/customer/cases/{case_id}/confirmation` (cần đăng nhập Customer; case phải đang `Resolved`, nếu không trả `409`):
+```json
+{ "confirmation": "RESOLVED_CONFIRMED", "feedback_note": null }
+```
+`RESOLVED_CONFIRMED` $\rightarrow$ `Closed`; `STILL_UNRESOLVED` $\rightarrow$ `Reopened` (quay lại Staff Queue).
+
+**Hành động của khách** — `POST /api/v1/customer/cases/{case_id}/actions` (đăng nhập Customer hoặc Guest qua `X-Session-Id`):
+```json
+{ "action": "CONFIRM_RESOLUTION", "reason": null, "feedback_note": null }
+```
+`action` là `CONFIRM_RESOLUTION` ($\rightarrow$ `Closed`) hoặc `REOPEN` ($\rightarrow$ `Reopened`). Response: `case_id`, `status`, `updated_at`, `customer_message`.
+
+**Mở lại** — `POST /api/v1/customer/cases/{case_id}/reopen`: chỉ cho case `Resolved` hoặc `Closed` (trạng thái khác trả `400`); nếu case đã `Reopened` thì trả thành công (idempotent). Hệ thống ghi `staff_audit_logs` với `staff_id = CUSTOMER_<user_id>`.
+
+**Đánh giá CSAT** — `POST /api/v1/customer/cases/{case_id}/feedback` (đăng nhập hoặc Guest qua `X-Session-Id`):
+```json
+{ "rating": 5, "comment": "Xử lý nhanh", "reason_tags": [] }
+```
+* `rating` từ 1 đến 5; `reason_tags` là các tag lý do nhanh, dùng khi đánh giá 1–2 sao.
+* Chỉ gửi được khi case `Resolved` hoặc `Closed` (trạng thái khác trả `409`).
+* Mỗi case chỉ có một đánh giá (`customer_feedback.case_id` UNIQUE); gửi lại sẽ cập nhật bản cũ, trong vòng 7 ngày kể từ lần gửi đầu (quá hạn trả `400`).
+* Response: `feedback_id`, `case_id`, `rating`, `reason_tags`.
+
+**Xác nhận an toàn** — `POST /api/v1/customer/cases/{case_id}/safety-acknowledgement`:
+```json
+{ "incident_version": 1 }
+```
+Chỉ áp dụng cho case `HIGH`/`CRITICAL` chưa `Resolved`/`Closed`. `incident_version` phải khớp phiên bản hiện tại, nếu không trả `409` để client tải lại. Thành công thì `safety_status` chuyển từ `unconfirmed` sang `customer_reported_safe`; xác nhận này **không** đóng hồ sơ.
+
+**Lịch sử phiên** — `GET /api/v1/customer/sessions/{session_id}/history?guest_session_id=...`: trả `session_id`, `case_id` đang gắn với phiên, `messages[]` (kèm `response_type`, `citations`, `suggested_replies`, `safe_guidance`) và `total`. Phiên của user đăng nhập chỉ chính chủ xem được; phiên guest cần `guest_session_id` hoặc `X-Session-Id` khớp.
 
 ---
 
@@ -235,13 +282,15 @@ POST /api/v1/auth/register
 }
 ```
 
+Mỗi item còn có thêm các trường: `issue_summary`, `suggested_action`, `has_location_consent`, `error_code_short`, `safety_status`, `safety_acknowledged_at`, `customer_feedback_score`, `customer_feedback_comment`, `customer_feedback_tags` và `is_auto_closed` (`true` khi case bị hệ thống tự đóng, xem mục 4).
+
 ---
 
 ### 3.1.1. Staff Dashboard, History & Routing Directory
 
 | Endpoint | Mô tả |
 | :--- | :--- |
-| `GET /api/v1/staff/dashboard` | Counter demo: Critical, Staff Reviewing, Needs Information, Resolved hôm nay |
+| `GET /api/v1/staff/dashboard` | Counter: `critical_count`, `staff_reviewing_count`, `needs_information_count`, `resolved_today_count`, `total_cases_count` |
 | `GET /api/v1/staff/tickets?status=Resolved,Closed,Reopened` | Lịch sử case, có filter intent/routing/staff/thời gian |
 | `GET /api/v1/staff/routing-directory` | Danh sách bộ phận demo để Staff chọn khi Reroute |
 
@@ -300,3 +349,31 @@ Routing directory P0: `Charging Operations`, `Service Center`, `Customer Care`, 
   "notes": "Đã tiếp nhận yêu cầu và điều phối kỹ thuật viên kiểm tra trụ sạc."
 }
 ```
+
+Trạng thái mới của case được suy ra từ `action`; nếu client gửi `updated_status` thì giá trị này ghi đè trạng thái suy ra:
+
+| `action` | Trạng thái sau thao tác | Ghi chú |
+| :--- | :--- | :--- |
+| `APPROVE` | `In Progress` | Tạo `case_updates` thông báo cho khách |
+| `REROUTE` | `Staff Reviewing` | Điều phối lại; ghi vết vào audit log |
+| `REQUEST_INFO` | `Needs Information` | Tạo `case_updates` yêu cầu khách bổ sung |
+| `RESOLVE` | `Resolved` | Tạo `case_updates` với `awaiting_customer_confirmation = true`; `notes` là thông điệp gửi khách |
+| `CLOSE` | `Closed` | |
+| `REOPEN` | `Reopened` | |
+| `EDIT_BRIEF` | Giữ nguyên | Cập nhật `summary`, `captured_fields`, `suggested_action` và đặt `is_edited_by_staff = true` |
+
+Mọi thao tác ghi `staff_audit_logs` kèm `previous_state` và `new_state`.
+
+---
+
+## 4. Vòng đời sau xử lý & Tự động đóng
+
+```
+Resolved --(khách xác nhận)--> Closed --(CSAT 1-5 sao)
+Resolved --(khách báo chưa xong / reopen)--> Reopened --> Staff Queue
+Resolved --(quá 72 giờ không phản hồi)--> Closed (auto-close)
+```
+
+* Job nền (`src/services/case_lifecycle.py`, hằng số `AUTO_CLOSE_HOURS = 72`) quét mỗi 600 giây; hàm quét cũng được gọi mỗi lần Staff gọi `GET /staff/tickets`.
+* Mỗi case bị tự đóng được ghi `staff_audit_logs` với `staff_id = SYSTEM_AUTO_CLOSE`, ghi chú bắt đầu bằng `[SYSTEM AUTO-CLOSE]`, và một `case_updates` có `author_type = SYSTEM`.
+* Staff Console nhận biết case tự đóng qua `is_auto_closed = true` trong `GET /staff/tickets`.
