@@ -86,24 +86,14 @@ def normalize(data: dict, tool: str) -> dict | None:
     }
 
     if tool == "claude":
-        prompt = ""
-        # UserPromptSubmit: prompt is at top level
-        if event == "UserPromptSubmit":
-            prompt = data.get("prompt", "")[:1000]
-        # PostToolUse: extract from tool_input
-        elif isinstance(data.get("tool_input"), dict):
-            prompt = data["tool_input"].get("prompt") or data["tool_input"].get("content") or ""
-        base.update({
-            "prompt": prompt,
-            "tool_name": data.get("tool_name", ""),
-            "tool_input": data.get("tool_input") if event != "UserPromptSubmit" else None,
-            "tool_response": str(data.get("tool_response", ""))[:500],
-        })
+        if event != "UserPromptSubmit":
+            return None
+        prompt = data.get("prompt", "")[:1000]
+        base.update({"prompt": prompt})
 
     elif tool == "gemini":
         if event == "BeforeAgent":
             prompt = data.get("prompt", "")[:1000]
-            base.update({"prompt": prompt})
         else:
             req = data.get("request", {})
             contents = req.get("contents", [])
@@ -115,67 +105,47 @@ def normalize(data: dict, tool: str) -> dict | None:
                         break
                 if prompt:
                     break
-            resp = data.get("response", {})
-            answer = ""
-            try:
-                answer = resp["candidates"][0]["content"]["parts"][0]["text"][:500]
-            except Exception:
-                pass
-            base.update({"prompt": prompt, "response_summary": answer})
+        if not prompt:
+            return None
+        base.update({"prompt": prompt})
 
     elif tool == "codex":
+        if event not in {"UserPromptSubmit", "UserPrompt"}:
+            return None
+        prompt = data.get("prompt") or ""
+        if not prompt:
+            return None
         base.update({"turn_id": data.get("turn_id", ""),
                      "transcript_path": data.get("transcript_path", ""),
-                     "capture_method": "native_hook"})
-        if event == "UserPromptSubmit":
-            # Keep the complete prompt in the local, ignored log.
-            base["prompt"] = data.get("prompt") or ""
-        elif event == "Stop":
-            response = data.get("last_assistant_message") or ""
-            if response:
-                base["response"] = response
-                base["response_summary"] = response[:500]
-            else:
-                base["activity"] = "Turn stopped; transcript sweep recovers the response"
-        elif event in {"PreToolUse", "PostToolUse"}:
-            base.update(tool_name=data.get("tool_name", ""), tool_use_id=data.get("tool_use_id", ""),
-                        tool_input=data.get("tool_input"), tool_response=data.get("tool_response"))
-        elif event in {"SessionStart", "SessionEnd", "Interrupt", "PreCompact", "PostCompact"}:
-            base["activity"] = event
-            base["source"] = data.get("source", "")
-            base["reason"] = data.get("reason", "")
-        else:
-            return None
-        identifier = (data.get("tool_use_id") if event in {"PreToolUse", "PostToolUse"}
-                      else [base["turn_id"], base.get("prompt", ""), base.get("response", ""), base.get("source", "")])
-        base["entry_id"] = entry_id(base["session_id"], event, identifier)
+                     "capture_method": "native_hook",
+                     "prompt": prompt})
+        identifier = [base["turn_id"], prompt]
+        base["entry_id"] = entry_id(base["session_id"], "UserPrompt", identifier)
 
     elif tool == "cursor":
-        base.update({
-            "prompt": data.get("prompt", "")[:1000],
-            "files_context": data.get("attachments", []),
-        })
+        prompt = data.get("prompt", "")[:1000]
+        if not prompt:
+            return None
+        base.update({"prompt": prompt})
 
     elif tool == "copilot":
-        base.update({
-            "prompt": data.get("prompt", "")[:1000],
-            "tool_name": data.get("toolName", ""),
-            "tool_args": data.get("toolArgs"),
-        })
+        prompt = data.get("prompt", "")[:1000]
+        if not prompt:
+            return None
+        base.update({"prompt": prompt})
 
-    # Skip only true noise: no prompt AND no tool-specific payload (tool_input,
-    # response_summary, tool_response, tool_args, files_context). Previously
-    # this only checked `prompt`, which dropped Claude Bash/Edit events (their
-    # tool_input has `command` / `file_path`, not `prompt` or `content`) and
-    # any Gemini/Cursor/Copilot turn that carried context but no plain prompt.
-    _PAYLOAD_KEYS = ("prompt", "response", "activity", "tool_input", "response_summary",
-                     "tool_response", "tool_args", "files_context")
-    _LIFECYCLE_EVENTS = ("Stop", "stop", "SessionEnd", "sessionEnd", "AfterModel")
-    has_payload = any(base.get(k) for k in _PAYLOAD_KEYS)
-    if not has_payload and event not in _LIFECYCLE_EVENTS:
+    else:
+        prompt = data.get("prompt", "")
+        if not prompt:
+            return None
+        base.update({"prompt": prompt})
+
+    if not base.get("prompt"):
         return None
 
+    base["event"] = "UserPrompt"
     return base
+
 
 
 def main():

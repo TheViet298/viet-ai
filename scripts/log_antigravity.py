@@ -296,12 +296,7 @@ def iter_user_inputs(brain_dirs: list[Path], cutoff: datetime | None,
 
 def iter_transcript_activity(transcript: Path, conv_id: str,
                              cutoff: datetime | None):
-    """Public user prompts, tool invocations and final replies only.
-
-    GENERIC model records can contain tool output or internal context, so they
-    are deliberately excluded. PLANNER_RESPONSE content is only included when
-    the record has no tool calls and is the conversation's final model record.
-    """
+    """Public user prompts only."""
     records = []
     with transcript.open(encoding="utf-8") as source:
         for line in source:
@@ -311,12 +306,6 @@ def iter_transcript_activity(transcript: Path, conv_id: str,
                 continue
             if isinstance(record, dict):
                 records.append(record)
-    final_model_step = next((r.get("step_index") for r in reversed(records)
-                             if r.get("type") == "PLANNER_RESPONSE"
-                             and r.get("source") == "MODEL"
-                             and r.get("status") == "DONE"
-                             and not r.get("tool_calls")
-                             and r.get("content")), None)
     for record in records:
         ts = record.get("created_at") or ""
         if cutoff and ts:
@@ -330,17 +319,6 @@ def iter_transcript_activity(transcript: Path, conv_id: str,
             prompt = extract_user_prompt(record.get("content", ""))
             if prompt:
                 yield {"timestamp": ts, "step_index": step, "event": "UserPrompt", "prompt": prompt}
-        elif record.get("type") == "PLANNER_RESPONSE" and record.get("source") == "MODEL":
-            for index, call in enumerate(record.get("tool_calls") or []):
-                if not isinstance(call, dict):
-                    continue
-                yield {"timestamp": ts, "step_index": step, "event": "PreToolUse",
-                       "call_index": index, "tool_name": call.get("name", ""),
-                       "tool_input": call.get("args", {})}
-            if step == final_model_step:
-                yield {"timestamp": ts, "step_index": step, "event": "Stop",
-                       "response": record["content"],
-                       "response_summary": record["content"][:500]}
 
 
 def activity_entries(transcript: Path, conv_id: str, cutoff: datetime | None,
@@ -348,13 +326,11 @@ def activity_entries(transcript: Path, conv_id: str, cutoff: datetime | None,
     repo, branch, commit, student = context
     for activity in iter_transcript_activity(transcript, conv_id, cutoff):
         step = activity.pop("step_index")
-        index = activity.pop("call_index", None)
+        activity.pop("call_index", None)
         ts = activity.pop("timestamp")
         event = activity["event"]
-        suffix = f"-{index}" if index is not None else ""
         yield {"ts": ts or datetime.now(VN_TZ).isoformat(), "tool": "antigravity",
-               "entry_id": f"antigravity-{conv_id}-{step:05d}" if event == "UserPrompt"
-               else f"antigravity-{conv_id}-{step:05d}-{event}{suffix}",
+               "entry_id": f"antigravity-{conv_id}-{step:05d}",
                "session_id": conv_id, "model": model, "repo": repo,
                "branch": branch, "commit": commit, "student": student, **activity}
 

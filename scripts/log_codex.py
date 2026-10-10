@@ -122,42 +122,20 @@ def transcript_entries(path, root, context):
                 if d.get('role') == 'user':
                     if text.lstrip().startswith('<environment_context>'):
                         continue
-                    row.update(event='UserPromptSubmit', prompt=text)
-                elif d.get('role') == 'assistant':
-                    event = 'Stop' if d.get('phase') == 'final_answer' else 'AssistantMessage'
-                    row.update(event=event, response=text, response_summary=text[:500])
+                    row.update(event='UserPrompt', prompt=text)
                 else:
                     continue
-            elif kind in {'function_call', 'custom_tool_call'}:
-                identifier = d.get('call_id') or identifier
-                row.update(event='PreToolUse', tool_name=d.get('name', ''),
-                           tool_use_id=d.get('call_id', ''), tool_input=d.get('arguments', d.get('input')))
-            elif kind in {'function_call_output', 'custom_tool_call_output'}:
-                identifier = d.get('call_id') or identifier
-                row.update(event='PostToolUse', tool_use_id=d.get('call_id', ''), tool_response=d.get('output'))
             else:
-                continue  # reasoning, developer/system messages, encrypted state
+                continue
         elif r.get('type') == 'event_msg':
             kind = d.get('type')
-            if kind in {'user_message', 'agent_message'}:
+            if kind == 'user_message':
                 text = d.get('message', '')
-                role = 'user' if kind == 'user_message' else 'assistant'
-                if not text or (role, turn, text) in primary:
+                if not text or ('user', turn, text) in primary:
                     continue
-                if role == 'user':
-                    if text.lstrip().startswith('<environment_context>'):
-                        continue
-                    row.update(event='UserPromptSubmit', prompt=text)
-                else:
-                    row.update(event='AssistantMessage', response=text, response_summary=text[:500])
-            elif kind == 'turn_aborted':
-                row.update(event='Interrupt', activity='Turn interrupted')
-            elif kind == 'item_completed' and isinstance(d.get('item'), dict):
-                item = d['item']
-                if item.get('type') not in {'CommandExecution', 'FileChange', 'WebSearch', 'McpToolCall', 'DynamicToolCall'}:
+                if text.lstrip().startswith('<environment_context>'):
                     continue
-                identifier = item.get('id') or identifier
-                row.update(event='ToolActivity', tool_name=item['type'], activity=item)
+                row.update(event='UserPrompt', prompt=text)
             else:
                 continue
         else:

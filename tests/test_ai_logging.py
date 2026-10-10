@@ -36,10 +36,10 @@ class CaptureTests(unittest.TestCase):
             path.write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in records),encoding='utf-8')
             entries=list(log_antigravity.activity_entries(path,'conversation',None,
                 ('P-142','main','1234567','synthetic')))
-            self.assertEqual([e['event'] for e in entries],['UserPrompt','PreToolUse','Stop'])
+            self.assertEqual([e['event'] for e in entries],['UserPrompt'])
             self.assertNotIn('private reasoning',json.dumps(entries))
             self.assertNotIn('private tool output',json.dumps(entries))
-            self.assertEqual(entries[-1]['response'],'Đã hoàn thành.')
+            self.assertEqual(entries[0]['prompt'],'Xin chào')
 
     def test_ingestion_tool_payloads_are_lossless_strings(self):
         entry = {'tool_input': {'question': 'pin'}, 'tool_response': [{'text': 'Đã kiểm tra'}]}
@@ -83,8 +83,8 @@ class CaptureTests(unittest.TestCase):
             out.write(json.dumps({'type': 'event_msg', 'payload': {'type': 'turn_aborted', 'turn_id': 'turn-test'}}) + '\n')
             out.write('{"incomplete":')
         entries = log_codex.transcript_entries(path, self.root, self.context)
-        self.assertEqual(next(e['prompt'] for e in entries if e['event'] == 'UserPromptSubmit'), prompt)
-        self.assertEqual({e['event'] for e in entries}, {'UserPromptSubmit','AssistantMessage','Stop','PreToolUse','PostToolUse','Interrupt'})
+        self.assertEqual(next(e['prompt'] for e in entries if e['event'] == 'UserPrompt'), prompt)
+        self.assertEqual({e['event'] for e in entries}, {'UserPrompt'})
         self.assertNotIn('private instructions', json.dumps(entries))
         self.assertNotIn('private reasoning', json.dumps(entries))
 
@@ -138,7 +138,9 @@ class CaptureTests(unittest.TestCase):
             cwd=SCRIPTS.parent,env={**os.environ,'AI_LOG_DIR':str(directory)},timeout=10)
         self.assertEqual(result.returncode,0,result.stderr)
         self.assertEqual(json.loads(result.stdout),{})
-        self.assertEqual(json.loads((directory/'session.jsonl').read_text(encoding='utf-8'))['prompt'],prompt)
+        logged_entry = json.loads((directory/'session.jsonl').read_text(encoding='utf-8'))
+        self.assertEqual(logged_entry['prompt'],prompt)
+        self.assertEqual(logged_entry['event'],'UserPrompt')
 
 
 class SubmissionTests(unittest.TestCase):
