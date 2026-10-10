@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from src.config import get_settings
 from src.services.dashboard_warning_service import ALIASES, normalize, warning_records
 from src.services.image_routing import get_async_openai_client
+from src.services.observability_usage import provider_generation
 
 
 class VisibleWarning(BaseModel):
@@ -85,7 +86,8 @@ async def analyze_dashboard_image(data: bytes, mime_type: str) -> dict:
         if use_openai:
             client = get_async_openai_client()
             b64 = base64.b64encode(data).decode("ascii")
-            res = await asyncio.wait_for(client.chat.completions.create(
+            res = await provider_generation('vision.dashboard', 'openai', settings.vision_model,
+                                            lambda: asyncio.wait_for(client.chat.completions.create(
                 model=settings.vision_model,
                 response_format={"type": "json_object"},
                 messages=[
@@ -98,7 +100,7 @@ async def analyze_dashboard_image(data: bytes, mime_type: str) -> dict:
                     }
                 ],
                 max_completion_tokens=4096,
-            ), timeout=settings.dashboard_vision_timeout_s)
+            ), timeout=settings.dashboard_vision_timeout_s))
             choice = res.choices[0]
             if choice.finish_reason not in ("stop", None):
                 raise ValueError("incomplete_response")
@@ -117,14 +119,16 @@ async def analyze_dashboard_image(data: bytes, mime_type: str) -> dict:
                     },
                 }
                 endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.dashboard_vision_model}:generateContent"
-                response = await client.post(
+                response = await provider_generation('vision.dashboard', 'google', settings.dashboard_vision_model,
+                                                     lambda: client.post(
                     endpoint, headers={"x-goog-api-key": settings.google_api_key}, json=request_payload,
-                )
+                ))
                 if response.status_code == 503:
                     await asyncio.sleep(1)
-                    response = await client.post(
+                    response = await provider_generation('vision.dashboard', 'google', settings.dashboard_vision_model,
+                                                         lambda: client.post(
                         endpoint, headers={"x-goog-api-key": settings.google_api_key}, json=request_payload,
-                    )
+                    ), attempt=2)
                 response.raise_for_status()
             candidate = response.json()["candidates"][0]
             if candidate.get("finishReason") != "STOP":

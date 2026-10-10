@@ -13,7 +13,7 @@ from src.agents.graph import agent
 from src.agents.guardrails import evaluate_hard_safety, sanitize_pii
 from src.services.agent_llm import structured_call
 from src.services.memory_buffer import compact_memory
-from src.services.observability import get_tracer_callbacks
+from src.services.observability import bind_trace_attributes, get_tracer_callbacks, observation
 from src.services.session_store import decode_state, encode_state, get_store, prepare_application_turn
 from src.services.tracer import sanitized_snapshot
 
@@ -84,16 +84,20 @@ async def process_chat_message(
         if context.get("vehicle_context"):
             state['pending_vehicle_context'] = context['vehicle_context']
         original_message = context.get("original_user_message") or user_message
+        for field in ('conversation_context', 'turn_understanding', 'llm_budget', 'reply_constraints'):
+            if field in context:
+                state[field] = context[field]
         state.update(query=sanitize_pii(original_message)[0], latest_user_message=sanitize_pii(original_message)[0])
         # Server-side AI evidence only; never read this from arbitrary client_context.
         state['pending_cardd_signal'] = make_cardd_signal(damage_evidence,state.get('turn',0)+1) if damage_evidence is not None else None
-        result = await agent.ainvoke(
-            state,
-            config={
-                "callbacks": get_tracer_callbacks(session_id=session_id, user_id=owner),
-                "metadata": {"session_id": session_id},
-            },
-        )
+        with bind_trace_attributes(session_id=session_id, user_id=owner):
+            result = await agent.ainvoke(
+                state,
+                config={
+                    "callbacks": get_tracer_callbacks(session_id=session_id, user_id=owner),
+                    "metadata": {"session_id": session_id},
+                },
+            )
         if not persist_business_case:
             prepare_application_turn(result)
         result["messages"].append(AIMessage(content=result.get("response", "")))
@@ -102,7 +106,8 @@ async def process_chat_message(
             summary = (
                 None
                 if result.get("is_critical")
-                else await structured_call({**result, "memory_summary": buffer_summary}, "memory", MemorySummary)
+                else await structured_call({**result, "memory_summary": buffer_summary}, "memory", MemorySummary,
+                                           callbacks=get_tracer_callbacks(session_id=session_id, user_id=owner))
             )
             result["memory_summary"] = sanitize_pii(summary.summary if summary else buffer_summary)[0]
         if application_db is not None:
@@ -110,9 +115,11 @@ async def process_chat_message(
             # transaction owned by run_chat_turn, including failure rollback.
             saved = result
             app_session.memory_states = {**(app_session.memory_states or {}), session_id: json.loads(encode_state(saved))}
-            application_db.flush()
+            with observation('memory.persist'):
+                application_db.flush()
         else:
-            saved = store.save_turn(session_id, owner, version, result, persist_business_case=persist_business_case)
+            with observation('business.persist'):
+                saved = store.save_turn(session_id, owner, version, result, persist_business_case=persist_business_case)
         reply = saved.get("response", "")
         if saved.get("case_id") and saved.get("response_type") == "CASE_CREATED":
             reply += f"\n\nMã hồ sơ: {saved['case_id']}."
@@ -128,6 +135,7 @@ async def process_chat_message(
             "is_no_source": saved.get("is_no_source", False),
             "retrieval_diagnostics": saved.get("retrieval_diagnostics", {}),
             "retrieval_status": saved.get("retrieval_status"),
+            "answer_claims": saved.get('answer_claims', []),
             "citations": saved.get("rag_citations", []),
             "suggested_replies": saved.get("suggested_replies", []),
             "case_brief": saved.get("case_brief"),

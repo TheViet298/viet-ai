@@ -10,6 +10,9 @@ from src.main import app
 
 @pytest.fixture(autouse=True)
 def isolated_agent_environment(monkeypatch, tmp_path):
+    monkeypatch.setenv("LANGFUSE_TRACING_ENABLED", "false")
+    from src.services import observability
+    monkeypatch.setattr(observability, "_client", None)
     settings = get_settings()
     monkeypatch.setattr(settings, "agent_llm_enabled", False)
     monkeypatch.setattr(settings, "database_url", f"sqlite:///{tmp_path / 'app.db'}")

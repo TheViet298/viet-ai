@@ -1,0 +1,176 @@
+[
+  {
+    "id": "quote-slots",
+    "topic": "Bổ sung đủ thông tin báo giá",
+    "turns": [
+      "Giá lăn bánh của xe VF8 là bao nhiêu?",
+      "Sao không có giá chính xác?",
+      "VF8 Plus, mua kèm pin, đăng ký ở Hà Nội.",
+      "Tôi đã nói phiên bản và nơi đăng ký rồi, vậy còn thiếu gì để báo giá?"
+    ],
+    "expected": "Nhớ VF8 Plus, mua kèm pin, Hà Nội; không hỏi lại. Trả giá niêm yết/giá công bố đúng phiên bản nếu có nguồn xác thực, kèm https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh và hướng dẫn chọn VF8/Plus/phương án pin/Hà Nội. Không chờ ưu đãi showroom mới trả giá niêm yết, không tự chốt giá giao dịch hoặc bịa giá khi thiếu nguồn."
+  },
+  {
+    "id": "drive-action",
+    "topic": "Yêu cầu thực hiện đặt lịch",
+    "turns": [
+      "Tôi muốn lái thử VF8 tại Hà Nội.",
+      "Tôi ở Cầu Giấy, muốn lái thử chiều thứ bảy.",
+      "Có đặt được luôn không? Nếu chưa được thì cần thêm gì?"
+    ],
+    "expected": "Giữ mẫu xe/khu vực/thời gian mong muốn; chiều thứ bảy cần xác định ngày. Nói rõ khả năng đặt lịch thực tế và thông tin còn thiếu; không tự tuyên bố đã đặt."
+  },
+  {
+    "id": "model-switch",
+    "topic": "Đổi mẫu xe bằng câu ngắn",
+    "turns": [
+      "Xe VF8 được bảo hành bao lâu?",
+      "Còn VF5 thì sao?",
+      "Tôi đang hỏi VF5 nhé, có cần đời xe không?"
+    ],
+    "expected": "Chuyển chủ thể sang VF5; kế thừa chủ đề bảo hành, không kế thừa số liệu VF8. Hỏi đời/loại sử dụng nếu cần đối chiếu."
+  },
+  {
+    "id": "component-correction",
+    "topic": "Sửa bộ phận đang hỏi",
+    "turns": [
+      "Pin VF8 được bảo hành bao lâu?",
+      "Tôi hỏi pin cao áp, không phải ắc quy 12V.",
+      "Vậy có thể xác nhận thời hạn cho xe của tôi chưa?"
+    ],
+    "expected": "Chủ thể là pin cao áp; phân biệt mua theo xe/mua thay thế và sử dụng nếu cần. Không hỏi lại 12V, không cam kết quyền lợi cá nhân khi thiếu hồ sơ."
+  },
+  {
+    "id": "challenge-number",
+    "topic": "Khách yêu cầu đối chiếu số liệu",
+    "turns": [
+      "VF8 sạc đầy đi được bao nhiêu km?",
+      "Bạn vừa nói khoảng 500 km, tôi thấy nơi khác nói 450 km, cái nào đúng?",
+      "Nếu chưa chắc thì cần thêm thông tin gì để kiểm tra?"
+    ],
+    "expected": "Nhận yêu cầu kiểm chứng; đối chiếu phiên bản/đời/chuẩn đo/nguồn, không đổi con số tùy ý; nói rõ số nào chưa được xác thực."
+  },
+  {
+    "id": "unknown-version",
+    "topic": "Khách không biết phiên bản",
+    "turns": [
+      "Tôi muốn biết dung lượng pin xe VF8.",
+      "Tôi không biết xe Eco hay Plus, làm sao kiểm tra?",
+      "Tôi chưa tìm được, có thể tư vấn tiếp không?"
+    ],
+    "expected": "Chỉ cách tìm phiên bản trong tài liệu/ứng dụng hoặc xác nhận với showroom; tiếp tục giải thích chung có giới hạn, không ép trả lời slot không biết."
+  },
+  {
+    "id": "cancel-action",
+    "topic": "Rút lại yêu cầu thao tác",
+    "turns": [
+      "Tôi muốn đăng ký lái thử VF8 ở Hà Nội.",
+      "Thôi không đặt nữa, tôi chỉ muốn xem thông tin xe.",
+      "Vậy hiện tại bạn có đặt lịch hay tạo hồ sơ gì cho tôi chưa?"
+    ],
+    "expected": "Ngừng ý định đặt lịch; chuyển sang thông tin xe. Trả lời trạng thái thao tác đúng dữ liệu, không nói đã hủy một lịch chưa được tạo."
+  },
+  {
+    "id": "next-step",
+    "topic": "Hỏi bước tiếp theo không nhắc chủ đề",
+    "turns": [
+      "Tôi muốn đặt lịch bảo dưỡng VF8.",
+      "Vậy giờ tôi cần làm gì?",
+      "Bạn đã có những thông tin nào của tôi rồi?"
+    ],
+    "expected": "Giữ mục tiêu đặt bảo dưỡng, tóm tắt đã biết VF8 và những slot thực sự thiếu; hướng dẫn bước tiếp theo trong khả năng hệ thống."
+  },
+  {
+    "id": "concept-detail",
+    "topic": "Yêu cầu ví dụ và cách tính",
+    "turns": [
+      "SOH là gì?",
+      "Giải thích cách tính bằng ví dụ đơn giản được không?",
+      "Vậy chỉ nhìn SOC có biết SOH không?"
+    ],
+    "expected": "Bổ sung cách đánh giá/ví dụ SOH và phân biệt SOC; không lặp định nghĩa, không suy ra SOH từ một SOC."
+  },
+  {
+    "id": "incident-slots",
+    "topic": "Bổ sung thông tin sự cố",
+    "turns": [
+      "Xe VF8 không sạc được.",
+      "Tôi đang ở trạm sạc, pin còn 35%, trụ báo CC01.",
+      "Tôi đã nói rồi, vậy còn thiếu gì? Có thể hỗ trợ tiếp chưa?"
+    ],
+    "expected": "Nhớ model/SOC/mã lỗi/vị trí mức mô tả; chỉ hỏi thông tin chưa có (ví dụ vị trí cụ thể/trụ), nói rõ trạng thái xử lý thay vì khởi động lại hỏi đáp."
+  },
+  {
+    "id": "incident-resolved",
+    "topic": "Cập nhật sự cố và trạng thái hiện tại",
+    "turns": [
+      "Xe VF8 đang hiện con rùa vàng.",
+      "Tôi đã dừng an toàn, đèn tắt rồi.",
+      "Vậy hiện tại có thể đi tiếp hay còn cần kiểm tra gì?"
+    ],
+    "expected": "Ghi nhận khách báo đã dừng/đèn tắt, không tự kết luận an toàn kỹ thuật; nêu điều kiện/kiểm tra cần thiết và trạng thái hồ sơ thực tế."
+  },
+  {
+    "id": "new-emergency",
+    "topic": "Đổi từ tư vấn sang nguy hiểm",
+    "turns": [
+      "Giá lăn bánh VF8 bao nhiêu?",
+      "Giờ xe tôi bị mất phanh, phải làm sao?"
+    ],
+    "expected": "Ưu tiên hướng dẫn an toàn và luồng khẩn cấp, không tiếp tục báo giá hoặc hỏi phiên bản/nơi đăng ký."
+  },
+  {
+    "id": "price-control",
+    "topic": "Giá lăn bánh (đối chứng)",
+    "first": "Giá lăn bánh của xe VF8 là bao nhiêu?",
+    "followup": "Sao không có giá chính xác?"
+  },
+  {
+    "id": "warranty",
+    "topic": "Bảo hành xe",
+    "first": "Xe VF8 được bảo hành bao lâu?",
+    "followup": "Sao không có thời hạn bảo hành chính xác?"
+  },
+  {
+    "id": "battery-warranty",
+    "topic": "Bảo hành pin",
+    "first": "Pin cao áp VF8 được bảo hành bao lâu?",
+    "followup": "Sao không có thời hạn bảo hành pin chính xác?"
+  },
+  {
+    "id": "charging-time",
+    "topic": "Thời gian sạc",
+    "first": "Sạc VF8 từ 10% lên 80% mất bao lâu?",
+    "followup": "Sao không có thời gian sạc chính xác?"
+  },
+  {
+    "id": "range",
+    "topic": "Quãng đường sau sạc",
+    "first": "VF8 sạc đầy đi được bao nhiêu km?",
+    "followup": "Sao không có quãng đường chính xác?"
+  },
+  {
+    "id": "battery-capacity",
+    "topic": "Dung lượng pin",
+    "first": "Dung lượng pin VF8 là bao nhiêu kWh?",
+    "followup": "Sao không có dung lượng pin chính xác?"
+  },
+  {
+    "id": "test-drive",
+    "topic": "Đăng ký lái thử",
+    "first": "Tôi muốn đăng ký lái thử VF8 tại Hà Nội, có lịch nào?",
+    "followup": "Sao không có lịch lái thử cụ thể?"
+  },
+  {
+    "id": "maintenance",
+    "topic": "Lịch bảo dưỡng",
+    "first": "VF8 cần bảo dưỡng sau bao nhiêu km?",
+    "followup": "Sao không có mốc bảo dưỡng chính xác?"
+  },
+  {
+    "id": "concept",
+    "topic": "Khái niệm SOH",
+    "first": "SOH là gì?",
+    "followup": "Sao chưa giải thích rõ SOH được tính như thế nào?"
+  }
+]

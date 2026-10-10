@@ -39,6 +39,11 @@ def is_general_vehicle_question(text: str) -> bool:
 
 def common_vehicle_explanation(text: str) -> str | None:
     lower = normalized(text)
+    if re.search(r'\bsoh\b', lower) and re.search(r'cach tinh|tinh nhu the nao|vi du|duoc tinh', lower):
+        return ('Một cách minh họa SOH theo dung lượng là: dung lượng sử dụng được hiện tại chia cho dung lượng ban đầu, nhân 100%. '
+                'Ví dụ giả định pin ban đầu 100 đơn vị, hiện còn sử dụng được 90 đơn vị thì SOH theo cách tính này là 90%. '
+                'Đây là ví dụ kiến thức chung; BMS có thể dùng thêm tiêu chí và thuật toán riêng. '
+                'SOC chỉ mức nạp hiện tại, nên SOC 90% không có nghĩa SOH 90%.')
     definitions = [
         (r"\bsoc\b", "SOC (State of Charge) là mức pin còn lại, thường được biểu thị bằng phần trăm so với dung lượng sử dụng được của pin. SOC cho biết trạng thái nạp hiện tại, không phải sức khỏe hay mức chai của pin."),
         (r"\bsoh\b", "SOH (State of Health) là chỉ số sức khỏe pin, phản ánh mức suy giảm so với trạng thái ban đầu. SOH khác SOC: SOC là mức pin đang còn, SOH liên quan đến khả năng của pin sau thời gian sử dụng. Cách đánh giá SOH phụ thuộc hệ thống quản lý pin."),

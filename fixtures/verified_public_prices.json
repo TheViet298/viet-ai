@@ -1,0 +1,20 @@
+[
+  {
+    "source_id": "SRC-009",
+    "model": "VF8",
+    "version": "Eco",
+    "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf8",
+    "status_code": 200,
+    "verified_at": "2026-10-10",
+    "relevant_snippet": "VF8 Eco: giá công bố từ 898.000.000 VNĐ. Mức giá ưu đãi mang tính chất tham khảo, chương trình áp dụng theo điều khoản và điều kiện; cần xác nhận cấu hình và phương án pin tại showroom."
+  },
+  {
+    "source_id": "SRC-009",
+    "model": "VF8",
+    "version": "Plus",
+    "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf8",
+    "status_code": 200,
+    "verified_at": "2026-10-10",
+    "relevant_snippet": "VF8 Plus: giá công bố từ 1.079.000.000 VNĐ. Mức giá ưu đãi mang tính chất tham khảo, chương trình áp dụng theo điều khoản và điều kiện; cần xác nhận cấu hình và phương án pin tại showroom."
+  }
+]

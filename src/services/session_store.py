@@ -43,7 +43,10 @@ def prepare_application_turn(data: dict) -> None:
             diag = data.get('retrieval_diagnostics') or {}
             diag_cat = diag.get('category')
             diag_stage = diag.get('stage')
-            if diag_cat == 'context_budget_exceeded' or diag_stage == 'prompt':
+            contextual_followup = (data.get('turn_understanding') or {}).get('move') in {
+                'elaborate', 'ask_status', 'ask_next_step', 'verify_claim',
+            }
+            if (diag_cat == 'context_budget_exceeded' or diag_stage == 'prompt') and not contextual_followup:
                 data['response'] = 'Tài liệu cần thiết vượt quá giới hạn xử lý hiện tại. Tôi sẽ chuyển chuyên viên kiểm tra đầy đủ điều kiện.'
             elif diag_stage == 'generation' or diag_cat in ('generation_unavailable', 'provider_error', 'circuit_open', 'rate_limited'):
                 data['response'] = data.get('response') or 'Tôi chưa hoàn tất được việc tạo câu trả lời từ tài liệu đã tìm thấy. Anh/chị vui lòng thử lại; tôi không thể xác nhận nội dung lúc này.'

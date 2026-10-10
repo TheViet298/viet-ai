@@ -7,11 +7,13 @@ from src.agents.guardrails import EMERGENCY_SAFE_GUIDANCE, evaluate_hard_safety
 from src.api.dependencies import Principal, optional_principal
 from src.models.schemas import ChatRequest, ChatResponse
 from src.services.session_store import SessionConflictError, decode_state, get_store
+from src.services.observability import trace_endpoint, update_trace_identity
 
 router = APIRouter()
 
 
 @router.post("/chat", response_model=ChatResponse)
+@trace_endpoint('p142.chat.legacy')
 async def chat(
     request: ChatRequest,
     http_request: Request,
@@ -30,6 +32,7 @@ async def chat(
             response.set_cookie(
                 "vf_guest_session", sid, httponly=True, samesite="lax", secure=http_request.url.scheme == "https"
             )
+        update_trace_identity(session_id=sid, user_id=owner)
         if request.case_id:
             if role != "customer":
                 raise HTTPException(status_code=401, detail="Customer authentication required")

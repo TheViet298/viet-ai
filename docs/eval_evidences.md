@@ -4,7 +4,7 @@
 
 | Ca | Tình huống | Kết quả | Ghi nhận chính |
 | --- | --- | --- | --- |
-| TC01 | Chào hỏi | PASS | Chào hỏi, gợi ý chức năng; không tạo case. |
+| TC01 | Giới thiệu khả năng hỗ trợ | PASS | Trả lời trực tiếp các chức năng hỗ trợ; không tạo case. |
 | TC02 | Giải thích cảnh báo con rùa | PASS | Giải thích kiến thức chung, ghi rõ chưa đối chiếu sổ tay. |
 | TC03 | Tra cứu bảo hành VF8 | PASS | Ba lần gọi đều có đáp án, nguồn SRC-002 và trace LLM parsed. |
 | TC04 | Tiếp nhận khiếu nại | PASS | Tạo hồ sơ khiếu nại; không tự gán dòng xe. |
@@ -19,22 +19,22 @@
 
 ## 2. Input và output thực tế
 
-### TC01: Chào hỏi 
+### TC01: Giới thiệu khả năng hỗ trợ — Dễ
 
-**Bước 1 — customer: `POST /api/v1/customer/chat`**
+**Request:** Customer gửi `POST /api/v1/customer/chat`.
 
 **Input:**
 
 ```json
 {
-  "session_id": "evidence-TC01",
+  "session_id": "greeting-2d8950e3-0",
   "message": "Chào bạn, bạn có thể hỗ trợ tôi những gì?"
 }
 ```
 
-**Output thực tế:** HTTP `200`, thời gian `0.074` giây.
+**Output thực tế:** HTTP `200`, thời gian `0.067` giây.
 
-> Chào bạn! Em là Trợ lý VF Serv. Em có thể hỗ trợ gì cho bạn hôm nay ạ?
+> Chào bạn! Tôi có thể hỗ trợ tìm hiểu xe VinFast, tra cứu bảo hành và bảo dưỡng, hướng dẫn về sạc và ứng dụng, tiếp nhận sự cố kỹ thuật hoặc khiếu nại, và theo dõi hồ sơ hỗ trợ. Bạn muốn được hỗ trợ nội dung nào?
 
 **Trích trường payload:**
 
@@ -42,10 +42,6 @@
 {
   "response_type": "FAQ_ANSWER",
   "case_id": null,
-  "status": null,
-  "priority": null,
-  "clarification_turn": null,
-  "max_clarification_turns": null,
   "citations": null,
   "suggested_replies": [
     "Tư vấn xe",
@@ -53,15 +49,11 @@
     "Bảo hành & bảo dưỡng",
     "Báo sự cố kỹ thuật"
   ],
-  "safe_guidance": null,
-  "show_emergency_banner": false,
-  "request_location": false,
-  "emergency_context": null,
-  "safety_status": "unconfirmed"
+  "show_emergency_banner": false
 }
 ```
 
-**Đánh giá: PASS.** API trả lời chào hỏi, cung cấp bốn nhóm gợi ý và không tạo hồ sơ. Phản hồi chưa liệt kê khả năng hỗ trợ trong chính câu trả lời; các lựa chọn nằm ở `suggested_replies`.
+**Đánh giá: PASS.** Câu trả lời trực tiếp liệt kê khả năng hỗ trợ theo câu hỏi của khách, giữ các nút gợi ý và không tạo hồ sơ. Gọi API thật với câu hỏi không kèm lời chào cũng nhận danh sách khả năng; lời chào thuần túy nhận phản hồi chào hỏi; câu kèm báo xe bốc khói vẫn tạo hồ sơ CRITICAL và bật cảnh báo. Nhánh giới thiệu khả năng dùng nội dung cố định, không cần gọi LLM. Xem [input/output kiểm tra lại TC01](../eval/results/evidence-20261010/greeting-recheck.json).
 
 ### TC02: Giải thích cảnh báo con rùa
 
