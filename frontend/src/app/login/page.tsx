@@ -12,7 +12,6 @@ import {
   Mail,
   AlertCircle,
   ArrowLeft,
-  RotateCcw,
 } from "lucide-react";
 import { useAuth, ProductMark, UserRole } from "@/features/shared";
 
@@ -24,16 +23,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [recentUsername, setRecentUsername] = useState("");
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("vf_last_username");
-      if (saved) {
-        setRecentUsername(saved);
-      }
-    } catch {}
-  }, []);
 
   const goToRoleHome = (role: UserRole) => {
     router.push(role === "STAFF" ? "/console" : "/chat");
@@ -115,11 +104,10 @@ export default function LoginPage() {
                 setActiveTab("CUSTOMER");
                 setErrorMessage("");
               }}
-              className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 transition ${
-                activeTab === "CUSTOMER"
-                  ? "bg-white text-[#1E40AF] shadow-[0_1px_2px_rgba(0,0,0,0.04)] font-bold"
-                  : "text-[#64748B] hover:text-[#0F172A]"
-              }`}
+              className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 transition ${activeTab === "CUSTOMER"
+                ? "bg-white text-[#1E40AF] shadow-[0_1px_2px_rgba(0,0,0,0.04)] font-bold"
+                : "text-[#64748B] hover:text-[#0F172A]"
+                }`}
             >
               <User className="h-3.5 w-3.5" />
               <span>Khách hàng</span>
@@ -132,11 +120,10 @@ export default function LoginPage() {
                 setIdentifier("staff@vinfast.vn");
                 setErrorMessage("");
               }}
-              className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 transition ${
-                activeTab === "STAFF"
-                  ? "bg-white text-[#6D5BD0] shadow-[0_1px_2px_rgba(0,0,0,0.04)] font-bold"
-                  : "text-[#64748B] hover:text-[#0F172A]"
-              }`}
+              className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 transition ${activeTab === "STAFF"
+                ? "bg-white text-[#6D5BD0] shadow-[0_1px_2px_rgba(0,0,0,0.04)] font-bold"
+                : "text-[#64748B] hover:text-[#0F172A]"
+                }`}
             >
               <ShieldCheck className="h-3.5 w-3.5" />
               <span>Kỹ thuật viên (Staff)</span>
@@ -183,22 +170,9 @@ export default function LoginPage() {
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-3">
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B]">
-                  {activeTab === "STAFF" ? "Tài khoản Staff nội bộ" : "Số điện thoại / Tên đăng nhập"}
-                </label>
-                {activeTab === "CUSTOMER" && recentUsername && (
-                  <button
-                    type="button"
-                    onClick={() => setIdentifier(recentUsername)}
-                    className="inline-flex items-center gap-1 text-[11px] font-medium text-[#1E40AF] hover:underline"
-                    title="Điền lại số điện thoại/tài khoản vừa đăng nhập gần nhất"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                    <span>Gần nhất: {recentUsername}</span>
-                  </button>
-                )}
-              </div>
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B] mb-1">
+                {activeTab === "STAFF" ? "Tài khoản Staff nội bộ" : "Số điện thoại / Tên đăng nhập"}
+              </label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#64748B]">
                   {activeTab === "STAFF" ? <Mail className="h-4 w-4" /> : <User className="h-4 w-4" />}
@@ -207,12 +181,12 @@ export default function LoginPage() {
                   type="text"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  className="w-full rounded-[10px] border border-[#E2E8F0] bg-white py-2 pl-9 pr-3 text-[13px] text-[#0F172A] placeholder-[#64748B] focus:border-[#1E40AF] focus:outline-none"
+                  className="w-full rounded-[10px] border border-[#E2E8F0] bg-white py-2 pl-9 pr-3 text-[13px] text-[#0F172A] placeholder-[#94A3B8] focus:border-[#1E40AF] focus:outline-none"
                   autoComplete="username"
                   placeholder={
                     activeTab === "STAFF"
-                      ? "staff@vinfast.vn"
-                      : (recentUsername || "0912345678")
+                      ? "staff_service"
+                      : "Nhập số điện thoại hoặc usernam"
                   }
                 />
               </div>

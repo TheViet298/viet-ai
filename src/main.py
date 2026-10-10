@@ -16,6 +16,10 @@ from src.db import Base, engine, ensure_schema
 from src.models import db_models  # noqa: F401 - Đảm bảo tất cả models được nạp vào metadata
 
 
+import asyncio
+from src.services.case_lifecycle import auto_close_background_loop
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
@@ -23,7 +27,17 @@ async def lifespan(app: FastAPI):
     os.makedirs("data/attachments", exist_ok=True)
     ensure_schema()
     print(f"Starting {settings.app_name} in {settings.app_env} mode")
+
+    # Khởi động background worker tự động đóng hồ sơ định kỳ
+    auto_close_task = asyncio.create_task(auto_close_background_loop(interval_seconds=600))
+
     yield
+
+    auto_close_task.cancel()
+    try:
+        await auto_close_task
+    except asyncio.CancelledError:
+        pass
     print("Shutting down...")
 
 

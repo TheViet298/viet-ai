@@ -122,3 +122,46 @@ export interface UserLocationState {
   label: string;
   coords?: { lat: number; lng: number };
 }
+
+export interface CustomerCaseDetailData {
+  case: CustomerCaseItem & {
+    safety_status?: string;
+    safety_guidance?: string;
+    incident_version?: number;
+  };
+  case_brief?: {
+    summary?: string;
+    captured_fields?: Record<string, any>;
+    suggested_action?: string;
+    confidence_score?: number;
+    is_edited_by_staff?: boolean;
+  } | null;
+  location?: {
+    case_id: string;
+    status: string;
+    source: string;
+    location_label?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    precision?: string | null;
+    share_with_staff?: boolean;
+    created_at?: string;
+  } | null;
+  updates?: Array<{
+    id: string;
+    case_id: string;
+    author_type: string;
+    status_after_update: string;
+    customer_message?: string;
+    next_step?: string;
+    awaiting_customer_confirmation?: boolean;
+    created_at: string;
+  }>;
+  attachments?: AttachmentOut[];
+  conversation_history?: Array<{
+    sender: "CUSTOMER" | "AGENT" | "STAFF" | "SYSTEM";
+    content: string;
+    created_at: string;
+  }>;
+}
+

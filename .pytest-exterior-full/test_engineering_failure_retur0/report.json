@@ -1,0 +1,8 @@
+{
+  "passed": false,
+  "production_acceptance": false,
+  "gate_kind": "engineering",
+  "failure_reasons": [
+    "wrong_model"
+  ]
+}

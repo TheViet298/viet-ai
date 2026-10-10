@@ -35,8 +35,9 @@ ALIASES = {
     "sensor_fault": ["loi cam bien ap suat lop", "mat tin hieu cam bien lop"],
     "sensor_battery_low": ["pin cam bien lop yeu", "pin cam bien lop thap"],
     "tpms_system_error": ["loi he thong tpms", "loi he thong theo doi ap suat lop"],
-    "brake_system_fault": ["canh bao he thong phanh", "loi he thong phanh", "den phanh do"],
-    "turtle_mode_power_limited": ["rua vang", "turtle mode"],
+    "brake_system_fault": ["canh bao he thong phanh", "loi he thong phanh", "den phanh do",
+                           "loi he thong tro luc phanh", "mat tro luc phanh"],
+    "turtle_mode_power_limited": ["rua vang", "turtle mode", "limp home", "hieu nang xe bi giam"],
     "high_voltage_battery_fault": ["loi pin cao ap", "loi he thong pin cao ap"],
     "eps_steering_fault": ["loi tro luc lai", "canh bao eps"],
     "airbag_warning": ["canh bao tui khi", "loi tui khi"],
@@ -46,6 +47,42 @@ ALIASES = {
     "seatbelt_warning": ["canh bao day an toan", "nhac nho day an toan"],
     "ready_mode_indicator": ["den ready", "chi bao ready"],
 }
+
+
+VISIBLE_WARNING_LABELS = {
+    "turtle": "Biểu tượng rùa — cảnh báo hạn chế công suất",
+    "abs": "Đèn ABS",
+    "brake": "Đèn cảnh báo hệ thống phanh",
+    "esc": "Biểu tượng xe trượt — cảnh báo cân bằng điện tử/chống trượt",
+    "general_warning": "Tam giác chấm than — cảnh báo chung",
+    "tpms": "Đèn cảnh báo áp suất lốp (TPMS)",
+    "battery": "Đèn cảnh báo pin/ắc quy",
+    "eps": "Đèn cảnh báo trợ lực lái",
+    "airbag": "Đèn cảnh báo túi khí",
+    "seatbelt": "Đèn nhắc thắt dây an toàn",
+    "parking_brake": "Đèn phanh đỗ",
+}
+
+
+def describe_dashboard_image(signals: list[dict]) -> str:
+    """Describe validated visual evidence without declaring mechanical failures."""
+    lines = []
+    colors = {"yellow": "vàng", "red": "đỏ", "green": "xanh lá", "unknown": "chưa rõ màu"}
+    for signal in signals:
+        if signal.get("confidence", 0) < .8 or signal.get("needs_clarification") or signal.get("analysis_error"):
+            continue
+        if signal.get("ocr_text"):
+            quoted = signal["ocr_text"].replace("\n", " — ")
+            lines.append(f'- **Chữ cảnh báo đọc được:** “{quoted}”.')
+        for icon in signal.get("visible_warnings", []):
+            label = VISIBLE_WARNING_LABELS.get(icon.get("kind"))
+            if label and icon.get("confidence", 0) >= .8:
+                line = f'- **{label}** ({colors.get(icon.get("color"), "chưa rõ màu")}).'
+                if line not in lines:
+                    lines.append(line)
+    if not lines:
+        return ""
+    return "Em nhận diện được các cảnh báo trong ảnh:\n\n" + "\n".join(lines)
 
 
 def merge_dashboard_clarification(previous: str, current: str) -> str:

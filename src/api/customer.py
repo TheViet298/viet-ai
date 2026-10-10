@@ -12,8 +12,15 @@ from sqlalchemy import func, update
 from sqlalchemy.orm import Session, joinedload
 
 from src.agents.chatbot_agent import process_chat_message
-from src.agents.guardrails import EMERGENCY_SAFE_GUIDANCE, STANDARD_SAFE_GUIDANCE, evaluate_hard_safety, sanitize_pii
+from src.agents.guardrails import (
+    EMERGENCY_SAFE_GUIDANCE,
+    STANDARD_SAFE_GUIDANCE,
+    VINFAST_HOTLINE,
+    evaluate_hard_safety,
+    sanitize_pii,
+)
 from src.agents.nodes.triage_node import classify_request_kind, extract_fields
+from src.config import get_settings
 from src.db import get_db
 from src.models.db_models import (
     Attachment,
@@ -74,12 +81,33 @@ from src.services.chat_cases import (
 )
 from src.services.chat_classification import classify_chat_context
 from src.services.chat_turns import run_chat_turn, safety_fields, session_emergency_context
+from src.services.dashboard_conversation import (
+    DASHBOARD_CHOICES,
+    DASHBOARD_SAFE_GUIDANCE,
+    EXPLANATION_CHOICE,
+    INCIDENT_CHOICE,
+    dashboard_question,
+    explain_dashboard,
+)
 from src.services.dashboard_vision_service import analyze_dashboard_image, prepare_image
-from src.services.dashboard_warning_service import ALIASES, lookup_dashboard_warning, merge_dashboard_clarification
+from src.services.dashboard_warning_service import (
+    ALIASES,
+    describe_dashboard_image,
+    lookup_dashboard_warning,
+    merge_dashboard_clarification,
+)
+from src.services.exterior_conversation import (
+    EXTERIOR_CHOICES,
+    REPAIR_CHOICE,
+    describe_exterior,
+    exterior_question,
+    repair_advice,
+)
 from src.services.image_routing import classify_vehicle_image
 from src.services.knowledge_questions import answer_sales_question, sales_parts
 from src.services.vehicle_context import resolve_vehicle_context
 from src.services.vehicle_knowledge import is_general_vehicle_question
+from src.services.vehicle_vision_service import recognize_vehicle_model
 from src.services.vision.cardd_runtime import analyze_exterior_image
 
 
@@ -106,6 +134,16 @@ def generate_attachment_id(db: Session) -> str:
     return f"{prefix}{count + 1:03d}"
 
 
+def elevate_priority_one_level(current_priority: str | None) -> str:
+    """Nâng ưu tiên lên 1 bậc khi khách mở lại ca (LOW -> MEDIUM -> HIGH -> CRITICAL)."""
+    p = (current_priority or "LOW").upper()
+    if p == Priority.LOW.value:
+        return Priority.MEDIUM.value
+    elif p == Priority.MEDIUM.value:
+        return Priority.HIGH.value
+    return Priority.CRITICAL.value
+
+
 # ==============================================================================
 # 1. ATTACHMENT UPLOAD API — Nguồn: api-contract.md 1.1 & ADR-004
 # ==============================================================================
@@ -123,6 +161,7 @@ async def upload_attachment(
     Lưu trữ file tại đường dẫn riêng tư (private storage), trích xuất tín hiệu sơ bộ qua OCR/Vision.
     Cảnh báo: Khách hàng không tải VIN, biển số xe, khuôn mặt hoặc giấy tờ cá nhân.
     """
+    settings = get_settings()
     att_id = f"ATT-{uuid.uuid4().hex}"
     storage_path = f"data/attachments/{att_id}.png"
     file_bytes = await file.read(5 * 1024 * 1024 + 1)
@@ -137,16 +176,30 @@ async def upload_attachment(
     routing = await classify_vehicle_image(clean_bytes, mime_type) if image_kind == "auto" else None
     resolved_kind = routing["image_kind"] if routing else image_kind
     if resolved_kind == "exterior":
-        evidence = await analyze_exterior_image(storage_path, att_id)
-        detected_signals = {"evidence_type": "CARDD", "image_kind": resolved_kind, "vision_evidence": evidence}
-        if evidence["damage"]["status"] == "unavailable":
-            detected_signals["analysis_error"] = evidence["damage"]["reason"]
+        if settings.cardd_enabled:
+            evidence = await analyze_exterior_image(storage_path, att_id)
+            detected_signals = {"evidence_type": "CARDD", "image_kind": resolved_kind, "vision_evidence": evidence}
+            if evidence["damage"]["status"] == "unavailable":
+                detected_signals["analysis_error"] = evidence["damage"]["reason"]
+        else:
+            vehicle_res = await recognize_vehicle_model(clean_bytes, mime_type)
+            top_conf = (vehicle_res.get("candidates") or [{}])[0].get("confidence", 0.0)
+            detected_signals = {
+                "evidence_type": "VEHICLE_MODEL",
+                "image_kind": resolved_kind,
+                "vehicle_model": vehicle_res.get("model_label"),
+                "vehicle_evidence": vehicle_res,
+                "confidence": top_conf,
+                "exterior_observation": vehicle_res.get("exterior_observation", {}),
+            }
+            if vehicle_res.get("status") == "unavailable":
+                detected_signals["analysis_error"] = vehicle_res.get("reason")
     elif resolved_kind in {"dashboard", "charger"}:
         detected_signals = await analyze_dashboard_image(clean_bytes, mime_type)
         detected_signals["image_kind"] = resolved_kind
     else:
         detected_signals = {"evidence_type": "IMAGE_ROUTING", "image_kind": "unknown",
-                            "needs_clarification": True, "analysis_error": "image_kind_uncertain"}
+                            "needs_clarification": True, "analysis_error": routing.get("reason", "image_kind_uncertain") if routing else "image_kind_uncertain"}
     if routing:
         detected_signals["image_routing"] = routing
     detected_signals["owner_user_id"] = current_user.id
@@ -324,6 +377,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     mock_cust_id = (current_user.mock_customer_id if current_user and current_user.mock_customer_id else
                     (ctx.mock_customer_id if ctx and ctx.mock_customer_id else f"GUEST_{(payload.guest_session_id or '')[:8]}"))
     previous_context = {}
+    dashboard_image_context = {}
+    exterior_image_context = {}
     prior_customer_messages = db.query(Message).filter(
         Message.session_id == payload.session_id,
         Message.sender_type == SenderType.CUSTOMER.value,
@@ -332,6 +387,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         metadata = prior.msg_metadata or {}
         if metadata.get("user_id") == user_id and metadata.get("guest_session_id") == payload.guest_session_id:
             previous_context = metadata.get("vehicle_context", {})
+            dashboard_image_context = metadata.get("dashboard_image_context", {})
+            exterior_image_context = metadata.get("exterior_image_context", {})
             break
     vehicle_context = resolve_vehicle_context(text, previous_context)
     if vehicle_context.get('scope_changed') or ('incident_case_id' in previous_context and vehicle_context['is_incident']):
@@ -375,6 +432,22 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     # Kiểm tra các tín hiệu OCR/Vision từ các ảnh đính kèm (nếu có)
     attached_signals: list[dict] = []
     attached_ocr_snippets: list[str] = []
+    new_image = bool(payload.attachment_ids)
+    dashboard_incident_selected = text == INCIDENT_CHOICE and bool(dashboard_image_context)
+    dashboard_explanation = text == EXPLANATION_CHOICE or dashboard_question(text)
+    exterior_incident_selected = text == INCIDENT_CHOICE and bool(exterior_image_context)
+    exterior_advice_selected = text == REPAIR_CHOICE or exterior_question(text)
+    # New sessions/images never inherit another image's context. Revalidate ownership
+    # even for attachment IDs previously recorded in this customer's conversation.
+    if vehicle_context.get("scope_changed"):
+        dashboard_image_context = {}
+        dashboard_incident_selected = False
+        exterior_image_context = {}
+        exterior_incident_selected = False
+    if not new_image and dashboard_image_context and (dashboard_incident_selected or dashboard_explanation):
+        payload = payload.model_copy(update={"attachment_ids": dashboard_image_context.get("attachment_ids", [])})
+    if not new_image and exterior_image_context and (exterior_incident_selected or exterior_advice_selected):
+        payload = payload.model_copy(update={"attachment_ids": exterior_image_context.get("attachment_ids", [])})
     if payload.attachment_ids:
         if not current_user:
             raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để sử dụng ảnh đính kèm.")
@@ -390,6 +463,27 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 attached_signals.append(att.detected_signals)
             if att.ocr_text:
                 attached_ocr_snippets.append(att.ocr_text)
+    if new_image:
+        dashboard_signals = [s for s in attached_signals if s.get("evidence_type") == "GEMINI_VISION"
+                             and s.get("confidence", 0) >= .8 and not s.get("needs_clarification")
+                             and (s.get("symptom_keys") or s.get("visible_warnings"))]
+        dashboard_image_context = {"attachment_ids": payload.attachment_ids, "mode": "pending"} if dashboard_signals else {}
+        dashboard_incident_selected = False
+        exterior_signals = [s for s in attached_signals if s.get("exterior_observation", {}).get("damages")]
+        exterior_image_context = {"attachment_ids": payload.attachment_ids, "mode": "pending",
+                                  "case_id": active_case_id} if exterior_signals else {}
+        exterior_incident_selected = False
+    elif exterior_image_context and (exterior_incident_selected or exterior_advice_selected):
+        bound_case_id = exterior_image_context.get("case_id")
+        if bound_case_id:
+            active_case = resolve_authorized_active_case(db, current_user, payload.session_id, bound_case_id,
+                                                        payload.guest_session_id)
+            active_case_id = active_case.id if active_case else None
+
+    model_signals = [s for s in attached_signals if s.get("evidence_type") == "VEHICLE_MODEL" and s.get("vehicle_model")]
+    if not vehicle_model and model_signals:
+        vehicle_model = model_signals[0]["vehicle_model"]
+        vehicle_label = vehicle_model
 
     # 1. Lưu tin nhắn của Khách hàng vào bảng messages
     cust_msg = Message(
@@ -404,6 +498,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             "client_context": ctx.model_dump() if ctx else {},
             "attachment_ids": payload.attachment_ids or [],
             "attached_signals": attached_signals,
+            "dashboard_image_context": dashboard_image_context,
+            "exterior_image_context": exterior_image_context,
             "guest_session_id": payload.guest_session_id,
         },
     )
@@ -424,12 +520,15 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         Message.sender_type == SenderType.AGENT.value,
     ).order_by(Message.created_at.desc(), Message.id.desc()).all()
     reply_created_at = datetime.now(UTC)
+    if cust_msg.created_at:
+        cust_at = cust_msg.created_at if cust_msg.created_at.tzinfo else cust_msg.created_at.replace(tzinfo=UTC)
+        reply_created_at = max(reply_created_at, cust_at + timedelta(microseconds=1000))
     if history:
         previous_reply_at = history[0].created_at
         if previous_reply_at.tzinfo is None:
             previous_reply_at = previous_reply_at.replace(tzinfo=UTC)
         # UUIDs do not preserve turn order when the system clock returns a tie.
-        reply_created_at = max(reply_created_at, previous_reply_at + timedelta(microseconds=1))
+        reply_created_at = max(reply_created_at, previous_reply_at + timedelta(microseconds=1000))
     for message in history:
         if vehicle_context.get('scope_changed'):
             break
@@ -438,6 +537,117 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         metadata = message.msg_metadata or {}
         if metadata.get("response_type") == "CLARIFICATION" and metadata.get("user_id") == user_id:
             prior_turns += 1
+
+    # Image recognition alone is not a customer report of a live incident.
+    # Explicit live danger still takes the hard safety path below.
+    live_danger, _, _ = evaluate_hard_safety(text)
+    exterior_signals = [s for s in attached_signals if s.get("exterior_observation", {}).get("damages")]
+    if exterior_image_context and exterior_signals and not live_danger and (
+        new_image or exterior_incident_selected or exterior_advice_selected
+    ):
+        case = active_case
+        citations = []
+        guidance = DASHBOARD_SAFE_GUIDANCE
+        if exterior_incident_selected:
+            severe = any(s["exterior_observation"].get("severity") == "severe" for s in exterior_signals)
+            priority = "CRITICAL" if severe else "HIGH"
+            if not case:
+                case = Case(id=generate_case_id(db), user_id=user_id, session_id=payload.session_id,
+                            mock_customer_id=mock_cust_id, vehicle_model=vehicle_model,
+                            intent=Intent.SERVICE_INCIDENT.value, priority=priority,
+                            status=TicketStatus.STAFF_REVIEWING.value)
+                db.add(case)
+                db.flush()
+            else:
+                new_event = not exterior_image_context.get("incident_reported", False)
+                ranks = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
+                new_priority = priority if ranks[priority] > ranks.get(case.priority, 0) else case.priority
+                values = {"priority": new_priority, "updated_at": datetime.now(UTC)}
+                if new_event:
+                    values.update(incident_version=Case.incident_version + 1,
+                                  safety_status="unconfirmed", safety_acknowledged_at=None)
+                db.execute(update(Case).where(Case.id == case.id).values(**values),
+                           execution_options={"synchronize_session": False})
+                db.refresh(case)
+            cust_msg.case_id = case.id
+            db.query(Attachment).filter(Attachment.id.in_(payload.attachment_ids)).update(
+                {"case_id": case.id, "message_id": cust_msg.id}, synchronize_session=False)
+            db.add(upsert_case_brief(db, id=str(uuid.uuid4()), case_id=case.id,
+                   summary=describe_exterior(exterior_signals), captured_fields={
+                       "vehicle_model": vehicle_model, "visual_signals": exterior_signals,
+                       "customer_reported_incident": True,
+                       "exterior_attachment_ids": payload.attachment_ids,
+                   }, suggested_action="Liên hệ khách hàng, kiểm tra an toàn và điều phối hỗ trợ cứu hộ.",
+                   confidence_score=.8, is_edited_by_staff=False))
+            phone = re.sub(r"\D", "", VINFAST_HOTLINE)
+            reply = f"**Hotline cứu hộ VinFast:** [{VINFAST_HOTLINE}](tel:{phone})"
+            choices = [REPAIR_CHOICE]
+            mode = "incident"
+        elif not new_image:
+            reply, raw_citations = await repair_advice(exterior_signals, text, payload.session_id)
+            citations = [Citation(**item) for item in raw_citations]
+            choices = [INCIDENT_CHOICE]
+            mode = "advice"
+        else:
+            reply = describe_exterior(exterior_signals) + "\n\nVui lòng chọn cách em hỗ trợ bên dưới ạ."
+            choices = EXTERIOR_CHOICES
+            mode = "pending"
+        cust_msg.msg_metadata = {**cust_msg.msg_metadata, "exterior_image_context": {
+            **exterior_image_context, "mode": mode, "case_id": case.id if case else None,
+            "incident_reported": exterior_incident_selected or exterior_image_context.get("incident_reported", False),
+        }}
+        response_type = "CASE_CREATED" if exterior_incident_selected else "FAQ_ANSWER"
+        db.add(Message(id=str(uuid.uuid4()), case_id=case.id if case else None, session_id=payload.session_id,
+                       sender_type=SenderType.AGENT.value, content=reply, created_at=reply_created_at,
+                       msg_metadata={"response_type": response_type, "user_id": user_id,
+                                     "suggested_replies": choices, "safe_guidance": guidance,
+                                     "citations": [c.model_dump() for c in citations]}))
+        db.flush()
+        return ApiResponse(success=True, data=ChatResponseData(
+            response_type=response_type, message=reply, safe_guidance=guidance, citations=citations,
+            suggested_replies=choices, case_id=case.id if case else None,
+            priority=case.priority if case else None, status=case.status if case else None,
+            show_emergency_banner=bool(exterior_incident_selected and case and case.priority == "CRITICAL"),
+            request_location=exterior_incident_selected,
+        ), error=None)
+    dashboard_signals = [s for s in attached_signals if s.get("evidence_type") == "GEMINI_VISION"]
+    if dashboard_image_context and not dashboard_incident_selected and not live_danger and (
+        new_image or dashboard_explanation
+    ):
+        explanation_selected = not new_image
+        dashboard_image_context = {**dashboard_image_context, "mode": "explanation" if explanation_selected else "pending"}
+        cust_msg.msg_metadata = {**cust_msg.msg_metadata, "dashboard_image_context": dashboard_image_context}
+        reply = (explain_dashboard(dashboard_signals, text) if explanation_selected else
+                 describe_dashboard_image(dashboard_signals)
+                 + "\n\nĐây là các cảnh báo quan sát được, chưa xác định nguyên nhân hư hỏng."
+                 + "\n\nVui lòng chọn cách em hỗ trợ bên dưới ạ.")
+        positions = {"rear_right": "sau bên phải", "rear_left": "sau bên trái",
+                     "front_right": "trước bên phải", "front_left": "trước bên trái"}
+        wheels = {positions[s["wheel_position"]] for s in dashboard_signals
+                  if s.get("confidence", 0) >= .8 and s.get("wheel_position") in positions}
+        if wheels:
+            reply += "\nVị trí bánh được đánh dấu: " + ", ".join(sorted(wheels)) + "."
+        symptom_text = "\n".join(ALIASES[key][0] for s in dashboard_signals
+                                 for key in s.get("symptom_keys", []) if key in ALIASES)
+        _, model, records, _ = lookup_dashboard_warning(symptom_text, vehicle_model)
+        citations = [Citation(source_id=record["id"], title=record["warning_name_vi"],
+                              url=record["source_url"], source_type="DATASET_REFERENCE",
+                              applicable_models=[model]) for record in records]
+        choices = [INCIDENT_CHOICE] if explanation_selected else DASHBOARD_CHOICES
+        db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
+                       sender_type=SenderType.AGENT.value, content=reply, created_at=reply_created_at,
+                       msg_metadata={"user_id": user_id, "response_type": "FAQ_ANSWER",
+                                     "suggested_replies": choices, "safe_guidance": DASHBOARD_SAFE_GUIDANCE,
+                                     "citations": [c.model_dump() for c in citations]}))
+        db.flush()
+        return ApiResponse(success=True, data=ChatResponseData(
+            response_type="FAQ_ANSWER", message=reply, suggested_replies=choices,
+            safe_guidance=DASHBOARD_SAFE_GUIDANCE, citations=citations, case_id=active_case_id,
+        ), error=None)
+    if dashboard_incident_selected:
+        cust_msg.msg_metadata = {**cust_msg.msg_metadata, "dashboard_image_context": {
+            **dashboard_image_context, "mode": "incident",
+        }}
 
     # 2. KIỂM TRA HARD SAFETY RULES (Bắt buộc theo triage-and-hitl-rules.md)
     is_guardrail_crit, crit_rule, _ = evaluate_hard_safety(resolved_text)
@@ -561,6 +771,34 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         db.flush()
         return ApiResponse(success=True, data=ChatResponseData(response_type="CLARIFICATION", message=reply,
             case_id=active_case_id, show_emergency_banner=bool(active_case and active_case.priority == "CRITICAL")), error=None)
+
+    if model_signals and not any(s.get("evidence_type") == "CARDD" for s in attached_signals):
+        detected_model = model_signals[0].get("vehicle_model")
+        if detected_model:
+            reply = f'Em xin xác nhận hình ảnh anh/chị gửi là mẫu xe "VinFast {detected_model}", Anh/Chị cần em hỗ trợ thông tin gì về dòng xe này ạ'
+            db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
+                           sender_type=SenderType.AGENT.value, created_at=reply_created_at,
+                           content=reply, msg_metadata={"response_type": "VEHICLE_MODEL_IDENTIFIED", "vehicle_model": detected_model}))
+            db.flush()
+            return ApiResponse(success=True, data=ChatResponseData(
+                response_type="FAQ_ANSWER",
+                message=reply,
+                case_id=active_case_id,
+                remaining_guest_messages=remaining_guest_msgs,
+            ), error=None)
+        elif model_signals[0].get("vehicle_evidence", {}).get("status") in {"unknown", "unavailable"}:
+            reply = "Hệ thống chưa nhận diện rõ mẫu xe VinFast từ ảnh ngoại thất này. Quý khách vui lòng cung cấp thêm thông tin về dòng xe (ví dụ: VF 3, VF 7,...) hoặc chụp góc rõ hơn ạ."
+            db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
+                           sender_type=SenderType.AGENT.value, created_at=reply_created_at,
+                           content=reply, msg_metadata={"response_type": "CLARIFICATION", "image_kind": "exterior"}))
+            db.flush()
+            return ApiResponse(success=True, data=ChatResponseData(
+                response_type="CLARIFICATION",
+                message=reply,
+                case_id=active_case_id,
+                remaining_guest_messages=remaining_guest_msgs,
+            ), error=None)
+
     exterior_signals = [s for s in attached_signals if s.get("evidence_type") == "CARDD"]
     prior_cardd = (history[0].msg_metadata or {}) if history else {}
     continue_cardd = prior_cardd.get("cardd_flow") and prior_cardd.get("user_id") == user_id and not attached_signals and not vehicle_context.get('scope_changed')
@@ -693,12 +931,22 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             )
 
         if image_evidence:
+            image_description = describe_dashboard_image(image_evidence)
+            if image_description:
+                follow_up = reply if warning else (
+                    "Anh/chị vui lòng cho biết mẫu xe để em đối chiếu hướng dẫn phù hợp ạ."
+                )
+                reply = (
+                    image_description + "\n\nĐây là các cảnh báo quan sát được, chưa xác định nguyên nhân hư hỏng.\n\n"
+                    + follow_up
+                )
+            guidance = "Nếu xe có dấu hiệu nguy hiểm, hãy dừng tại nơi an toàn và liên hệ cứu hộ."
             visible_text = " | ".join(s.get("ocr_text", "") for s in image_evidence if s.get("ocr_text"))
             positions = {"rear_right": "sau bên phải", "rear_left": "sau bên trái",
                          "front_right": "trước bên phải", "front_left": "trước bên trái"}
             wheels = {positions[s["wheel_position"]] for s in image_evidence
                       if s.get("confidence", 0) >= 0.8 and s.get("wheel_position") in positions}
-            if visible_text:
+            if visible_text and not image_description:
                 reply += f"\nChữ đọc sơ bộ từ ảnh: {visible_text}"
             if wheels:
                 reply += "\nVị trí bánh được đánh dấu: " + ", ".join(sorted(wheels)) + "."
@@ -706,7 +954,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 reply += "\nẢnh chưa đọc được chắc chắn; vui lòng gửi ảnh rõ hơn hoặc mô tả cảnh báo."
 
         create_case = (
-            bool(warning and (warning.get("requires_staff_review")
+            dashboard_incident_selected or bool(warning and (warning.get("requires_staff_review")
                               or priority in {"HIGH", "CRITICAL"}))
             or (not warning and (prior_turns >= 2 or priority in {"HIGH", "CRITICAL"}))
         )
@@ -751,6 +999,12 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 brief.suggested_action = guidance
             reply += f"\nHồ sơ {case.id} đã được chuyển cho nhân viên hỗ trợ."
 
+        if dashboard_incident_selected:
+            phone = re.sub(r"\D", "", VINFAST_HOTLINE)
+            reply = f"**Hotline cứu hộ VinFast:** [{VINFAST_HOTLINE}](tel:{phone})"
+            guidance = DASHBOARD_SAFE_GUIDANCE
+            citations = []
+
         response_type = "CASE_CREATED" if case else "FAQ_ANSWER" if warning else "CLARIFICATION"
         db.add(Message(
             id=str(uuid.uuid4()), case_id=case.id if case else None,
@@ -758,6 +1012,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             created_at=reply_created_at,
             content=reply, msg_metadata={
                 "response_type": response_type, "user_id": user_id,
+                "safe_guidance": guidance,
                 "dashboard_warning_ids": [item["id"] for item in dashboard_records],
                 "citations": [citation.model_dump() for citation in citations],
                 "dashboard_text": dashboard_text,
@@ -771,6 +1026,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             case_id=case.id if case else None, status=case.status if case else None,
             priority=case.priority if case else priority if warning else None,
             safe_guidance=guidance, citations=citations,
+            request_location=bool(case and dashboard_incident_selected),
             clarification_turn=prior_turns + 1 if response_type == "CLARIFICATION" else None,
             max_clarification_turns=2 if response_type == "CLARIFICATION" else None,
         ), error=None)
@@ -1085,7 +1341,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             error=None,
         )
 
-    if not is_technical_incident and any(k in lower_text for k in ["gần tôi", "gần nhất", "tìm trạm", "tìm showroom", "xung quanh đây", "trạm sạc quanh", "xưởng gần"]):
+    if not is_technical_incident and any(k in lower_text for k in ["gần tôi", "gần nhất", "tìm trạm", "tìm showroom", "xung quanh đây", "trạm sạc quanh", "xưởng gần", "xưởng dịch vụ", "danh sách xưởng", "tìm xưởng"]):
         target = "showroom" if "showroom" in lower_text else "xưởng dịch vụ" if "xưởng" in lower_text else "trạm sạc"
         reply = f"Anh/chị vui lòng chia sẻ vị trí để tìm {target} gần mình. Nếu không dùng GPS, anh/chị có thể nhập khu vực hoặc địa chỉ."
         db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
@@ -1404,7 +1660,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
 
             safe_guidance = "Anh/chị vui lòng giữ xe ở vị trí đỗ an toàn và theo dõi cập nhật trên giao diện này."
             error_line = f"Mã lỗi: {resolved_error}\n\n" if resolved_error else (
-                f"Mã lỗi: Đã ghi nhận không còn báo lỗi (xe vẫn không vào điện)\n\n" if denied_codes else "Mã lỗi: chưa cung cấp\n\n"
+                "Mã lỗi: Đã ghi nhận không còn báo lỗi (xe vẫn không vào điện)\n\n" if denied_codes else "Mã lỗi: chưa cung cấp\n\n"
             )
             agent_reply = (
                 f"Dạ VinFast đã ghi nhận sự cố sạc của xe {car_label}:\n"
@@ -1441,10 +1697,12 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             db.add(case_brief)
 
             safe_guidance = "Anh/chị vui lòng giữ xe ở vị trí đỗ an toàn, bật đèn cảnh báo nguy hiểm và theo dõi cập nhật trên giao diện này."
+            soc_display = f"{current_soc}%" if current_soc and not str(current_soc).endswith("%") else (current_soc or "chưa rõ")
             agent_reply = (
-                f"Dạ VinFast đã ghi nhận sự cố vận hành của xe {car_label}:\n"
-                f"Tình trạng: Cảnh báo rùa vàng, xe chạy yếu (Mức pin: {current_soc or '18%'})\n"
-                f"Trạng thái: Khách hàng đã dừng đỗ ở vị trí an toàn\n\n"
+                f"Dạ VinFast đã ghi nhận sự cố vận hành của xe {car_label}:\n\n"
+                f"- **Tình trạng:** Cảnh báo rùa vàng, xe chạy yếu\n"
+                f"- **Mức pin:** {soc_display}\n"
+                f"- **Trạng thái:** Anh/chị đã dừng đỗ ở vị trí an toàn\n\n"
                 f"Hệ thống đã tự động tạo hồ sơ hỗ trợ (Mã: {case.id}) và chuyển dữ liệu trực tiếp tới Đội ngũ Kỹ thuật Dịch vụ VinFast. "
                 f"Anh/chị vui lòng theo dõi cập nhật tiến độ giải quyết trực tiếp trên màn hình này ạ."
             )
@@ -1837,7 +2095,7 @@ def confirm_customer_case_resolution(
             action=StaffAction.CLOSE.value,
             previous_state={"status": prev_status},
             new_state={"status": TicketStatus.CLOSED.value},
-            notes=f"Khách hàng xác nhận đã được hỗ trợ thỏa đáng. {payload.feedback_note or ''}".strip(),
+            notes=f"[ACTOR: CUSTOMER] Khách hàng ({current_user.full_name or current_user.username}) xác nhận đã được hỗ trợ thỏa đáng. {payload.feedback_note or ''}".strip(),
             created_at=utcnow(),
         )
         db.add(audit)
@@ -1845,7 +2103,7 @@ def confirm_customer_case_resolution(
         update = CaseUpdate(
             id=str(uuid.uuid4()),
             case_id=case.id,
-            author_type=AuthorType.SYSTEM.value,
+            author_type=AuthorType.CUSTOMER.value,
             status_after_update=TicketStatus.CLOSED.value,
             customer_message="Cảm ơn quý khách đã xác nhận. Hồ sơ sự cố đã được đóng thành công.",
             next_step="Cảm ơn quý khách đã tin tưởng và đồng hành cùng VinFast.",
@@ -1868,7 +2126,13 @@ def confirm_customer_case_resolution(
     else:
         prev_status = case.status
         case.status = TicketStatus.REOPENED.value
+        case.priority = elevate_priority_one_level(case.priority)
         case.updated_at = utcnow()
+
+        if case.brief:
+            fields = dict(case.brief.captured_fields or {})
+            fields["reopen_reason"] = payload.feedback_note or "Khách hàng báo chưa được khắc phục triệt để"
+            case.brief.captured_fields = fields
 
         audit = StaffAuditLog(
             id=str(uuid.uuid4()),
@@ -1877,7 +2141,7 @@ def confirm_customer_case_resolution(
             action=StaffAction.REOPEN.value,
             previous_state={"status": prev_status},
             new_state={"status": TicketStatus.REOPENED.value},
-            notes=f"Khách hàng báo vẫn chưa được giải quyết xong: {payload.feedback_note or ''}".strip(),
+            notes=f"[ACTOR: CUSTOMER] Khách hàng báo vẫn chưa được giải quyết xong: {payload.feedback_note or ''}".strip(),
             created_at=utcnow(),
         )
         db.add(audit)
@@ -1885,7 +2149,7 @@ def confirm_customer_case_resolution(
         update = CaseUpdate(
             id=str(uuid.uuid4()),
             case_id=case.id,
-            author_type=AuthorType.SYSTEM.value,
+            author_type=AuthorType.CUSTOMER.value,
             status_after_update=TicketStatus.REOPENED.value,
             customer_message="Hệ thống ghi nhận sự cố chưa được khắc phục hoàn toàn và đã chuyển lại hồ sơ sang hàng đợi chuyên viên kỹ thuật.",
             next_step="Chuyên viên dịch vụ sẽ liên hệ lại quý khách trong thời gian sớm nhất.",
@@ -1985,7 +2249,13 @@ def handle_customer_action(
     elif payload.action == "REOPEN":
         prev_status = case.status
         case.status = TicketStatus.REOPENED.value
+        case.priority = elevate_priority_one_level(case.priority)
         case.updated_at = utcnow()
+
+        if case.brief:
+            fields = dict(case.brief.captured_fields or {})
+            fields["reopen_reason"] = payload.reason or payload.feedback_note or "Khách hàng yêu cầu kiểm tra lại"
+            case.brief.captured_fields = fields
 
         audit = StaffAuditLog(
             id=str(uuid.uuid4()),
@@ -2344,41 +2614,101 @@ def reopen_customer_case(
     )
 
 
-@router.post("/cases/{case_id}/feedback", response_model=ApiResponse[CustomerFeedbackResponseData])
-def submit_customer_feedback(
-    case_id: str,
+def _handle_submit_feedback(
+    target_case_id: str,
     payload: CustomerFeedbackPayload,
-    current_user: User = Depends(require_customer),
-    db: Session = Depends(get_db),
-):
-    """
-    Khách hàng gửi đánh giá và nhận xét sau khi xử lý hồ sơ theo api-contract.md Mục 2.3.
-    """
-    case = db.get(Case, case_id)
+    current_user: User | None,
+    x_session_id: str | None,
+    db: Session,
+) -> ApiResponse[CustomerFeedbackResponseData]:
+    if not target_case_id:
+        raise HTTPException(status_code=400, detail="Mã hồ sơ (case_id) không được để trống.")
+
+    case = db.get(Case, target_case_id)
     if not case:
-        raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {target_case_id}")
 
-    check_case_ownership(case, current_user)
+    # Kiểm tra quyền sở hữu chặt chẽ: chỉ chủ sở hữu tài khoản hoặc guest session tạo ca mới có quyền đánh giá
+    check_case_ownership(case, current_user, session_id=x_session_id)
 
-    feedback = CustomerFeedback(
-        id=str(uuid.uuid4()),
-        case_id=case.id,
-        rating=payload.rating,
-        comment=payload.comment,
-        created_at=utcnow(),
-    )
-    db.add(feedback)
-    db.commit()
+    if case.status not in (TicketStatus.RESOLVED.value, TicketStatus.CLOSED.value):
+        raise HTTPException(
+            status_code=409,
+            detail=f"Hồ sơ ở trạng thái '{case.status}' chưa thể đánh giá dịch vụ. Chỉ có thể đánh giá khi ca đã được giải quyết (Resolved) hoặc đóng (Closed).",
+        )
+
+    # Ràng buộc Unique / Upsert: Nếu khách đã gửi feedback trước đó thì cập nhật
+    existing = db.query(CustomerFeedback).filter(CustomerFeedback.case_id == case.id).first()
+    if existing:
+        # Giới hạn thời gian cho phép chỉnh sửa: tối đa 7 ngày kể từ lần gửi đầu
+        if existing.created_at and (utcnow() - existing.created_at) > timedelta(days=7):
+            raise HTTPException(
+                status_code=400,
+                detail="Đã quá thời hạn 7 ngày cho phép chỉnh sửa đánh giá dịch vụ.",
+            )
+        existing.rating = payload.rating
+        existing.comment = payload.comment
+        existing.reason_tags = payload.reason_tags
+        existing.updated_at = utcnow()
+        db.commit()
+        feedback_id = existing.id
+    else:
+        now_ts = utcnow()
+        feedback = CustomerFeedback(
+            id=str(uuid.uuid4()),
+            case_id=case.id,
+            rating=payload.rating,
+            comment=payload.comment,
+            reason_tags=payload.reason_tags,
+            created_at=now_ts,
+            updated_at=now_ts,
+        )
+        db.add(feedback)
+        db.commit()
+        feedback_id = feedback.id
 
     return ApiResponse(
         success=True,
         data=CustomerFeedbackResponseData(
             success=True,
-            feedback_id=feedback.id,
+            feedback_id=feedback_id,
             case_id=case.id,
+            rating=payload.rating,
+            reason_tags=payload.reason_tags,
         ),
         error=None,
     )
+
+
+@router.post("/cases/{case_id}/feedback", response_model=ApiResponse[CustomerFeedbackResponseData])
+def submit_customer_feedback(
+    case_id: str,
+    payload: CustomerFeedbackPayload,
+    current_user: User | None = Depends(get_optional_user),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    db: Session = Depends(get_db),
+):
+    """
+    Khách hàng gửi đánh giá và nhận xét sau khi xử lý hồ sơ theo api-contract.md Mục 2.3.
+    Hỗ trợ cả người dùng đã đăng nhập hoặc khách vãng lai (qua header X-Session-Id).
+    """
+    return _handle_submit_feedback(case_id, payload, current_user, x_session_id, db)
+
+
+@router.post("/feedback", response_model=ApiResponse[CustomerFeedbackResponseData])
+def submit_customer_feedback_alias(
+    payload: CustomerFeedbackPayload,
+    current_user: User | None = Depends(get_optional_user),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    db: Session = Depends(get_db),
+):
+    """
+    Endpoint alias: Nhận đánh giá dịch vụ với case_id truyền trong body.
+    Bắt buộc kiểm tra quyền sở hữu như endpoint chính.
+    """
+    if not payload.case_id:
+        raise HTTPException(status_code=400, detail="Trường 'case_id' trong nội dung gửi là bắt buộc.")
+    return _handle_submit_feedback(payload.case_id, payload, current_user, x_session_id, db)
 
 
 @router.post("/cases/{case_id}/safety-acknowledgement", response_model=ApiResponse[SafetyAcknowledgementData])
@@ -2390,7 +2720,7 @@ def acknowledge_safety(case_id: str, payload: SafetyAcknowledgementPayload,
     check_case_ownership(case, current_user)
     if case.incident_version != payload.incident_version:
         raise HTTPException(409, "Tình trạng sự cố đã thay đổi. Vui lòng tải lại.")
-    if case.priority != "CRITICAL" or case.status in {"Closed", "Resolved"}:
+    if case.priority not in {"CRITICAL", "HIGH"} or case.status in {"Closed", "Resolved"}:
         raise HTTPException(409, "Hồ sơ không có cảnh báo khẩn cấp đang mở.")
     changed = db.execute(update(Case).where(Case.id == case_id,
         Case.incident_version == payload.incident_version, Case.safety_status == "unconfirmed")

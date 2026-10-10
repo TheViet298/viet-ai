@@ -1,0 +1,69 @@
+{
+  "timestamp": "2026-10-07T20:33:01.292528",
+  "total_kb_tokens": 431368,
+  "embed_cost_usd": 0.008627359999999999,
+  "doc_stats": [
+    {
+      "id": "SRC-001",
+      "filename": "SRC-001.txt",
+      "char_count": 17570,
+      "token_count": 8696,
+      "chunks_estimate": 12
+    },
+    {
+      "id": "SRC-002",
+      "filename": "SRC-002.txt",
+      "char_count": 19070,
+      "token_count": 9309,
+      "chunks_estimate": 13
+    },
+    {
+      "id": "SRC-003",
+      "filename": "SRC-003.txt",
+      "char_count": 1633,
+      "token_count": 841,
+      "chunks_estimate": 1
+    },
+    {
+      "id": "SRC-004",
+      "filename": "SRC-004.txt",
+      "char_count": 1649,
+      "token_count": 959,
+      "chunks_estimate": 1
+    },
+    {
+      "id": "SRC-005",
+      "filename": "SRC-005.txt",
+      "char_count": 4036,
+      "token_count": 2121,
+      "chunks_estimate": 3
+    },
+    {
+      "id": "SRC-006",
+      "filename": "SRC-006.txt",
+      "char_count": 22703,
+      "token_count": 11625,
+      "chunks_estimate": 16
+    },
+    {
+      "id": "SRC-007",
+      "filename": "SRC-007.txt",
+      "char_count": 523030,
+      "token_count": 259862,
+      "chunks_estimate": 371
+    },
+    {
+      "id": "SRC-008",
+      "filename": "SRC-008.txt",
+      "char_count": 273982,
+      "token_count": 137955,
+      "chunks_estimate": 197
+    }
+  ],
+  "total_eval_cost_usd": 0.02258636,
+  "sample_doc_vf8": {
+    "doc_id": "SRC-007",
+    "tokens": 259862,
+    "total_cost_usd": 0.00822274
+  }
+}

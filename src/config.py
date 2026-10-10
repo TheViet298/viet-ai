@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     app_host: str = "0.0.0.0"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     cors_origins: str = "http://localhost:3000"
+    enable_demo_auth_fallback: bool = True
 
     # LLM Configuration (OpenAI / LiteLLM Gateway / Gemini)
     openai_api_key: str = ""
@@ -26,10 +27,15 @@ class Settings(BaseSettings):
     google_api_key: str = ""
     model: str = ""
     model_name: str = "openai/gpt-5.6"
+    # Vision Configuration (GPT-6-Luna & Google)
+    vision_provider: Literal["openai", "google"] = "openai"
+    vision_model: str = "gpt-6-luna"
+    cardd_enabled: bool = False
     dashboard_vision_enabled: bool = True
     dashboard_vision_model: str = "gemini-3.5-flash"
     dashboard_vision_timeout_s: float = Field(default=25, gt=0, le=60)
     image_routing_timeout_s: float = Field(default=12, gt=0, le=30)
+    exterior_vision_timeout_s: float = Field(default=25, gt=0, le=60)
     image_routing_min_confidence: float = Field(default=.8, ge=0, le=1)
     cardd_python_executable: str = ""
     cardd_inference_timeout_s: float = Field(default=45, gt=0, le=60)

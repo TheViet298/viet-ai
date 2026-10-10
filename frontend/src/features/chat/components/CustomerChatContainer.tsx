@@ -23,6 +23,7 @@ import { ChatInputBar } from "./ChatInputBar";
 import { LocationConsentCard } from "./LocationConsentCard";
 import { ServiceMapPanel } from "./ServiceMapPanel";
 import { getAiSystemStatus, uploadAttachment } from "../api/chatApi";
+import { getUploadError } from "../uploadState";
 import { useAuth, ProductMark } from "@/features/shared";
 
 export function CustomerChatContainer() {
@@ -55,6 +56,7 @@ export function CustomerChatContainer() {
   const [resolvedImageKind, setResolvedImageKind] = useState<"dashboard" | "charger" | "exterior" | null>(null);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const uploadRequestId = useRef(0);
+  const hasSentInitialPrompt = useRef(false);
   const [aiStatus, setAiStatus] = useState<string>("Trợ lý VF Serv • Hỗ trợ dịch vụ xe điện VinFast");
 
   // ===========================================================================
@@ -116,26 +118,35 @@ export function CustomerChatContainer() {
       .catch(() => { });
   }, []);
 
-  // Pre-load draft from Landing Hero if available
+  // Pre-load draft or auto-send prompt from Landing Hero if available
   useEffect(() => {
+    if (hasSentInitialPrompt.current) return;
+
     try {
       const savedPrompt = sessionStorage.getItem("vf_initial_prompt");
       sessionStorage.removeItem("vf_initial_model");
       const savedImg = sessionStorage.getItem("vf_initial_image");
       const savedImgName = sessionStorage.getItem("vf_initial_image_name");
 
-      if (savedPrompt) {
-        setInput(savedPrompt);
-        sessionStorage.removeItem("vf_initial_prompt");
-      }
       if (savedImg) {
         setImagePreview(savedImg);
         setImageName(savedImgName || "anh_canh_bao.jpg");
         sessionStorage.removeItem("vf_initial_image");
         sessionStorage.removeItem("vf_initial_image_name");
       }
+
+      if (savedPrompt) {
+        sessionStorage.removeItem("vf_initial_prompt");
+        if (!savedImg) {
+          // Gửi trực tiếp tin nhắn bằng sendMessage thay vì setInput rồi bắt bấm gửi lần 2
+          hasSentInitialPrompt.current = true;
+          sendMessage(savedPrompt.trim());
+        } else {
+          setInput(savedPrompt);
+        }
+      }
     } catch { }
-  }, [setInput]);
+  }, [sendMessage, setInput]);
 
   // ===========================================================================
   // LOCATION HANDLERS (Tuân thủ ADR-005: timeout 8s, không lấy GPS nền, 3 lựa chọn)
@@ -221,6 +232,10 @@ export function CustomerChatContainer() {
   };
 
   const selectImage = async (file: File) => {
+    if (role !== "CUSTOMER") {
+      setImageUploadError("Vui lòng đăng nhập tài khoản khách hàng để tải ảnh.");
+      return;
+    }
     setResolvedImageKind(null);
     const requestId = ++uploadRequestId.current;
     setUploadedAttachmentId(null);
@@ -239,8 +254,9 @@ export function CustomerChatContainer() {
       if (requestId !== uploadRequestId.current) return;
       if (res?.success && res.data?.attachment_id) {
         const kind = res.data.detected_signals?.image_kind;
-        if (kind === "unknown") {
-          setImageUploadError("Chưa xác định chắc loại ảnh. Vui lòng chọn ảnh rõ hơn hoặc xóa ảnh và mô tả bằng chữ.");
+        const error = getUploadError(res.data);
+        if (error) {
+          setImageUploadError(error);
         } else {
           setResolvedImageKind(kind === "exterior" ? "exterior" : kind === "charger" ? "charger" : "dashboard");
           setUploadedAttachmentId(res.data.attachment_id);
@@ -362,7 +378,7 @@ export function CustomerChatContainer() {
                 </Link>
               ) : (
                 <Link
-                  href="/track-case"
+                  href={currentCaseId ? `/track-case?case_id=${encodeURIComponent(currentCaseId)}` : "/track-case"}
                   className="text-[#1E40AF] font-bold hover:underline flex items-center gap-0.5 shrink-0 text-[11px]"
                 >
                   <span>Xem tiến trình ›</span>
@@ -448,7 +464,7 @@ export function CustomerChatContainer() {
           {(isUploadingImage || resolvedImageKind || imageUploadError) && (
             <div className="px-3 py-2 border-t border-slate-200 text-xs text-slate-600">
               {isUploadingImage && <p role="status" className="mt-1">Đang tải và phân tích ảnh…</p>}
-              {resolvedImageKind && <p role="status" className="mt-1">Đã tự nhận diện: {resolvedImageKind === "exterior" ? "Ngoại thất xe — CarDD" : resolvedImageKind === "charger" ? "Trụ sạc — OCR/Vision" : "Táp-lô — OCR/Vision"}</p>}
+              {resolvedImageKind && <p role="status" className="mt-1">Đã tự nhận diện: {resolvedImageKind === "exterior" ? "Ngoại thất xe" : resolvedImageKind === "charger" ? "Trụ sạc" : "Táp-lô"}</p>}
               {imageUploadError && <p role="alert" className="mt-1 text-red-700">{imageUploadError}</p>}
             </div>
           )}
@@ -457,6 +473,9 @@ export function CustomerChatContainer() {
             onChangeInput={setInput}
             onSend={submit}
             disabled={loading || isUploadingImage || (!!imagePreview && !uploadedAttachmentId)}
+            uploadDisabled={loading || isUploadingImage || role !== "CUSTOMER"}
+            uploadHint={role !== "CUSTOMER" ? "Đăng nhập tài khoản khách hàng để tải ảnh" : undefined}
+            imageReady={!!uploadedAttachmentId}
             imagePreview={imagePreview}
             imageName={imageName}
             onSelectImage={selectImage}

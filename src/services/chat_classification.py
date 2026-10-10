@@ -67,6 +67,8 @@ def temporal_context(text: str) -> Literal['current', 'resolved_past', 'hypothet
         return 'hypothetical'
     if re.search(r'\b(?:co phai\b.*?\b(?:khong|dung khong|phai khong)|co dung\b.*?\bkhong)\b', lower):
         return 'knowledge'
+    if re.search(r'\b(?:co\s+duoc\s+bao\s+hanh\s+khong|chinh\s+sach\s+bao\s+hanh|quy\s+dinh\s+bao\s+hanh|co\s+bao\s+hanh\s+khong)\b', lower) and not re.search(r'\b(dang|vua|xe toi|xe em|bay gio)\b', lower):
+        return 'knowledge'
     if re.search(r'\b(nghia la gi|y nghia|la gi|tim hieu)\b', lower) and not re.search(r'\b(dang|vua|xe toi|xe cua toi|bay gio)\b', lower):
         return 'knowledge'
     if re.search(r'\b(dang|vua|bay gio|xe toi|xe em|khong (?:sac|chay|di|khoi dong|di chuyen))\b', lower):

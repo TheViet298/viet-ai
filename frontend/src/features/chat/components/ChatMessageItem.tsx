@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { ExternalLink, FileText, Check } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ChatMessage } from "../types";
 import { ClarificationChips } from "./ClarificationChips";
@@ -11,12 +11,14 @@ import { ClarificationChips } from "./ClarificationChips";
 interface ChatMessageItemProps {
   message: ChatMessage;
   isLastMessage: boolean;
+  showCaseBadge?: boolean;
   onSelectReply: (reply: string) => void;
 }
 
 export function ChatMessageItem({
   message,
   isLastMessage,
+  showCaseBadge = false,
   onSelectReply,
 }: ChatMessageItemProps) {
   const isCustomer = message.sender === "CUSTOMER";
@@ -29,9 +31,21 @@ export function ChatMessageItem({
     // 1. Xóa các mã nguồn học thuật thô lọt vào text (vd: [SRC-006], [SRC-001], [1], [2])
     text = text.replace(/\s*\[(?:SRC-[A-Za-z0-9_-]+|\d+)\]/g, "");
 
-    // 2. Chuẩn hóa đại từ xưng hô thân thiện, loại bỏ xưng 'Quý khách' khách khí
+    // 2. Chuẩn hóa đại từ xưng hô thân thiện, loại bỏ xưng 'Quý khách' hoặc 'Khách hàng'
     text = text.replace(/\bquý\s+khách\b/gi, "anh/chị");
     text = text.replace(/(^|[.!?]\s+)(anh\/chị)/g, (_m, p1, p2) => p1 + "Anh/chị");
+    text = text.replace(/khách\s+hàng\s+đã\s+dừng\s+đỗ/gi, "anh/chị đã dừng đỗ");
+    text = text.replace(/Khách\s+hàng\s+đã\s+dừng\s+đỗ/g, "Anh/chị đã dừng đỗ");
+
+    // 2b. Tách các cụm trạng thái sự cố bị dính trên 1 dòng
+    text = text.replace(
+      /(?:sự cố [^:\n]+:\s*)?Tình trạng:\s*([^(\n]+?)\s*\(Mức pin:\s*([^)]+)\)\s*Trạng thái:\s*([^\n.]+)/gi,
+      (_match, p1, p2, p3) => {
+        const cleanP3 = p3.replace(/khách\s+hàng\s+đã\s+dừng\s+đỗ/gi, "anh/chị đã dừng đỗ");
+        return `\n\n- **Tình trạng:** ${p1.trim()}\n- **Mức pin:** ${p2.trim()}\n- **Trạng thái:** ${cleanP3.trim()}\n\n`;
+      }
+    );
+    text = text.replace(/([^\n])\n(Tình trạng:|Mức pin:|Trạng thái:)/gi, "$1\n\n- $2");
 
     // 3. Tách các mục bị dồn trên 1 dòng có emoji + bold (vd: "🚗 **VF 3**: ... 🚙 **VF 5 Plus**: ...")
     text = text.replace(/(?:^|\n|[.!?]\s+)[\p{Emoji_Presentation}\p{Extended_Pictographic}]\s*(\*\*[^*]+\*\*)/gu, "\n\n- $1");
@@ -87,6 +101,7 @@ export function ChatMessageItem({
         ) : (
           <div className="chat-markdown-body text-[13px] leading-relaxed text-slate-800">
             <ReactMarkdown
+              urlTransform={(url) => /^tel:\+?\d+$/.test(url) ? url : defaultUrlTransform(url)}
               remarkPlugins={[remarkGfm]}
               allowedElements={[
                 "p",
@@ -102,7 +117,7 @@ export function ChatMessageItem({
               ]}
               unwrapDisallowed={true}
               components={{
-                p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+                p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed whitespace-pre-line">{children}</p>,
                 strong: ({ children }) => (
                   <strong className="font-semibold text-slate-900">{children}</strong>
                 ),
@@ -143,7 +158,7 @@ export function ChatMessageItem({
         )}
 
         {/* Chỉ dẫn an toàn: gộp trực tiếp vào bong bóng dạng chữ đậm, KHÔNG TẠO HỘP VÀNG */}
-        {message.safe_guidance && message.priority !== "CRITICAL" && (
+        {message.safe_guidance && (
           <div className="mt-2 pt-1.5 border-t border-slate-200/60 text-[12px] text-amber-950 font-medium">
             <strong>Chỉ dẫn: </strong>
             <span>{message.safe_guidance}</span>
@@ -178,8 +193,9 @@ export function ChatMessageItem({
       {/* ─────────────────────────────────────────────────────────────
           CẤP 3: TRẠNG THÁI HỆ THỐNG ("ĐÃ TIẾP NHẬN CA")
           - 1 dòng nhỏ giữa khung chat, KHÔNG NỀN, KHÔNG BONG BÓNG
+          - CHỈ HIỆN 1 LẦN DUY NHẤT sau tin AI xác nhận tạo ca
       ───────────────────────────────────────────────────────────── */}
-      {message.case_id && (
+      {showCaseBadge && message.case_id && (
         <div className="my-1 py-0.5 px-1 text-[11.5px] text-slate-500 flex items-center gap-1.5 self-center animate-fadeIn">
           <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
             <Check className="w-2.5 h-2.5" />
@@ -189,7 +205,7 @@ export function ChatMessageItem({
           </span>
           <span>·</span>
           <Link
-            href="/track-case"
+            href={`/track-case?case_id=${encodeURIComponent(message.case_id)}`}
             className="text-[#1E40AF] font-semibold hover:underline"
           >
             Xem tiến trình ›

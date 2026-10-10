@@ -58,6 +58,7 @@ export default function RegisterPage() {
     } finally {
       setSubmitting(false);
     }
+
   };
 
   return (

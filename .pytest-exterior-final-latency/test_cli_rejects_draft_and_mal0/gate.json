@@ -1,0 +1,8 @@
+{
+  "gate_kind": "input_error",
+  "passed": false,
+  "production_acceptance": false,
+  "failure_reasons": [
+    "malformed_input"
+  ]
+}

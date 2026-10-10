@@ -11,7 +11,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 async function getStaffAuthHeaders(): Promise<Record<string, string>> {
   if (typeof window === "undefined") return {};
-  const token = localStorage.getItem("vf_access_token");
+  const token = localStorage.getItem("vf_access_token") || localStorage.getItem("vf_staff_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 

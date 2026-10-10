@@ -73,6 +73,18 @@ def ensure_schema() -> None:
                 if "incident_version" not in cases_cols:
                     conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN incident_version INTEGER DEFAULT 1")
 
+            # Bổ sung các cột mới cho customer_feedback nếu thiếu
+            fb_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(customer_feedback)").fetchall()}
+            if fb_cols:
+                if "reason_tags" not in fb_cols:
+                    conn.exec_driver_sql("ALTER TABLE customer_feedback ADD COLUMN reason_tags JSON")
+                if "updated_at" not in fb_cols:
+                    conn.exec_driver_sql("ALTER TABLE customer_feedback ADD COLUMN updated_at DATETIME")
+                try:
+                    conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS uq_customer_feedback_case_id ON customer_feedback(case_id)")
+                except Exception:
+                    pass
+
             # Khởi tạo thông tin hồ sơ mẫu nếu đang bị NULL
             conn.exec_driver_sql(
                 "UPDATE users SET full_name = 'Nguyễn Văn Tuấn', phone = '0912345678', vehicle_model = 'VF8' "

@@ -154,14 +154,28 @@ def require_staff(current_user: User = Depends(get_current_user)) -> User:
 
 
 def check_case_ownership(case: Case, user: User | None = None, session_id: str | None = None) -> None:
-    """Only the authenticated principal owns a case; demo IDs are not credentials."""
+    """
+    Xác thực quyền sở hữu hồ sơ sự cố (Chống lỗi IDOR / trái quyền).
+    Quy tắc an toàn:
+    1. Nhân viên dịch vụ (STAFF): Toàn quyền truy cập để điều phối và xử lý.
+    2. Khách hàng đã đăng nhập: Phải khớp định danh mạnh `case.user_id == user.id`.
+    3. Khách hàng dùng thử (Guest): Phải khớp `case.session_id == session_id` của đúng phiên chat tạo ca.
+    4. Kịch bản Demo/Seed: Chỉ cho phép khớp `mock_customer_id` khi ca chưa từng được gán cho user khác.
+    Tuyệt đối KHÔNG khớp theo tên/số điện thoại tự do, không tự động gán chủ sở hữu khi gọi API.
+    """
     if user and user.role == UserRole.STAFF.value:
         return
-    # Customer ownership: match user_id, mock_customer_id hoặc session_id
+
     is_owner = False
     if user:
         if case.user_id and case.user_id == user.id:
             is_owner = True
+        elif get_settings().enable_demo_auth_fallback and get_settings().app_env != "production":
+            # Fallback chỉ chạy trong môi trường demo/dev khi case chưa gắn user_id cụ thể
+            if not case.user_id and case.mock_customer_id and user.mock_customer_id and case.mock_customer_id == user.mock_customer_id:
+                is_owner = True
+    elif session_id and case.session_id and case.session_id == session_id:
+        is_owner = True
 
     if not is_owner:
         raise HTTPException(
