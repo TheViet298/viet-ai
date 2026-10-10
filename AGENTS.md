@@ -1,6 +1,7 @@
 # Project guide
 
-- Đọc README.md để nắm cấu trúc; chỉ mở tài liệu/module liên quan đến task.
+- Bắt đầu từ `.agents/memory/INDEX.md`; chỉ nạp memory và tài liệu được chỉ tới cho task hiện tại. Đọc README.md khi onboarding, khi cần overview, hoặc khi memory không khớp repo.
+- Không đọc đệ quy toàn bộ Markdown/codebase. Với hành vi hiện tại, kiểm tra code và test liên quan; memory và tài liệu chỉ là chỉ đường hoặc ghi nhận quyết định.
 - Trước mọi thao tác Git: báo branch, upstream và `git status --short --branch`.
 - Trước khi nhận định có conflict: xác định branch đích và cập nhật remote ref nếu được phép.
 - Phân biệt file cùng thay đổi với conflict được Git xác nhận.
