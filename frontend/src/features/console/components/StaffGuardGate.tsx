@@ -8,22 +8,7 @@ import { useAuth } from "@/features/shared";
 
 export function StaffGuardGate() {
   const router = useRouter();
-  const { role, loginDemo } = useAuth();
-  const [errorMessage, setErrorMessage] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleDemoStaffLogin = async () => {
-    setSubmitting(true);
-    setErrorMessage("");
-    try {
-      await loginDemo("STAFF");
-      router.push("/console");
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Tài khoản demo không khả dụng.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const { role } = useAuth();
 
   const returnHref = role === "CUSTOMER" ? "/track-case" : "/";
   const returnLabel = role === "CUSTOMER" ? "Quay lại Trung tâm hỗ trợ" : "Quay lại Trang chủ";
@@ -59,19 +44,13 @@ export function StaffGuardGate() {
 
         {/* Action Buttons */}
         <div className="space-y-3 pt-2">
-          {process.env.NODE_ENV !== "production" && (
-            <button
-              type="button"
-              onClick={handleDemoStaffLogin}
-              disabled={submitting}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] px-4 py-3 text-[13px] font-semibold text-white shadow-md transition-all group disabled:opacity-60"
-            >
-              <KeyRound className="w-4 h-4 text-[#A5B4FC] group-hover:rotate-12 transition-transform" />
-              <span>{submitting ? "Đang xác thực…" : "Đăng nhập Staff Demo"}</span>
-            </button>
-          )}
-
-          {errorMessage && <p role="alert" className="text-sm text-red-700">{errorMessage}</p>}
+          <Link
+            href="/login"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] px-4 py-3 text-[13px] font-semibold text-white shadow-md transition-all group"
+          >
+            <KeyRound className="w-4 h-4 text-[#A5B4FC] group-hover:rotate-12 transition-transform" />
+            <span>Đăng nhập Tài khoản Điều phối (Staff)</span>
+          </Link>
 
           {/* Nút 2: Quay lại trang phù hợp */}
           <Link
@@ -83,12 +62,9 @@ export function StaffGuardGate() {
           </Link>
         </div>
 
-        {/* Secondary link */}
-        <div className="pt-2 border-t border-[#F1F5F9] text-[11px] text-[#94A3B8]">
-          Bạn có tài khoản chuyên viên riêng?{" "}
-          <Link href="/login" className="text-[#1E40AF] font-semibold hover:underline">
-            Đăng nhập bằng form
-          </Link>
+        {/* Secondary note */}
+        <div className="pt-2 border-t border-[#F1F5F9] text-[11px] text-[#64748B]">
+          Liên hệ quản trị viên nội bộ VinFast nếu bạn chưa được cấp quyền truy cập.
         </div>
       </div>
     </div>

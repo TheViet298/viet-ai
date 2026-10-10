@@ -116,45 +116,66 @@ const ISSUE_CATEGORIES = [
 ];
 
 // Cẩm nang kiến thức chính thức (Fallback cho Knowledge Hub nếu backend offline)
+// Đồng bộ 100% với danh mục nguồn chính thức tại docs/data-sources.md
 const FALLBACK_ARTICLES: ArticleItem[] = [
   {
     id: "KB-CHG-01",
-    title: "Quy chuẩn sạc DC & Xử lý lỗi bắt tay BMS (Mã CC01)",
+    title: "Quy chuẩn sạc DC & Dịch vụ pin xe điện VinFast",
     category: "Sạc & Pin",
     summary:
-      "Hướng dẫn kiểm tra súng sạc, trình tự khóa ngàm tiếp xúc và cách khắc phục khi trụ sạc báo đèn đỏ giao tiếp.",
-    source_url: "https://vinfastauto.com/vn_vi/chinh-sach-va-bieu-phi-sac-pin-cong-cong",
-    verified_at: "24/09/2026",
+      "Hướng dẫn kiểm tra súng sạc, trình tự khóa ngàm tiếp xúc và cách khắc phục khi trụ sạc báo đèn đỏ giao tiếp (Mã CC01).",
+    source_url: "https://vinfastauto.com/vn_vi/dich-vu-pin-oto-dien",
+    verified_at: "30/09/2026",
     applicable_models: ["VF3", "VF5", "VF6", "VF7", "VF8", "VF9"],
   },
   {
     id: "KB-DASH-02",
-    title: "Ý nghĩa biểu tượng Con Rùa Vàng & Giới hạn công suất",
+    title: "Sổ tay vận hành & Ý nghĩa biểu tượng cảnh báo táp-lô",
     category: "Vận hành",
     summary:
-      "Chế độ bảo vệ pin cao áp khi dung lượng còn dưới 10% hoặc nhiệt độ hệ thống pin tăng cao. Hướng dẫn di chuyển an toàn.",
-    source_url: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-va-cuu-ho-xe-dien",
-    verified_at: "24/09/2026",
+      "Chế độ bảo vệ pin cao áp khi dung lượng còn dưới 10% hoặc nhiệt độ hệ thống pin tăng cao. Hướng dẫn di chuyển an toàn khi hiện rùa vàng.",
+    source_url: "https://om.vinfastauto.com/vi_vn/detail?car=VF8&year=2026",
+    verified_at: "30/09/2026",
     applicable_models: ["VF3", "VF5", "VF6", "VF7", "VF8", "VF9"],
   },
   {
     id: "KB-MAINT-03",
-    title: "Quy trình bảo dưỡng định kỳ 12.000km xe điện VinFast",
+    title: "Quy trình và lịch bảo dưỡng định kỳ xe điện VinFast",
     category: "Bảo dưỡng",
     summary:
-      "Các hạng mục bắt buộc: kiểm tra chất lỏng làm mát pin, đo độ mòn má phanh, cập nhật phần mềm ECU và cân bằng động lốp.",
-    source_url: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-va-cuu-ho-xe-dien",
-    verified_at: "24/09/2026",
+      "Các hạng mục bắt buộc mốc 12.000km: kiểm tra nước làm mát pin, đo độ mòn má phanh, cập nhật phần mềm ECU và cân bằng động lốp.",
+    source_url: "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
+    verified_at: "30/09/2026",
     applicable_models: ["VF3", "VF5", "VF6", "VF7", "VF8", "VF9"],
   },
   {
     id: "KB-RESCUE-04",
-    title: "Chính sách Cứu hộ Khẩn cấp 24/7 & Cứu hộ pin lưu động",
+    title: "Thông tin cứu hộ khẩn cấp 24/7 & Cứu hộ pin lưu động",
     category: "Cứu hộ",
     summary:
       "Quy chuẩn điều phối xe cẩu cứu hộ trên cao tốc toàn quốc và dịch vụ sạc pin lưu động 24/7 qua tổng đài 1900-232389.",
-    source_url: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-va-cuu-ho-xe-dien",
-    verified_at: "24/09/2026",
+    source_url: "https://vinfastauto.com/vn_vi/thong-tin-cuu-ho-oto",
+    verified_at: "30/09/2026",
+    applicable_models: ["Tất cả dòng xe"],
+  },
+  {
+    id: "KB-WARR-05",
+    title: "Chính sách bảo hành xe ô tô điện VinFast",
+    category: "Bảo hành",
+    summary:
+      "Chính sách bảo hành 10 năm hoặc 200.000 km cho xe và pin cao áp. Cam kết thay thế pack pin khi dung lượng dưới 70%.",
+    source_url: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto",
+    verified_at: "30/09/2026",
+    applicable_models: ["VF3", "VF5", "VF6", "VF7", "VF8", "VF9"],
+  },
+  {
+    id: "KB-APP-06",
+    title: "Hướng dẫn sử dụng ứng dụng VinFast",
+    category: "Ứng dụng",
+    summary:
+      "Cách theo dõi dung lượng pin (SoC), kiểm tra lịch sử sạc, tìm trạm sạc gần nhất và đặt hẹn bảo dưỡng trực tiếp trên ứng dụng.",
+    source_url: "https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast",
+    verified_at: "30/09/2026",
     applicable_models: ["Tất cả dòng xe"],
   },
 ];
@@ -386,24 +407,8 @@ export function LandingPage() {
           }
         })
         .catch(() => {
-          // Demo fallback động theo ngày chỉ dành cho tài khoản Demo đã đăng nhập
-          if (user.isDemo || user.email === "customer@vinfast.vn") {
-            const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-            setActiveUserCase({
-              id: `CASE-${todayStr}-001`,
-              vehicle_model: user.vehicleModel ? `VF${user.vehicleModel.replace("VF", "")}` : "VF8 Plus",
-              intent: "Charging/Battery",
-              status: "Needs Information",
-              priority: "HIGH",
-              summary: "Trụ P02 Vincom Metropolis lỗi CC01 không sạc được DC",
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            });
-            setOpenCasesCount(1);
-          } else {
-            setActiveUserCase(null);
-            setOpenCasesCount(0);
-          }
+          setActiveUserCase(null);
+          setOpenCasesCount(0);
         });
     } else {
       setActiveUserCase(null);
@@ -481,7 +486,12 @@ export function LandingPage() {
   // Filtered articles
   const filteredArticles = useMemo(() => {
     if (selectedArticleCategory === "ALL") return articles;
-    return articles.filter((a) => a.category.toLowerCase().includes(selectedArticleCategory.toLowerCase()));
+    const cat = selectedArticleCategory.toLowerCase();
+    return articles.filter((a) => {
+      const aCat = a.category.toLowerCase();
+      if (cat === "sạc & pin") return aCat.includes("sạc") || aCat.includes("pin");
+      return aCat.includes(cat);
+    });
   }, [articles, selectedArticleCategory]);
 
   return (
@@ -957,6 +967,7 @@ export function LandingPage() {
                 { id: "Vận hành", label: "Vận hành" },
                 { id: "Bảo dưỡng", label: "Bảo dưỡng" },
                 { id: "Cứu hộ", label: "Cứu hộ" },
+                { id: "Bảo hành", label: "Bảo hành" },
               ].map((c) => (
                 <button
                   key={c.id}

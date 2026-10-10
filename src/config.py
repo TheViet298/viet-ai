@@ -19,7 +19,6 @@ class Settings(BaseSettings):
     app_host: str = "0.0.0.0"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     cors_origins: str = "http://localhost:3000"
-    enable_demo_auth_fallback: bool = True
 
     # LLM Configuration (OpenAI / LiteLLM Gateway / Gemini)
     openai_api_key: str = ""
@@ -41,9 +40,10 @@ class Settings(BaseSettings):
     cardd_inference_timeout_s: float = Field(default=45, gt=0, le=60)
     llm_temperature: float = Field(default=0.7, ge=0.0, le=2.0)
 
-    # Database
+    # Database & Security
     database_url: str = "sqlite:///./data/app.db"
     auth_secret_key: SecretStr = SecretStr("")
+    staff_seed_password: str = "VinFast@ServiceFlow2026!Sec"
 
     # Vector Store
     chroma_persist_dir: str = "./data/chroma"

@@ -30,15 +30,16 @@ export default function RegisterPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !username.trim() || !password) {
-      setErrorMessage("Vui lòng điền đầy đủ các thông tin bắt buộc.");
+    const cleanUsername = username.trim();
+    if (!cleanUsername || !password) {
+      setErrorMessage("Vui lòng nhập tên đăng nhập và mật khẩu.");
       return;
     }
     if (password.length < 8) {
       setErrorMessage("Mật khẩu cần có ít nhất 8 ký tự.");
       return;
     }
-    if (password !== confirmPassword) {
+    if (confirmPassword && password !== confirmPassword) {
       setErrorMessage("Mật khẩu xác nhận không khớp.");
       return;
     }
@@ -47,10 +48,10 @@ export default function RegisterPage() {
     setErrorMessage("");
 
     try {
-      await registerCustomer(username.trim(), password, {
-        name: name.trim(),
-        phone: username.trim(),
-        vehicleModel,
+      await registerCustomer(cleanUsername, password, {
+        name: name.trim() || cleanUsername,
+        phone: cleanUsername,
+        vehicleModel: vehicleModel || "VF8",
       });
       router.push("/chat");
     } catch (error) {
@@ -58,7 +59,6 @@ export default function RegisterPage() {
     } finally {
       setSubmitting(false);
     }
-
   };
 
   return (
@@ -114,7 +114,7 @@ export default function RegisterPage() {
           <form onSubmit={handleRegister} className="mt-4 space-y-3">
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B] mb-1">
-                Tên của bạn / Biệt danh xưng hô <span className="text-[#DC2626]">*</span>
+                Tên của bạn / Biệt danh xưng hô <span className="text-slate-400 font-normal">(Tùy chọn)</span>
               </label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#64748B]">
@@ -124,9 +124,8 @@ export default function RegisterPage() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ví dụ: Anh Tuấn, Chị Mai"
-                  className="w-full rounded-[10px] border border-[#E2E8F0] bg-white py-2 pl-9 pr-3 text-[13px] text-[#0F172A] placeholder-[#64748B] focus:border-[#1E40AF] focus:outline-none"
-                  required
+                  placeholder="Ví dụ: Giám khảo 01, Anh Tuấn..."
+                  className="w-full rounded-[10px] border border-[#E2E8F0] bg-white py-2 pl-9 pr-3 text-[13px] text-[#0F172A] placeholder-[#94A3B8] focus:border-[#1E40AF] focus:outline-none"
                 />
               </div>
             </div>
@@ -194,7 +193,7 @@ export default function RegisterPage() {
 
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B] mb-1">
-                Xác nhận mật khẩu <span className="text-[#DC2626]">*</span>
+                Xác nhận mật khẩu <span className="text-slate-400 font-normal">(Tùy chọn)</span>
               </label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#64748B]">
@@ -204,9 +203,8 @@ export default function RegisterPage() {
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Nhập lại mật khẩu"
-                  className="w-full rounded-[10px] border border-[#E2E8F0] bg-white py-2 pl-9 pr-3 text-[13px] text-[#0F172A] placeholder-[#64748B] focus:border-[#1E40AF] focus:outline-none"
-                  required
+                  placeholder="Nhập lại để kiểm tra (hoặc để trống)"
+                  className="w-full rounded-[10px] border border-[#E2E8F0] bg-white py-2 pl-9 pr-3 text-[13px] text-[#0F172A] placeholder-[#94A3B8] focus:border-[#1E40AF] focus:outline-none"
                 />
               </div>
             </div>

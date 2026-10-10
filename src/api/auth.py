@@ -83,29 +83,40 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
 
     # ── Claim Guest Cases khi đăng nhập (Audit vết rõ ràng, kiểm soát chặt IDOR) ──
     raw_claim = (payload.guest_session_id or payload.session_id or request.headers.get("x-session-id") or "").strip()
-    # Kiểm tra entropy: phải từ 16 đến 64 ký tự an toàn alphanumeric/hyphen/underscore (chuẩn UUID/Token)
-    is_valid_claim = bool(raw_claim and len(raw_claim) >= 16 and len(raw_claim) <= 64 and re.match(r"^[a-zA-Z0-9_\-]+$", raw_claim))
+    # Kiểm tra entropy: 16-64 ký tự an toàn alphanumeric/hyphen/underscore VÀ tối thiểu 8 ký tự khác nhau (chống lặp chuỗi aaaaa... hay 1234567812345678)
+    is_valid_claim = bool(
+        raw_claim
+        and 16 <= len(raw_claim) <= 64
+        and len(set(raw_claim)) >= 8
+        and re.match(r"^[a-zA-Z0-9_\-]+$", raw_claim)
+    )
     if is_valid_claim and user.role == UserRole.CUSTOMER.value:
         cutoff_claim = utcnow() - timedelta(hours=72)
-        unclaimed = db.query(Case).filter(
-            Case.session_id == raw_claim,
-            Case.user_id.is_(None),
-            Case.created_at >= cutoff_claim,
-        ).all()
-        for uc in unclaimed:
-            uc.user_id = user.id
-            db.add(
-                StaffAuditLog(
-                    id=str(uuid.uuid4()),
-                    case_id=uc.id,
-                    staff_id=f"CUSTOMER_{user.id}",
-                    action="CLAIM_CASE",
-                    # Không in chi tiết session_id vào log để tránh lộ token của phiên
-                    notes=f"[AUTH_CLAIM] Khách hàng '{user.username}' liên kết quyền sở hữu hồ sơ từ phiên khách vãng lai hợp lệ.",
-                    created_at=utcnow(),
-                )
+        # Thao tác nguyên tử có điều kiện: UPDATE ... WHERE session_id = ? AND user_id IS NULL
+        # Ngăn chặn hoàn toàn race condition nếu có 2 request đăng nhập/claim gửi đến đồng thời
+        rows_claimed = (
+            db.query(Case)
+            .filter(
+                Case.session_id == raw_claim,
+                Case.user_id.is_(None),
+                Case.created_at >= cutoff_claim,
             )
-        if unclaimed:
+            .update({"user_id": user.id}, synchronize_session=False)
+        )
+        if rows_claimed > 0:
+            claimed_cases = db.query(Case).filter(Case.session_id == raw_claim, Case.user_id == user.id).all()
+            for uc in claimed_cases:
+                db.add(
+                    StaffAuditLog(
+                        id=str(uuid.uuid4()),
+                        case_id=uc.id,
+                        staff_id=f"CUSTOMER_{user.id}",
+                        action="CLAIM_CASE",
+                        # Không in chi tiết session_id vào log để tránh lộ token của phiên
+                        notes=f"[AUTH_CLAIM] Khách hàng '{user.username}' liên kết quyền sở hữu hồ sơ từ phiên khách vãng lai hợp lệ.",
+                        created_at=utcnow(),
+                    )
+                )
             db.commit()
 
     token = create_token(user.id, user.role)
@@ -141,7 +152,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         )
 
     # Luôn gán vai trò CUSTOMER, không cho phép đăng ký STAFF công khai.
-    # mock_customer_id sinh ngẫu nhiên từ server, không nhận từ client để chống chiếm quyền dữ liệu seed.
+    # mock_customer_id được gán None cho mọi tài khoản thật, chỉ tài khoản demo trong seed mới có giá trị.
     new_user = User(
         id=str(uuid.uuid4()),
         username=username,
@@ -150,7 +161,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         full_name=payload.full_name.strip() if payload.full_name else None,
         phone=payload.phone.strip() if payload.phone else None,
         vehicle_model=payload.vehicle_model.strip() if payload.vehicle_model else None,
-        mock_customer_id=f"CUST_MOCK_{uuid.uuid4().hex[:8].upper()}",
+        mock_customer_id=None,
     )
     db.add(new_user)
     try:

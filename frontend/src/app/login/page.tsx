@@ -17,7 +17,7 @@ import { useAuth, ProductMark, UserRole } from "@/features/shared";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, loginDemo, logout } = useAuth();
+  const { login, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<"CUSTOMER" | "STAFF">("CUSTOMER");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -46,19 +46,6 @@ export default function LoginPage() {
       goToRoleHome(authenticated.role);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Không thể đăng nhập. Vui lòng thử lại.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleQuickDemoLogin = async (role: "CUSTOMER" | "STAFF") => {
-    setSubmitting(true);
-    setErrorMessage("");
-    try {
-      const authenticated = await loginDemo(role);
-      goToRoleHome(authenticated.role);
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Tài khoản demo không khả dụng.");
     } finally {
       setSubmitting(false);
     }
@@ -102,6 +89,7 @@ export default function LoginPage() {
               type="button"
               onClick={() => {
                 setActiveTab("CUSTOMER");
+                if (identifier === "staff@vinfast.vn") setIdentifier("");
                 setErrorMessage("");
               }}
               className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 transition ${activeTab === "CUSTOMER"
@@ -130,45 +118,16 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Quick 1-Click Demo Box */}
-          <div className="mt-4 rounded-xl border border-[#0D9488]/30 bg-[#F0FDFA] p-3 text-[12px]">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-[#0F172A] flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-[#0D9488]" /> Thử nghiệm nhanh (Demo):
-              </span>
-              <span className="text-[10px] text-[#64748B] uppercase tracking-wider font-semibold">1-click login</span>
-            </div>
-            <p className="mt-1 text-[11px] text-[#64748B]">
-              Đăng nhập tài khoản mẫu để vào thẳng {activeTab === "STAFF" ? "Bàn điều phối (Console)" : "Trợ lý Chat"}:
-            </p>
-            <button
-              type="button"
-              onClick={() => handleQuickDemoLogin(activeTab)}
-              disabled={submitting}
-              className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-[#1E40AF] hover:bg-[#1E3A8A] px-3 py-1.5 font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] text-[12px] transition"
-            >
-              <span>Vào ngay với vai trò {activeTab === "STAFF" ? "Kỹ thuật viên (Staff)" : "Chủ xe (Khách hàng)"}</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div className="my-4 flex items-center gap-3">
-            <div className="h-px flex-1 bg-[#E2E8F0]" />
-            <span className="text-[11px] uppercase tracking-wider text-[#64748B]">hoặc đăng nhập thủ công</span>
-            <div className="h-px flex-1 bg-[#E2E8F0]" />
-          </div>
-
           {/* Error notice */}
           {errorMessage && (
-            <div className="mb-3 flex items-center gap-2 rounded-xl bg-[#FEF2F2] p-2.5 text-[12px] text-[#DC2626] border border-[#DC2626]/20">
+            <div className="mt-4 mb-1 flex items-center gap-2 rounded-xl bg-[#FEF2F2] p-2.5 text-[12px] text-[#DC2626] border border-[#DC2626]/20">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-3">
+          <form onSubmit={handleLogin} className="mt-5 space-y-3.5">
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B] mb-1">
                 {activeTab === "STAFF" ? "Tài khoản Staff nội bộ" : "Số điện thoại / Tên đăng nhập"}
