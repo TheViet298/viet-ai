@@ -1,0 +1,44 @@
+P-142/
+├── requirements.txt                 # Dependency chính của backend
+├── requirements-vision-train.txt    # Dependency cho huấn luyện vision
+├── Dockerfile
+└── src/
+    ├── main.py                      # Entry point FastAPI: src.main:app
+    ├── config.py                    # Cấu hình ứng dụng
+    ├── db.py                        # Kết nối database, SQLAlchemy session
+    ├── seed.py
+    ├── api/                         # Routes/controllers
+    │   ├── auth.py
+    │   ├── customer.py
+    │   ├── staff.py
+    │   ├── public.py
+    │   ├── cases.py
+    │   ├── routes.py
+    │   └── agent_customer.py
+    ├── services/                    # Logic nghiệp vụ và tích hợp
+    │   ├── chat_turns.py
+    │   ├── chat_cases.py
+    │   ├── chat_classification.py
+    │   ├── case_store.py
+    │   ├── session_store.py
+    │   ├── auth.py
+    │   ├── rag_service.py
+    │   ├── rag_index.py
+    │   ├── agent_llm.py
+    │   ├── llm.py
+    │   ├── vehicle_context.py
+    │   ├── vehicle_vision_service.py
+    │   ├── dashboard_vision_service.py
+    │   ├── location_service.py
+    │   ├── observability.py
+    │   └── ...                      # Các service hỗ trợ khác
+    ├── agents/                      # LangGraph, state, guardrails, nodes, tools
+    │   ├── chatbot_agent.py
+    │   ├── graph.py
+    │   ├── state.py
+    │   ├── guardrails.py
+    │   ├── nodes/
+    │   └── tools/
+    └── models/
+        ├── db_models.py             # Model SQLAlchemy
+        └── schemas.py               # Schema request/response
