@@ -74,3 +74,6 @@ docs/reviews/
 
 # Local ZIP exports
 *.zip
+
+# Chroma local vector store
+chroma/

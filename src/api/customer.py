@@ -2533,8 +2533,9 @@ def get_customer_case_status(
     )
     cust_msg = latest_update.customer_message if latest_update else status_desc
 
+    user_id = current_user.id if current_user else None
     data = CustomerCaseStatusData(
-        emergency_context=session_emergency_context(db, current_user.id, case.session_id),
+        emergency_context=session_emergency_context(db, user_id, case.session_id),
         case_id=case.id,
         priority=case.priority,
         **safety_fields(case),
@@ -2641,11 +2642,13 @@ def _handle_submit_feedback(
     existing = db.query(CustomerFeedback).filter(CustomerFeedback.case_id == case.id).first()
     if existing:
         # Giới hạn thời gian cho phép chỉnh sửa: tối đa 7 ngày kể từ lần gửi đầu
-        if existing.created_at and (utcnow() - existing.created_at) > timedelta(days=7):
-            raise HTTPException(
-                status_code=400,
-                detail="Đã quá thời hạn 7 ngày cho phép chỉnh sửa đánh giá dịch vụ.",
-            )
+        if existing.created_at:
+            created_ts = existing.created_at.replace(tzinfo=UTC) if existing.created_at.tzinfo is None else existing.created_at
+            if (utcnow() - created_ts) > timedelta(days=7):
+                raise HTTPException(
+                    status_code=409,
+                    detail="Đã quá thời hạn 7 ngày cho phép chỉnh sửa đánh giá dịch vụ.",
+                )
         existing.rating = payload.rating
         existing.comment = payload.comment
         existing.reason_tags = payload.reason_tags

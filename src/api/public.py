@@ -14,47 +14,86 @@ router = APIRouter(prefix="/public", tags=["public"])
 VERIFIED_ARTICLES: list[ArticleItem] = [
     ArticleItem(
         id="ART-001",
-        title="Hướng dẫn sử dụng Ứng dụng VinFast",
-        category="Ứng dụng & Tiện ích",
-        summary="Cách theo dõi dung lượng pin, kiểm tra lịch sử sạc và đặt lịch bảo dưỡng trực tiếp trên ứng dụng.",
+        title="Quy chuẩn sạc DC & Dịch vụ pin xe điện VinFast",
+        category="Sạc & Pin",
+        summary="Hướng dẫn kiểm tra súng sạc, trình tự khóa ngàm tiếp xúc và cách khắc phục khi trụ sạc báo đèn đỏ giao tiếp (Mã CC01).",
         content=(
-            "Ứng dụng VinFast cho phép chủ xe quản lý toàn diện thông tin phương tiện. "
-            "Các tính năng nổi bật gồm: hiển thị trạng thái sạc theo thời gian thực (SoC), "
-            "tìm kiếm và đặt chỗ trụ sạc công cộng gần nhất, thanh toán phí sạc tự động và đặt hẹn dịch vụ tại xưởng."
+            "Quy chuẩn sạc nhanh DC VinFast yêu cầu cắm súng chắc chắn, nghe tiếng ngàm khóa trước khi khởi động phiên sạc qua ứng dụng. "
+            "Khi trụ báo lỗi CC01 (lỗi giao tiếp BMS), rút súng sạc, chờ 30 giây và cắm lại dứt khoát."
         ),
-        source_url="https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast",
-        verified_at="2026-09-24",
+        source_url="https://vinfastauto.com/vn_vi/dich-vu-pin-oto-dien",
+        verified_at="2026-09-30",
+        applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9"],
     ),
     ArticleItem(
         id="ART-002",
-        title="Chính sách và Biểu phí Sạc pin Trạm công cộng VinFast",
-        category="Sạc & Trạm sạc",
-        summary="Thông tin đơn giá sạc công cộng, hình thức thanh toán và quy định phí phạt chiếm chỗ sau khi sạc đầy.",
+        title="Sổ tay vận hành & Ý nghĩa biểu tượng cảnh báo táp-lô",
+        category="Vận hành",
+        summary="Chế độ bảo vệ pin cao áp khi dung lượng còn dưới 10% hoặc nhiệt độ hệ thống pin tăng cao. Hướng dẫn di chuyển an toàn khi hiện rùa vàng.",
         content=(
-            "VinFast áp dụng biểu phí sạc điện chuẩn hóa tại tất cả các trạm sạc công cộng trên toàn quốc. "
-            "Khách hàng vui lòng rút súng sạc và di chuyển xe trong vòng 10 phút sau khi sạc đầy hoặc đạt mức pin cài đặt "
-            "để nhường chỗ cho các xe tiếp theo, tránh phát sinh phí chiếm dụng trụ sạc theo quy định."
+            "Biểu tượng Con Rùa Vàng xuất hiện khi pin dưới 10% hoặc hệ thống quản lý nhiệt pin kích hoạt chế độ an toàn. "
+            "Xe sẽ bị giới hạn công suất để kéo dài quãng đường di chuyển tới điểm sạc gần nhất."
         ),
-        source_url="https://vinfastauto.com/vn_vi/chinh-sach-va-bieu-phi-sac-pin-cong-cong",
-        verified_at="2026-09-24",
+        source_url="https://om.vinfastauto.com/vi_vn/detail?car=VF8&year=2026",
+        verified_at="2026-09-30",
+        applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9"],
     ),
     ArticleItem(
         id="ART-003",
-        title="Quy định Bảo hành và Cứu hộ Khẩn cấp Pin xe điện VinFast",
-        category="Bảo hành & Cứu hộ",
-        summary="Hướng dẫn an toàn khi gặp sự cố dừng xe, đèn cảnh báo rùa vàng và cách liên hệ cứu hộ 24/7.",
+        title="Quy trình và lịch bảo dưỡng định kỳ xe điện VinFast",
+        category="Bảo dưỡng",
+        summary="Các hạng mục bắt buộc mốc 12.000km: kiểm tra nước làm mát pin, đo độ mòn má phanh, cập nhật phần mềm ECU và cân bằng động lốp.",
         content=(
-            "Khi xe xuất hiện đèn cảnh báo rùa vàng kèm hiện tượng giảm công suất trên đường, người lái cần: "
-            "bật đèn cảnh báo nguy hiểm (Hazard), từ từ tấp xe vào làn dừng khẩn cấp an toàn, tắt máy và liên hệ "
-            "ngay Hotline Cứu hộ 24/7 của VinFast qua số 1900-232389 để được hỗ trợ chuyên nghiệp."
+            "Bảo dưỡng định kỳ 12.000km hoặc 12 tháng tại xưởng dịch vụ chính hãng VinFast giúp duy trì tuổi thọ pin "
+            "và đảm bảo xe vận hành ổn định trong suốt chu kỳ sử dụng."
         ),
-        source_url="https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-va-cuu-ho-xe-dien",
-        verified_at="2026-09-24",
+        source_url="https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
+        verified_at="2026-09-30",
+        applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9"],
     ),
     ArticleItem(
         id="ART-004",
+        title="Thông tin cứu hộ khẩn cấp 24/7 & Cứu hộ pin lưu động",
+        category="Cứu hộ",
+        summary="Quy chuẩn điều phối xe cẩu cứu hộ trên cao tốc toàn quốc và dịch vụ sạc pin lưu động 24/7 qua tổng đài 1900-232389.",
+        content=(
+            "Dịch vụ cứu hộ VinFast hoạt động 24/7 trên toàn quốc, hỗ trợ cẩu kéo miễn phí đối với xe gặp sự cố kỹ thuật trong thời gian bảo hành "
+            "và cung cấp giải pháp sạc pin lưu động tại hiện trường."
+        ),
+        source_url="https://vinfastauto.com/vn_vi/thong-tin-cuu-ho-oto",
+        verified_at="2026-09-30",
+        applicable_models=["Tất cả dòng xe"],
+    ),
+    ArticleItem(
+        id="ART-005",
+        title="Chính sách bảo hành xe ô tô điện VinFast",
+        category="Bảo hành",
+        summary="Chế độ bảo hành 10 năm hoặc 200.000 km cho xe và pin cao áp theo tiêu chuẩn VinFast toàn cầu.",
+        content=(
+            "VinFast áp dụng chính sách bảo hành dẫn đầu thị trường: 10 năm hoặc 200.000 km đối với các dòng xe VF e34, VF 7, VF 8, VF 9 "
+            "và cam kết thay thế/sửa chữa pack pin miễn phí khi dung lượng pin giảm dưới 70%."
+        ),
+        source_url="https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto",
+        verified_at="2026-09-30",
+        applicable_models=["VF3", "VF5", "VF6", "VF7", "VF8", "VF9"],
+    ),
+    ArticleItem(
+        id="ART-006",
+        title="Hướng dẫn sử dụng ứng dụng VinFast",
+        category="Ứng dụng",
+        summary="Cách theo dõi dung lượng pin (SoC), kiểm tra lịch sử sạc, tìm trạm sạc gần nhất và đặt hẹn bảo dưỡng trực tiếp trên ứng dụng.",
+        content=(
+            "Ứng dụng VinFast cho phép chủ xe quản lý toàn diện thông tin phương tiện: hiển thị trạng thái pin theo thời gian thực (SoC), "
+            "tìm trạm sạc gần nhất, thanh toán phí sạc tự động và đặt hẹn dịch vụ tại xưởng."
+        ),
+        source_url="https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast",
+        verified_at="2026-09-30",
+        applicable_models=["Tất cả dòng xe"],
+    ),
+    ArticleItem(
+        id="ART-007",
         title="Chính sách Bảo vệ Dữ liệu và An toàn Thông tin Khách hàng (No-PII)",
-        category="Chính sách & An toàn",
+        category="Chính sách",
         summary="Cam kết không thu thập dữ liệu cá nhân nhạy cảm thật, chỉ xử lý mã định danh giả lập.",
         content=(
             "Hệ thống Trợ lý Dịch vụ VinFast ServiceFlow AI cam kết tuân thủ nghiêm ngặt nguyên tắc No-PII. "
@@ -62,7 +101,7 @@ VERIFIED_ARTICLES: list[ArticleItem] = [
             "Biển số xe thật, Số khung VIN hoặc ảnh khuôn mặt) trong các phiên hội thoại và ảnh đính kèm."
         ),
         source_url="https://vinfastauto.com/vn_vi/chinh-sach-bao-mat-thong-tin",
-        verified_at="2026-09-24",
+        verified_at="2026-09-30",
     ),
 ]
 
