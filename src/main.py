@@ -1,3 +1,4 @@
+import asyncio
 import os
 from contextlib import asynccontextmanager
 
@@ -12,8 +13,10 @@ from src.api.public import router as public_router
 from src.api.routes import router
 from src.api.staff import router as staff_router
 from src.config import get_settings
-from src.db import Base, engine
-from src.services.observability import initialize_observability, flush_observability
+from src.db import ensure_schema
+from src.models import db_models  # noqa: F401 - Đảm bảo tất cả models được nạp vào metadata
+from src.services.case_lifecycle import auto_close_background_loop
+from src.services.observability import flush_observability, initialize_observability
 
 
 @asynccontextmanager
@@ -21,14 +24,21 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     # Tự động đảm bảo các bảng trong SQLite DB và thư mục lưu trữ đã được tạo
     os.makedirs("data/attachments", exist_ok=True)
-    Base.metadata.create_all(bind=engine)
+    ensure_schema()
     print(f"Starting {settings.app_name} in {settings.app_env} mode")
     initialize_observability()
+    auto_close_task = asyncio.create_task(auto_close_background_loop(interval_seconds=600))
     try:
         yield
     finally:
-        await flush_observability(shutdown=True)
-        print("Shutting down...")
+        auto_close_task.cancel()
+        try:
+            await auto_close_task
+        except asyncio.CancelledError:
+            pass
+        finally:
+            await flush_observability(shutdown=True)
+            print("Shutting down...")
 
 
 app = FastAPI(

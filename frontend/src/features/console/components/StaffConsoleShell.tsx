@@ -43,6 +43,8 @@ import { TicketDetailPanel } from "./TicketDetailPanel";
 import { sendChatMessage, getPublicArticles } from "@/features/chat/api/chatApi";
 import { ArticleItem } from "@/features/chat/types";
 
+import { cleanTicketHeadline } from "./TicketDetailPanel";
+
 export type ConsoleTab =
   | "queue"
   | "overview"
@@ -52,32 +54,24 @@ export type ConsoleTab =
   | "preview"
   | "profile";
 
-// Helper phân nhóm ngày cho danh sách Ticket
-function getTicketDateLabel(dateStr: string): string {
+// Helper tính thời gian chờ tương đối: "chờ 12 phút", "chờ 2 giờ", "chờ 3 ngày"
+export function getRelativeWaitTime(dateStr?: string): string {
+  if (!dateStr) return "chờ --";
   try {
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return "Khác";
+    if (isNaN(d.getTime())) return "chờ --";
     const now = new Date();
-
-    const isToday =
-      d.getDate() === now.getDate() &&
-      d.getMonth() === now.getMonth() &&
-      d.getFullYear() === now.getFullYear();
-    if (isToday) return "Hôm nay";
-
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
-    const isYesterday =
-      d.getDate() === yesterday.getDate() &&
-      d.getMonth() === yesterday.getMonth() &&
-      d.getFullYear() === yesterday.getFullYear();
-    if (isYesterday) return "Hôm qua";
-
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    return `${day}/${month}/${d.getFullYear()}`;
+    const diffMs = now.getTime() - d.getTime();
+    if (diffMs < 0) return "vừa xong";
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    if (diffMins < 1) return "vừa xong";
+    if (diffMins < 60) return `chờ ${diffMins} phút`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `chờ ${diffHours} giờ`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `chờ ${diffDays} ngày`;
   } catch {
-    return "Khác";
+    return "chờ --";
   }
 }
 
@@ -110,6 +104,25 @@ function getTicketDisplayTitle(ticket: TicketItem): string {
     return `Phản ánh dịch vụ khách hàng xe ${ticket.vehicle_model}`;
   }
   return `Yêu cầu hỗ trợ kỹ thuật xe ${ticket.vehicle_model}`;
+}
+
+// Headline ngắn gọn 1 dòng cho Card Queue
+function getShortHeadline(ticket: TicketItem): string {
+  const title = getTicketDisplayTitle(ticket);
+  const cleaned = cleanTicketHeadline(title);
+  if (/rùa|turtle/i.test(cleaned)) {
+    return "Rùa vàng, giảm công suất";
+  }
+  if (/CC01/i.test(cleaned)) {
+    return "Lỗi handshake sạc DC CC01";
+  }
+  if (/áp suất lốp|TPMS/i.test(cleaned)) {
+    return "Cảnh báo áp suất lốp TPMS";
+  }
+  if (/bộ sạc tại nhà|wallbox/i.test(cleaned)) {
+    return "Sạc Wallbox tự ngắt sau 2h";
+  }
+  return cleaned;
 }
 
 // 5 Bộ phận Routing chuẩn hóa P0
@@ -182,76 +195,13 @@ export interface HistoricalCase {
   locationName?: string;
   customerFeedbackScore?: number;
   customerFeedbackComment?: string;
+  customerFeedbackTags?: string[];
   reopenReason?: string;
+  isAutoClosed?: boolean;
   staffUpdateNotes: string;
 }
 
-export const SAMPLE_CASE_HISTORY: HistoricalCase[] = [
-  {
-    id: "CASE-20260924-001",
-    intent: "Charging/Battery",
-    status: "Closed",
-    routedTo: "Charging Operations",
-    customerConfirmed: true,
-    resolvedAt: "02/10/2026 14:15",
-    staffName: "Lê Hoàng Quân",
-    vehicleModel: "VinFast VF8",
-    vehicleCode: "VF8-PLUS-2023",
-    briefSummary: "Trụ số 3 Landmark 81 báo lỗi 0x41 không cấp điện. KTV đã hướng dẫn reset giao thức và xe sạc lại bình thường.",
-    hasLocationConsent: true,
-    locationName: "Vincom Landmark 81, P.22, Bình Thạnh, TP.HCM",
-    customerFeedbackScore: 5,
-    customerFeedbackComment: "Hỗ trợ rất nhanh, AI nhận diện đúng mã lỗi táp-lô nên không phải nói lại nhiều.",
-    staffUpdateNotes: "Trụ DC 250kW đã khởi động lại firmware, thông số sạc đạt 180kW ổn định.",
-  },
-  {
-    id: "CASE-20260924-002",
-    intent: "Service/Incident",
-    status: "Resolved",
-    routedTo: "Service Center",
-    customerConfirmed: false,
-    resolvedAt: "02/10/2026 11:30",
-    staffName: "Lê Hoàng Quân",
-    vehicleModel: "VinFast VF5",
-    vehicleCode: "VF5-PLUS-2024",
-    briefSummary: "Đèn báo rùa vàng do pin SoC xuống dưới 8%. Đã hướng dẫn khách di chuyển chậm tới trạm sạc gần nhất 500m.",
-    hasLocationConsent: true,
-    locationName: "Trạm sạc Vincom Metropolis, Liễu Giai, Hà Nội",
-    staffUpdateNotes: "Khách đã cắm súng sạc thành công, theo dõi pin tăng lên 25%. Chờ khách xác nhận.",
-  },
-  {
-    id: "CASE-20260923-088",
-    intent: "Complaint/Feedback",
-    status: "Reopened",
-    routedTo: "Customer Care",
-    customerConfirmed: false,
-    resolvedAt: "01/10/2026 18:20",
-    staffName: "Nguyễn Mai Anh",
-    vehicleModel: "VinFast VF e34",
-    vehicleCode: "VFe34-2022",
-    briefSummary: "Khách phản ánh xe xăng chiếm 2 vị trí sạc tại hầm TTTM khiến không thể cắm dây.",
-    hasLocationConsent: false,
-    reopenReason: "Bảo vệ hầm chưa nhắc nhở xe xăng, khách quay lại vẫn không có chỗ sạc.",
-    staffUpdateNotes: "Đã liên hệ ban quản lý tòa nhà cử bảo vệ giải tỏa vị trí sạc.",
-  },
-  {
-    id: "CASE-20260922-045",
-    intent: "Sales/General Info",
-    status: "Closed",
-    routedTo: "Sales Advisor",
-    customerConfirmed: true,
-    resolvedAt: "30/09/2026 16:45",
-    staffName: "Phạm Quốc Hưng",
-    vehicleModel: "VinFast VF7",
-    vehicleCode: "VF7-ECO-2024",
-    briefSummary: "Khách đăng ký lái thử VF7 Plus tại Showroom Times City vào 10:00 thứ Bảy.",
-    hasLocationConsent: true,
-    locationName: "Showroom VinFast Times City, Hai Bà Trưng, Hà Nội",
-    customerFeedbackScore: 5,
-    customerFeedbackComment: "Tư vấn rõ ràng thông số 349 mã lực và tầm hoạt động.",
-    staffUpdateNotes: "Đã xếp xe lái thử màu Trắng ngọc trai cho khách hàng.",
-  },
-];
+export const SAMPLE_CASE_HISTORY: HistoricalCase[] = [];
 
 export function StaffConsoleShell() {
   const { user, logout } = useAuth();
@@ -262,6 +212,7 @@ export function StaffConsoleShell() {
 
   // Tickets state từ hook useTickets
   const {
+    tickets,
     filteredTickets,
     statusFilter,
     setStatusFilter,
@@ -291,6 +242,7 @@ export function StaffConsoleShell() {
   const [reviewingHistoryCase, setReviewingHistoryCase] = useState<HistoricalCase | null>(null);
   const [historyStatusFilter, setHistoryStatusFilter] = useState<string>("ALL");
   const [historyIntentFilter, setHistoryIntentFilter] = useState<string>("ALL");
+  const [historySearchQuery, setHistorySearchQuery] = useState("");
 
   // Customer Preview live chat session
   const previewSessionId = useRef<string>("staff_preview_" + Math.random().toString(36).substring(2, 9));
@@ -330,30 +282,6 @@ export function StaffConsoleShell() {
     };
   }, []);
 
-  const handleStatusUpdate = (ticketId: string, newStatus: TicketStatus) => {
-    setLocalTicketStatuses((prev) => ({ ...prev, [ticketId]: newStatus }));
-  };
-
-  const ticketsWithLocalStatus = filteredTickets.map((t) => ({
-    ...t,
-    status: localTicketStatuses[t.id] || t.status,
-  }));
-
-  // Lọc hàng đợi xử lý: chỉ tập trung các hồ sơ cần can thiệp
-  const activeQueueTickets = ticketsWithLocalStatus.filter((t) => {
-    if (queueQuickFilter === "CRITICAL") return t.priority === "CRITICAL";
-    if (queueQuickFilter === "Staff Reviewing") return t.status === "Staff Reviewing";
-    if (queueQuickFilter === "Needs Information") return t.status === "Needs Information";
-    if (queueQuickFilter === "In Progress") return t.status === "In Progress";
-
-    return (
-      t.status === "Staff Reviewing" ||
-      t.status === "Needs Information" ||
-      t.status === "In Progress" ||
-      t.priority === "CRITICAL"
-    );
-  });
-
   // Đồng bộ selectedTicketId từ URL parameter '?case=...' khi trang tải
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -378,7 +306,7 @@ export function StaffConsoleShell() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
-  // Chọn case đồng thời cập nhật URL mà không reload trang
+  // Chọn case đồng thời cập nhật URL mà không reload trang (/console?case=...)
   const handleSelectTicket = useCallback((ticketId: string) => {
     setSelectedTicketId(ticketId);
     if (typeof window !== "undefined") {
@@ -388,23 +316,140 @@ export function StaffConsoleShell() {
     }
   }, []);
 
+  // Undo Action State
+  const [undoToast, setUndoToast] = useState<{
+    ticketId: string;
+    prevStatus: TicketStatus;
+    newStatus: TicketStatus;
+  } | null>(null);
+
+  const handleStatusUpdate = (ticketId: string, newStatus: TicketStatus) => {
+    const prevStatus =
+      localTicketStatuses[ticketId] ||
+      ticketsWithLocalStatus.find((t) => t.id === ticketId)?.status ||
+      "Staff Reviewing";
+    setLocalTicketStatuses((prev) => ({ ...prev, [ticketId]: newStatus }));
+
+    // Tự động nhảy sang case tiếp theo trong hàng đợi khi Duyệt/Giải quyết
+    const currentIndex = activeQueueTickets.findIndex((t) => t.id === ticketId);
+    const remaining = activeQueueTickets.filter((t) => t.id !== ticketId);
+    const nextTicket =
+      remaining[currentIndex] || remaining[currentIndex - 1] || remaining[0] || null;
+    if (
+      nextTicket &&
+      (newStatus === "In Progress" || newStatus === "Resolved" || newStatus === "Closed")
+    ) {
+      handleSelectTicket(nextTicket.id);
+    }
+
+    // Hiện toast có nút Hoàn tác
+    setUndoToast({
+      ticketId,
+      prevStatus,
+      newStatus,
+    });
+  };
+
+  const handleUndo = () => {
+    if (!undoToast) return;
+    setLocalTicketStatuses((prev) => ({
+      ...prev,
+      [undoToast.ticketId]: undoToast.prevStatus,
+    }));
+    handleSelectTicket(undoToast.ticketId);
+    setRoutingConfirmedNotice(
+      `Đã hoàn tác: Ca ${undoToast.ticketId} trở về trạng thái ${
+        VIETNAMESE_STATUS_MAP[undoToast.prevStatus] || undoToast.prevStatus
+      }`
+    );
+    setUndoToast(null);
+  };
+
+  // 1. Toàn bộ tickets trong DB kèm local status (dùng cho tổng thể, badge sidebar, routing, lịch sử)
+  const allTicketsWithLocalStatus = useMemo(() => {
+    return tickets.map((t) => ({
+      ...t,
+      status: localTicketStatuses[t.id] || t.status,
+    }));
+  }, [tickets, localTicketStatuses]);
+
+  // 2. Danh sách tickets đang hiển thị trong Hàng đợi (đã áp dụng bộ lọc và từ khóa tìm kiếm của Queue)
+  const ticketsWithLocalStatus = useMemo(() => {
+    return filteredTickets.map((t) => ({
+      ...t,
+      status: localTicketStatuses[t.id] || t.status,
+    }));
+  }, [filteredTickets, localTicketStatuses]);
+
+  // Tổng số ca đang hoạt động trong toàn hệ thống (không bị giảm khi gõ tìm kiếm)
+  const totalActiveQueueCount = useMemo(() => {
+    return allTicketsWithLocalStatus.filter(
+      (t) => t.status !== "Resolved" && t.status !== "Closed"
+    ).length;
+  }, [allTicketsWithLocalStatus]);
+
+  // Thống kê số lượng theo từng tab lọc trong Hàng đợi
+  const queueStats = useMemo(() => {
+    const unclosed = allTicketsWithLocalStatus.filter(
+      (t) => t.status !== "Resolved" && t.status !== "Closed"
+    );
+    return {
+      all: unclosed.length,
+      critical: unclosed.filter((t) => t.priority === "CRITICAL").length,
+      reviewing: unclosed.filter(
+        (t) => t.status === "Staff Reviewing" || t.status === "New"
+      ).length,
+      needsInfo: unclosed.filter((t) => t.status === "Needs Information").length,
+      inProgress: unclosed.filter((t) => t.status === "In Progress").length,
+    };
+  }, [allTicketsWithLocalStatus]);
+
+  // Trọng số ưu tiên
+  const priorityWeight: Record<string, number> = {
+    CRITICAL: 4,
+    HIGH: 3,
+    MEDIUM: 2,
+    LOW: 1,
+  };
+
+  // Lọc và sắp xếp hàng đợi xử lý: Ưu tiên trước, sau đó tới thời gian chờ
+  const activeQueueTickets = useMemo(() => {
+    return ticketsWithLocalStatus
+      .filter((t) => {
+        // 1. Luôn loại trừ các case đã Giải quyết (Resolved) hoặc Đã đóng (Closed) khỏi Hàng đợi cần xử lý
+        if (t.status === "Resolved" || t.status === "Closed") return false;
+
+        // 2. Lọc nhanh theo pill filter được chọn
+        if (queueQuickFilter === "CRITICAL") return t.priority === "CRITICAL";
+        if (queueQuickFilter === "Staff Reviewing")
+          return t.status === "Staff Reviewing" || t.status === "New";
+        if (queueQuickFilter === "Needs Information")
+          return t.status === "Needs Information";
+        if (queueQuickFilter === "In Progress") return t.status === "In Progress";
+
+        // 3. Mặc định ("ALL" của Hàng đợi): Hiển thị tất cả các ca đang hoạt động cần KTV can thiệp
+        return (
+          t.status === "Staff Reviewing" ||
+          t.status === "Needs Information" ||
+          t.status === "In Progress" ||
+          t.status === "New" ||
+          t.status === "Reopened"
+        );
+      })
+      .sort((a, b) => {
+        // Sắp xếp mặc định: Mức ưu tiên (CRITICAL > HIGH > MEDIUM > LOW)
+        const weightA = priorityWeight[a.priority] || 1;
+        const weightB = priorityWeight[b.priority] || 1;
+        if (weightB !== weightA) {
+          return weightB - weightA;
+        }
+        // Cùng mức ưu tiên: ca có thời gian chờ lâu nhất (created_at xa hơn) lên trước
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+  }, [ticketsWithLocalStatus, queueQuickFilter]);
+
   const currentActiveTicket =
     activeQueueTickets.find((t) => t.id === selectedTicketId) || activeQueueTickets[0] || null;
-
-  // Phân nhóm danh sách ticket theo ngày
-  const groupedQueueTickets = useMemo(() => {
-    const groups: { dateLabel: string; tickets: TicketItem[] }[] = [];
-    activeQueueTickets.forEach((t) => {
-      const label = getTicketDateLabel(t.created_at);
-      let group = groups.find((g) => g.dateLabel === label);
-      if (!group) {
-        group = { dateLabel: label, tickets: [] };
-        groups.push(group);
-      }
-      group.tickets.push(t);
-    });
-    return groups;
-  }, [activeQueueTickets]);
 
   // Phím tắt ↑ ↓ (hoặc J/K) để duyệt nhanh qua danh sách case và tự cuộn vào khung nhìn
   useEffect(() => {
@@ -454,9 +499,9 @@ export function StaffConsoleShell() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeTab, activeQueueTickets, currentActiveTicket?.id, handleSelectTicket]);
 
-  // Dynamic Intent Distribution derived from ticketsWithLocalStatus
+  // Dynamic Intent Distribution derived from allTicketsWithLocalStatus
   const intentDistribution = useMemo(() => {
-    const total = ticketsWithLocalStatus.length;
+    const total = allTicketsWithLocalStatus.length;
     if (total === 0) {
       return [
         { label: "Sạc & Pin (Charging/Battery)", key: "charging", count: 0, percent: 0, color: "bg-[#1E40AF]" },
@@ -471,7 +516,7 @@ export function StaffConsoleShell() {
     let complaintCount = 0;
     let salesCount = 0;
 
-    ticketsWithLocalStatus.forEach((t) => {
+    allTicketsWithLocalStatus.forEach((t) => {
       const it = (t.intent || "").toLowerCase();
       if (it.includes("charging") || it.includes("battery") || it.includes("sạc") || it.includes("pin")) {
         chargingCount++;
@@ -514,11 +559,11 @@ export function StaffConsoleShell() {
         color: "bg-[#059669]",
       },
     ];
-  }, [ticketsWithLocalStatus]);
+  }, [allTicketsWithLocalStatus]);
 
-  // Dynamic Routing Departments active count derived from ticketsWithLocalStatus
+  // Dynamic Routing Departments active count derived from allTicketsWithLocalStatus
   const liveRoutingDepartments = useMemo(() => {
-    const active = ticketsWithLocalStatus.filter(
+    const active = allTicketsWithLocalStatus.filter(
       (t) => t.status !== "Resolved" && t.status !== "Closed"
     );
 
@@ -554,11 +599,11 @@ export function StaffConsoleShell() {
         activeTickets: count,
       };
     });
-  }, [ticketsWithLocalStatus]);
+  }, [allTicketsWithLocalStatus]);
 
   // Dynamic Case History: Live resolved/closed cases from DB + sample archive
   const realCaseHistory = useMemo(() => {
-    const fromDb = ticketsWithLocalStatus
+    const fromDb = allTicketsWithLocalStatus
       .filter((t) => t.status === "Resolved" || t.status === "Closed" || t.status === "Reopened")
       .map((t) => {
         let routed = "Service Center";
@@ -591,12 +636,14 @@ export function StaffConsoleShell() {
           // Ignore format error
         }
 
+        const isAuto = Boolean(t.is_auto_closed);
         return {
           id: t.id,
           intent: t.intent,
           status: (t.status === "Resolved" || t.status === "Closed" || t.status === "Reopened" ? t.status : "Resolved") as "Resolved" | "Closed" | "Reopened",
           routedTo: routed,
-          customerConfirmed: t.status === "Closed",
+          customerConfirmed: Boolean(t.customer_feedback_score) || (t.status === "Closed" && !isAuto),
+          isAutoClosed: isAuto,
           resolvedAt: formattedTime,
           staffName: user?.name || "Kỹ thuật viên VinFast",
           vehicleModel: t.vehicle_model || "VinFast",
@@ -604,19 +651,33 @@ export function StaffConsoleShell() {
           briefSummary: t.issue_summary || getTicketDisplayTitle(t),
           hasLocationConsent: Boolean(t.has_location_consent),
           locationName: t.has_location_consent ? "Tọa độ GPS đã xác thực" : undefined,
+          customerFeedbackScore: t.customer_feedback_score ?? undefined,
+          customerFeedbackComment: t.customer_feedback_comment ?? undefined,
+          customerFeedbackTags: t.customer_feedback_tags || [],
           staffUpdateNotes: t.suggested_action || "Đã kiểm tra kỹ thuật và hoàn tất xử lý theo quy chuẩn VinFast.",
         } as HistoricalCase;
       });
 
-    const dbIds = new Set(fromDb.map((c) => c.id));
-    const samples = SAMPLE_CASE_HISTORY.filter((s) => !dbIds.has(s.id));
-    return [...fromDb, ...samples];
-  }, [ticketsWithLocalStatus, user?.name]);
+    return fromDb;
+  }, [allTicketsWithLocalStatus, user?.name]);
 
   // Filtered History list
   const filteredHistory = realCaseHistory.filter((item) => {
     if (historyStatusFilter !== "ALL" && item.status !== historyStatusFilter) return false;
     if (historyIntentFilter !== "ALL" && item.intent !== historyIntentFilter) return false;
+    if (historySearchQuery.trim()) {
+      const q = historySearchQuery.trim().toLowerCase();
+      const matchId = item.id.toLowerCase().includes(q);
+      const matchVehicle = item.vehicleModel.toLowerCase().includes(q) || (item.vehicleCode && item.vehicleCode.toLowerCase().includes(q));
+      const matchSummary = item.briefSummary.toLowerCase().includes(q);
+      const matchIntent = item.intent.toLowerCase().includes(q);
+      const matchNotes = item.staffUpdateNotes.toLowerCase().includes(q);
+      const matchLocation = item.locationName?.toLowerCase().includes(q);
+      const matchStaff = item.staffName?.toLowerCase().includes(q);
+      if (!matchId && !matchVehicle && !matchSummary && !matchIntent && !matchNotes && !matchLocation && !matchStaff) {
+        return false;
+      }
+    }
     return true;
   });
 
@@ -667,12 +728,11 @@ export function StaffConsoleShell() {
   };
 
   const NAV_ITEMS = [
-    { id: "queue", label: "Hàng đợi xử lý", icon: Inbox, count: activeQueueTickets.length },
+    { id: "queue", label: "Hàng đợi xử lý", icon: Inbox, count: totalActiveQueueCount },
     { id: "overview", label: "Tổng quan ca trực", icon: LayoutDashboard },
     { id: "history", label: "Lịch sử hồ sơ", icon: History, count: realCaseHistory.length },
     { id: "routing", label: "Bộ phận / Routing", icon: GitBranch, count: liveRoutingDepartments.reduce((acc, d) => acc + d.activeTickets, 0) },
     { id: "knowledge", label: "Knowledge Hub", icon: BookOpen, count: knowledgeArticles.length || 7 },
-    { id: "preview", label: "Customer Preview", icon: Eye },
     { id: "profile", label: "Hồ sơ Staff", icon: User },
   ];
 
@@ -760,12 +820,12 @@ export function StaffConsoleShell() {
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 overflow-hidden">
               <div className="w-8 h-8 rounded-full bg-[#1E40AF] text-white flex items-center justify-center text-xs font-bold shrink-0">
-                {user?.name?.charAt(0) || "Q"}
+                {user?.name?.charAt(0) || "V"}
               </div>
               {!isSidebarCollapsed && (
                 <div className="min-w-0 flex-1 truncate">
                   <div className="text-[12px] font-semibold text-white truncate">
-                    {user?.name || "Lê Hoàng Quân"}
+                    {user?.name || "Cố vấn Dịch vụ VinFast"}
                   </div>
                   <div className="text-[10px] text-slate-400 font-mono truncate">
                     Cố vấn KTV Bậc 4
@@ -849,24 +909,25 @@ export function StaffConsoleShell() {
                   )}
                 </div>
 
-                {/* Quick Filter Pills & Refresh Button */}
+                {/* Quick Filter Pills với số đếm động & Refresh Button */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex items-center gap-1 bg-slate-200/50 p-1 rounded-xl text-[11px] font-medium">
                     {[
-                      { id: "ALL", label: "Tất cả" },
-                      { id: "CRITICAL", label: "🔥 Khẩn cấp" },
-                      { id: "Staff Reviewing", label: "Chờ duyệt" },
-                      { id: "Needs Information", label: "Cần tin" },
-                      { id: "In Progress", label: "Đang xử lý" },
+                      { id: "ALL", label: `Tất cả (${queueStats.all})` },
+                      { id: "CRITICAL", label: `🔥 Khẩn cấp (${queueStats.critical})` },
+                      { id: "Staff Reviewing", label: `Chờ duyệt (${queueStats.reviewing})` },
+                      { id: "Needs Information", label: `Cần thêm tin (${queueStats.needsInfo})` },
+                      { id: "In Progress", label: `Đang xử lý (${queueStats.inProgress})` },
                     ].map((pill) => (
                       <button
                         key={pill.id}
                         type="button"
                         onClick={() => setQueueQuickFilter(pill.id)}
-                        className={`px-2.5 py-1 rounded-lg transition ${queueQuickFilter === pill.id
-                          ? "bg-white text-slate-900 font-semibold shadow-xs"
-                          : "text-slate-600 hover:text-slate-900"
-                          }`}
+                        className={`px-2.5 py-1 rounded-lg transition ${
+                          queueQuickFilter === pill.id
+                            ? "bg-white text-slate-900 font-semibold shadow-xs"
+                            : "text-slate-600 hover:text-slate-900"
+                        }`}
                       >
                         {pill.label}
                       </button>
@@ -879,14 +940,44 @@ export function StaffConsoleShell() {
                     disabled={loading}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-[12px] font-medium shadow-2xs transition"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${loading ? "animate-spin text-[#1E40AF]" : ""}`} />
+                    <RefreshCw
+                      className={`w-3.5 h-3.5 text-slate-500 ${
+                        loading ? "animate-spin text-[#1E40AF]" : ""
+                      }`}
+                    />
                     <span className="hidden sm:inline">Làm mới</span>
                   </button>
                 </div>
               </div>
 
+              {/* Toast thông báo hành động có nút Hoàn tác */}
+              {undoToast && (
+                <div className="p-3 bg-slate-900 text-white rounded-xl text-[13px] font-medium flex items-center justify-between shadow-lg animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>
+                      Đã cập nhật hồ sơ{" "}
+                      <strong className="font-mono text-emerald-300">
+                        {undoToast.ticketId}
+                      </strong>{" "}
+                      sang{" "}
+                      <strong>
+                        {VIETNAMESE_STATUS_MAP[undoToast.newStatus] || undoToast.newStatus}
+                      </strong>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleUndo}
+                    className="px-3 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white font-semibold text-[12px] transition active:scale-[0.98]"
+                  >
+                    Hoàn tác
+                  </button>
+                </div>
+              )}
+
               {/* Action notification toast */}
-              {routingConfirmedNotice && (
+              {routingConfirmedNotice && !undoToast && (
                 <div className="p-3 bg-[#ECFDF5] rounded-xl text-[#065F46] text-[13px] font-medium flex items-center gap-2 shadow-2xs animate-in fade-in">
                   <Check className="w-4 h-4 text-[#10B981]" />
                   <span>{routingConfirmedNotice}</span>
@@ -899,115 +990,170 @@ export function StaffConsoleShell() {
                 <div className="lg:col-span-5 flex flex-col space-y-2.5">
                   <div className="flex items-center justify-between text-[11px] px-1 text-slate-500 font-medium">
                     <span>
-                      Hồ sơ đang mở: <strong className="text-slate-900">{activeQueueTickets.length}</strong>
+                      Hồ sơ trong hàng đợi:{" "}
+                      <strong className="text-slate-900">{activeQueueTickets.length}</strong>
                     </span>
                     <span className="text-slate-400">Dùng phím ↑ ↓ (hoặc J/K) để duyệt</span>
                   </div>
 
                   <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden divide-y divide-slate-100 h-[calc(100vh-140px)] overflow-y-auto scrollbar-thin">
                     {activeQueueTickets.length === 0 ? (
-                      <div className="p-8 text-center text-slate-500">
-                        <Inbox className="w-8 h-8 mx-auto text-slate-300 mb-2" />
-                        <p className="text-[13px] font-semibold text-slate-900">Hàng đợi hiện đang trống</p>
-                        <p className="text-[12px] mt-1">Không có hồ sơ nào khớp với bộ lọc hiện tại.</p>
+                      <div className="p-8 text-center text-slate-500 space-y-3">
+                        <Inbox className="w-8 h-8 mx-auto text-slate-300" />
+                        <div>
+                          <p className="text-[13px] font-semibold text-slate-900">
+                            {searchQuery.trim()
+                              ? `Không tìm thấy ca "${searchQuery.trim()}" trong hàng đợi`
+                              : "Hàng đợi xử lý hiện đang trống"}
+                          </p>
+                          <p className="text-[12px] text-slate-500 mt-1 max-w-xs mx-auto">
+                            {searchQuery.trim()
+                              ? "Hồ sơ này có thể đã được KTV giải quyết (Resolved) hoặc đã đóng (Closed)."
+                              : "Hiện không có hồ sơ nào cần xử lý với bộ lọc hiện tại."}
+                          </p>
+                        </div>
+                        {searchQuery.trim() && (
+                          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setHistorySearchQuery(searchQuery.trim());
+                                setActiveTab("history");
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[12px] font-semibold transition shadow-xs"
+                            >
+                              <Search className="w-3.5 h-3.5" />
+                              <span>Tìm trong Lịch sử hồ sơ</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSearchQuery("")}
+                              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[12px] font-medium transition"
+                            >
+                              Xóa từ khóa
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      groupedQueueTickets.map((group) => (
-                        <div key={group.dateLabel} className="divide-y divide-slate-100">
-                          {/* Dòng tiêu đề nhỏ phân nhóm ngày */}
-                          <div className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur-xs px-3.5 py-1.5 border-y border-slate-100/90 flex items-center justify-between text-[11px] font-semibold text-slate-600 uppercase tracking-wide">
-                            <span>{group.dateLabel}</span>
-                            <span className="text-[10px] font-normal text-slate-400 lowercase">{group.tickets.length} hồ sơ</span>
-                          </div>
+                      activeQueueTickets.map((ticket) => {
+                        const isSelected = (currentActiveTicket?.id || "") === ticket.id;
+                        const isCritical = ticket.priority === "CRITICAL";
+                        const isHigh = ticket.priority === "HIGH";
+                        const isMedium = ticket.priority === "MEDIUM";
 
-                          {group.tickets.map((ticket) => {
-                            const isSelected = (currentActiveTicket?.id || "") === ticket.id;
-                            const isCritical = ticket.priority === "CRITICAL";
-                            const isHigh = ticket.priority === "HIGH";
+                        const headline = getShortHeadline(ticket);
+                        const waitTime = getRelativeWaitTime(ticket.created_at);
+                        const isSafetyConfirmed =
+                          ticket.safety_status === "safe" ||
+                          ticket.safety_status === "customer_reported_safe" ||
+                          Boolean(ticket.safety_acknowledged_at);
 
-                            const shortId = getShortTicketId(ticket.id);
-                            const title = getTicketDisplayTitle(ticket);
-                            const formattedTime = new Date(ticket.created_at).toLocaleTimeString("vi-VN", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            });
-
-                            return (
-                              <div
-                                id={`ticket-item-${ticket.id}`}
-                                key={ticket.id}
-                                onClick={() => handleSelectTicket(ticket.id)}
-                                className={`group cursor-pointer p-3.5 transition-all border-l-[3.5px] ${isSelected
-                                  ? "bg-[#EFF3FC] border-l-[#1E40AF] shadow-2xs"
-                                  : isCritical
-                                    ? "bg-white border-l-red-500 hover:bg-slate-50/80"
-                                    : isHigh
-                                      ? "bg-white border-l-amber-500 hover:bg-slate-50/80"
-                                      : ticket.priority === "MEDIUM"
-                                        ? "bg-white border-l-blue-400 hover:bg-slate-50/80"
-                                        : "bg-white border-l-transparent hover:border-l-slate-200 hover:bg-slate-50/80"
-                                  }`}
-                              >
-                                {/* Dòng 1: Tiêu đề sự cố thật từ AI brief + nhãn mức độ/trạng thái duy nhất */}
-                                <div className="flex items-center justify-between gap-2">
-                                  <h3
-                                    className={`text-[13.5px] truncate leading-tight flex-1 ${isSelected
+                        return (
+                          <div
+                            id={`ticket-item-${ticket.id}`}
+                            key={ticket.id}
+                            onClick={() => handleSelectTicket(ticket.id)}
+                            className={`group cursor-pointer p-3.5 transition-all border-l-4 ${
+                              isSelected
+                                ? "bg-[#EFF3FC] border-l-[#1E40AF] shadow-2xs"
+                                : isCritical
+                                ? "bg-white border-l-red-500 hover:bg-slate-50/80"
+                                : isHigh
+                                ? "bg-white border-l-amber-500 hover:bg-slate-50/80"
+                                : isMedium
+                                ? "bg-white border-l-blue-400 hover:bg-slate-50/80"
+                                : "bg-white border-l-transparent hover:border-l-slate-200 hover:bg-slate-50/80"
+                            }`}
+                          >
+                            {/* Dòng 1: Tên khách · Xe | Bên phải: "chờ 12 phút" */}
+                            <div className="flex items-center justify-between gap-2 text-[12.5px]">
+                              <div className="flex items-center gap-1.5 truncate">
+                                <span
+                                  className={`truncate ${
+                                    isSelected
                                       ? "font-bold text-[#1E40AF]"
-                                      : "font-semibold text-slate-900 group-hover:text-[#1E40AF]"
-                                      }`}
-                                  >
-                                    {title}
-                                  </h3>
-
-                                  {/* Gom thành một dấu hiệu duy nhất mỗi dòng ở góc phải */}
-                                  <div className="shrink-0 flex items-center gap-1 font-sans">
-                                    {isCritical ? (
-                                      <span className="px-1.5 py-0.5 rounded text-[10.5px] font-bold text-red-600 bg-red-50 tracking-wide">
-                                        Khẩn cấp
-                                      </span>
-                                    ) : isHigh ? (
-                                      <span className="px-1.5 py-0.5 rounded text-[10.5px] font-semibold text-amber-700 bg-amber-50">
-                                        Ưu tiên
-                                      </span>
-                                    ) : (
-                                      <span className="text-[11px] text-slate-500 font-medium">
-                                        {VIETNAMESE_STATUS_MAP[ticket.status] || ticket.status}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Dòng 2: Mã case rút gọn, dòng xe, giờ: 001 · VF8 · 07:29 */}
-                                <div className="mt-1.5 text-[12px] text-slate-500 flex items-center justify-between font-mono">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className={`font-semibold ${isSelected ? "text-[#1E40AF]" : "text-slate-700"}`}>
-                                      {shortId}
-                                    </span>
-                                    <span>·</span>
-                                    <span className="font-sans font-medium text-slate-600">{ticket.vehicle_model}</span>
-                                    <span>·</span>
-                                    <span className="text-slate-400">{formattedTime}</span>
-                                  </div>
-
-                                  {/* Thông tin phụ hiển thị nhẹ nhàng: Mã lỗi hoặc GPS */}
-                                  <div className="flex items-center gap-1 font-sans">
-                                    {ticket.error_code_short && (
-                                      <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-mono text-[10px]">
-                                        {ticket.error_code_short}
-                                      </span>
-                                    )}
-                                    {ticket.has_location_consent && (
-                                      <span className="px-1 py-0.2 rounded bg-blue-50 text-[#1E40AF] text-[10px] font-medium">
-                                        GPS
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
+                                      : "font-semibold text-slate-900"
+                                  }`}
+                                >
+                                  {ticket.customer_name || ticket.mock_customer_id}
+                                </span>
+                                <span className="text-slate-400">·</span>
+                                <span className="font-medium text-slate-600 shrink-0">
+                                  {ticket.vehicle_model}
+                                </span>
                               </div>
-                            );
-                          })}
-                        </div>
-                      ))
+
+                              <span className="text-[11px] text-slate-400 font-sans shrink-0 font-medium">
+                                {waitTime}
+                              </span>
+                            </div>
+
+                            {/* Dòng 2: Headline ngắn 1 dòng (bỏ tiền tố giật gân) */}
+                            <p
+                              className={`mt-1 text-[13px] leading-snug truncate ${
+                                isSelected
+                                  ? "font-semibold text-slate-900"
+                                  : "font-normal text-slate-700 group-hover:text-slate-900"
+                              }`}
+                              title={headline}
+                            >
+                              {headline}
+                            </p>
+
+                            {/* Dòng 3: Chip ưu tiên, thiếu tin, GPS, đã an toàn */}
+                            <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                              {/* Chip Mở lại ca (Reopened) */}
+                              {ticket.status === "Reopened" && (
+                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-bold text-purple-700 bg-purple-100 border border-purple-300">
+                                  ↺ Mở lại ca
+                                </span>
+                              )}
+
+                              {/* Chip Ưu tiên */}
+                              {isCritical ? (
+                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-bold text-red-600 bg-red-50">
+                                  Khẩn cấp
+                                </span>
+                              ) : isHigh ? (
+                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-semibold text-amber-700 bg-amber-50">
+                                  Ưu tiên cao
+                                </span>
+                              ) : isMedium ? (
+                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-medium text-blue-700 bg-blue-50">
+                                  Trung bình
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-medium text-slate-600 bg-slate-100">
+                                  Thấp
+                                </span>
+                              )}
+
+                              {/* Chip Thiếu thông tin */}
+                              {(ticket.missing_info_flag ||
+                                ticket.status === "Needs Information") && (
+                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-semibold text-amber-800 bg-amber-100/80">
+                                  Thiếu thông tin
+                                </span>
+                              )}
+
+                              {/* Chip GPS */}
+                              {ticket.has_location_consent && (
+                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-medium text-[#1E40AF] bg-blue-50">
+                                  GPS
+                                </span>
+                              )}
+
+                              {/* Chip Khách đã an toàn */}
+                              {isSafetyConfirmed && (
+                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-semibold text-emerald-700 bg-emerald-50">
+                                  ✓ Đã an toàn
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
                     )}
                   </div>
                 </div>
@@ -1128,49 +1274,78 @@ export function StaffConsoleShell() {
                 </p>
               </div>
 
-              {/* Filter Bar with Styled Pills */}
-              <div className="flex flex-wrap items-center justify-between gap-3 bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[12px] font-semibold text-slate-500">Trạng thái:</span>
-                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-medium">
-                    {["ALL", "Resolved", "Closed", "Reopened"].map((st) => (
+              {/* Filter Bar with Quick Search and Styled Pills */}
+              <div className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] space-y-3">
+                {/* Search Bar Row */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={historySearchQuery}
+                      onChange={(e) => setHistorySearchQuery(e.target.value)}
+                      placeholder="Tìm nhanh mã case (ví dụ CASE-...), dòng xe, sự cố, KTV..."
+                      className="w-full text-[12px] pl-9 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 focus:bg-white transition"
+                    />
+                    {historySearchQuery && (
                       <button
-                        key={st}
                         type="button"
-                        onClick={() => setHistoryStatusFilter(st)}
-                        className={`px-2.5 py-1 rounded-lg transition ${historyStatusFilter === st
-                          ? "bg-white text-slate-900 font-semibold shadow-xs"
-                          : "text-slate-600 hover:text-slate-900"
-                          }`}
+                        onClick={() => setHistorySearchQuery("")}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
                       >
-                        {st === "ALL" ? "Tất cả" : st}
+                        <X className="w-3.5 h-3.5" />
                       </button>
-                    ))}
+                    )}
+                  </div>
+                  <div className="text-[12px] text-slate-500 font-medium">
+                    Tìm thấy <strong className="text-slate-900">{filteredHistory.length}</strong> hồ sơ
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[12px] font-semibold text-slate-500">Ý định:</span>
-                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-medium">
-                    {[
-                      { id: "ALL", label: "Tất cả" },
-                      { id: "Charging/Battery", label: "Sạc & Pin" },
-                      { id: "Service/Incident", label: "Kỹ thuật" },
-                      { id: "Complaint/Feedback", label: "Khiếu nại" },
-                      { id: "Sales/General Info", label: "Bán hàng" },
-                    ].map((it) => (
-                      <button
-                        key={it.id}
-                        type="button"
-                        onClick={() => setHistoryIntentFilter(it.id)}
-                        className={`px-2.5 py-1 rounded-lg transition ${historyIntentFilter === it.id
-                          ? "bg-white text-slate-900 font-semibold shadow-xs"
-                          : "text-slate-600 hover:text-slate-900"
-                          }`}
-                      >
-                        {it.label}
-                      </button>
-                    ))}
+                {/* Filter Pills Row */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-slate-100">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[12px] font-semibold text-slate-500">Trạng thái:</span>
+                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-medium">
+                      {["ALL", "Resolved", "Closed", "Reopened"].map((st) => (
+                        <button
+                          key={st}
+                          type="button"
+                          onClick={() => setHistoryStatusFilter(st)}
+                          className={`px-2.5 py-1 rounded-lg transition ${historyStatusFilter === st
+                            ? "bg-white text-slate-900 font-semibold shadow-xs"
+                            : "text-slate-600 hover:text-slate-900"
+                            }`}
+                        >
+                          {st === "ALL" ? "Tất cả" : st}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[12px] font-semibold text-slate-500">Ý định:</span>
+                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-medium">
+                      {[
+                        { id: "ALL", label: "Tất cả" },
+                        { id: "Charging/Battery", label: "Sạc & Pin" },
+                        { id: "Service/Incident", label: "Kỹ thuật" },
+                        { id: "Complaint/Feedback", label: "Khiếu nại" },
+                        { id: "Sales/General Info", label: "Bán hàng" },
+                      ].map((it) => (
+                        <button
+                          key={it.id}
+                          type="button"
+                          onClick={() => setHistoryIntentFilter(it.id)}
+                          className={`px-2.5 py-1 rounded-lg transition ${historyIntentFilter === it.id
+                            ? "bg-white text-slate-900 font-semibold shadow-xs"
+                            : "text-slate-600 hover:text-slate-900"
+                            }`}
+                        >
+                          {it.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1191,49 +1366,69 @@ export function StaffConsoleShell() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {filteredHistory.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-50/70 transition">
-                          <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{item.id}</td>
-                          <td className="py-3.5 px-4">
-                            <div className="font-semibold text-slate-900">{item.intent}</div>
-                            <div className="text-[11px] text-slate-500">{item.vehicleModel}</div>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <span
-                              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase ${item.status === "Closed"
-                                ? "bg-[#ECFDF5] text-[#059669]"
-                                : item.status === "Reopened"
-                                  ? "bg-[#FEF2F2] text-[#DC2626]"
-                                  : "bg-[#EFF3FC] text-[#1E40AF]"
-                                }`}
-                            >
-                              {item.status}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4 text-[12px] font-medium text-slate-700">{item.routedTo}</td>
-                          <td className="py-3.5 px-4 text-[12px]">
-                            {item.customerConfirmed ? (
-                              <span className="text-[#059669] font-medium flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Đã xác nhận
-                              </span>
-                            ) : item.status === "Reopened" ? (
-                              <span className="text-[#DC2626] font-medium">Báo chưa giải quyết</span>
-                            ) : (
-                              <span className="text-slate-400">Chưa xác nhận</span>
-                            )}
-                          </td>
-                          <td className="py-3.5 px-4 text-[12px] text-slate-500 font-mono">{item.resolvedAt}</td>
-                          <td className="py-3.5 px-4 text-right">
-                            <button
-                              type="button"
-                              onClick={() => setReviewingHistoryCase(item)}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-[#1E40AF] text-[12px] font-semibold transition"
-                            >
-                              Xem lại hồ sơ
-                            </button>
+                      {filteredHistory.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-12 text-center text-slate-400">
+                            Không tìm thấy hồ sơ nào khớp với bộ lọc hoặc từ khóa tìm kiếm.
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        filteredHistory.map((item) => (
+                          <tr key={item.id} className="hover:bg-slate-50/70 transition">
+                            <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{item.id}</td>
+                            <td className="py-3.5 px-4">
+                              <div className="font-semibold text-slate-900">{item.intent}</div>
+                              <div className="text-[11px] text-slate-500">{item.vehicleModel}</div>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase ${item.status === "Closed"
+                                  ? "bg-[#ECFDF5] text-[#059669]"
+                                  : item.status === "Reopened"
+                                    ? "bg-[#FEF2F2] text-[#DC2626]"
+                                    : "bg-[#EFF3FC] text-[#1E40AF]"
+                                  }`}
+                              >
+                                {item.status}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-[12px] font-medium text-slate-700">{item.routedTo}</td>
+                            <td className="py-3.5 px-4 text-[12px]">
+                              {item.isAutoClosed ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                  ⏱ Tự động đóng (72h)
+                                </span>
+                              ) : item.customerConfirmed ? (
+                                <div className="flex flex-col">
+                                  <span className="text-[#059669] font-medium flex items-center gap-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5" /> Đã xác nhận
+                                  </span>
+                                  {item.customerFeedbackScore && (
+                                    <span className="text-[11px] text-amber-600 font-semibold mt-0.5 flex items-center gap-0.5">
+                                      <Star className="w-3 h-3 fill-amber-500 text-amber-500 inline" />
+                                      {item.customerFeedbackScore}/5 sao
+                                    </span>
+                                  )}
+                                </div>
+                              ) : item.status === "Reopened" ? (
+                                <span className="text-[#DC2626] font-medium">Báo chưa giải quyết</span>
+                              ) : (
+                                <span className="text-slate-400">Chưa xác nhận</span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4 text-[12px] text-slate-500 font-mono">{item.resolvedAt}</td>
+                            <td className="py-3.5 px-4 text-right">
+                              <button
+                                type="button"
+                                onClick={() => setReviewingHistoryCase(item)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-[#1E40AF] text-[12px] font-semibold transition"
+                              >
+                                Xem lại hồ sơ
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -1276,14 +1471,25 @@ export function StaffConsoleShell() {
                       </div>
 
                       {reviewingHistoryCase.customerFeedbackScore && (
-                        <div className="p-3.5 rounded-xl bg-[#ECFDF5]">
-                          <div className="flex items-center gap-1 text-[#D97706] mb-1">
+                        <div className="p-3.5 rounded-xl bg-[#ECFDF5] space-y-1.5">
+                          <div className="flex items-center gap-1 text-[#D97706]">
                             {[...Array(reviewingHistoryCase.customerFeedbackScore)].map((_, i) => (
                               <Star key={i} className="w-4 h-4 fill-current" />
                             ))}
                             <span className="text-[12px] font-bold text-[#065F46] ml-2">Đánh giá của khách hàng</span>
                           </div>
-                          <p className="text-[12px] text-[#065F46] italic">"{reviewingHistoryCase.customerFeedbackComment}"</p>
+                          {reviewingHistoryCase.customerFeedbackTags && reviewingHistoryCase.customerFeedbackTags.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {reviewingHistoryCase.customerFeedbackTags.map((tag) => (
+                                <span key={tag} className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {reviewingHistoryCase.customerFeedbackComment && (
+                            <p className="text-[12px] text-[#065F46] italic">"{reviewingHistoryCase.customerFeedbackComment}"</p>
+                          )}
                         </div>
                       )}
 
@@ -1401,13 +1607,13 @@ export function StaffConsoleShell() {
                     scope: item.summary || item.category,
                   }))
                   : [
-                    { id: "SRC-001", title: "Chính sách Bảo hành Ô tô Điện VinFast", url: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-xe-dien", scope: "VF 8 (10 năm/200.000km, pin mua đứt không giới hạn km)" },
+                    { id: "SRC-001", title: "Chính sách Bảo hành Ô tô Điện VinFast", url: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto", scope: "VF 8 (10 năm/200.000km, pin mua đứt không giới hạn km)" },
                     { id: "SRC-002", title: "Hướng dẫn sử dụng Ứng dụng VinFast", url: "https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast", scope: "Đặt lịch xưởng, theo dõi dung lượng pin" },
-                    { id: "SRC-003", title: "Thông tin Cứu hộ Khẩn cấp & Cứu hộ Pin 24/7", url: "https://vinfastauto.com/vn_vi/dich-vu-cuu-ho-24-7", scope: "Hotline 1900-232389, cứu hộ pin lưu động" },
-                    { id: "SRC-004", title: "Biểu phí & Chính sách Sạc tại Trạm Công cộng", url: "https://vinfastauto.com/vn_vi/chinh-sach-bieu-phi-sac-xe-dien", scope: "Đơn giá kWh, phí chiếm trụ 1.000đ/phút sau 10 phút" },
-                    { id: "SRC-005", title: "Cẩm nang Bảo dưỡng Định kỳ 12.000 km", url: "https://vinfastauto.com/vn_vi/lich-bao-duong-dinh-ky-xe-dien", scope: "6 hạng mục kiểm tra tiêu chuẩn pack pin, phanh, gầm" },
-                    { id: "SRC-006", title: "Danh mục Sản phẩm & Chính sách Bán hàng", url: "https://vinfastauto.com/vn_vi/cac-dong-xe-o-to", scope: "Dải xe điện VF 3, VF 5, VF 6, VF 7, VF 8, VF 9" },
-                    { id: "SRC-007", title: "Thông số Kỹ thuật Chi tiết Catalog", url: "https://vinfastauto.com/vn_vi/thong-so-ky-thuat-o-to-dien", scope: "VF 7 Plus 349HP AWD vs Eco 201HP FWD, kích thước VF 9" },
+                    { id: "SRC-003", title: "Thông tin Cứu hộ Khẩn cấp & Cứu hộ Pin 24/7", url: "https://vinfastauto.com/vn_vi/thong-tin-cuu-ho-oto", scope: "Hotline 1900-232389, cứu hộ pin lưu động" },
+                    { id: "SRC-004", title: "Biểu phí & Chính sách Sạc tại Trạm Công cộng", url: "https://vinfastauto.com/vn_vi/chinh-sach-va-bieu-phi-sac-pin-cong-cong", scope: "Đơn giá kWh, phí chiếm trụ 1.000đ/phút sau 10 phút" },
+                    { id: "SRC-005", title: "Cẩm nang Bảo dưỡng Định kỳ 12.000 km", url: "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto", scope: "6 hạng mục kiểm tra tiêu chuẩn pack pin, phanh, gầm" },
+                    { id: "SRC-006", title: "Danh mục Sản phẩm & Chính sách Bán hàng", url: "https://vinfastauto.com/vn_vi/", scope: "Dải xe điện VF 3, VF 5, VF 6, VF 7, VF 8, VF 9" },
+                    { id: "SRC-007", title: "Sổ tay Hướng dẫn Sử dụng VF 8", url: "https://om.vinfastauto.com/vi_vn/detail?car=VF8&year=2026", scope: "Sổ tay điện tử hướng dẫn chi tiết vận hành VF 8" },
                   ]
                 ).map((item) => (
                   <div key={item.id} className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] space-y-2">
@@ -1583,15 +1789,15 @@ export function StaffConsoleShell() {
               <div className="bg-white rounded-3xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.05)] space-y-5">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-2xl bg-[#1E40AF] text-white flex items-center justify-center text-xl font-bold shadow-xs">
-                    {user?.name?.charAt(0) || "Q"}
+                    {user?.name?.charAt(0) || "V"}
                   </div>
                   <div>
-                    <h2 className="text-base font-bold text-slate-900">{user?.name || "Lê Hoàng Quân"}</h2>
+                    <h2 className="text-base font-bold text-slate-900">{user?.name || "Cố vấn Dịch vụ VinFast"}</h2>
                     <div className="text-[12px] text-[#1E40AF] font-semibold">
                       {user?.role === "STAFF" ? "Cố vấn Dịch vụ / Kỹ thuật viên Tiếp nhận HITL" : (user?.role || "Kỹ thuật viên Bậc 4")}
                     </div>
                     <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                      Mã nhân viên: {user?.id || "STAFF-VF-0891"} &bull; {user?.email || "quan.lh@vinfast.vn"}
+                      Mã nhân viên: {user?.id || "STAFF_001"} &bull; {user?.email || "staff@vinfast.vn"}
                     </div>
                   </div>
                 </div>

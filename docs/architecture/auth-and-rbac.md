@@ -8,9 +8,12 @@
 
 ## Quy tắc
 
-* Public register chỉ tạo `Customer` bằng SĐT + OTP demo; đây không phải xác minh chủ xe VinFast thật. Staff là account seed/invite.
+* Public register chỉ tạo `Customer` bằng tên đăng nhập demo và mật khẩu; không yêu cầu tên thật, SĐT thật, OTP/SMS hoặc định danh VinFast. `mock_customer_id` do backend tạo riêng cho từng tài khoản.
+* Guest là phiên chưa đăng nhập, không có bản ghi trong bảng `users`; giới hạn guest được kiểm tra ở backend.
+* Staff là tài khoản nội bộ có role `STAFF`, được tạo qua quy trình seed/invite hoặc lệnh quản trị nội bộ; không có API đăng ký Staff công khai.
+* Login trả bearer JWT HS256 có hạn 7 ngày. `sub` trỏ đến `users.id`; mỗi request lấy role hiện tại từ database. Production bắt buộc cấu hình `AUTH_SECRET_KEY` tối thiểu 32 ký tự.
 * Backend bắt buộc kiểm tra role và ownership, không chỉ ẩn nút ở frontend.
 * MVP không xác thực mã khách hàng/VinFast ID thật và không tích hợp CRM.
 * Attachment không công khai; cảnh báo khách không tải VIN, biển số, khuôn mặt, giấy tờ cá nhân.
 * Guest limit áp dụng theo `guest_session_id`; backend phải kiểm tra, không chỉ ẩn ở frontend.
-* Staff không có quyền quản lý user/role toàn hệ thống. Customer Preview chạy session demo, không cho Staff mạo danh hoặc mở chat history của Customer khác ngoài case được phân quyền xử lý.
+* Staff không có quyền quản lý user/role toàn hệ thống. Customer Preview chạy session demo riêng, không cho Staff mạo danh hoặc mở chat history của Customer khác ngoài case được phân quyền xử lý.

@@ -2,6 +2,7 @@
 import asyncio
 import hashlib
 import json
+import logging
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 from weakref import WeakValueDictionary
@@ -9,6 +10,8 @@ from weakref import WeakValueDictionary
 from fastapi import HTTPException
 from sqlalchemy import or_, update
 from sqlalchemy.exc import IntegrityError
+
+logger = logging.getLogger("chat_turns")
 
 from src.models.db_models import Case, ChatRequestRecord, ChatSession, Message
 from src.models.schemas import ApiResponse, ChatResponseData, EmergencyContext
@@ -35,6 +38,8 @@ def session_emergency_context(db, owner_id: str, session_id: str) -> EmergencyCo
 
 
 async def run_chat_turn(payload, user, db, handler):
+    if not user and not payload.guest_session_id:
+        payload = payload.model_copy(update={'guest_session_id': payload.session_id})
     owner = f'user:{user.id}' if user else f'guest:{payload.guest_session_id}'
     lock = _LOCKS.setdefault((str(db.get_bind().url), payload.session_id), asyncio.Lock())
     async with lock:
@@ -50,7 +55,12 @@ async def run_chat_turn(payload, user, db, handler):
                 db.rollback()
                 session = db.get(ChatSession, payload.session_id)
         if session.owner != owner:
-            raise HTTPException(403, 'Phiên hội thoại không thuộc khách hàng này.')
+            if session.owner and (session.owner.startswith('guest:') or session.owner == 'guest:None'):
+                session.owner = owner
+                db.commit()
+            else:
+                logger.warning(f"[403 FORBIDDEN] session.owner mismatch: db_owner='{session.owner}', request_owner='{owner}', session_id='{payload.session_id}'")
+                raise HTTPException(403, f'Phiên hội thoại không thuộc khách hàng này (owner={session.owner}).')
         request_key = hashlib.sha256(f'{owner}:{payload.request_id}'.encode()).hexdigest() if payload.request_id else None
         fingerprint = hashlib.sha256(json.dumps(payload.model_dump(), sort_keys=True, ensure_ascii=False).encode()).hexdigest()
         record = db.get(ChatRequestRecord, request_key) if request_key else None

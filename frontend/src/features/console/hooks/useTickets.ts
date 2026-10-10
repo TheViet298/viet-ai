@@ -8,7 +8,9 @@ import { getTicketQueue } from "../api/consoleApi";
 export const INITIAL_TICKETS: TicketItem[] = [
   {
     id: "CASE-20260924-001",
-    mock_customer_id: "CUST_MOCK_01",
+    mock_customer_id: "VF-CUST-001",
+    customer_name: "Nguyễn Văn Tuấn",
+    customer_phone: "0912345678",
     vehicle_model: "VF8",
     vehicle_code_mock: "VF-SF-00231",
     intent: "Charging/Battery",
@@ -24,7 +26,9 @@ export const INITIAL_TICKETS: TicketItem[] = [
   },
   {
     id: "CASE-20260924-002",
-    mock_customer_id: "CUST_MOCK_99",
+    mock_customer_id: "VF-CUST-099",
+    customer_name: "Lê Minh Trí",
+    customer_phone: "0934567890",
     vehicle_model: "VF8",
     vehicle_code_mock: "VF-SF-99120",
     intent: "Service/Incident",
@@ -40,7 +44,9 @@ export const INITIAL_TICKETS: TicketItem[] = [
   },
   {
     id: "CASE-20260924-003",
-    mock_customer_id: "CUST_MOCK_02",
+    mock_customer_id: "VF-CUST-002",
+    customer_name: "Trần Thị Mai",
+    customer_phone: "0987654321",
     vehicle_model: "VF5",
     vehicle_code_mock: "VF-SF-00445",
     intent: "Service/Incident",
@@ -56,7 +62,9 @@ export const INITIAL_TICKETS: TicketItem[] = [
   },
   {
     id: "CASE-20260924-004",
-    mock_customer_id: "CUST_MOCK_15",
+    mock_customer_id: "VF-CUST-015",
+    customer_name: "Phạm Hồng Phúc",
+    customer_phone: "0901234567",
     vehicle_model: "VF9",
     vehicle_code_mock: "VF-SF-00789",
     intent: "Charging/Battery",
@@ -72,7 +80,9 @@ export const INITIAL_TICKETS: TicketItem[] = [
   },
   {
     id: "CASE-20260924-005",
-    mock_customer_id: "CUST_MOCK_23",
+    mock_customer_id: "VF-CUST-023",
+    customer_name: "Hoàng Gia Bảo",
+    customer_phone: "0918765432",
     vehicle_model: "VF6",
     vehicle_code_mock: "VF-SF-00612",
     intent: "Service/Incident",
@@ -163,7 +173,11 @@ export function useTickets() {
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase().trim();
           const matchId = t.id.toLowerCase().includes(q);
-          const matchCust = t.mock_customer_id.toLowerCase().includes(q);
+          const matchCust = (
+            t.customer_name
+              ? `${t.customer_name} ${t.mock_customer_id} ${t.customer_phone || ""}`
+              : t.mock_customer_id
+          ).toLowerCase().includes(q);
           const matchModel = t.vehicle_model.toLowerCase().includes(q);
           const matchCode = (t.vehicle_code_mock || "").toLowerCase().includes(q);
           const matchIntent = t.intent.toLowerCase().includes(q);
@@ -180,7 +194,9 @@ export function useTickets() {
         if (sortBy === "CONFIDENCE_DESC") {
           return b.confidence_score - a.confidence_score;
         }
-        // Default: NEWEST
+        // Mặc định (NEWEST): Luôn ghim ca Khẩn cấp (CRITICAL) lên trên cùng, sau đó xếp theo thời gian mới nhất
+        if (a.priority === "CRITICAL" && b.priority !== "CRITICAL") return -1;
+        if (b.priority === "CRITICAL" && a.priority !== "CRITICAL") return 1;
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
   }, [tickets, statusFilter, priorityFilter, searchQuery, sortBy]);

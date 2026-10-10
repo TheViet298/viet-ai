@@ -28,6 +28,8 @@ export interface CaseBrief {
 export interface TicketItem {
   id: string;
   mock_customer_id: string;
+  customer_name?: string;
+  customer_phone?: string;
   vehicle_model: string;
   vehicle_code_mock?: string;
   intent: TicketIntent;
@@ -40,17 +42,28 @@ export interface TicketItem {
   suggested_action?: string;
   has_location_consent?: boolean;
   error_code_short?: string;
+  safety_status?: string;
+  safety_acknowledged_at?: string | null;
+  customer_feedback_score?: number | null;
+  customer_feedback_comment?: string | null;
+  customer_feedback_tags?: string[];
+  is_auto_closed?: boolean;
 }
 
 export interface TicketDetail {
   case: {
     id: string;
     mock_customer_id: string;
+    customer_name?: string;
+    customer_phone?: string;
     vehicle_code_mock?: string;
     vehicle_model: string;
     intent: TicketIntent;
     priority: TicketPriority;
     status: TicketStatus;
+    safety_status?: string;
+    safety_acknowledged_at?: string | null;
+    safety_guidance?: string;
   };
   case_brief: CaseBrief;
   conversation_history: Array<{
@@ -58,6 +71,14 @@ export interface TicketDetail {
     content: string;
     created_at: string;
   }>;
+  location?: {
+    location_label?: string | null;
+    share_with_staff?: boolean;
+    status?: string;
+    source?: string;
+    latitude?: number | null;
+    longitude?: number | null;
+  } | null;
 }
 
 export type StaffActionType =
@@ -89,7 +110,7 @@ export const VIETNAMESE_STATUS_MAP: Record<string, string> = {
 
 export const VIETNAMESE_PRIORITY_MAP: Record<string, string> = {
   "CRITICAL": "Khẩn cấp",
-  "HIGH": "Ưu tiên",
+  "HIGH": "Ưu tiên cao",
   "MEDIUM": "Tiêu chuẩn",
   "LOW": "Thấp",
 };

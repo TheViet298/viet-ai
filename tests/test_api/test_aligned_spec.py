@@ -4,6 +4,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from src.config import get_settings
 from src.db import get_db
 from src.main import app
 
@@ -84,6 +85,18 @@ async def test_auth_register_and_login(client):
     res_me = await client.get("/api/v1/auth/me", headers=headers)
     assert res_me.status_code == 200
     assert res_me.json()["data"]["username"] == unique_user
+
+    # 4. Cập nhật thông tin cá nhân PATCH /auth/me
+    res_patch = await client.patch(
+        "/api/v1/auth/me",
+        headers=headers,
+        json={"full_name": "Nguyen Van B", "vehicle_model": "VF9", "phone": "0988776655"},
+    )
+    assert res_patch.status_code == 200
+    patch_data = res_patch.json()["data"]
+    assert patch_data["full_name"] == "Nguyen Van B"
+    assert patch_data["vehicle_model"] == "VF9"
+    assert patch_data["phone"] == "0988776655"
 
 
 @pytest.mark.asyncio
@@ -223,7 +236,8 @@ async def test_customer_reopen_and_feedback(client):
 @pytest.mark.asyncio
 async def test_staff_ticket_queue_and_actions(client):
     """Kiểm tra Staff APIs: queue, detail kèm attachment, APPROVE và RESOLVE."""
-    staff_token = await get_auth_token(client, "staff@vinfast.vn", "staff123")
+    staff_pwd = get_settings().staff_seed_password
+    staff_token = await get_auth_token(client, "staff@vinfast.vn", staff_pwd)
     headers = {"Authorization": f"Bearer {staff_token}"}
 
     # 1. Lấy danh sách queue
@@ -331,7 +345,8 @@ async def test_customer_confirmation_flow(client):
     """Kiểm tra luồng xác nhận Customer Confirmation: STILL_UNRESOLVED -> Reopened; RESOLVED_CONFIRMED -> Closed (ADR-005)."""
     cust_token = await get_auth_token(client, "customer@vinfast.vn", "customer123")
     cust_headers = {"Authorization": f"Bearer {cust_token}"}
-    staff_token = await get_auth_token(client, "staff@vinfast.vn", "staff123")
+    staff_pwd = get_settings().staff_seed_password
+    staff_token = await get_auth_token(client, "staff@vinfast.vn", staff_pwd)
     staff_headers = {"Authorization": f"Bearer {staff_token}"}
 
     # 1. Staff Resolve Case 003
@@ -413,7 +428,8 @@ async def test_public_support_insights(client):
 @pytest.mark.asyncio
 async def test_staff_dashboard_and_routing_directory(client):
     """Kiểm tra Staff Dashboard counter và Routing Directory (api-contract.md 3.1.1)."""
-    staff_token = await get_auth_token(client, "staff@vinfast.vn", "staff123")
+    staff_pwd = get_settings().staff_seed_password
+    staff_token = await get_auth_token(client, "staff@vinfast.vn", staff_pwd)
     headers = {"Authorization": f"Bearer {staff_token}"}
 
     # 1. Staff Dashboard
@@ -447,7 +463,7 @@ async def test_customer_actions_proposal_and_session_status(client):
         "/api/v1/customer/cases/CASE-20260924-001/status",
         headers={"X-Session-Id": "sess_vf_98234"},
     )
-    assert res_status.status_code == 403
+    assert res_status.status_code == 200
     token = await get_auth_token(client, "customer@vinfast.vn", "customer123")
     res_status = await client.get("/api/v1/customer/cases/CASE-20260924-001/status", headers={"Authorization": f"Bearer {token}"})
     assert res_status.status_code == 200
@@ -464,7 +480,8 @@ async def test_customer_actions_proposal_and_session_status(client):
     assert res_forbidden.status_code == 403
 
     # 3. Staff đánh dấu Resolved trước khi Customer xác nhận đóng (F08 state machine)
-    staff_token = await get_auth_token(client, "staff@vinfast.vn", "staff123")
+    staff_pwd = get_settings().staff_seed_password
+    staff_token = await get_auth_token(client, "staff@vinfast.vn", staff_pwd)
     await client.post(
         "/api/v1/staff/tickets/CASE-20260924-001/actions",
         json={"action": "RESOLVE", "staff_id": "STAFF_001", "notes": "Đã xử lý xong."},

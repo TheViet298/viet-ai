@@ -1,6 +1,6 @@
 import pytest
 
-from src.api.auth import Principal, optional_principal
+from src.api.dependencies import Principal, optional_principal
 from src.main import app
 
 
