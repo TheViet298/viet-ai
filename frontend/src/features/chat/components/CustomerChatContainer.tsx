@@ -378,7 +378,7 @@ export function CustomerChatContainer() {
                 </Link>
               ) : (
                 <Link
-                  href="/track-case"
+                  href={currentCaseId ? `/track-case?case_id=${encodeURIComponent(currentCaseId)}` : "/track-case"}
                   className="text-[#1E40AF] font-bold hover:underline flex items-center gap-0.5 shrink-0 text-[11px]"
                 >
                   <span>Xem tiến trình ›</span>

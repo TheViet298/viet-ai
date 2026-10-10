@@ -42,6 +42,12 @@ export interface TicketItem {
   suggested_action?: string;
   has_location_consent?: boolean;
   error_code_short?: string;
+  safety_status?: string;
+  safety_acknowledged_at?: string | null;
+  customer_feedback_score?: number | null;
+  customer_feedback_comment?: string | null;
+  customer_feedback_tags?: string[];
+  is_auto_closed?: boolean;
 }
 
 export interface TicketDetail {
@@ -55,6 +61,9 @@ export interface TicketDetail {
     intent: TicketIntent;
     priority: TicketPriority;
     status: TicketStatus;
+    safety_status?: string;
+    safety_acknowledged_at?: string | null;
+    safety_guidance?: string;
   };
   case_brief: CaseBrief;
   conversation_history: Array<{
@@ -62,6 +71,14 @@ export interface TicketDetail {
     content: string;
     created_at: string;
   }>;
+  location?: {
+    location_label?: string | null;
+    share_with_staff?: boolean;
+    status?: string;
+    source?: string;
+    latitude?: number | null;
+    longitude?: number | null;
+  } | null;
 }
 
 export type StaffActionType =

@@ -176,6 +176,7 @@ export function LandingPage() {
 
   // Active cases of user (CHỈ dành cho CUSTOMER đã đăng nhập - ADR-005, RBAC)
   const [activeUserCase, setActiveUserCase] = useState<CustomerCaseItem | null>(null);
+  const [openCasesCount, setOpenCasesCount] = useState<number>(0);
   // Mặc định là dạng thu gọn (pill); đọc trạng thái từ sessionStorage nếu có
   const [isCaseBubbleExpanded, setIsCaseBubbleExpanded] = useState(false);
   // Hiệu ứng trượt vào sau 300ms sau khi trang tải xong (không xuất hiện cùng lúc với hero)
@@ -253,14 +254,86 @@ export function LandingPage() {
     if (s === "IN PROGRESS" || s === "DISPATCHED") {
       return "Kỹ thuật viên đang xử lý sự cố";
     }
-    if (s === "NEEDS INFORMATION" || s === "WAITING_CONFIRMATION") {
-      return "Chờ bạn xác nhận phương án";
+    if (s === "NEEDS INFORMATION" || s === "NEEDS_INFORMATION" || s === "WAITING_CONFIRMATION") {
+      return "Chờ bạn bổ sung thông tin xe";
+    }
+    if (s === "RESOLVED" || s === "ĐÃ GIẢI QUYẾT") {
+      return "Chờ bạn xác nhận nghiệm thu xe";
     }
     if (s === "PENDING") {
       return "Đang điều phối kỹ thuật viên";
     }
     return "Kỹ thuật viên đang kiểm tra";
   }, [activeUserCase]);
+
+  // Cấu hình hiển thị bong bóng phản ánh trạng thái thực (Needs Info / In Progress / Resolved / Closed)
+  const bubbleConfig = useMemo(() => {
+    if (!activeUserCase) return null;
+    const rawStatus = (activeUserCase.status || "").trim();
+    const upper = rawStatus.toUpperCase();
+
+    // Closed: Ẩn hoàn toàn
+    if (upper === "CLOSED" || upper === "ĐÃ ĐÓNG" || upper === "CANCELLED") {
+      return null;
+    }
+
+    // 1. Needs Information: Nổi bật nhất (màu cam, chấm đỏ nhấp nháy, vì đang chờ khách)
+    if (
+      upper === "NEEDS INFORMATION" ||
+      upper === "NEEDS_INFORMATION" ||
+      upper === "WAITING_CONFIRMATION" ||
+      upper === "CHỜ BỔ SUNG"
+    ) {
+      return {
+        type: "NEEDS_INFO" as const,
+        badgeText: "Cần bổ sung thông tin",
+        subtitle: "Kỹ thuật viên đang chờ dữ kiện từ bạn",
+        cardClass: "border-amber-300 bg-amber-50/95 hover:border-amber-500",
+        pillClass: "border-amber-300 bg-amber-50/95 hover:border-amber-500 text-amber-900",
+        mobileClass: "border-amber-300 bg-amber-50/95",
+        dotPing: "bg-red-400",
+        dotBg: "bg-red-500",
+        badgeBg: "bg-amber-200 text-amber-900 border-amber-300",
+        ctaText: "Bổ sung",
+        ctaColor: "text-amber-700 group-hover:text-amber-900",
+        pillText: "Cần bổ sung thông tin",
+      };
+    }
+
+    // 2. Resolved (chờ nghiệm thu): Nhắc nhẹ “Xác nhận hoàn tất” (xanh lá / emerald)
+    if (upper === "RESOLVED" || upper === "ĐÃ GIẢI QUYẾT" || upper === "HOÀN TẤT") {
+      return {
+        type: "RESOLVED" as const,
+        badgeText: "Đã xử lý xong",
+        subtitle: "Nhắc nhẹ: Xác nhận hoàn tất",
+        cardClass: "border-emerald-300 bg-emerald-50/95 hover:border-emerald-500",
+        pillClass: "border-emerald-300 bg-emerald-50/95 hover:border-emerald-500 text-emerald-900",
+        mobileClass: "border-emerald-300 bg-emerald-50/95",
+        dotPing: "bg-emerald-400",
+        dotBg: "bg-emerald-600",
+        badgeBg: "bg-emerald-100 text-emerald-800 border-emerald-200",
+        ctaText: "Nghiệm thu",
+        ctaColor: "text-emerald-700 group-hover:text-emerald-900",
+        pillText: "Xác nhận hoàn tất",
+      };
+    }
+
+    // 3. In Progress (và Staff Reviewing, Assigned): Bình thường, màu xanh
+    return {
+      type: "IN_PROGRESS" as const,
+      badgeText: "Hồ sơ đang xử lý",
+      subtitle: friendlyStatus || "Kỹ thuật viên đang kiểm tra",
+      cardClass: "border-blue-200/90 bg-white/95 hover:border-[#1E40AF]",
+      pillClass: "border-blue-200/90 bg-white/95 hover:border-[#1E40AF] text-slate-800",
+      mobileClass: "border-blue-200/80 bg-white/95",
+      dotPing: "bg-blue-400",
+      dotBg: "bg-[#1E40AF]",
+      badgeBg: "bg-blue-100 text-[#1E40AF]",
+      ctaText: "Xem",
+      ctaColor: "text-[#1E40AF]",
+      pillText: `${openCasesCount > 1 ? openCasesCount : 1} hồ sơ đang xử lý`,
+    };
+  }, [activeUserCase, friendlyStatus, openCasesCount]);
 
   // Kiểm tra có cập nhật mới từ nhân viên kỹ thuật hay không (hiện chấm đỏ nhỏ)
   const hasStaffUpdate = useMemo(() => {
@@ -285,52 +358,56 @@ export function LandingPage() {
       getCustomerCases()
         .then((res) => {
           if (res?.success && res.data?.cases && res.data.cases.length > 0) {
-            // Chỉ hiển thị khi có hồ sơ chưa đóng; hồ sơ đã giải quyết thì không nổi bong bóng nữa
+            // Closed cases ẩn hoàn toàn, còn Resolved cần khách nghiệm thu nên vẫn hiển thị
             const isClosedCase = (status: string) => {
-              const s = status.toUpperCase();
-              return (
-                s === "CLOSED" ||
-                s === "RESOLVED" ||
-                s === "ĐÃ ĐÓNG" ||
-                s === "ĐÃ GIẢI QUYẾT" ||
-                s === "CANCELLED"
-              );
+              const s = (status || "").toUpperCase();
+              return s === "CLOSED" || s === "ĐÃ ĐÓNG" || s === "CANCELLED";
             };
             const openCases = res.data.cases.filter((c) => !isClosedCase(c.status));
+            setOpenCasesCount(openCases.length);
             if (openCases.length > 0) {
-              const ongoing =
-                openCases.find(
-                  (c) =>
-                    c.status === "Staff Reviewing" ||
-                    c.status === "In Progress" ||
-                    c.status === "Needs Information" ||
-                    c.status === "ASSIGNED"
-                ) || openCases[0];
+              // Ưu tiên: Needs Information > Resolved > In Progress
+              const needsInfoCase = openCases.find((c) => {
+                const s = (c.status || "").toUpperCase();
+                return s === "NEEDS INFORMATION" || s === "NEEDS_INFORMATION" || s === "WAITING_CONFIRMATION";
+              });
+              const resolvedCase = openCases.find((c) => {
+                const s = (c.status || "").toUpperCase();
+                return s === "RESOLVED" || s === "ĐÃ GIẢI QUYẾT";
+              });
+              const ongoing = needsInfoCase || resolvedCase || openCases[0];
               setActiveUserCase(ongoing);
             } else {
               setActiveUserCase(null);
             }
           } else {
             setActiveUserCase(null);
+            setOpenCasesCount(0);
           }
         })
         .catch(() => {
-          // Demo fallback động theo ngày chỉ dành cho tài khoản Customer đã đăng nhập
-          const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-          setActiveUserCase({
-            id: `CASE-${todayStr}-001`,
-            vehicle_model: user.vehicleModel ? `VF${user.vehicleModel.replace("VF", "")}` : "VF8 Plus",
-            intent: "Charging/Battery",
-            status: "Staff Reviewing",
-            priority: "HIGH",
-            summary: "Trụ P02 Vincom Metropolis lỗi CC01 không sạc được DC",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          });
+          // Demo fallback động theo ngày chỉ dành cho tài khoản Demo đã đăng nhập
+          if (user.isDemo || user.email === "customer@vinfast.vn") {
+            const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+            setActiveUserCase({
+              id: `CASE-${todayStr}-001`,
+              vehicle_model: user.vehicleModel ? `VF${user.vehicleModel.replace("VF", "")}` : "VF8 Plus",
+              intent: "Charging/Battery",
+              status: "Needs Information",
+              priority: "HIGH",
+              summary: "Trụ P02 Vincom Metropolis lỗi CC01 không sạc được DC",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            });
+            setOpenCasesCount(1);
+          } else {
+            setActiveUserCase(null);
+            setOpenCasesCount(0);
+          }
         });
     } else {
-      // Chế độ Khách vãng lai (Guest): Tuyệt đối không hiển thị hồ sơ
       setActiveUserCase(null);
+      setOpenCasesCount(0);
     }
   }, [role, user]);
 
@@ -1025,7 +1102,10 @@ export function LandingPage() {
       {/* ─────────────────────────────────────────────────────────
           BONG BÓNG THEO DÕI HỒ SƠ NỔI (DESKTOP: PILL/CARD GÓC PHẢI; MOBILE: THANH MỎNG DƯỚI CÙNG)
       ───────────────────────────────────────────────────────── */}
-      {role === "CUSTOMER" && activeUserCase && (
+      {/* ─────────────────────────────────────────────────────────
+          BONG BÓNG THEO DÕI HỒ SƠ NỔI (DESKTOP: PILL/CARD GÓC PHẢI; MOBILE: THANH MỎNG DƯỚI CÙNG)
+      ───────────────────────────────────────────────────────── */}
+      {role === "CUSTOMER" && activeUserCase && bubbleConfig && (
         <>
           {/* Màn hình lớn (Desktop / Tablet >= sm): Bong bóng góc dưới phải */}
           <aside
@@ -1038,34 +1118,34 @@ export function LandingPage() {
           >
             {isCaseBubbleExpanded ? (
               /* Thẻ mở rộng rút gọn đúng 2 dòng, cả thẻ bấm được */
-              <div className="relative group w-[340px] rounded-2xl border border-blue-200/90 bg-white/95 p-3 shadow-xl backdrop-blur-md transition-all hover:border-[#1E40AF] hover:shadow-2xl">
+              <div className={`relative group w-[340px] rounded-2xl border p-3 shadow-xl backdrop-blur-md transition-all hover:shadow-2xl ${bubbleConfig.cardClass}`}>
                 <Link
                   href="/track-case"
                   className="block text-left pr-6 cursor-pointer focus:outline-none"
                   title="Bấm để xem chi tiết tiến trình hồ sơ"
                 >
-                  {/* Dòng 1: ● Hồ sơ đang xử lý · Kỹ thuật viên đang kiểm tra trụ P02 */}
+                  {/* Dòng 1: ● Badge trạng thái · Phụ đề hướng dẫn */}
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="relative flex h-2 w-2 shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1E40AF]" />
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${bubbleConfig.dotPing}`} />
+                      <span className={`relative inline-flex rounded-full h-2 w-2 ${bubbleConfig.dotBg}`} />
                     </span>
                     <span className="text-[12px] font-bold text-slate-900 shrink-0">
-                      Hồ sơ đang xử lý
+                      {bubbleConfig.badgeText}
                     </span>
                     <span className="text-slate-300">·</span>
-                    <span className="text-[11.5px] font-medium text-[#1E40AF] truncate">
-                      {friendlyStatus}
+                    <span className={`text-[11.5px] truncate ${bubbleConfig.ctaColor}`}>
+                      {bubbleConfig.subtitle}
                     </span>
                   </div>
 
-                  {/* Dòng 2: Trụ P02 Vincom Metropolis lỗi CC01… Xem › */}
+                  {/* Dòng 2: Tóm tắt sự cố … Xem / Bổ sung / Nghiệm thu › */}
                   <div className="mt-1 flex items-center justify-between gap-2 text-[12px] text-slate-600">
                     <p className="truncate min-w-0 font-normal">
                       {activeUserCase.summary || activeUserCase.id}
                     </p>
-                    <span className="inline-flex items-center gap-0.5 text-[11.5px] font-bold text-[#1E40AF] shrink-0 group-hover:translate-x-0.5 transition">
-                      <span>Xem</span>
+                    <span className={`inline-flex items-center gap-0.5 text-[11.5px] font-bold shrink-0 group-hover:translate-x-0.5 transition ${bubbleConfig.ctaColor}`}>
+                      <span>{bubbleConfig.ctaText}</span>
                       <ChevronRight className="h-3 w-3" />
                     </span>
                   </div>
@@ -1092,26 +1172,33 @@ export function LandingPage() {
                 type="button"
                 onClick={handleExpandBubble}
                 onMouseEnter={handleExpandBubble}
-                className="group relative flex items-center gap-2 rounded-full border border-blue-200/90 bg-white/95 px-3.5 py-2 shadow-lg backdrop-blur-md hover:border-[#1E40AF] hover:shadow-xl transition-all"
-                title="Rê chuột hoặc bấm để xem chi tiết hồ sơ đang xử lý"
+                className={`group relative flex items-center gap-2 rounded-full border px-3.5 py-2 shadow-lg backdrop-blur-md hover:shadow-xl transition-all ${bubbleConfig.pillClass}`}
+                title="Rê chuột hoặc bấm để xem chi tiết hồ sơ"
               >
-                {/* Ping xanh */}
+                {/* Ping chấm màu theo trạng thái */}
                 <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1E40AF]" />
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${bubbleConfig.dotPing}`} />
+                  <span className={`relative inline-flex rounded-full h-2 w-2 ${bubbleConfig.dotBg}`} />
                 </span>
 
-                {/* Chấm đỏ nhỏ khi có cập nhật mới từ nhân viên KTV */}
-                {hasStaffUpdate && (
+                {/* Chấm đỏ nhỏ khi có cập nhật mới từ nhân viên KTV hoặc khi Cần bổ sung */}
+                {(hasStaffUpdate || bubbleConfig.type === "NEEDS_INFO") && (
                   <span
                     className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white animate-pulse"
-                    title="Có phản hồi mới từ kỹ thuật viên"
+                    title={bubbleConfig.type === "NEEDS_INFO" ? "Cần bổ sung thông tin" : "Có phản hồi mới từ kỹ thuật viên"}
                   />
                 )}
 
-                <span className="text-[12px] font-bold text-slate-800">
-                  1 hồ sơ đang xử lý
+                <span className="text-[12px] font-bold">
+                  {bubbleConfig.pillText}
                 </span>
+
+                {openCasesCount > 1 && bubbleConfig.type === "IN_PROGRESS" && (
+                  <span className="px-1.5 py-0.2 rounded-full bg-blue-100 text-[#1E40AF] text-[10px] font-bold">
+                    {openCasesCount}
+                  </span>
+                )}
+
                 <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:translate-x-0.5 transition" />
               </button>
             )}
@@ -1120,7 +1207,7 @@ export function LandingPage() {
           {/* Màn hình hẹp (< sm / Mobile): Thanh mỏng cố định phía dưới, không dùng thẻ nổi che màn hình */}
           <aside
             aria-label="Hồ sơ đang xử lý trên di động"
-            className={`sm:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-blue-200/80 bg-white/95 px-3.5 py-2 backdrop-blur-md shadow-[0_-4px_16px_rgba(0,0,0,0.06)] transition-all duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none ${
+            className={`sm:hidden fixed bottom-0 left-0 right-0 z-40 border-t px-3.5 py-2 backdrop-blur-md shadow-[0_-4px_16px_rgba(0,0,0,0.06)] transition-all duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none ${bubbleConfig.mobileClass} ${
               isBubbleMounted
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-full pointer-events-none"
@@ -1132,15 +1219,15 @@ export function LandingPage() {
             >
               <div className="flex items-center gap-2 min-w-0">
                 <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1E40AF]" />
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${bubbleConfig.dotPing}`} />
+                  <span className={`relative inline-flex rounded-full h-2 w-2 ${bubbleConfig.dotBg}`} />
                 </span>
-                {hasStaffUpdate && (
+                {(hasStaffUpdate || bubbleConfig.type === "NEEDS_INFO") && (
                   <span className="h-2 w-2 rounded-full bg-red-500 shrink-0 animate-pulse" />
                 )}
                 <div className="min-w-0">
                   <p className="text-[11.5px] font-bold text-slate-900 truncate">
-                    {friendlyStatus}
+                    {bubbleConfig.badgeText} · {bubbleConfig.subtitle}
                   </p>
                   <p className="text-[10.5px] text-slate-500 truncate">
                     {activeUserCase.summary || activeUserCase.id}
@@ -1148,8 +1235,8 @@ export function LandingPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-0.5 text-[11.5px] font-bold text-[#1E40AF] shrink-0">
-                <span>Xem</span>
+              <div className={`flex items-center gap-0.5 text-[11.5px] font-bold shrink-0 ${bubbleConfig.ctaColor}`}>
+                <span>{bubbleConfig.ctaText}</span>
                 <ChevronRight className="h-3.5 w-3.5" />
               </div>
             </Link>

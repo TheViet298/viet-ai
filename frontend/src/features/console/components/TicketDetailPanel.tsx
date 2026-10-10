@@ -282,6 +282,14 @@ const DETAILED_TICKETS_MAP: Record<string, TicketDetail> = {
   },
 };
 
+// Helper làm sạch tiêu đề sự cố, loại bỏ tiền tố giật gân lặp lại
+export function cleanTicketHeadline(raw?: string): string {
+  if (!raw) return "Yêu cầu kiểm tra sự cố";
+  return raw
+    .replace(/^(SỰ CỐ NGUY HIỂM KHẨN CẤP|SỰ CỐ NGUY HIỂM|CẢNH BÁO KHẨN CẤP|KHẨN CẤP|SỰ CỐ KHẨN CẤP)\s*:\s*/gi, "")
+    .trim();
+}
+
 export function TicketDetailPanel({
   ticket,
   onActionComplete,
@@ -298,8 +306,8 @@ export function TicketDetailPanel({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
 
-  // Accordion state for workshop suggested action (collapsed by default as requested)
-  const [isProposalOpen, setIsProposalOpen] = useState(false);
+  // Accordion state for workshop suggested action
+  const [isProposalOpen, setIsProposalOpen] = useState(true);
 
   // Routing selection state
   const [selectedDept, setSelectedDept] = useState("Charging Operations");
@@ -319,6 +327,8 @@ export function TicketDetailPanel({
           intent: ticket.intent,
           priority: ticket.priority,
           status: ticket.status,
+          safety_status: ticket.safety_status,
+          safety_acknowledged_at: ticket.safety_acknowledged_at,
         },
         case_brief: {
           summary: `Hồ sơ sự cố tiếp nhận cho xe ${ticket.vehicle_model}. Yêu cầu kiểm tra kỹ thuật và điều phối xưởng dịch vụ.`,
@@ -382,7 +392,6 @@ export function TicketDetailPanel({
 
   // When ticket prop changes, sync detail & default selected dept
   useEffect(() => {
-    // Cuộn panel về đầu mỗi khi đổi case
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
 
     let isMounted = true;
@@ -415,6 +424,8 @@ export function TicketDetailPanel({
               intent: ticket.intent,
               priority: ticket.priority,
               status: ticket.status,
+              safety_status: ticket.safety_status,
+              safety_acknowledged_at: ticket.safety_acknowledged_at,
             },
             case_brief: {
               summary: ticket.issue_summary || `Hồ sơ sự cố tiếp nhận cho xe ${ticket.vehicle_model}. Yêu cầu kiểm tra kỹ thuật và điều phối xưởng.`,
@@ -492,7 +503,6 @@ export function TicketDetailPanel({
         updated_status: targetStatus,
         notes: notes || undefined,
       });
-      // Làm mới dữ liệu chi tiết sau khi thao tác thành công
       const refreshed = await getTicketDetail(ticket.id);
       if (refreshed && refreshed.success && refreshed.data) {
         setTicketDetail(refreshed.data);
@@ -509,69 +519,140 @@ export function TicketDetailPanel({
   const isCritical = ticket.priority === "CRITICAL";
   const otherDepts = ROUTING_DEPARTMENTS.filter((d) => d.id !== recommendedDept.id);
 
-  // Structured key-value parameter rows
+  // Structured key-value parameter rows với bóc tách chuẩn xác từ captured_fields
   const captured = ticketDetail.case_brief.captured_fields || {};
+
+  // 1. Dòng xe
+  const resolvedModel = captured.vehicle_model || ticket.vehicle_model || "VF8";
+
+  // 2. Vị trí
+  const resolvedLocation =
+    ticketDetail.location?.location_label ||
+    captured.station_location ||
+    captured.location_label ||
+    (ticketDetail.location?.latitude
+      ? `${ticketDetail.location.latitude.toFixed(4)}° N, ${ticketDetail.location.longitude?.toFixed(4)}° E`
+      : "Đang xác minh tọa độ");
+
+  // 3. Pin (SoC): Đọc đa dạng key soc, current_soc, battery_percentage
+  const rawSoc = captured.current_soc ?? captured.soc ?? captured.battery_percentage;
+  let resolvedSoc = "Chưa rõ";
+  if (rawSoc !== undefined && rawSoc !== null && rawSoc !== "") {
+    resolvedSoc = String(rawSoc).trim();
+    if (/^\d+$/.test(resolvedSoc)) {
+      resolvedSoc = `${resolvedSoc}%`;
+    }
+  }
+
+  // 4. Mã lỗi / Cảnh báo: Đọc error_code, warning_symbol, visual_signals
+  const rawWarning =
+    captured.warning_symbol ||
+    captured.visual_signals ||
+    captured.error_code ||
+    ticket.error_code_short;
+  let resolvedWarning = "Chưa ghi nhận mã lỗi";
+  let isWarningAlert = false;
+
+  if (rawWarning) {
+    const warnStr = String(rawWarning);
+    if (/rùa|turtle/i.test(warnStr)) {
+      resolvedWarning = "Rùa vàng (giảm công suất)";
+      isWarningAlert = true;
+    } else {
+      resolvedWarning = warnStr;
+      if (/CC01|BMS|LIMIT/i.test(warnStr)) {
+        isWarningAlert = true;
+      }
+    }
+  }
+
+  // 5. GPS Sharing
+  const isGpsShared = Boolean(
+    ticketDetail.location?.share_with_staff ||
+    ticket.has_location_consent ||
+    captured.location_consent ||
+    captured.gps_coordinates
+  );
+
+  // 6. Safety check: Safety status & safety acknowledged at
+  const safetyStatus = ticketDetail.case.safety_status || ticket.safety_status;
+  const safetyAckTime = ticketDetail.case.safety_acknowledged_at || ticket.safety_acknowledged_at;
+  const isSafetyConfirmed =
+    safetyStatus === "customer_reported_safe" ||
+    safetyStatus === "safe" ||
+    Boolean(safetyAckTime);
+
   const parameterRows = [
     {
       label: "Dòng xe",
-      value: captured.vehicle_model || ticket.vehicle_model,
+      value: resolvedModel,
       isWarning: false,
+      isAlert: false,
     },
     {
       label: "Vị trí",
-      value: captured.station_location || "Đang xác minh tọa độ",
-      isWarning: !captured.station_location || String(captured.station_location).includes("Đang"),
+      value: resolvedLocation,
+      isWarning: resolvedLocation.includes("Đang xác minh") || resolvedLocation.includes("Chưa"),
+      isAlert: false,
     },
     {
       label: "Dung lượng pin (SoC)",
-      value: captured.current_soc || "Chưa rõ",
-      isWarning: String(captured.current_soc || "").includes("< 10%") || String(captured.current_soc || "").includes("Chưa rõ"),
+      value: resolvedSoc,
+      isWarning: resolvedSoc === "Chưa rõ" || resolvedSoc.includes("< 10%"),
+      isAlert: false,
     },
     {
-      label: "Mã lỗi kỹ thuật",
-      value: captured.error_code || "Chưa ghi nhận mã lỗi",
-      isWarning: String(captured.error_code || "").includes("Chưa rõ") || String(captured.error_code || "").includes("Chưa ghi nhận"),
-      isAlert: String(captured.error_code || "").includes("TURTLE") || String(captured.error_code || "").includes("CC01"),
+      label: "Cảnh báo / Mã lỗi",
+      value: resolvedWarning,
+      isWarning: resolvedWarning.includes("Chưa"),
+      isAlert: isWarningAlert,
     },
     {
       label: "Chia sẻ vị trí GPS",
-      value: captured.location_consent || "Chưa bật chia sẻ vị trí",
-      isWarning: String(captured.location_consent || "").includes("Chưa bật"),
+      value: isGpsShared ? "Đã bật chia sẻ GPS" : "Chưa bật chia sẻ vị trí",
+      isWarning: !isGpsShared,
+      isAlert: false,
     },
   ];
 
-  // Optional extra parameters if present (e.g. charger_id, safe_status)
   if (captured.charger_id) {
     parameterRows.push({
       label: "Trụ sạc / Cổng kết nối",
       value: captured.charger_id,
       isWarning: false,
-    });
-  }
-  if (captured.safe_status) {
-    parameterRows.push({
-      label: "Tình trạng an toàn",
-      value: captured.safe_status,
-      isWarning: false,
+      isAlert: false,
     });
   }
 
-  // Tiêu đề ngắn 1 dòng cho Header
-  const displayHeaderTitle =
+  // Tiêu đề ngắn gọn 1 dòng cho Header (đã loại bỏ tiền tố giật gân)
+  const displayHeaderTitle = cleanTicketHeadline(
     ticket.issue_summary && ticket.issue_summary !== "Yêu cầu kiểm tra sự cố"
       ? ticket.issue_summary
       : ticketDetail.case_brief.summary
       ? ticketDetail.case_brief.summary.split(".")[0]
-      : `Hồ sơ sự cố xe ${ticket.vehicle_model}`;
+      : `Hồ sơ sự cố xe ${ticket.vehicle_model}`
+  );
+
+  // Formatted Safety Time
+  let formattedSafetyTime = "";
+  if (safetyAckTime) {
+    try {
+      formattedSafetyTime = new Date(safetyAckTime).toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      formattedSafetyTime = "";
+    }
+  }
 
   return (
     <div
       key={ticket.id}
-      className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col h-[calc(100vh-140px)] overflow-hidden transition-all duration-150 animate-in fade-in slide-in-from-right-2 duration-200"
+      className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.06)] flex flex-col h-[calc(100vh-140px)] overflow-hidden transition-opacity duration-150 animate-in fade-in"
     >
       {/* ─────────────────────────────────────────────────────────────
-          1. STICKY DETAIL HEADER: 1 DÒNG SÚC TÍCH, DÍNH TRÊN CÙNG KHI CUỘN
-             Mã case nhỏ, trạng thái đồng nhất, 3 nút hành động sticky
+          1. STICKY DETAIL HEADER: 1 DÒNG SÚC TÍCH, NÚT THEO TRẠNG THÁI
       ───────────────────────────────────────────────────────────── */}
       <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-slate-100 p-4 space-y-2.5 shrink-0 shadow-2xs">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
@@ -579,7 +660,7 @@ export function TicketDetailPanel({
           <div className="space-y-1 min-w-0 flex-1">
             <h2
               className="text-[17px] sm:text-[18px] font-bold text-slate-900 leading-snug truncate"
-              title={ticket.issue_summary || ticketDetail.case_brief.summary}
+              title={displayHeaderTitle}
             >
               {displayHeaderTitle}
             </h2>
@@ -639,9 +720,146 @@ export function TicketDetailPanel({
             </div>
           </div>
 
-          {/* Quick Action Buttons: Thích ứng động theo trạng thái hồ sơ */}
+          {/* Quick Action Buttons: Thiết kế theo đúng trạng thái hồ sơ (Chỉ 1 nút nổi bật) */}
           <div className="flex items-center gap-2 shrink-0 pt-0.5">
-            {ticket.status === "Resolved" ? (
+            {/* TRƯỜNG HỢP 1: Chờ duyệt (Staff Reviewing / New) */}
+            {(ticket.status === "Staff Reviewing" || ticket.status === "New") && (
+              <>
+                {/* NÚT CHÍNH NỔI BẬT: Duyệt & Điều phối */}
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() =>
+                    executeStaffAction(
+                      "Duyệt phương án & chuyển xưởng",
+                      "APPROVE",
+                      "In Progress"
+                    )
+                  }
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[12.5px] font-semibold transition shadow-xs active:scale-[0.98] disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>Duyệt & Điều phối</span>
+                </button>
+
+                {/* NÚT PHỤ 1: Cần thêm tin */}
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() =>
+                    executeStaffAction(
+                      "Yêu cầu thêm thông tin",
+                      "REQUEST_INFO",
+                      "Needs Information"
+                    )
+                  }
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-amber-50 hover:text-amber-700 text-slate-700 text-[12px] font-medium transition active:scale-[0.98] disabled:opacity-50"
+                  title="Yêu cầu khách hàng bổ sung thêm dữ kiện"
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="hidden sm:inline">Cần thêm tin</span>
+                </button>
+
+                {/* NÚT PHỤ 2: Sửa brief */}
+                <button
+                  type="button"
+                  onClick={() => setIsEditingBrief(true)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[12px] font-medium transition active:scale-[0.98]"
+                  title="Chỉnh sửa tóm tắt Case Brief"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="hidden sm:inline">Sửa brief</span>
+                </button>
+              </>
+            )}
+
+            {/* TRƯỜNG HỢP 2: Cần thêm tin (Needs Information) */}
+            {ticket.status === "Needs Information" && (
+              <>
+                {/* NÚT CHÍNH NỔI BẬT: Nhắc khách */}
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() =>
+                    executeStaffAction(
+                      "Gửi tin nhắn nhắc khách bổ sung thông tin",
+                      "REQUEST_INFO",
+                      "Needs Information"
+                    )
+                  }
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[12.5px] font-semibold transition shadow-xs active:scale-[0.98] disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Send className="w-3.5 h-3.5" />
+                  )}
+                  <span>Nhắc khách</span>
+                </button>
+
+                {/* NÚT PHỤ: Duyệt khi đã đủ */}
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() =>
+                    executeStaffAction(
+                      "Thông tin đã đủ - Duyệt điều phối",
+                      "APPROVE",
+                      "In Progress"
+                    )
+                  }
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-blue-50 hover:text-[#1E40AF] text-slate-700 text-[12px] font-medium transition active:scale-[0.98] disabled:opacity-50"
+                  title="Duyệt ca khi khách đã cung cấp đủ dữ liệu"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#1E40AF]" />
+                  <span className="hidden sm:inline">Duyệt khi đã đủ</span>
+                </button>
+              </>
+            )}
+
+            {/* TRƯỜNG HỢP 3: Đang xử lý (In Progress) */}
+            {ticket.status === "In Progress" && (
+              <>
+                {/* NÚT CHÍNH NỔI BẬT: Giải quyết */}
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() =>
+                    executeStaffAction(
+                      "Hoàn tất giải quyết (Resolved)",
+                      "RESOLVE",
+                      "Resolved"
+                    )
+                  }
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[12.5px] font-semibold transition shadow-xs active:scale-[0.98] disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                  <span>Giải quyết</span>
+                </button>
+
+                {/* NÚT PHỤ: Điều phối lại */}
+                <button
+                  type="button"
+                  onClick={() => setDetailTab("dispatch")}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[12px] font-medium transition active:scale-[0.98]"
+                  title="Chuyển sang tab điều phối xưởng"
+                >
+                  <GitBranch className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="hidden sm:inline">Điều phối lại</span>
+                </button>
+              </>
+            )}
+
+            {/* TRƯỜNG HỢP 4: Đã giải quyết (Resolved) */}
+            {ticket.status === "Resolved" && (
               <>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-[12px] font-semibold">
                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -672,7 +890,10 @@ export function TicketDetailPanel({
                   <span className="hidden sm:inline">Mở lại</span>
                 </button>
               </>
-            ) : ticket.status === "Closed" ? (
+            )}
+
+            {/* TRƯỜNG HỢP 5: Đã đóng (Closed) */}
+            {ticket.status === "Closed" && (
               <>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 text-[12px] font-semibold">
                   <Check className="w-3.5 h-3.5 text-slate-500" />
@@ -690,62 +911,29 @@ export function TicketDetailPanel({
                   <span className="hidden sm:inline">Mở lại hồ sơ</span>
                 </button>
               </>
-            ) : (
-              <>
-                {/* Nút Chính Đặc */}
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() =>
-                    executeStaffAction(
-                      "Duyệt phương án & chuyển xưởng",
-                      "APPROVE",
-                      "In Progress"
-                    )
-                  }
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[12.5px] font-semibold transition shadow-xs active:scale-[0.98] disabled:opacity-50"
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                  )}
-                  <span>Duyệt & Điều phối</span>
-                </button>
-
-                {/* Nút Viền Mảnh: Cần thêm tin */}
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() =>
-                    executeStaffAction(
-                      "Yêu cầu thêm thông tin",
-                      "REQUEST_INFO",
-                      "Needs Information"
-                    )
-                  }
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[12px] font-medium transition active:scale-[0.98] disabled:opacity-50"
-                >
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="hidden sm:inline">Cần thêm tin</span>
-                </button>
-
-                {/* Nút Viền Mảnh: Giải quyết */}
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() =>
-                    executeStaffAction("Hoàn tất giải quyết (Resolved)", "RESOLVE", "Resolved")
-                  }
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 text-slate-700 text-[12px] font-medium transition active:scale-[0.98] disabled:opacity-50"
-                >
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span className="hidden sm:inline">Giải quyết</span>
-                </button>
-              </>
             )}
           </div>
         </div>
+
+        {/* ─────────────────────────────────────────────────────────────
+            BANNER AN TOÀN NỔI BẬT: ĐẶT Ở ĐẦU DETAIL KHI DUYỆT
+        ───────────────────────────────────────────────────────────── */}
+        {isSafetyConfirmed ? (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[12px] font-medium">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>
+              <strong>Khách đã xác nhận an toàn</strong>
+              {formattedSafetyTime ? ` lúc ${formattedSafetyTime}` : ""} (đã dừng đỗ an toàn, bật hazard)
+            </span>
+          </div>
+        ) : isCritical ? (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-[12px] font-medium animate-pulse">
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            <span>
+              <strong>Khách chưa xác nhận an toàn!</strong> Cần ưu tiên gọi hotline hoặc nhắc khách kích hoạt hướng dẫn an toàn.
+            </span>
+          </div>
+        ) : null}
 
         {/* ─────────────────────────────────────────────────────────────
             SUB-TABS NAVIGATION (Sentence case, clean tabs)
