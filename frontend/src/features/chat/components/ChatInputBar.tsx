@@ -87,7 +87,7 @@ export function ChatInputBar({
           onChange={(e) => onChangeInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onSend()}
           placeholder="Hỏi về vận hành, cẩm nang hoặc báo sự cố xe..."
-          className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200/90 bg-slate-50/50 hover:bg-white focus:bg-white text-[13px] sm:text-[13.5px] text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1E40AF] focus:ring-2 focus:ring-[#1E40AF]/15 transition"
+          className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200/90 bg-slate-50/50 hover:bg-white focus:bg-white text-[13px] sm:text-[13.5px] text-slate-900 placeholder-slate-400 outline-none focus:outline-none focus-visible:outline-none focus:border-[#1E40AF] focus:ring-2 focus:ring-[#1E40AF]/15 transition"
         />
 
         <button
