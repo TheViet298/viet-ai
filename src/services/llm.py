@@ -3,6 +3,16 @@ from threading import RLock
 
 from src.config import get_settings
 
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+except ImportError:
+    ChatGoogleGenerativeAI = None
+
+try:
+    from langchain_openai import ChatOpenAI
+except ImportError:
+    ChatOpenAI = None
+
 _client_lock = RLock()
 
 
@@ -10,7 +20,11 @@ _client_lock = RLock()
 def _client(model: str, key: str, base_url: str, temperature: float, transport_timeout: float):
     # Sử dụng Google Gemini nếu model là gemini và key bắt đầu bằng AIza
     if "gemini" in model.lower() and key.startswith("AIza"):
-        from langchain_google_genai import ChatGoogleGenerativeAI
+        if ChatGoogleGenerativeAI is None:
+            raise ImportError(
+                "Thư viện langchain-google-genai chưa được cài đặt. "
+                "Cài đặt bằng lệnh: pip install langchain-google-genai"
+            )
         return ChatGoogleGenerativeAI(
             model=model,
             google_api_key=key,
@@ -18,12 +32,17 @@ def _client(model: str, key: str, base_url: str, temperature: float, transport_t
             max_retries=0,
             timeout=transport_timeout,
         )
+
     # Mặc định sử dụng OpenAI hoặc LiteLLM Gateway (openai/gpt-5.6, v.v.)
-    from langchain_openai import ChatOpenAI
+    if ChatOpenAI is None:
+        raise ImportError(
+            "Thư viện langchain-openai chưa được cài đặt. "
+            "Cài đặt bằng lệnh: pip install langchain-openai"
+        )
     kwargs = {
         "model": model,
         "temperature": temperature,
-        "max_retries": 1,
+        "max_retries": 0,
         "timeout": transport_timeout,
     }
     if key:

@@ -54,7 +54,7 @@ async def run_chat_turn(payload, user, db, handler):
                 db.rollback()
                 session = db.get(ChatSession, payload.session_id)
         if session.owner != owner:
-            if not user or (session.owner and session.owner.startswith('guest:')) or session.owner == 'guest:None':
+            if session.owner and (session.owner.startswith('guest:') or session.owner == 'guest:None'):
                 session.owner = owner
                 db.commit()
             else:
