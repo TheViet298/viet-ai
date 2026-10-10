@@ -7,7 +7,7 @@ sys.stdout.reconfigure(encoding='utf-8')
 
 RAW_DIR = r"d:\142.AI20K\P-142\data\raw"
 PROCESSED_DIR = r"d:\142.AI20K\P-142\data\processed"
-CARS_JSONL = r"d:\142.AI20K\P-142\eval\datasets\cars.jsonl"
+CARS_JSONL = os.path.join(RAW_DIR, "cars.jsonl")
 OUTPUT_CHUNKS = os.path.join(PROCESSED_DIR, "chunks.jsonl")
 
 os.makedirs(PROCESSED_DIR, exist_ok=True)
@@ -147,6 +147,54 @@ def process_cars_jsonl():
     src_id = "SRC-009"
     chunk_idx = 1
     
+    master_overview_content = (
+        "Tổng quan các dòng xe điện VinFast — Dải sản phẩm xe điện thông minh:\n"
+        "VinFast cung cấp dải sản phẩm ô tô điện toàn diện trải dài từ phân khúc mini đến SUV hạng sang cỡ lớn:\n"
+        "- VinFast VF 3: Mẫu mini SUV đô thị cá tính, linh hoạt, 4 chỗ ngồi, quãng đường di chuyển 210-215 km (NEDC).\n"
+        "- VinFast VF 5: Mẫu SUV đô thị phân khúc A năng động, tối ưu chi phí vận hành cho đô thị.\n"
+        "- VinFast VF 6: Mẫu SUV phân khúc B hiện đại, thời thượng, phù hợp cho gia đình trẻ.\n"
+        "- VinFast VF 7: Mẫu SUV phân khúc C phong cách tương lai, hiệu năng vận hành mạnh mẽ.\n"
+        "- VinFast VF 8: Mẫu SUV phân khúc D sang trọng, tích hợp công nghệ hỗ trợ lái ADAS và tiện ích thông minh.\n"
+        "- VinFast VF 9: Mẫu SUV full-size phân khúc E cao cấp nhất, tùy chọn 6 hoặc 7 chỗ ngồi tiện nghi thương gia.\n"
+        "- Các dòng xe thương mại và dịch vụ: VF MPV 7 (xe gia đình 7 chỗ), EC Van, Herio Green, Nerio Green, Limo Green, Minio Green.\n"
+        "Tất cả các dòng xe điện VinFast đều được trang bị công nghệ pin tiên tiến, hỗ trợ sạc nhanh và bảo hành chính hãng từ 7 đến 10 năm."
+    )
+    chunks.append({
+        "source_id": src_id,
+        "chunk_id": f"{src_id}-0000",
+        "title": "Tổng quan các dòng xe điện VinFast",
+        "url": "https://vinfastauto.com/vn_vi/",
+        "source_type": "official_catalog",
+        "verified_at": "2026-09-30",
+        "applicable_models": ["ALL", "VF 3", "VF 5", "VF 6", "VF 7", "VF 8", "VF 9"],
+        "section": "Tổng quan dải sản phẩm xe điện",
+        "content": master_overview_content
+    })
+
+    rolling_content = (
+        "Dự toán chi phí lăn bánh ô tô điện VinFast:\n"
+        "Chính sách ưu đãi lệ phí trước bạ: Ô tô điện chạy pin được miễn 100% lệ phí trước bạ theo quy định của Chính phủ, giúp tiết kiệm đáng kể chi phí lăn bánh so với xe động cơ đốt trong.\n"
+        "Các khoản chi phí lăn bánh thông thường bao gồm:\n"
+        "- Giá bán xe (đã bao gồm VAT hoặc kèm pin/thuê pin theo chính sách bán hàng).\n"
+        "- Lệ phí trước bạ: 0% (áp dụng cho ô tô điện).\n"
+        "- Phí cấp biển số: tùy theo khu vực (Hà Nội, TP.HCM hoặc các tỉnh thành khác).\n"
+        "- Phí bảo trì đường bộ (12 tháng hoặc theo chu kỳ đăng kiểm).\n"
+        "- Bảo hiểm trách nhiệm dân sự bắt buộc.\n"
+        "- Phí kiểm định an toàn kỹ thuật và bảo vệ môi trường.\n"
+        "Khách hàng có thể tra cứu và dự toán chi phí lăn bánh chính xác theo từng dòng xe, phiên bản và địa phương đăng ký tại công cụ chính thức: https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh."
+    )
+    chunks.append({
+        "source_id": src_id,
+        "chunk_id": f"{src_id}-rolling-cost",
+        "title": "Dự toán chi phí lăn bánh ô tô điện VinFast",
+        "url": "https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh",
+        "source_type": "official_catalog",
+        "verified_at": "2026-09-30",
+        "applicable_models": ["ALL"],
+        "section": "Chi phí lăn bánh",
+        "content": rolling_content
+    })
+
     with open(CARS_JSONL, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -272,14 +320,18 @@ def main():
             
     print(f"Đã lưu thành công vào: {OUTPUT_CHUNKS}")
     
-    # Save a copy in workspace
-    local_output_dir = r"d:\Downloads\New folder\data\processed"
-    os.makedirs(local_output_dir, exist_ok=True)
-    local_output_chunks = os.path.join(local_output_dir, "chunks.jsonl")
-    with open(local_output_chunks, "w", encoding="utf-8") as f:
-        for c in all_chunks:
-            f.write(json.dumps(c, ensure_ascii=False) + "\n")
-    print(f"Đã lưu bản sao vào: {local_output_chunks}")
+    # Save a copy in workspace if available
+    try:
+        local_output_dir = r"d:\Downloads\New folder\data\processed"
+        if os.path.exists(os.path.dirname(local_output_dir)):
+            os.makedirs(local_output_dir, exist_ok=True)
+            local_output_chunks = os.path.join(local_output_dir, "chunks.jsonl")
+            with open(local_output_chunks, "w", encoding="utf-8") as f:
+                for c in all_chunks:
+                    f.write(json.dumps(c, ensure_ascii=False) + "\n")
+            print(f"Đã lưu bản sao vào: {local_output_chunks}")
+    except Exception:
+        pass
 
 if __name__ == "__main__":
     main()

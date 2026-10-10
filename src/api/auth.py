@@ -1,8 +1,12 @@
 import uuid
+from dataclasses import dataclass
+from hmac import compare_digest
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from src.config import get_settings
 from src.db import get_db
 from src.models.db_models import User, UserRole
 from src.models.schemas import (
@@ -108,15 +112,8 @@ def get_me(current_user: User = Depends(get_current_user)):
     )
 
 
-"""Trusted demo-token adapter; production identity can replace this dependency."""
 
-from dataclasses import dataclass
-from hmac import compare_digest
 
-from fastapi import Depends, HTTPException
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-
-from src.config import get_settings
 
 bearer = HTTPBearer(auto_error=False)
 

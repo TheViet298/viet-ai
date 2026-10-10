@@ -11,26 +11,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function getCustomerAuthHeaders(): Promise<Record<string, string>> {
   if (typeof window === "undefined") return {};
-  let token = localStorage.getItem("vf_customer_token");
-  if (!token) {
-    try {
-      const res = await fetch(`${BASE_URL}/api/v1/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: "customer@vinfast.vn",
-          password: "customer123",
-        }),
-      });
-      if (res.ok) {
-        const json = await res.json();
-        token = json?.data?.token;
-        if (token) localStorage.setItem("vf_customer_token", token);
-      }
-    } catch {
-      // Offline fallback
-    }
-  }
+  const token = localStorage.getItem("vf_customer_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -39,6 +20,7 @@ export async function getCustomerAuthHeaders(): Promise<Record<string, string>> 
  */
 export async function uploadAttachment(file: File, imageKind: "auto" | "dashboard" | "exterior" = "auto"): Promise<ApiResponse<AttachmentOut>> {
   const authHeaders = await getCustomerAuthHeaders();
+  if (!authHeaders.Authorization) throw new Error("Vui lòng đăng nhập để tải ảnh.");
   const formData = new FormData();
   formData.append("file", file);
   formData.append("image_kind", imageKind);
@@ -63,6 +45,7 @@ export async function uploadAttachment(file: File, imageKind: "auto" | "dashboar
  * Gửi tin nhắn chat từ khách hàng, hỗ trợ kèm mã định danh ảnh đã tải
  */
 export async function sendChatMessage(params: {
+  requestId?: string;
   sessionId: string;
   message: string;
   caseId?: string | null;
@@ -78,15 +61,13 @@ export async function sendChatMessage(params: {
     },
     signal: AbortSignal.timeout(8000),
     body: JSON.stringify({
+      request_id: params.requestId,
       session_id: params.sessionId,
+      ...(!authHeaders.Authorization ? { guest_session_id: params.sessionId } : {}),
       case_id: params.caseId || null,
       message: params.message,
       attachment_ids: params.attachmentIds || [],
-      client_context: params.clientContext || {
-        mock_customer_id: "CUST_MOCK_01",
-        vehicle_model: "VF8",
-        vehicle_code_mock: "VF-SF-00231",
-      },
+      client_context: params.clientContext || {},
     }),
   });
 
@@ -95,6 +76,39 @@ export async function sendChatMessage(params: {
     throw new Error(`Chat API error (${res.status}): ${errorText}`);
   }
 
+  return res.json();
+}
+
+/**
+ * Lấy lịch sử hội thoại của phiên chat (multi-topic chat remediation)
+ */
+export async function getSessionHistory(sessionId: string): Promise<ApiResponse<{
+  session_id: string;
+  case_id: string | null;
+  messages: Array<{
+    id: string;
+    sender: "CUSTOMER" | "AGENT" | "STAFF" | "SYSTEM";
+    content: string;
+    timestamp: string;
+    response_type?: "CLARIFICATION" | "FAQ_ANSWER" | "CASE_CREATED";
+    citations?: any[];
+    suggested_replies?: string[];
+    safe_guidance?: string;
+    case_id?: string | null;
+    priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  }>;
+  total: number;
+}>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const res = await fetch(`${BASE_URL}/api/v1/customer/sessions/${sessionId}/history`, {
+    headers: {
+      ...authHeaders,
+    },
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to fetch session history (${res.status}): ${errorText}`);
+  }
   return res.json();
 }
 
@@ -111,6 +125,17 @@ export async function getCaseStatus(caseId: string) {
   if (!res.ok) {
     throw new Error(`Failed to fetch case status: ${res.statusText}`);
   }
+  return res.json();
+}
+
+export async function acknowledgeCaseSafety(caseId: string, incidentVersion: number) {
+  const authHeaders = await getCustomerAuthHeaders();
+  const res = await fetch(`${BASE_URL}/api/v1/customer/cases/${caseId}/safety-acknowledgement`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders },
+    body: JSON.stringify({ incident_version: incidentVersion }),
+  });
+  if (!res.ok) throw new Error(`Safety acknowledgement failed (${res.status})`);
   return res.json();
 }
 

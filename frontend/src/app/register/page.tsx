@@ -74,12 +74,16 @@ export default function RegisterPage() {
       setSubmitting(false);
     }
 
-    loginAs("CUSTOMER", {
+    const authenticated = await loginAs("CUSTOMER", {
       id: `CUST_${phone.slice(-4) || "NEW"}`,
       name: name.trim(),
       vehicleModel,
       email: `${phone}@vinfast.customer`,
     });
+    if (!authenticated) {
+      setErrorMessage("Không thể đăng nhập. Vui lòng thử lại.");
+      return;
+    }
 
     router.push("/chat");
   };

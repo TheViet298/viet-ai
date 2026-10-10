@@ -186,6 +186,9 @@ class Case(Base):
     intent: Mapped[str] = mapped_column(String(50), nullable=False)
     priority: Mapped[str] = mapped_column(String(20), nullable=False, default=Priority.MEDIUM.value)
     status: Mapped[str] = mapped_column(String(30), nullable=False, default=TicketStatus.NEW.value)
+    safety_status: Mapped[str] = mapped_column(String(30), nullable=False, default='unconfirmed', server_default='unconfirmed')
+    safety_acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    incident_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default='1')
     assigned_staff_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
@@ -237,6 +240,24 @@ class Message(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     case: Mapped["Case | None"] = relationship(back_populates="messages")
+
+
+class ChatSession(Base):
+    __tablename__ = 'chat_sessions'
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    owner: Mapped[str] = mapped_column(String(100), nullable=False)
+    lease_token: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    memory_states: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict, server_default='{}')
+
+
+class ChatRequestRecord(Base):
+    __tablename__ = 'chat_request_records'
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    owner: Mapped[str] = mapped_column(String(100), nullable=False)
+    session_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    response: Mapped[dict] = mapped_column(JSON, nullable=False)
 
 
 class CaseBrief(Base):

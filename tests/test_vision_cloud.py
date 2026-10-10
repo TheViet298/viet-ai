@@ -14,6 +14,31 @@ from src.services.vision.contract import damage_result, vehicle_result
 
 
 class TestVisionCloud(unittest.TestCase):
+    def test_notebooks_migrate_old_numpy_pin_and_require_restart_for_loaded_kernel(self):
+        repo = Path(__file__).resolve().parents[1]
+        from packaging.requirements import Requirement
+
+        for task in ("vehicles", "damage"):
+            notebook = json.loads((repo / f"notebooks/train_{task}_baseline.ipynb").read_text(encoding="utf-8"))
+            install = "".join(notebook["cells"][3]["source"])
+            with tempfile.TemporaryDirectory() as tmp:
+                data = Path(tmp)
+                (data / "requirements-vision-train.txt").write_text("numpy>=1.26,<2\npydantic>=2.10,<3\n")
+                calls = []
+                namespace = {
+                    "DATA": data,
+                    "sys": types.SimpleNamespace(executable="python", modules={"numpy": object()}),
+                    "subprocess": types.SimpleNamespace(run=lambda *a, **k: calls.append((a, k))),
+                }
+                with self.assertRaisesRegex(RuntimeError, "Restart"):
+                    exec(compile(install, task, "exec"), namespace)
+                pins = [Requirement(line) for line in (data / "requirements-vision-notebook.txt").read_text().splitlines()]
+                active = [r for r in pins if r.name == "numpy" and r.marker.evaluate({"python_version": "3.13"})]
+                self.assertEqual(len(active), 1)
+                self.assertIn("2.1.0", active[0].specifier)
+                self.assertNotIn("1.26.4", active[0].specifier)
+                self.assertEqual(len(calls), 2, "install and check in a fresh process")
+
     def test_portable_bundle_preserves_split_and_label_paths(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

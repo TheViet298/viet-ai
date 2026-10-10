@@ -322,9 +322,8 @@ async def test_customer_location_and_service_points(client):
     assert res_sp.status_code == 200
     sp_body = res_sp.json()
     assert sp_body["success"] is True
-    assert len(sp_body["data"]["recommended_points"]) >= 3
-    # Case 001 là Charging/Battery nên trạm sạc được ưu tiên lên đầu
-    assert sp_body["data"]["recommended_points"][0]["category"] == "CHARGING_STATION"
+    # Unverified demo seeds must not be presented as nearby verified locations.
+    assert sp_body["data"]["recommended_points"] == []
 
 
 @pytest.mark.asyncio
@@ -448,6 +447,9 @@ async def test_customer_actions_proposal_and_session_status(client):
         "/api/v1/customer/cases/CASE-20260924-001/status",
         headers={"X-Session-Id": "sess_vf_98234"},
     )
+    assert res_status.status_code == 403
+    token = await get_auth_token(client, "customer@vinfast.vn", "customer123")
+    res_status = await client.get("/api/v1/customer/cases/CASE-20260924-001/status", headers={"Authorization": f"Bearer {token}"})
     assert res_status.status_code == 200
     status_body = res_status.json()
     assert status_body["success"] is True
@@ -461,7 +463,15 @@ async def test_customer_actions_proposal_and_session_status(client):
     )
     assert res_forbidden.status_code == 403
 
-    # 3. Customer thực hiện action CONFIRM_RESOLUTION qua /actions
+    # 3. Staff đánh dấu Resolved trước khi Customer xác nhận đóng (F08 state machine)
+    staff_token = await get_auth_token(client, "staff@vinfast.vn", "staff123")
+    await client.post(
+        "/api/v1/staff/tickets/CASE-20260924-001/actions",
+        json={"action": "RESOLVE", "staff_id": "STAFF_001", "notes": "Đã xử lý xong."},
+        headers={"Authorization": f"Bearer {staff_token}"},
+    )
+
+    # Customer thực hiện action CONFIRM_RESOLUTION qua /actions
     token = await get_auth_token(client, "customer@vinfast.vn", "customer123")
     res_action = await client.post(
         "/api/v1/customer/cases/CASE-20260924-001/actions",

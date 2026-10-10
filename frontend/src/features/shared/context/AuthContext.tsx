@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 
 export type UserRole = "GUEST" | "CUSTOMER" | "STAFF";
 
@@ -32,7 +32,7 @@ export const DEMO_PROFILES: Record<"CUSTOMER" | "STAFF", AuthUser> = {
 interface AuthContextType {
   user: AuthUser | null;
   role: UserRole;
-  loginAs: (role: "CUSTOMER" | "STAFF", customData?: Partial<AuthUser>) => void;
+  loginAs: (role: "CUSTOMER" | "STAFF", customData?: Partial<AuthUser>) => Promise<boolean>;
   logout: () => void;
   switchRole: (role: UserRole) => void;
   isReady: boolean;
@@ -41,7 +41,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   role: "GUEST",
-  loginAs: () => {},
+  loginAs: async () => false,
   logout: () => {},
   switchRole: () => {},
   isReady: false,
@@ -52,13 +52,19 @@ const STORAGE_KEY = "vf_serviceflow_auth";
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const loginGeneration = useRef(0);
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        setUser(parsed);
+        const tokenKey = parsed.role === "STAFF" ? "vf_staff_token" : "vf_customer_token";
+        if (["CUSTOMER", "STAFF"].includes(parsed.role) && localStorage.getItem(tokenKey)) {
+          setUser(parsed);
+        } else {
+          localStorage.removeItem(STORAGE_KEY);
+        }
       }
     } catch {
       // Fallback
@@ -67,36 +73,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const loginAs = (role: "CUSTOMER" | "STAFF", customData?: Partial<AuthUser>) => {
+  const loginAs = async (role: "CUSTOMER" | "STAFF", customData?: Partial<AuthUser>): Promise<boolean> => {
+    const generation = ++loginGeneration.current;
     const base = DEMO_PROFILES[role];
     const newUser: AuthUser = {
       ...base,
       ...customData,
       role,
     };
-    setUser(newUser);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
       const username = role === "STAFF" ? "staff@vinfast.vn" : "customer@vinfast.vn";
       const password = role === "STAFF" ? "staff123" : "customer123";
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      fetch(`${baseUrl}/api/v1/auth/login`, {
+      const response = await fetch(`${baseUrl}/api/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
-      })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((json) => {
-          if (json?.data?.token) {
-            if (role === "STAFF") localStorage.setItem("vf_staff_token", json.data.token);
-            else localStorage.setItem("vf_customer_token", json.data.token);
-          }
-        })
-        .catch(() => {});
-    } catch {}
+      });
+      if (!response.ok) return false;
+      const json = await response.json();
+      if (!json?.data?.token || generation !== loginGeneration.current) return false;
+      localStorage.setItem(role === "STAFF" ? "vf_staff_token" : "vf_customer_token", json.data.token);
+      localStorage.removeItem(role === "STAFF" ? "vf_customer_token" : "vf_staff_token");
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
+      setUser(newUser);
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const logout = () => {
+    loginGeneration.current++;
     setUser(null);
     try {
       localStorage.removeItem(STORAGE_KEY);

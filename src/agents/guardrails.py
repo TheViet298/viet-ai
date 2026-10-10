@@ -5,6 +5,7 @@ import unicodedata
 from typing import Any
 
 from src.agents.state import PriorityLevel
+from src.services.chat_classification import current_clause, temporal_context
 
 # =====================================================================
 # Constants & Hotline
@@ -68,8 +69,8 @@ def strip_accents(s: str) -> str:
 
 CRITICAL_STANDALONE_RULES: dict[str, str] = {
     "SMOKE_OR_FIRE": (
-        r"\b(cháy|cháy xe|xe bốc lửa|bốc lửa|khói|bốc khói|mùi khét|lửa|xì khói|chập điện|"
-        r"chay|chay xe|xe boc lua|boc lua|khoi|boc khoi|mui khet|chap dien)\b"
+        r"\b(cháy|cháy xe|xe bốc lửa|bốc lửa|bốc khói|khói từ (?:xe|pin)|xe.{0,15}(?:có|ra|xì) khói|mùi khét|xì khói|chập điện|"
+        r"chay|chay xe|xe boc lua|boc lua|boc khoi|khoi tu (?:xe|pin)|xe.{0,15}(?:co|ra|xi) khoi|mui khet|chap dien)\b"
     ),
     "BRAKE_FAILURE": (
         r"\b(mất phanh|liệt phanh|phanh không ăn|không phanh được|không ăn phanh|"
@@ -97,7 +98,13 @@ def evaluate_hard_safety(text: str) -> tuple[bool, str | None, PriorityLevel]:
     Returns:
         (is_critical, trigger_rule_name, priority)
     """
-    text_lower = text.lower()
+    temporal = temporal_context(text)
+    if temporal in {'resolved_past', 'hypothetical', 'knowledge'}:
+        return False, 'TURTLE_DEFINITION' if re.search(TURTLE_PATTERN, text.lower()) else None, 'LOW'
+    text_lower = current_clause(text).lower()
+    # Negated symptom mentions do not establish that symptom. Other actual
+    # hazards in the same message remain eligible for hard safety.
+    text_lower = without_negated_hazards(text_lower)
     text_unaccented = strip_accents(text_lower)
 
     # 1. Kiểm tra các rủi ro độc lập (cháy, mất phanh, kẹt ga...)
@@ -111,7 +118,7 @@ def evaluate_hard_safety(text: str) -> tuple[bool, str | None, PriorityLevel]:
         if rule_name == "SMOKE_OR_FIRE":
             # Do not turn accented "chạy" (driving) into "cháy" (fire).
             # For unaccented input, only suppress the explicit driving phrase.
-            rule_text = re.sub(r"\b(?:đang|vẫn|dang|van)\s+(?:chạy|chay)\b", "di chuyển", text_lower)
+            rule_text = re.sub(r"\b(?:đang|vẫn|dang|van)\s+(?:chạy|chay)\b|\bchạy\b", "di chuyển", text_lower)
             normalized_text = rule_text
         if re.search(pattern, rule_text) or re.search(pattern, normalized_text):
             if is_pure_inquiry and not has_emergency_presence and rule_name == "SMOKE_OR_FIRE":
@@ -134,6 +141,46 @@ def evaluate_hard_safety(text: str) -> tuple[bool, str | None, PriorityLevel]:
         return False, "TURTLE_NORMAL", "HIGH"
 
     return False, None, "MEDIUM"
+
+
+def without_negated_hazards(text: str) -> str:
+    """Mask denied hazards while keeping affirmative hazards in other clauses."""
+    hazard_terms = (
+        r"(?:khói|khoi(?!\s+dong)|mùi khét|mui khet|bốc khói|boc khoi|cháy xe|chay xe|cháy|chay|"
+        r"chập điện|chap dien|xì khói|xi khoi|bốc lửa|boc lua|mất phanh|mat phanh|"
+        r"liệt phanh|liet phanh|kẹt chân ga|ket chan ga|nổ lốp|no lop|tai nạn|tai nan)"
+    )
+    conjunction_pattern = (
+        rf"\b(?:không|khong|chưa|chua)\s+(?:(?:còn|con|có|co|thấy|thay|bị|bi|hề|he|phát hiện)\s+)*"
+        rf"{hazard_terms}(?:\s+(?:hay|hoặc|hoac|lẫn|lan|và|va)\s+(?:(?:có|co|thấy|thay|bị|bi)\s+)*{hazard_terms})*"
+    )
+    text = re.sub(conjunction_pattern, "hiện tượng đã được phủ định", text, flags=re.I)
+
+    prefix = r"\b(?:không|khong|chưa|chua)\s+(?:(?:còn|con|có|co|thấy|thay|bị|bi|hề|he|bao giờ|bao gio)\s+)*"
+    for pattern in [*CRITICAL_STANDALONE_RULES.values(), TURTLE_PATTERN]:
+        text = re.sub(prefix + pattern, "hiện tượng đã được phủ định", text, flags=re.I)
+    return text
+
+
+HAZARDOUS_INTERVENTION_PATTERN = (
+    r"\b(?:tháo|mở|can thiệp|đấu nối|chạm vào|tự sửa|đo điện)\s+(?:bộ\s+)?(?:pin|cọc pin|dây cam|dây cao áp|hệ thống cao áp|pack pin|cell pin)\b|"
+    r"\b(?:thao|mo|can thiep|dau noi|cham vao|tu sua|do dien)\s+(?:bo\s+)?(?:pin|coc pin|day cam|day cao ap|cao ap)\b|"
+    r"\b(?:tháo|thao)\s+(?:bộ\s+|bo\s+)?pin\s+(?:ra|để|de)\b"
+)
+
+
+def evaluate_hazardous_intervention(text: str) -> tuple[bool, str | None]:
+    """Phát hiện yêu cầu hoặc câu hỏi về việc tự ý can thiệp phần cứng/hệ thống pin cao áp nguy hiểm."""
+    lower = text.lower()
+    lower_unaccented = strip_accents(lower)
+    if re.search(HAZARDOUS_INTERVENTION_PATTERN, lower) or re.search(HAZARDOUS_INTERVENTION_PATTERN, lower_unaccented):
+        warning = (
+            "CẢNH BÁO AN TOÀN CAO ÁP: Quý khách tuyệt đối không tự ý tháo mở, can thiệp hoặc chạm vào bộ pin và hệ thống dây điện cao áp. "
+            "Hệ thống pin ô tô điện hoạt động ở điện áp rất cao và tiềm ẩn nguy cơ giật điện hoặc cháy nổ nguy hiểm đến tính mạng. "
+            "Vui lòng giữ khoảng cách an toàn với xe và chờ kỹ thuật viên chuyên trách của VinFast tiếp nhận xử lý."
+        )
+        return True, warning
+    return False, None
 
 
 # =====================================================================

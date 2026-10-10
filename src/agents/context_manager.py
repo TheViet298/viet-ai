@@ -29,6 +29,7 @@ class ContextLayers:
     memory_context: str = ""
     retrieval_context: str = ""
     tool_context: str = ""
+    required_memory_context: str = ""
 
 
 def build_7_layer_context(state: AgentState, task_objective: str, tool_outputs: str = "") -> ContextLayers:
@@ -46,6 +47,7 @@ def build_7_layer_context(state: AgentState, task_objective: str, tool_outputs: 
         memory_context=str(
             {
                 "summary": state.get("memory_summary", ""),
+                "summary_evidence": state.get('summary_evidence', []),
                 "facts": state.get("captured_fields", {}),
                 "clarification_turn": state.get("clarification_turn", 0),
                 "intent": state.get("intent"),
@@ -55,6 +57,10 @@ def build_7_layer_context(state: AgentState, task_objective: str, tool_outputs: 
             f"[{c['source_id']}] {c.get('relevant_snippet', '')}" for c in state.get("rag_citations", [])
         ),
         tool_context='\n'.join(value for value in (tool_outputs,confirmed_cardd_context(state)) if value),
+        required_memory_context=str({'facts': state.get('captured_fields', {}),
+                                    'clarification_turn': state.get('clarification_turn', 0),
+                                    'intent': state.get('intent'),
+                                    'priority': state.get('priority'), 'case_id': state.get('case_id')}),
     )
 
 
@@ -81,9 +87,11 @@ def trim_context_layers(layers: ContextLayers, max_bytes: int = 8000, *, max_tok
         body = "\n\n".join(
             f"[{k.upper()} — DATA]\n{dynamic[k]}" for k in ("user", "memory", "retrieval", "tool") if dynamic[k]
         )
+        if layers.required_memory_context:
+            body += f'\n\n[REQUIRED MEMORY — DATA]\n{layers.required_memory_context}'
         return [SystemMessage(content=system), *([HumanMessage(content=body)] if body else [])]
 
-    for key in ("tool", "memory", "task", "retrieval"):
+    for key in ("tool", "retrieval", "memory"):
         if sum(utf8_size(str(m.content)) for m in render()) <= max_bytes:
             break
         dynamic[key] = ""
@@ -111,7 +119,11 @@ def apply_fact_recency_and_invalidation(
 ) -> tuple[dict, list]:
     facts = dict(current_facts)
     history = [dict(item) for item in fact_history]
+    timestamp = datetime.now(UTC).isoformat()
     if facts.get(field) == new_value:
+        for item in history:
+            if item['field'] == field and item['status'] == 'valid':
+                item.update(last_seen_at=timestamp, last_seen_provenance=provenance)
         return facts, history
     now = datetime.now(UTC).isoformat()
     for item in history:
@@ -126,6 +138,28 @@ def apply_fact_recency_and_invalidation(
             "status": "valid",
             "valid_from": now,
             "valid_to": None,
+            "last_seen_at": timestamp,
+            "last_seen_provenance": provenance,
         }
     )
+    return facts, history
+
+
+def expire_dynamic_facts(facts: dict, history: list[dict], at: datetime | None = None) -> tuple[dict, list]:
+    """Dynamic observations cannot be treated as current indefinitely."""
+    at = at or datetime.now(UTC)
+    facts, history = dict(facts), [dict(item) for item in history]
+    for field, seconds in {'current_soc': 300, 'current_location': 900}.items():
+        if field not in facts:
+            continue
+        observation = next((item for item in reversed(history) if item['field'] == field and item['status'] == 'valid'), None)
+        try:
+            seen = datetime.fromisoformat(observation.get('last_seen_at') or observation['valid_from']) if observation else None
+            fresh = seen is not None and 0 <= (at - seen).total_seconds() < seconds
+        except (ValueError, TypeError):
+            fresh = False
+        if not fresh:
+            facts.pop(field, None)
+            if observation:
+                observation.update(status='expired', valid_to=at.isoformat())
     return facts, history

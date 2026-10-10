@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Generic, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -149,12 +149,13 @@ class LocationRequest(BaseModel):
 
 class ClientContext(BaseModel):
     mock_customer_id: str | None = "CUST_MOCK_01"
-    vehicle_model: str | None = "VF8"
-    vehicle_code_mock: str | None = "VF-SF-00231"
+    vehicle_model: str | None = None
+    vehicle_code_mock: str | None = None
     customer_name: str | None = None
 
 
 class CustomerChatRequest(BaseModel):
+    request_id: str | None = Field(default=None, min_length=1, max_length=100)
     session_id: str = Field(default="sess_default", description="Mã phiên hội thoại (No-PII)")
     case_id: str | None = None  # e.g. CASE-20260924-001, null nếu là tin nhắn đầu tiên
     message: str = Field(..., min_length=1, max_length=5000, description="Nội dung tin nhắn khách hàng")
@@ -168,7 +169,7 @@ class ApiResponseEnvelope(BaseModel):
     data: dict[str, Any] = Field(default_factory=dict, description="Payload dữ liệu trả về")
     error: str | None = Field(default=None, description="Thông báo lỗi nếu có")
     meta: dict[str, Any] = Field(
-        default_factory=lambda: {"timestamp": datetime.now(timezone.utc).isoformat()},
+        default_factory=lambda: {"timestamp": datetime.now(UTC).isoformat()},
         description="Metadata phản hồi",
     )
 
@@ -190,7 +191,18 @@ class ServiceHandoff(BaseModel):
     guide_url: str
 
 
+class EmergencyContext(BaseModel):
+    case_id: str
+    incident_version: int
+    safety_status: str
+    safety_acknowledged_at: str | None = None
+
+
 class ChatResponseData(BaseModel):
+    emergency_context: EmergencyContext | None = None
+    safety_status: Literal['unconfirmed', 'customer_reported_safe'] = 'unconfirmed'
+    safety_acknowledged_at: str | None = None
+    incident_version: int | None = None
     visual_evidence: dict[str, Any] | None = None
     response_type: Literal["CLARIFICATION", "FAQ_ANSWER", "CASE_CREATED"]
     message: str
@@ -208,7 +220,32 @@ class ChatResponseData(BaseModel):
     remaining_guest_messages: int | None = None  # Số lượt chat còn lại cho Guest trial (tối đa 5)
 
 
+class SessionHistoryMessageItem(BaseModel):
+    id: str
+    sender: Literal["CUSTOMER", "AGENT", "STAFF", "SYSTEM"]
+    content: str
+    timestamp: str
+    response_type: Literal["CLARIFICATION", "FAQ_ANSWER", "CASE_CREATED"] | None = None
+    citations: list[Citation] = Field(default_factory=list)
+    suggested_replies: list[str] = Field(default_factory=list)
+    safe_guidance: str | None = None
+    case_id: str | None = None
+    priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"] | None = None
+
+
+class SessionHistoryResponseData(BaseModel):
+    session_id: str
+    case_id: str | None = None
+    messages: list[SessionHistoryMessageItem] = Field(default_factory=list)
+    total: int = 0
+
+
 class CustomerCaseStatusData(BaseModel):
+    emergency_context: EmergencyContext | None = None
+    priority: str | None = None
+    safety_status: str = 'unconfirmed'
+    safety_acknowledged_at: str | None = None
+    incident_version: int = 1
     case_id: str
     status: str
     status_description: str | None = None
@@ -219,6 +256,9 @@ class CustomerCaseStatusData(BaseModel):
 
 
 class CustomerCaseItem(BaseModel):
+    safety_status: str = 'unconfirmed'
+    safety_acknowledged_at: str | None = None
+    incident_version: int = 1
     id: str
     vehicle_model: str | None = None
     vehicle_code_mock: str | None = None
@@ -402,6 +442,9 @@ class ConversationItem(BaseModel):
 
 
 class TicketDetailCase(BaseModel):
+    safety_status: str = "unconfirmed"
+    safety_acknowledged_at: str | None = None
+    incident_version: int = 1
     id: str
     mock_customer_id: str
     vehicle_code_mock: str | None = None
@@ -427,6 +470,18 @@ class CustomerCaseDetailData(BaseModel):
     updates: list[CaseUpdateOut] = Field(default_factory=list)
     attachments: list[AttachmentOut] = Field(default_factory=list)
     conversation_history: list[ConversationItem] = Field(default_factory=list)
+
+
+class SafetyAcknowledgementPayload(BaseModel):
+    incident_version: int = Field(ge=1)
+
+
+class SafetyAcknowledgementData(BaseModel):
+    emergency_context: EmergencyContext | None = None
+    case_id: str
+    safety_status: str
+    safety_acknowledged_at: str | None = None
+    incident_version: int
 
 
 class StaffActionPayload(BaseModel):

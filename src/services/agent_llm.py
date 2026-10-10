@@ -18,7 +18,8 @@ _circuits: dict[str, dict] = {}
 
 def circuit_key() -> str:
     s = get_settings()
-    return sha256((s.google_api_key + s.model_name).encode()).hexdigest()
+    key = s.openai_api_key if (s.model_name.startswith("gpt") or s.openai_api_key) else s.google_api_key
+    return sha256((str(key) + str(getattr(s, "model_name", "model"))).encode()).hexdigest()
 
 
 def open_circuit() -> None:
@@ -43,11 +44,12 @@ def classify_provider_error(error: Exception) -> str:
 
 def record_outcome(state: AgentState, prompt: str, decision: str, usage: dict | None = None, parsed=None) -> None:
     usage = usage or {}
+    state["last_llm_outcome"] = decision
     try:
         record_trace_step(
             state.get("session_id", "unspecified"), state.get("turn", 0), "llm", prompt, decision,
             tokens_in=usage.get("input_tokens"), tokens_out=usage.get("output_tokens"),
-            metadata={"model": get_settings().model_name, "output": sanitized_snapshot(parsed.model_dump()) if isinstance(parsed, BaseModel) else None},
+            metadata={"model": getattr(get_settings(), "model_name", "gemini"), "output": sanitized_snapshot(parsed.model_dump()) if isinstance(parsed, BaseModel) else None},
         )
     except Exception:
         pass
@@ -56,7 +58,9 @@ def record_outcome(state: AgentState, prompt: str, decision: str, usage: dict | 
 async def structured_call(state: AgentState, prompt: str, schema: type[T]) -> T | None:
     """Optional online generation; deterministic, safe fallback when unavailable."""
     settings = get_settings()
-    if not settings.google_api_key or not settings.agent_llm_enabled:
+    is_openai = bool(settings.model_name and settings.model_name.lower().startswith("gpt")) or bool(settings.openai_api_key)
+    has_api_key = bool(settings.openai_api_key) if is_openai else bool(settings.google_api_key)
+    if not has_api_key or not settings.agent_llm_enabled:
         return None
     budget = state.setdefault("llm_budget", {"deadline": time.monotonic() + settings.agent_turn_timeout_s, "attempts": 0})
     remaining = budget["deadline"] - time.monotonic()
