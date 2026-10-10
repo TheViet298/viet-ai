@@ -304,8 +304,8 @@ Theo quy định đánh giá định kỳ của chương trình VinUni AI20K:
 | Thành viên | Vai trò chính | Mã học viên | Trách nhiệm chính |
 |---|---|---|---|
 | **Ngô Thế Việt** | Project Manager, Product Lead, Frontend Engineer | `2A202602594` | Quản lý tiến độ, thiết kế UX/UI, hiện thực giao diện Web Support Hub & Staff Console |
-| **Bùi Đăng Khôi** | AI Engineer, Data & Benchmark | `2A202602434` | Thu thập dữ liệu, xây dựng bộ benchmark kiểm thử và đánh giá độ chính xác mô hình |
-| **Đức Long** | AI Engineer, Workflow & RAG | `2A202602633` | Hiện thực LangGraph Agent, Hard Safety Guardrails, ChromaDB RAG & Vision Triage |
+| **Phạm Đình Bảo Khôi** | AI Engineer, Data & Benchmark | `2A202602434` | Thu thập dữ liệu, xây dựng bộ benchmark kiểm thử. Tích hợp GPS và tham gia xây dựng phần nhận diện ảnh |
+| **Đinh Đức Long** | AI Engineer, Workflow & RAG | `2A202602633` |Thu thập và xây dựng dữ liệu, LangGraph Agent, Hard Safety Guardrails, ChromaDB RAG & Vision Triage. Kiểm thử và đánh giá độ chính xác mô hình |
 | **Trọng Triển** | Backend Engineer, Database & APIs | `2A202602837` | Xây dựng kiến trúc API FastAPI, Database ORM, xác thực phân quyền và nghiệp vụ Case |
 
 ---
