@@ -12,6 +12,8 @@ import {
   Mail,
   AlertCircle,
   ArrowLeft,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useAuth, ProductMark, UserRole } from "@/features/shared";
 
@@ -21,6 +23,7 @@ export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<"CUSTOMER" | "STAFF">("CUSTOMER");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -160,12 +163,25 @@ export default function LoginPage() {
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-[10px] border border-[#E2E8F0] bg-white py-2 pl-9 pr-3 text-[13px] text-[#0F172A] placeholder-[#64748B] focus:border-[#1E40AF] focus:outline-none"
+                  className="w-full rounded-[10px] border border-[#E2E8F0] bg-white py-2 pl-9 pr-10 text-[13px] text-[#0F172A] placeholder-[#64748B] focus:border-[#1E40AF] focus:outline-none"
                   placeholder="Nhập mật khẩu"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#64748B] hover:text-[#0F172A] transition-colors focus:outline-none"
+                  title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
               </div>
             </div>
 

@@ -92,6 +92,19 @@ export function createWelcomeMessage(context?: ChatUserContext | string): ChatMe
   };
 }
 
+export function generateSecureSessionId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `sess_vf_${crypto.randomUUID()}`;
+  }
+  const randArr = new Uint32Array(4);
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    crypto.getRandomValues(randArr);
+    const hex = Array.from(randArr).map((n) => n.toString(16).padStart(8, "0")).join("");
+    return `sess_vf_${hex}`;
+  }
+  return `sess_vf_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+}
+
 export const INITIAL_WELCOME_MESSAGE: ChatMessage = createWelcomeMessage();
 
 export function useChat(context?: ChatUserContext | string) {
@@ -100,7 +113,7 @@ export function useChat(context?: ChatUserContext | string) {
   const [messages, setMessages] = useState<ChatMessage[]>(() => [createWelcomeMessage(ctx)]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sessionId, setSessionId] = useState(() => `sess_vf_${Math.random().toString(36).substring(2, 9)}`);
+  const [sessionId, setSessionId] = useState(() => generateSecureSessionId());
   const [currentCaseId, setCurrentCaseId] = useState<string | null>(() => ctx.caseId || null);
   const [storageRestored, setStorageRestored] = useState(false);
   const [criticalBanner, setCriticalBanner] = useState(false);
@@ -134,7 +147,7 @@ export function useChat(context?: ChatUserContext | string) {
       try {
         const key = storageKey("session");
         const savedSession = key ? localStorage.getItem(key) : null;
-        if (savedSession && /^sess_vf_[a-z0-9_-]+$/.test(savedSession) && savedSession.length <= 64) {
+        if (savedSession && /^sess_vf_[a-zA-Z0-9_-]+$/.test(savedSession) && savedSession.length <= 64) {
           setSessionId(savedSession);
           void (async () => {
             try {
@@ -194,7 +207,13 @@ export function useChat(context?: ChatUserContext | string) {
     return () => { cancelled = true; clearInterval(timer); window.removeEventListener("focus", onFocus); };
   }, [currentCaseId, storageRestored]);
 
+  const lastUserRef = useRef(ctx.userName);
   useEffect(() => {
+    if (lastUserRef.current !== ctx.userName) {
+      lastUserRef.current = ctx.userName;
+      resetChat();
+      return;
+    }
     setMessages((prev) => {
       if (prev.length === 1 && prev[0].id === "welcome-1") {
         return [createWelcomeMessage(ctx)];
@@ -213,12 +232,50 @@ export function useChat(context?: ChatUserContext | string) {
     setCriticalBannerDismissed(false);
     setSessionHasCritical(false);
     setRequestLocation(false);
-    setSessionId(`sess_vf_${Math.random().toString(36).substring(2, 9)}`);
+    setSessionId(generateSecureSessionId());
     safetyRef.current = { caseId: null, version: 0, acknowledged: false, epoch: safetyRef.current.epoch + 1 };
     failedRequest.current = null;
     setIncidentVersion(null);
     setSafetyError(null);
     setSafetyPending(false);
+  };
+
+  const loadSession = async (targetSessionId: string) => {
+    if (targetSessionId === sessionId) return;
+    ++conversationGeneration.current;
+    setLoading(true);
+    setSessionId(targetSessionId);
+    try {
+      const key = storageKey("session");
+      if (key) localStorage.setItem(key, targetSessionId);
+    } catch {}
+
+    try {
+      const hist = await getSessionHistory(targetSessionId);
+      if (hist?.success && hist?.data?.messages && hist.data.messages.length > 0) {
+        const mapped: ChatMessage[] = hist.data.messages.map((m) => ({
+          id: m.id,
+          sender: m.sender === "CUSTOMER" ? "CUSTOMER" : "AGENT",
+          content: m.content,
+          timestamp: m.timestamp,
+          response_type: m.response_type,
+          citations: m.citations,
+          suggested_replies: m.suggested_replies,
+          safe_guidance: m.safe_guidance,
+          case_id: m.case_id,
+          priority: m.priority,
+        }));
+        setMessages(mapped);
+        setCurrentCaseId(hist.data.case_id || null);
+      } else {
+        setMessages([createWelcomeMessage(ctx)]);
+        setCurrentCaseId(null);
+      }
+    } catch {
+      setMessages([createWelcomeMessage(ctx)]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateMessageChips = (messageId: string, newChips: string[]) => {
@@ -396,6 +453,7 @@ export function useChat(context?: ChatUserContext | string) {
     requestLocation,
     sendMessage,
     resetChat,
+    loadSession,
     updateMessageChips,
   };
 }

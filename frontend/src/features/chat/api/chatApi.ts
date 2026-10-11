@@ -3,6 +3,7 @@ import {
   ArticleItem,
   AttachmentOut,
   ChatResponseData,
+  ChatSessionItem,
   ClientContext,
   CustomerCaseDetailData,
   CustomerCaseItem,
@@ -113,6 +114,88 @@ export async function getSessionHistory(sessionId: string): Promise<ApiResponse<
   }
   return res.json();
 }
+
+/**
+ * Lấy danh sách các cuộc trò chuyện của người dùng hoặc khách
+ */
+export async function fetchChatSessions(guestSessionId?: string): Promise<ApiResponse<{ sessions: ChatSessionItem[]; total: number }>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const query = !authHeaders.Authorization && guestSessionId ? `?guest_session_id=${encodeURIComponent(guestSessionId)}` : "";
+  const res = await fetch(`${BASE_URL}/api/v1/customer/sessions${query}`, {
+    headers: {
+      ...authHeaders,
+      ...(guestSessionId ? { "X-Session-Id": guestSessionId } : {}),
+    },
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to fetch chat sessions (${res.status}): ${errorText}`);
+  }
+  return res.json();
+}
+
+/**
+ * Đổi tên phiên trò chuyện
+ */
+export async function updateChatSessionTitle(sessionId: string, title: string, guestSessionId?: string): Promise<ApiResponse<{ session_id: string; title: string }>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const query = !authHeaders.Authorization && guestSessionId ? `?guest_session_id=${encodeURIComponent(guestSessionId)}` : "";
+  const res = await fetch(`${BASE_URL}/api/v1/customer/sessions/${sessionId}${query}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders,
+      ...(guestSessionId ? { "X-Session-Id": guestSessionId } : {}),
+    },
+    body: JSON.stringify({ title }),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to update session title (${res.status}): ${errorText}`);
+  }
+  return res.json();
+}
+
+/**
+ * Xóa một phiên trò chuyện
+ */
+export async function deleteChatSession(sessionId: string, guestSessionId?: string): Promise<ApiResponse<{ deleted_session_id: string }>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const query = !authHeaders.Authorization && guestSessionId ? `?guest_session_id=${encodeURIComponent(guestSessionId)}` : "";
+  const res = await fetch(`${BASE_URL}/api/v1/customer/sessions/${sessionId}${query}`, {
+    method: "DELETE",
+    headers: {
+      ...authHeaders,
+      ...(guestSessionId ? { "X-Session-Id": guestSessionId } : {}),
+    },
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to delete session (${res.status}): ${errorText}`);
+  }
+  return res.json();
+}
+
+/**
+ * Xóa toàn bộ lịch sử trò chuyện
+ */
+export async function deleteAllChatSessions(guestSessionId?: string): Promise<ApiResponse<{ deleted_sessions_count: number }>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const query = !authHeaders.Authorization && guestSessionId ? `?guest_session_id=${encodeURIComponent(guestSessionId)}` : "";
+  const res = await fetch(`${BASE_URL}/api/v1/customer/sessions${query}`, {
+    method: "DELETE",
+    headers: {
+      ...authHeaders,
+      ...(guestSessionId ? { "X-Session-Id": guestSessionId } : {}),
+    },
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to delete all sessions (${res.status}): ${errorText}`);
+  }
+  return res.json();
+}
+
 
 /**
  * Tra cứu trạng thái hồ sơ theo mã Case ID (api-contract.md Mục 2.2)

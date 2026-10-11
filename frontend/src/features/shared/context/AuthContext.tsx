@@ -112,6 +112,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isReady, setIsReady] = useState(false);
   const loginGeneration = useRef(0);
 
+  const getActiveGuestSessionId = (): string | null => {
+    if (typeof window === "undefined") return null;
+    try {
+      return localStorage.getItem("vf_chat_session:guest");
+    } catch {
+      return null;
+    }
+  };
+
+  const clearGuestSessionOnClient = () => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.removeItem("vf_chat_session:guest");
+      localStorage.removeItem("vf_chat_case:guest");
+    } catch {}
+  };
+
   const acceptAuthResponse = (
     response: { data: { token: string; user?: ApiUser } },
     localProfile: Partial<AuthUser> = {},
@@ -127,15 +144,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Xóa token role đối diện để tránh xung đột quyền
     localStorage.removeItem(authUser.role === "STAFF" ? "vf_customer_token" : "vf_staff_token");
     localStorage.setItem(STORAGE_KEY, JSON.stringify(authUser));
+    clearGuestSessionOnClient();
     setUser(authUser);
     return authUser;
   };
 
   const requestLogin = async (username: string, password: string): Promise<AuthResponse> => {
+    const guestSessionId = getActiveGuestSessionId();
     const response = await fetch(`${BASE_URL}/api/v1/auth/login`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: username.trim(), password }),
+      headers: {
+        "Content-Type": "application/json",
+        ...(guestSessionId ? { "X-Session-Id": guestSessionId } : {}),
+      },
+      body: JSON.stringify({
+        username: username.trim(),
+        password,
+        guest_session_id: guestSessionId || undefined,
+      }),
     });
     const json = await response.json().catch(() => null);
     if (!response.ok || !json?.data?.token) {
@@ -159,15 +185,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const registerCustomer: AuthContextType["registerCustomer"] = async (username, password, profile) => {
     const generation = ++loginGeneration.current;
+    const guestSessionId = getActiveGuestSessionId();
     const response = await fetch(`${BASE_URL}/api/v1/auth/register`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(guestSessionId ? { "X-Session-Id": guestSessionId } : {}),
+      },
       body: JSON.stringify({
         username: username.trim(),
         password,
         full_name: profile?.name?.trim() || null,
         phone: profile?.phone?.trim() || username.trim(),
         vehicle_model: profile?.vehicleModel || null,
+        guest_session_id: guestSessionId || undefined,
       }),
     });
     const json = await response.json().catch(() => null);
@@ -222,6 +253,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem("vf_staff_token");
       localStorage.removeItem("vf_customer_token");
+      localStorage.removeItem("vf_chat_session:guest");
+      localStorage.removeItem("vf_chat_case:guest");
+      const freshGuestId =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? `sess_vf_${crypto.randomUUID()}`
+          : `sess_vf_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+      localStorage.setItem("vf_chat_session:guest", freshGuestId);
     } catch { }
   };
 
