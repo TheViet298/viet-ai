@@ -31,17 +31,15 @@ export function ChatMessageItem({
     // 1. Xóa các mã nguồn học thuật thô lọt vào text (vd: [SRC-006], [SRC-001], [1], [2])
     text = text.replace(/\s*\[(?:SRC-[A-Za-z0-9_-]+|\d+)\]/g, "");
 
-    // 2. Chuẩn hóa đại từ xưng hô thân thiện, loại bỏ xưng 'Quý khách' hoặc 'Khách hàng'
-    text = text.replace(/\bquý\s+khách\b/gi, "anh/chị");
-    text = text.replace(/(^|[.!?]\s+)(anh\/chị)/g, (_m, p1, p2) => p1 + "Anh/chị");
-    text = text.replace(/khách\s+hàng\s+đã\s+dừng\s+đỗ/gi, "anh/chị đã dừng đỗ");
-    text = text.replace(/Khách\s+hàng\s+đã\s+dừng\s+đỗ/g, "Anh/chị đã dừng đỗ");
+    // 2. Chuẩn hóa đại từ xưng hô theo chuẩn VinFast CSKH (giữ nguyên Quý khách)
+    text = text.replace(/khách\s+hàng\s+đã\s+dừng\s+đỗ/gi, "Quý khách đã dừng đỗ");
+    text = text.replace(/Khách\s+hàng\s+đã\s+dừng\s+đỗ/g, "Quý khách đã dừng đỗ");
 
     // 2b. Tách các cụm trạng thái sự cố bị dính trên 1 dòng
     text = text.replace(
       /(?:sự cố [^:\n]+:\s*)?Tình trạng:\s*([^(\n]+?)\s*\(Mức pin:\s*([^)]+)\)\s*Trạng thái:\s*([^\n.]+)/gi,
       (_match, p1, p2, p3) => {
-        const cleanP3 = p3.replace(/khách\s+hàng\s+đã\s+dừng\s+đỗ/gi, "anh/chị đã dừng đỗ");
+        const cleanP3 = p3.replace(/khách\s+hàng\s+đã\s+dừng\s+đỗ/gi, "Quý khách đã dừng đỗ");
         return `\n\n- **Tình trạng:** ${p1.trim()}\n- **Mức pin:** ${p2.trim()}\n- **Trạng thái:** ${cleanP3.trim()}\n\n`;
       }
     );

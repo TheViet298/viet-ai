@@ -380,7 +380,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             ), error=None)
         if guest_count >= 5:
             logger.warning(f"[403 FORBIDDEN] Guest session='{payload.session_id}' reached limit: guest_count={guest_count} >= 5")
-            raise HTTPException(403, "Bạn đã sử dụng hết 5 lượt chat thử nghiệm. Vui lòng đăng nhập để tiếp tục.")
+            raise HTTPException(403, "Quý khách đã sử dụng hết 5 lượt chat thử nghiệm. Quý khách vui lòng đăng nhập để tiếp tục trải nghiệm ạ.")
     mock_cust_id = (current_user.mock_customer_id if current_user and current_user.mock_customer_id else
                     (ctx.mock_customer_id if ctx and ctx.mock_customer_id else f"GUEST_{(payload.guest_session_id or '')[:8]}"))
     previous_context = {}
@@ -1286,9 +1286,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
 
         if is_capabilities:
             greeting_reply = (
-                "Chào bạn! Tôi có thể hỗ trợ tìm hiểu xe VinFast, tra cứu bảo hành và bảo dưỡng, "
+                "Chào Quý khách! Em có thể hỗ trợ tìm hiểu xe VinFast, tra cứu bảo hành và bảo dưỡng, "
                 "hướng dẫn về sạc và ứng dụng, tiếp nhận sự cố kỹ thuật hoặc khiếu nại, "
-                "và theo dõi hồ sơ hỗ trợ. Bạn muốn được hỗ trợ nội dung nào?"
+                "và theo dõi hồ sơ hỗ trợ. Quý khách cần em hỗ trợ nội dung nào ạ?"
             )
         elif short_name:
             full_lower = customer_name.lower()
@@ -1305,9 +1305,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             if title:
                 greeting_reply = f"Chào {title} {short_name}! Em giúp gì được cho {title} hôm nay ạ?"
             else:
-                greeting_reply = f"Chào {short_name}! Em giúp gì được cho bạn hôm nay ạ?"
+                greeting_reply = f"Chào {short_name}! Em giúp gì được cho Quý khách hôm nay ạ?"
         else:
-            greeting_reply = "Chào bạn! Em là Trợ lý VF Serv. Em có thể hỗ trợ gì cho bạn hôm nay ạ?"
+            greeting_reply = "Chào Quý khách! Em là Trợ lý VFServ. Em có thể hỗ trợ gì cho Quý khách hôm nay ạ?"
 
         suggested_replies = [
             "Tư vấn xe",
@@ -1402,7 +1402,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
 
     if not is_technical_incident and any(k in lower_text for k in ["gần tôi", "gần nhất", "tìm trạm", "tìm showroom", "xung quanh đây", "trạm sạc quanh", "xưởng gần", "xưởng dịch vụ", "danh sách xưởng", "tìm xưởng"]):
         target = "showroom" if "showroom" in lower_text else "xưởng dịch vụ" if "xưởng" in lower_text else "trạm sạc"
-        reply = f"Anh/chị vui lòng chia sẻ vị trí để tìm {target} gần mình. Nếu không dùng GPS, anh/chị có thể nhập khu vực hoặc địa chỉ."
+        reply = f"Quý khách vui lòng chia sẻ vị trí để tìm {target} gần mình. Nếu không dùng GPS, Quý khách có thể nhập khu vực hoặc địa chỉ."
         db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
                        sender_type="AGENT", content=reply, msg_metadata={"action": "find_service_point"}))
         db.flush()
@@ -1470,9 +1470,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 },
             )
         agent_reply = ai_res.get("reply") or (
-            "Theo tài liệu chính thức từ VinFast, anh/chị có thể tra cứu thông tin chi tiết, "
+            "Theo tài liệu chính thức từ VinFast, Quý khách có thể tra cứu thông tin chi tiết, "
             "quản lý tình trạng xe và đặt lịch dịch vụ trực tiếp trên Ứng dụng VinFast.\n\n"
-            "Anh/chị cần em hỗ trợ thao tác cụ thể nào không ạ?"
+            "Quý khách cần em hỗ trợ thao tác cụ thể nào không ạ?"
         )
         db.info['conversation_claims'] = ai_res.get('answer_claims', [])
         db.info['conversation_retrieval'] = ai_res.get('retrieval_diagnostics', {})
@@ -1490,11 +1490,11 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             diag_cat = diag.get("category")
             diag_stage = diag.get("stage")
             if diag_cat == "context_budget_exceeded" or diag_stage == "prompt":
-                agent_reply = "Tài liệu cần thiết vượt quá giới hạn xử lý hiện tại. Tôi sẽ chuyển chuyên viên kiểm tra đầy đủ điều kiện."
-            elif diag_stage == "generation" or diag_cat in ("generation_unavailable", "provider_error", "circuit_open", "rate_limited"):
-                agent_reply = "Tôi chưa hoàn tất được việc tạo câu trả lời từ tài liệu đã tìm thấy. Anh/chị vui lòng thử lại; tôi không thể xác nhận nội dung lúc này."
-            elif not agent_reply or "Tôi chưa có nguồn" in agent_reply:
-                agent_reply = "Tôi chưa có nguồn đã xác thực cho câu hỏi này. Anh/chị có thể yêu cầu chuyển chuyên viên hỗ trợ."
+                agent_reply = "Tài liệu cần thiết vượt quá giới hạn xử lý hiện tại. Em sẽ chuyển chuyên viên kiểm tra đầy đủ điều kiện."
+            elif (not agent_reply or "chưa hoàn tất" in agent_reply) and (diag_stage == "generation" or diag_cat in ("generation_unavailable", "provider_error", "circuit_open", "rate_limited")):
+                agent_reply = "Em chưa hoàn tất được việc tạo câu trả lời từ tài liệu đã tìm thấy. Quý khách vui lòng thử lại; em chưa thể xác nhận nội dung lúc này."
+            elif not agent_reply or "chưa có nguồn" in agent_reply:
+                agent_reply = "Em chưa có nguồn đã xác thực cho câu hỏi này. Quý khách có thể yêu cầu chuyển chuyên viên hỗ trợ."
         citations = []
         if ai_res.get("citations"):
             seen_sources = set()
