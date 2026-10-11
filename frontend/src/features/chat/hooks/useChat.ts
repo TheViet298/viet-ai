@@ -33,7 +33,7 @@ export interface ChatUserContext {
 }
 
 export function getSalutation(fullName?: string): { title: string; shortName: string; pronoun: string } {
-  if (!fullName || !fullName.trim()) {
+  if (!fullName || !fullName.trim() || ["guest", "khách", "khách hàng", "anh/chị"].includes(fullName.trim().toLowerCase())) {
     return { title: "", shortName: "", pronoun: "Quý khách" };
   }
   const parts = fullName.trim().split(/\s+/);
@@ -62,7 +62,7 @@ export function createWelcomeMessage(context?: ChatUserContext | string): ChatMe
   const { title, shortName, pronoun } = getSalutation(userName);
 
   let content: string;
-  if (shortName) {
+  if (shortName && !["guest", "khách", "khách hàng", "anh/chị"].includes(shortName.toLowerCase())) {
     const greetingStart = title ? `Chào ${title} ${shortName}!` : `Chào ${shortName}!`;
     if (caseId) {
       content = `${greetingStart} Hồ sơ ${caseId} đang được kỹ thuật viên kiểm tra. Em giúp gì thêm được cho ${pronoun} hôm nay ạ?`;
