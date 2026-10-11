@@ -33,8 +33,8 @@ export interface ChatUserContext {
 }
 
 export function getSalutation(fullName?: string): { title: string; shortName: string; pronoun: string } {
-  if (!fullName || !fullName.trim()) {
-    return { title: "", shortName: "", pronoun: "bạn" };
+  if (!fullName || !fullName.trim() || ["guest", "khách", "khách hàng", "anh/chị"].includes(fullName.trim().toLowerCase())) {
+    return { title: "", shortName: "", pronoun: "Quý khách" };
   }
   const parts = fullName.trim().split(/\s+/);
   const shortName = parts[parts.length - 1];
@@ -52,7 +52,7 @@ export function getSalutation(fullName?: string): { title: string; shortName: st
   if (isMale) {
     return { title: "anh", shortName, pronoun: "anh" };
   }
-  return { title: "", shortName, pronoun: "bạn" };
+  return { title: "", shortName, pronoun: "Quý khách" };
 }
 
 export function createWelcomeMessage(context?: ChatUserContext | string): ChatMessage {
@@ -62,19 +62,19 @@ export function createWelcomeMessage(context?: ChatUserContext | string): ChatMe
   const { title, shortName, pronoun } = getSalutation(userName);
 
   let content: string;
-  if (shortName) {
+  if (shortName && !["guest", "khách", "khách hàng", "anh/chị"].includes(shortName.toLowerCase())) {
     const greetingStart = title ? `Chào ${title} ${shortName}!` : `Chào ${shortName}!`;
     if (caseId) {
       content = `${greetingStart} Hồ sơ ${caseId} đang được kỹ thuật viên kiểm tra. Em giúp gì thêm được cho ${pronoun} hôm nay ạ?`;
     } else {
-      content = `${greetingStart} Em là Trợ lý VF Serv. Em có thể hỗ trợ gì cho ${pronoun} hôm nay ạ?`;
+      content = `${greetingStart} Em là Trợ lý VFServ. Em có thể hỗ trợ gì cho ${pronoun} hôm nay ạ?`;
     }
   } else {
     // Khách vãng lai (Guest)
     if (caseId) {
-      content = `Chào bạn! Hồ sơ ${caseId} đang được kỹ thuật viên kiểm tra. Bạn cần em hỗ trợ thêm thông tin gì không ạ?`;
+      content = `Chào Quý khách! Hồ sơ ${caseId} đang được kỹ thuật viên kiểm tra. Quý khách cần em hỗ trợ thêm thông tin gì không ạ?`;
     } else {
-      content = `Chào bạn! Em là Trợ lý VF Serv. Em có thể hỗ trợ gì cho bạn hôm nay ạ?`;
+      content = `Chào Quý khách! Em là Trợ lý VFServ. Em có thể hỗ trợ gì cho Quý khách hôm nay ạ?`;
     }
   }
 

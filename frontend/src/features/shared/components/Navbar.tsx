@@ -81,8 +81,8 @@ export function Navbar() {
                 <ProductMark className="w-4 h-4 text-white" />
               </div>
               <div>
-                <div className="font-bold text-[16px] tracking-tight flex items-center gap-1 font-display text-[#0F172A]">
-                  VF <span className="text-[#1E40AF] font-bold">Serv</span>
+                <div className="font-bold text-[16px] tracking-tight flex items-center font-display text-[#0F172A]">
+                  VF<span className="text-[#1E40AF] font-bold">Serv</span>
                 </div>
                 <div className="text-[9.5px] text-[#64748B] tracking-wider font-mono uppercase font-semibold">
                   VinFast EV Hub

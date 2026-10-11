@@ -58,7 +58,7 @@ export function CustomerChatContainer() {
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const uploadRequestId = useRef(0);
   const hasSentInitialPrompt = useRef(false);
-  const [aiStatus, setAiStatus] = useState<string>("Trợ lý VF Serv • Hỗ trợ dịch vụ xe điện VinFast");
+  const [aiStatus, setAiStatus] = useState<string>("Trợ lý VFServ • Hỗ trợ dịch vụ xe điện VinFast");
 
   // ===========================================================================
   // SERVICE MAP PREVIEW & LOCATION CONSENT (ADR-005, screen-spec.md Section 5.4, CUS-03)
@@ -120,7 +120,7 @@ export function CustomerChatContainer() {
     getAiSystemStatus()
       .then((res) => {
         if (res?.status === "ready") {
-          setAiStatus("Trợ lý VF Serv • Sẵn sàng hỗ trợ");
+          setAiStatus("Trợ lý VFServ • Sẵn sàng hỗ trợ");
         }
       })
       .catch(() => { });
@@ -408,7 +408,7 @@ export function CustomerChatContainer() {
               </div>
               <div className="min-w-0">
                 <div className="font-bold text-[13px] text-slate-900 truncate">
-                  VF Serv AI · <span className="font-normal text-slate-600">Trợ lý Dịch vụ VinFast</span>
+                  VFServ AI · <span className="font-normal text-slate-600">Trợ lý Dịch vụ VinFast</span>
                 </div>
               </div>
               <div className="text-[11px] text-slate-500 hidden sm:flex items-center gap-1.5 pl-2 border-l border-slate-200">

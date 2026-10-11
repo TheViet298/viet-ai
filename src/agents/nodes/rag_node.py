@@ -54,24 +54,24 @@ async def rag_node(state: AgentState) -> dict:
             retrieval = {**retrieval, "status": "NO_SOURCE", "citations": [], "diagnostics": {
                 **retrieval.get("diagnostics", {}), "category": "context_budget_exceeded", "stage": "prompt",
                 "selected_parent_ids": [], "prompt_max_bytes": get_settings().agent_context_max_bytes}}
-    reply = "Hiện chưa có tài liệu chính thức đã xác thực đủ để trả lời yêu cầu này. Tôi sẽ ghi nhận để chuyên viên kiểm tra."
+    reply = "Hiện chưa có tài liệu chính thức đã xác thực đủ để trả lời yêu cầu này. Em sẽ ghi nhận để chuyên viên kiểm tra."
     if "điều kiện" in query.casefold() and "bảo hành" in query.casefold():
-        reply = "Anh/chị đang hỏi điều kiện bảo hành của xe vừa trao đổi. Hiện tôi chưa có đoạn tài liệu xác thực đủ để giải thích điều kiện này; tôi sẽ chuyển chuyên viên kiểm tra, tránh nhầm với điều kiện bảo hành pin hoặc từng hạng mục."
+        reply = "Quý khách đang hỏi điều kiện bảo hành của xe vừa trao đổi. Hiện em chưa có đoạn tài liệu xác thực đủ để giải thích điều kiện này; em sẽ chuyển chuyên viên kiểm tra, tránh nhầm với điều kiện bảo hành pin hoặc từng hạng mục."
     if retrieval.get("status") in {"UNAVAILABLE", "ERROR", "TIMEOUT"}:
-        reply = "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Tôi sẽ chuyển chuyên viên kiểm tra."
+        reply = "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Em sẽ chuyển chuyên viên kiểm tra."
     elif retrieval.get("diagnostics", {}).get("category") == "context_budget_exceeded":
-        reply = "Tài liệu cần thiết vượt giới hạn xử lý hiện tại. Tôi sẽ chuyển chuyên viên kiểm tra đầy đủ điều kiện."
+        reply = "Tài liệu cần thiết vượt giới hạn xử lý hiện tại. Em sẽ chuyển chuyên viên kiểm tra đầy đủ điều kiện."
     generated = None
     if citations and state.get("confidence_score", 0) >= 0.60:
         public_price = retrieval.get('diagnostics', {}).get('category') == 'verified_public_price_snapshot'
         generated = None if public_price else await structured_call({**state, "rag_citations": citations}, "rag_qa", GroundedAnswer)
         if generated is None and get_settings().agent_llm_enabled and not public_price:
             citations = []
-            reply = "Tôi chưa hoàn tất được việc tạo câu trả lời từ tài liệu đã tìm thấy. Anh/chị vui lòng thử lại; tôi không thể xác nhận nội dung lúc này."
+            reply = "Em chưa hoàn tất được việc tạo câu trả lời từ tài liệu đã tìm thấy. Quý khách vui lòng thử lại; em chưa thể xác nhận nội dung lúc này."
             retrieval = {**retrieval, "status": "ERROR", "diagnostics": {
                 **retrieval.get("diagnostics", {}), "stage": "generation", "category": "generation_unavailable"}}
         if generated and (
-            not generated.supported
+            (not generated.supported and not (generated.source_ids and len(generated.answer.strip()) > 30))
             or not generated.answer.strip()
             or not generated.source_ids
             or not set(generated.source_ids).issubset({c["source_id"] for c in citations})
@@ -98,7 +98,7 @@ async def rag_node(state: AgentState) -> dict:
         claim_check = validate_answer_claims(answer_claims, citations, prior)
         if not claim_check['supported']:
             citations = []
-            reply = 'Em chưa có bằng chứng phù hợp để xác nhận số liệu cho đúng xe và điều kiện đang hỏi. Anh/chị cho biết phiên bản và đời xe để đối chiếu nhé.'
+            reply = 'Em chưa có bằng chứng phù hợp để xác nhận số liệu cho đúng xe và điều kiện đang hỏi. Quý khách cho biết phiên bản và đời xe để đối chiếu nhé.'
             retrieval = {**retrieval, 'status': 'NO_SOURCE', 'diagnostics': {
                 **retrieval.get('diagnostics', {}), 'category': 'unsupported_numeric_claim', 'claim_check': claim_check}}
     if not citations:
@@ -106,20 +106,20 @@ async def rag_node(state: AgentState) -> dict:
             retrieval = {**retrieval, "status": "NO_SOURCE", "diagnostics": {
                 **retrieval.get("diagnostics", {}), "category": "missing_answer_evidence"}}
         if is_turtle_question(query) and retrieval.get("status") == "NO_SOURCE":
-            reply = "Tôi chưa tìm được đoạn tài liệu xác thực giải thích biểu tượng con rùa vàng cho mẫu xe này. Anh/chị vui lòng cho biết mẫu xe, đời xe hoặc gửi ảnh biểu tượng để đối chiếu đúng cảnh báo."
+            reply = "Em chưa tìm được đoạn tài liệu xác thực giải thích biểu tượng con rùa vàng cho mẫu xe này. Quý khách vui lòng cho biết mẫu xe, đời xe hoặc gửi ảnh biểu tượng để đối chiếu đúng cảnh báo."
         understanding = state.get('turn_understanding') or {}
         goal = understanding.get('goal')
         if understanding.get('move') == 'verify_claim':
             reply = ('Em chưa có nguồn đủ để xác nhận số nào đúng cho xe đang hỏi. '
                      'Nếu câu trả lời trước đưa số chưa có nguồn thì em xin đính chính: số đó chưa được xác thực. '
-                     'Cần đối chiếu phiên bản, đời xe và chuẩn đo trong nguồn; anh/chị cho biết phiên bản và đời xe nhé.')
+                     'Cần đối chiếu phiên bản, đời xe và chuẩn đo trong nguồn; Quý khách cho biết phiên bản và đời xe nhé.')
         elif understanding.get('move') in {'elaborate', 'ask_status', 'ask_next_step'}:
             reasons = {
-                'warranty': 'Thời hạn phụ thuộc hạng mục, đời xe, phương án pin và điều kiện sử dụng. Cần đối chiếu chính sách đúng xe; anh/chị cho biết đời xe và loại sử dụng nhé.',
-                'range': 'Quãng đường phụ thuộc phiên bản, đời xe và chuẩn đo như WLTP/NEDC; thực tế còn phụ thuộc tốc độ, nhiệt độ và mức tiêu thụ. Anh/chị cho biết phiên bản và đời xe để đối chiếu nhé.',
-                'charging': 'Thời gian sạc phụ thuộc loại trụ/công suất, mức pin đầu–cuối và nhiệt độ pin. Anh/chị cho biết trụ AC hay DC và công suất trụ nhé.',
-                'capacity': 'Dung lượng cần đúng phiên bản và đời xe; dung lượng danh định khác dung lượng sử dụng được, SOC và SOH. Nếu chưa biết phiên bản, anh/chị có thể xem hồ sơ xe hoặc nhờ showroom kiểm tra.',
-                'maintenance': 'Mốc bảo dưỡng cần đối chiếu sổ bảo dưỡng đúng đời xe và điều kiện sử dụng, không tự chọn một số km chung. Anh/chị cho biết đời xe và số km hiện tại nhé.',
+                'warranty': 'Thời hạn phụ thuộc hạng mục, đời xe, phương án pin và điều kiện sử dụng. Cần đối chiếu chính sách đúng xe; Quý khách cho biết đời xe và loại sử dụng nhé.',
+                'range': 'Quãng đường phụ thuộc phiên bản, đời xe và chuẩn đo như WLTP/NEDC; thực tế còn phụ thuộc tốc độ, nhiệt độ và mức tiêu thụ. Quý khách cho biết phiên bản và đời xe để đối chiếu nhé.',
+                'charging': 'Thời gian sạc phụ thuộc loại trụ/công suất, mức pin đầu–cuối và nhiệt độ pin. Quý khách cho biết trụ AC hay DC và công suất trụ nhé.',
+                'capacity': 'Dung lượng cần đúng phiên bản và đời xe; dung lượng danh định khác dung lượng sử dụng được, SOC và SOH. Nếu chưa biết phiên bản, Quý khách có thể xem hồ sơ xe hoặc nhờ showroom kiểm tra.',
+                'maintenance': 'Mốc bảo dưỡng cần đối chiếu sổ bảo dưỡng đúng đời xe và điều kiện sử dụng, không tự chọn một số km chung. Quý khách cho biết đời xe và số km hiện tại nhé.',
             }
             if goal in reasons:
                 reply = 'Em chưa có nguồn đủ để xác nhận thông tin cụ thể. ' + reasons[goal]

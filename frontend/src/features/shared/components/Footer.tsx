@@ -27,7 +27,7 @@ export function Footer() {
             <div className="flex h-5 w-5 items-center justify-center rounded-md bg-[#1E40AF] text-white">
               <ProductMark className="h-3.5 w-3.5 text-white" />
             </div>
-            <span>VF <span className="text-[#1E40AF]">Serv</span></span>
+            <span>VF<span className="text-[#1E40AF]">Serv</span></span>
           </Link>
           <span className="text-slate-300">|</span>
           <span className="text-slate-400">© 2026 VinFast EV Support</span>
