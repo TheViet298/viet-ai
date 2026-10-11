@@ -123,4 +123,22 @@ Các nhận xét sau phản ánh thời điểm kiểm tra, không thay thế ti
 
 ---
 
+## 2026-10-11 (Bảo mật Phiên Chat, Khắc phục Session Takeover & Vòng đời Đa phiên ADR-006)
+
+| Member | Task | Status | Output | Time |
+|---|---|---|---|---|
+| Triển, Thế Việt | Khắc phục lỗ hổng chiếm đoạt phiên (Session Takeover): loại bỏ `ChatSession.id == raw_claim`, chỉ cho phép claim khi `owner == f"guest:{raw_claim}"` | ✅ Done | `src/api/auth.py`, `src/api/customer.py` | 3.5h |
+| Triển | Ràng buộc gộp Case & Message an toàn: chỉ nhận Case `user_id IS NULL`, Message theo `claimed_session_ids`, thực thi nguyên tử trong login/register | ✅ Done | `src/api/auth.py`, `src/models/schemas.py` | 3h |
+| Triển | Chuẩn hóa IDOR Protection 404 (chống dò session) và cascade deletion xóa sạch Message & ChatRequestRecord khi xóa session | ✅ Done | `src/api/customer.py` | 2.5h |
+| Triển | Khắc phục mất cờ `title_edited` trong JSON column bằng `flag_modified`; sửa lỗi đóng băng sớm Title cache trên câu chào | ✅ Done | `src/api/customer.py` | 2h |
+| Thế Việt | Nâng cấp bảo mật client: sinh guest id bằng UUID v4 (`crypto.randomUUID`), xóa localStorage sau khi xác thực 200 OK, dọn dẹp state và xoay guest id khi logout | ✅ Done | `useChat.ts`, `AuthContext.tsx`, `ChatHistorySidebar.tsx` | 3.5h |
+| Cả nhóm | Xây dựng bộ test nghiệm thu tự động bảo mật & kiểm thử hồi quy toàn diện (takeover prevention, guest isolation, double-claim, title lifecycle, clean deletion) | ✅ Done | `tests/test_api/test_session_security_and_lifecycle.py` (5/5 PASS), `npm run build` PASS | 3h |
+
+**Tổng kết ngày:**
+1. **Khắc phục lỗ hổng nghiêm trọng:** Triệt tiêu hoàn toàn khả năng chiếm đoạt session (`Session Takeover`) bằng cách loại bỏ query theo session id tự do.
+2. **Kiến trúc bền vững:** Ghi nhận `ADR-006` và cập nhật `api-contract.md` v1.2.0; bảo đảm đồng bộ dirty state cho JSON column và cascade deletion chống dữ liệu mồ côi.
+3. **UX & Bảo mật đồng hành:** Tiêu đề động thông minh không bị đóng băng khi mới chào hỏi, giữ nguyên tiêu đề đổi thủ công; khách đăng xuất trên máy dùng chung được bảo vệ tuyệt đối.
+
+---
+
 <!-- Format: copy block trên cho mỗi ngày làm việc -->
