@@ -55,3 +55,28 @@ export function formatDistanceKm(distanceKm: number): string {
  * Nếu điểm gần nhất cách xa hơn ngưỡng này, thông báo cho khách gọi Hotline 1900-232389 thay vì gán nhãn "gần nhất".
  */
 export const MAX_SUPPORT_RADIUS_KM = 50;
+
+/**
+ * Tạo URL chỉ đường mở trực tiếp ứng dụng bản đồ bên ngoài (Google Maps / Apple Maps / Web).
+ * Khi có tọa độ origin (GPS), truyền chính xác origin và destination để mở chế độ lái xe (driving).
+ * Khi không có origin, fallback tìm kiếm theo địa chỉ đích.
+ */
+export function getDirectionsUrl(
+  destination: { lat: number; lng: number; address: string },
+  origin?: Coordinates
+): string {
+  if (origin && typeof origin.lat === "number" && typeof origin.lng === "number") {
+    return `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving`;
+  }
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination.address)}`;
+}
+
+/**
+ * Tạo URL chỉ đường mã nguồn mở OpenStreetMap Directions (FOSSGIS OSRM Car).
+ */
+export function getOsmDirectionsUrl(
+  destination: Coordinates,
+  origin: Coordinates
+): string {
+  return `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${origin.lat}%2C${origin.lng}%3B${destination.lat}%2C${destination.lng}`;
+}

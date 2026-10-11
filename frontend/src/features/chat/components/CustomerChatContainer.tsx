@@ -15,14 +15,15 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { UserLocationState } from "../types";
+import { ServicePointSeed, UserLocationState } from "../types";
 import { useChat } from "../hooks/useChat";
 import { EmergencyAlertBanner } from "./EmergencyAlertBanner";
 import { ChatFeed } from "./ChatFeed";
 import { ChatInputBar } from "./ChatInputBar";
 import { LocationConsentCard } from "./LocationConsentCard";
 import { ServiceMapPanel } from "./ServiceMapPanel";
-import { getAiSystemStatus, uploadAttachment } from "../api/chatApi";
+import { getAiSystemStatus, submitCustomerLocation, uploadAttachment } from "../api/chatApi";
+import { getSeedServicePoints } from "../constants/servicePoints";
 import { getUploadError } from "../uploadState";
 import { useAuth, ProductMark } from "@/features/shared";
 
@@ -62,6 +63,7 @@ export function CustomerChatContainer() {
   // ===========================================================================
   // SERVICE MAP PREVIEW & LOCATION CONSENT (ADR-005, screen-spec.md Section 5.4, CUS-03)
   // ===========================================================================
+  const [servicePoints] = useState<ServicePointSeed[]>(() => getSeedServicePoints());
   const [locationState, setLocationState] = useState<UserLocationState>({
     status: "PENDING",
     source: "USER_TEXT",
@@ -74,6 +76,12 @@ export function CustomerChatContainer() {
   const [suggestedCategory, setSuggestedCategory] = useState<
     "ALL" | "EXPRESSWAY_RESCUE" | "CHARGING_STATION" | "SERVICE_WORKSHOP"
   >("ALL");
+
+  const handleSelectDestination = (point: ServicePointSeed) => {
+    setSelectedPointId(point.id);
+    const destPrompt = `Tôi muốn đến ${point.name} (${point.address}) để kiểm tra. Cho tôi hỏi trạm hiện có hoạt động và sẵn sàng tiếp nhận không?`;
+    setInput(destPrompt);
+  };
 
   // Tự động kích hoạt Card xin vị trí khi phát hiện ca khẩn cấp hoặc backend gửi cờ request_location
   useEffect(() => {
@@ -149,7 +157,7 @@ export function CustomerChatContainer() {
   }, [sendMessage, setInput]);
 
   // ===========================================================================
-  // LOCATION HANDLERS (Tuân thủ ADR-005: timeout 8s, không lấy GPS nền, 3 lựa chọn)
+  // LOCATION HANDLERS (Kế hoạch 11/10: Desktop Browser định vị qua Wi-Fi/IP, timeout 8s, không lấy GPS nền, 3 lựa chọn)
   // ===========================================================================
   const handleConsentGps = () => {
     setIsLocating(true);
@@ -158,7 +166,9 @@ export function CustomerChatContainer() {
       setLocationState({
         status: "MANUAL",
         source: "USER_TEXT",
-        label: "Trình duyệt không hỗ trợ GPS (Vui lòng nhập tay)",
+        label: "Thiết bị hoặc trình duyệt không hỗ trợ định vị GPS",
+        errorCode: "UNSUPPORTED",
+        errorMessage: "Trình duyệt không hỗ trợ Geolocation.",
       });
       return;
     }
@@ -170,22 +180,60 @@ export function CustomerChatContainer() {
       setIsLocating(false);
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
-      setLocationState({
+      const accuracy = pos.coords.accuracy;
+      const isLowAccuracy = accuracy > 500;
+
+      const newState: UserLocationState = {
         status: "CONSENTED",
         source: "BROWSER_GPS",
-        label: "Đã ghi nhận vị trí của bạn (GPS)",
+        label: isLowAccuracy
+          ? `Vị trí GPS (Ước tính ±${Math.round(accuracy)}m)`
+          : "Đã ghi nhận vị trí của bạn (GPS)",
         coords: { lat, lng },
-      });
+        accuracy,
+        errorCode: isLowAccuracy ? "ACCURACY_LOW" : undefined,
+      };
+      setLocationState(newState);
       setIsMapOpen(true);
+
+      // Đồng bộ vị trí lên backend nếu đã có case_id
+      if (currentCaseId) {
+        void submitCustomerLocation({
+          case_id: currentCaseId,
+          status: "CONSENTED",
+          source: "BROWSER_GPS",
+          location_label: newState.label,
+          latitude: lat,
+          longitude: lng,
+          precision: isLowAccuracy ? "APPROXIMATE" : "EXACT",
+          share_with_staff: true,
+        }).catch(() => {});
+      }
     };
 
-    const errorHandler = () => {
+    const errorHandler = (err?: GeolocationPositionError) => {
       clearTimeout(timeoutId);
       setIsLocating(false);
+      let errorCode: UserLocationState["errorCode"] = "POSITION_UNAVAILABLE";
+      let errorLabel = "Tín hiệu GPS không khả dụng (Vui lòng nhập tay)";
+
+      if (err?.code === 1) {
+        errorCode = "PERMISSION_DENIED";
+        errorLabel = "Trình duyệt đã từ chối quyền vị trí (Vui lòng nhập tay)";
+      } else if (err?.code === 2) {
+        errorCode = "POSITION_UNAVAILABLE";
+        errorLabel = "Tín hiệu GPS yếu hoặc mất sóng (Vui lòng nhập tay)";
+      } else if (err?.code === 3) {
+        errorCode = "TIMEOUT";
+        errorLabel = "Quá thời gian chờ GPS > 8s (Vui lòng nhập tay)";
+      }
+
       setLocationState({
         status: "MANUAL",
         source: "USER_TEXT",
-        label: "Tín hiệu GPS yếu hoặc bị chặn (Vui lòng nhập tay)",
+        label: errorLabel,
+        errorCode,
+        errorMessage: err?.message,
       });
     };
 
@@ -196,12 +244,15 @@ export function CustomerChatContainer() {
         status: "MANUAL",
         source: "USER_TEXT",
         label: "Quá thời gian chờ GPS > 8s (Vui lòng nhập tay)",
+        errorCode: "TIMEOUT",
+        errorMessage: "Quá thời gian chờ định vị > 8s",
       });
     }, 8000);
 
     navigator.geolocation.getCurrentPosition(successHandler, errorHandler, {
       timeout: 8000,
-      enableHighAccuracy: false,
+      enableHighAccuracy: true,
+      maximumAge: 0,
     });
   };
 
@@ -212,6 +263,19 @@ export function CustomerChatContainer() {
       label: areaText,
     });
     setIsMapOpen(true);
+
+    if (currentCaseId) {
+      void submitCustomerLocation({
+        case_id: currentCaseId,
+        status: "MANUAL",
+        source: "USER_TEXT",
+        location_label: areaText,
+        latitude: null,
+        longitude: null,
+        precision: "APPROXIMATE",
+        share_with_staff: true,
+      }).catch(() => {});
+    }
   };
 
   const handleSkipLocation = () => {
@@ -221,6 +285,18 @@ export function CustomerChatContainer() {
       label: "Không chia sẻ",
     });
     setIsMapOpen(false);
+
+    if (currentCaseId) {
+      void submitCustomerLocation({
+        case_id: currentCaseId,
+        status: "NOT_SHARED",
+        source: "USER_TEXT",
+        location_label: "",
+        latitude: null,
+        longitude: null,
+        share_with_staff: false,
+      }).catch(() => {});
+    }
   };
 
   const handleResetLocation = () => {
@@ -507,9 +583,10 @@ export function CustomerChatContainer() {
               isOpen={isMapOpen}
               onClose={() => setIsMapOpen(false)}
               locationState={locationState}
-              servicePoints={[]}
+              servicePoints={servicePoints}
               selectedPointId={selectedPointId}
               onSelectPoint={(id) => setSelectedPointId(id)}
+              onSelectDestination={handleSelectDestination}
               suggestedCategory={suggestedCategory}
             />
           </div>
@@ -524,9 +601,10 @@ export function CustomerChatContainer() {
           isOpen={isMapOpen}
           onClose={() => setIsMapOpen(false)}
           locationState={locationState}
-          servicePoints={[]}
+          servicePoints={servicePoints}
           selectedPointId={selectedPointId}
           onSelectPoint={(id) => setSelectedPointId(id)}
+          onSelectDestination={handleSelectDestination}
           suggestedCategory={suggestedCategory}
           isMobileModal={true}
         />

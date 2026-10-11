@@ -121,6 +121,9 @@ export interface UserLocationState {
   source: "BROWSER_GPS" | "USER_TEXT" | "MAP_PICKER";
   label: string;
   coords?: { lat: number; lng: number };
+  accuracy?: number;
+  errorCode?: "PERMISSION_DENIED" | "POSITION_UNAVAILABLE" | "TIMEOUT" | "ACCURACY_LOW" | "UNSUPPORTED";
+  errorMessage?: string;
 }
 
 export interface CustomerCaseDetailData {
