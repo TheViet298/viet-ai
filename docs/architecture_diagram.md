@@ -2,155 +2,143 @@
 
 ## 1. System Overview (Web Support Hub & Service Flow)
 
+Hệ thống kết hợp giữa Web Support Hub (Frontend), Gateway API (FastAPI) và AI Core (LangGraph StateGraph). Dưới đây là sơ đồ hoạt động tổng thể và các luồng chi tiết.
+
+### Sơ đồ Trực quan Chính thức
+
+#### 1. Activity Tổng thể MVP Main (Khách hàng — Hệ thống AI — Nhân viên)
+![Activity Tổng thể MVP](architecture/Activity%20diagram%20system.jpg)
+
+#### 2. Sơ đồ Hoạt động Toàn hệ thống (End-to-End System Activity)
+![Sơ đồ Hoạt động Toàn hệ thống](architecture/serviceflow-system-activity.png)
+
+#### 3. Sơ đồ Xử lý Một lượt Hội thoại Khách hàng (Customer Chat Turn Activity)
+![Sơ đồ Hội thoại Khách hàng](architecture/serviceflow-customer-activity.png)
+
+---
+
+## 2. Kiến trúc Phân tầng Kỹ thuật (Layered Architecture)
+
 ```mermaid
 graph TB
-    subgraph ClientLayer[Web Support Hub]
-        Guest[Guest: Landing / FAQ / Policy]
-        WC[Customer: Web Chat text + ảnh / My Cases]
-        Staff[Staff: Queue + Ticket Detail]
+    subgraph ClientLayer[1. Web Support Hub (Next.js 14)]
+        Guest[Guest: Landing / FAQ / Giới hạn 5 lượt]
+        Customer[Customer: Web Chat / Upload ảnh / Theo dõi Case]
+        Staff[Staff: Service Agent Console / Hàng đợi / Review]
     end
 
-    subgraph APILayer[FastAPI Backend Gateway]
-        Router[API Router /api/v1/cases]
-        Auth[Authentication + RBAC]
+    subgraph APILayer[2. FastAPI Gateway & RBAC]
+        Router[API Routers: /customer, /staff, /auth, /public]
+        Auth[Authentication + RBAC: JWT, Session Isolation]
         Upload[Attachment Upload / Private Storage]
         Location[Location Consent + Service Point API]
     end
 
-    subgraph AgentLayer[LangGraph AI Core]
+    subgraph AgentLayer[3. LangGraph AI Core]
         IntakeNode[intake_node: Chuẩn hóa text, ảnh & context]
-        VisionNode[image_analysis_node: OCR/Vision tín hiệu sơ bộ]
-        MapNode[service_location_node: Gợi ý điểm hỗ trợ]
+        SafetyNode[safety_node: Hard Safety Rules & Policy Check]
+        CarddNode[cardd_review_node: Tín hiệu CarDD & xác nhận ảnh]
         TriageNode[triage_node: Intent + Priority + Confidence]
-        SafetyCheck{Safety trigger, sensitive case<br/>hoặc confidence thấp?}
-        IntentRoute{Intent Router}
-        
-        SalesBranch[Sales FAQ & Inquiry Brief]
-        ChargingBranch[Charging FAQ & Support Brief]
-        ComplaintBranch[Complaint Sentiment & Case Brief]
-        
-        subgraph ServiceSubGraph[Nhánh Dịch vụ & Sự cố Kỹ thuật]
-            SlotCheck{Đủ dữ kiện cần thiết?}
-            ClarifyNode[Contextual Clarifier]
-            ServiceRAG[VinFast Technical Knowledge RAG]
-            ServiceBriefNode[Service Brief Generator]
-        end
-        
-        CaseBriefGen[Case Brief Aggregator]
+        GeneralNode[general_node: Xã giao & chào hỏi]
+        RagNode[rag_node: RAG ChromaDB & Trích dẫn nguồn]
+        ClarifyNode[clarify_node: Hỏi làm rõ tối đa 2 lượt + Quick Replies]
+        BriefNode[case_brief_node: Tổng hợp Case Brief chuẩn hóa]
     end
 
-    subgraph DataLayer[Data & Knowledge Base]
-        DB[(Ticket DB: user, case, message, attachment, brief)]
+    subgraph DataLayer[4. Data & Knowledge Base]
+        DB[(Relational DB: Users, Sessions, Cases, Messages, Briefs, Audit)]
         VDB[(ChromaDB: Cẩm nang VF, FAQ, Bảo hành chính hãng)]
+        Models[(Local ONNX Models: multilingual-e5-small embeddings)]
     end
 
-    subgraph HITLLayer[Human-in-the-Loop Review & Dispatch]
+    subgraph HITLLayer[5. Human-in-the-Loop Review & Dispatch]
         Console[Service Agent Console]
-        ReviewerAction{Reviewer: Approve / Edit / Escalate}
-        Dispatch[Dispatching tới Sales, Service, Charging hoặc CSKH]
+        ReviewerAction{Reviewer: Approve / Edit / Reroute / Request Info}
+        ResolveAction[Resolve Ticket & Gửi Customer Update]
     end
 
     Guest --> Auth
-    WC --> Upload
-    Upload --> VisionNode
-    WC --> Location
-    Location --> MapNode
-    ClientLayer --> Router
+    Customer --> Router
+    Customer --> Upload
+    Customer --> Location
+    Staff --> Console
     Router --> Auth
     Auth --> IntakeNode
-    VisionNode --> IntakeNode
-    TriageNode --> MapNode
-    MapNode --> DB
-    IntakeNode --> TriageNode
+    Upload --> IntakeNode
+    Location --> BriefNode
+    IntakeNode --> SafetyNode
     
-    TriageNode --> SafetyCheck
-    SafetyCheck -- Yes (Rủi ro/Nhạy cảm/Low Conf) --> Console
-    
-    SafetyCheck -- No --> IntentRoute
-    IntentRoute -- Sales --> SalesBranch
-    IntentRoute -- Charging --> ChargingBranch
-    IntentRoute -- Complaint --> ComplaintBranch
-    IntentRoute -- Service/Incident --> SlotCheck
-    
-    SlotCheck -- Chưa đủ dữ kiện --> ClarifyNode
-    ClarifyNode -.->|Gửi câu hỏi làm rõ| WC
-    
-    SlotCheck -- Đã đủ dữ kiện --> ServiceRAG
-    ServiceRAG <--> VDB
-    ServiceRAG --> ServiceBriefNode
-    
-    SalesBranch --> CaseBriefGen
-    ChargingBranch --> CaseBriefGen
-    ComplaintBranch --> CaseBriefGen
-    ServiceBriefNode --> CaseBriefGen
-    
-    CaseBriefGen --> DB
-    CaseBriefGen --> Console
-    Staff --> Console
+    SafetyNode -- Khẩn cấp / Vi phạm --> BriefNode
+    SafetyNode -- Ảnh ngoại thất / CarDD --> CarddNode
+    SafetyNode -- Bình thường --> TriageNode
+
+    CarddNode --> TriageNode
+    TriageNode -- Xã giao --> GeneralNode
+    TriageNode -- FAQ / Sales --> RagNode
+    TriageNode -- Sự cố / Thiếu dữ kiện --> ClarifyNode
+    TriageNode -- Đủ dữ kiện / Confidence thấp --> BriefNode
+
+    ClarifyNode -- Hết 2 lượt / Cần hồ sơ --> BriefNode
+    RagNode -- Không tìm thấy nguồn --> BriefNode
+    RagNode <--> VDB
+    VDB <--> Models
+
+    BriefNode --> DB
+    BriefNode --> Console
     Console --> ReviewerAction
-    ReviewerAction --> Dispatch
+    ReviewerAction --> ResolveAction
 ```
 
 ---
 
-## 2. LangGraph Detailed State Machine
+## 3. LangGraph State Machine Chi tiết (Khớp mã nguồn `src/agents/graph.py`)
 
 ```mermaid
 graph TD
-    START([Input text và/hoặc ảnh từ Web]) --> intake[intake_node: Chuẩn hóa nội dung và context]
-    intake --> image{Có ảnh?}
-    image -->|Có| vision[image_analysis_node: OCR/Vision, evidence sơ bộ]
-    image -->|Không| triage
-    vision --> triage[triage_node: Intent + Priority + Confidence]
+    START([Bắt đầu lượt chat]) --> intake[intake_node: Chuẩn hóa nội dung & context]
+    intake --> safety[safety_node: Kiểm tra Hard Safety & Chính sách]
 
-    triage --> safety{Safety trigger, sensitive case hoặc confidence thấp?}
-    safety -- Yes --> critical_brief[Case Brief tối thiểu + Staff Reviewing]
-    critical_brief --> location_consent{Customer consent vị trí?}
-    location_consent -->|Có| map[Map: điểm hỗ trợ gần]
-    location_consent -->|Bỏ qua| hitl[HITL: Escalate reviewer hoặc nhân viên phù hợp]
-    map --> hitl
+    safety -->|is_critical == True HOẶC policy_blocked| case_brief[case_brief_node: Tạo Brief tối thiểu & Hotline]
+    safety -->|login_required| END([Kết thúc lượt / Yêu cầu đăng nhập])
+    safety -->|Tín hiệu CarDD ngoại thất mới| cardd[cardd_review_node: Đánh giá hư hại & xác nhận vùng ảnh]
+    safety -->|Trường hợp thông thường| triage[triage_node: Phân loại 4 Intent, Priority, Confidence]
 
-    safety -- No --> route{Intent router}
+    cardd -->|Cần phân loại tiếp| triage
+    cardd -->|Hoàn thành phản hồi ảnh| END
 
-    route -- Sales --> sales_rag[Sales FAQ hoặc Sales Brief]
-    route -- Charging --> charging_rag[Charging FAQ hoặc Charging Brief]
-    route -- Complaint --> complaint_brief[Complaint Case Brief]
-    route -- Service Incident --> slot{Đủ dữ kiện cần thiết?}
+    triage -->|Intent = Out_of_Scope| END
+    triage -->|is_general_query == True| general[general_node: Phản hồi chào hỏi xã giao]
+    general --> END
 
-    slot -- No --> clarify[Contextual Clarifier]
-    clarify --> wait([Chờ phản hồi khách trên Channel Session])
-    wait --> intake
+    triage -->|is_rag_query == True| rag[rag_node: Tra cứu ChromaDB & trích dẫn]
+    rag -->|Tìm thấy nguồn kiểm chứng| END
+    rag -->|is_no_source == True| case_brief
 
-    slot -- Yes --> service_rag[VinFast Knowledge Retrieval]
-    service_rag --> service_brief[Service Brief Generator]
+    triage -->|Thiếu trường kỹ thuật & lượt <= 2| clarify[clarify_node: Hỏi gom 1 câu + Quick Replies]
+    clarify -->|Chờ khách bổ sung| END
+    clarify -->|Đã hỏi đủ 2 lượt mà vẫn thiếu| case_brief
 
-    sales_rag --> case_brief[Case Brief]
-    charging_rag --> case_brief
-    complaint_brief --> case_brief
-    service_brief --> case_brief
+    triage -->|Đủ dữ kiện kỹ thuật HOẶC Confidence < 0.60| case_brief
 
-    case_brief --> console[Service Agent Console]
-    console --> reviewer{Approve, Edit hoặc Escalate}
-    reviewer --> dispatch[Routing tới Sales, Service, Charging hoặc CSKH]
+    case_brief --> console[Service Agent Console: Hàng đợi duyệt HITL]
+    console --> reviewer{Reviewer: Approve / Edit / Reroute}
+    reviewer --> dispatch[Đưa vào xử lý In Progress hoặc Điều phối]
+    dispatch --> resolve[Nhân viên Resolve -> Khách xác nhận Closed / Reopened]
+    resolve --> END
 ```
 
 ---
 
-## 3. Component Details & Responsibility Matrix
+## 4. Bảng Chi tiết Thành phần Kỹ thuật & Trách nhiệm (Component Matrix)
 
-| Component | Technology | Chỉnh lại theo kiến trúc chuẩn |
+| Thành phần | Công nghệ | Trách nhiệm & Hiện thực thực tế |
 |---|---|---|
-| **Vector DB** | ChromaDB / FAISS | Lưu trữ tài liệu chính hãng, FAQ xe điện, chính sách bảo hành, cẩm nang hướng dẫn sử dụng xe VinFast |
-| **LLM Inference** | LLM API hỗ trợ Structured Output | Cấu hình linh hoạt theo môi trường (`gpt-4o-mini`, `gpt-4o`, `gemini-1.5-flash`, v.v.) phục vụ phân loại intent, trích xuất slot, tóm tắt brief |
-| **Guardrails & Safety** | Rule Engine + Sentiment + Guard Prompts | Bổ sung **confidence threshold**, bắt **complaint sensitive case**, **safety emergency trigger** và chính sách từ chối yêu cầu ngoài phạm vi |
-| **Attachment / Vision** | Private storage + OCR/Vision API | Lưu ảnh táp-lô; trích xuất tín hiệu sơ bộ để hỏi context, không chẩn đoán kỹ thuật |
-| **Location / Map** | Consent API + điểm dịch vụ seed | Customer chia sẻ vị trí/nhập khu vực; gợi ý điểm hỗ trợ, không điều phối cứu hộ thật |
-| **Database** | SQLite (MVP) / PostgreSQL | Lưu user/role, case, message, attachment, intent, priority, brief, audit log, ticket status |
-| **Console (HITL)** | React / Next.js / Tailwind UI | Service Agent Console — **Reviewer là người quyết định cuối cùng** với escalation, chỉnh sửa brief và routing trước khi dispatch |
+| **Vector DB** | ChromaDB (Local SQLite) | Lưu trữ vector embeddings tài liệu cẩm nang VinFast (VF3, VF5, VF8, VF9, e34), FAQ sạc pin và bảo hành. |
+| **Local Embedding Model** | `Xenova/multilingual-e5-small` (ONNX Quantized) | Tự động tải qua `scripts/download_models.py` lưu tại `data/models/multilingual-e5-small/`, suy luận nhúng cục bộ không phụ thuộc API ngoài. |
+| **LLM Inference** | Google Gemini (`gemini-2.0-flash`) HOẶC OpenAI Gateway (`openai/gpt-5.6` qua LiteLLM) | Phân loại Intent có cấu trúc, trích xuất thực thể (slot filling), tóm tắt Case Brief và đàm thoại. Cấu hình linh hoạt qua `.env`. |
+| **Guardrails & Hard Safety** | Rule Engine Regex + Boundary Guards | Phát hiện khẩn cấp độc lập & kết hợp (rùa vàng trên cao tốc, bốc khói, mất phanh), chặn PII (SĐT, CCCD, biển số), chặn Out-of-Scope và khóa cứng 2 lượt clarification. |
+| **Image & Vision Triage** | Google Gemini Vision & CarDD Runtime | Tự động phân loại định tuyến ảnh táp-lô, màn hình trụ sạc hoặc nhận diện sơ bộ vùng va chạm ngoại thất xe. |
+| **Location & Service Points** | Location Consent API + Seed Service Points | Gợi ý 3-5 xưởng dịch vụ hoặc trạm sạc VinFast gần nhất khi khách đồng ý chia sẻ vị trí hoặc nhập khu vực. |
+| **Database & ORM** | SQLite (MVP) / PostgreSQL | SQLAlchemy 2.0 ORM lưu trữ Cases, Messages, Attachments, Case Briefs, Chat Sessions và Staff Audit Logs. |
+| **Frontend Web** | Next.js 14 App Router + Tailwind CSS | Phục vụ Web Support Hub gồm Customer Chat, Public Knowledge Hub, và Service Agent Console với cơ chế Session Isolation. |
 
-
-<!-- update info from feature/ai-khoi branch -->
-
-### Các trường database đề xuất từ feature/ai-khoi
-
-| **Database** | SQLite (MVP) / PostgreSQL | Lưu trữ đầy đủ: `source_channel`, `intent`, `priority`, `confidence_score`, `suggested_action`, `captured_fields`, `reviewer_feedback`, `status` |

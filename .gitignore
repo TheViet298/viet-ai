@@ -42,6 +42,12 @@ htmlcov/
 .coverage
 coverage.xml
 
+# Python tool caches and temporary pytest runs
+.pytest_cache/
+/.pytest-*/
+.mypy_cache/
+.ruff_cache/
+
 # Docker
 docker-compose.override.yml
 
@@ -56,8 +62,7 @@ out/
 *.pyo
 
 # AI logs — tracked structure, ignored content
-.ai-log/*
-!.ai-log/.gitkeep
+.ai-log/*.jsonl
 .test-runs/
 .test-tmp*/
 .ai-log/archive/
@@ -65,26 +70,28 @@ out/
 # Superpowers specs & plans
 docs/superpowers/
 
-# Non-essential vision requirements
-requirements-vision-data.txt
-requirements-vision-runtime.txt
+# Local docs, reviews, and test artifacts
+docs/reviews/2026-10-05*
+docs/reviews/2026-10-06*
+docs/vehicles-*.md
+docs/architecture/vehicle-conversation-context.md
+# Local review reports and evidence
+docs/reviews/
 
-# Development plans & working drafts
-docs/agent-quality-v2.md
-docs/cardd-agent-integration.md
-docs/cardd-baseline-training-review.md
-docs/cardd-inference.md
-docs/create_api_contract.md
-docs/dashboard-chat-integration.md
-docs/data-workplan-mvp.md
-docs/eval-evidence.md
-docs/kich_ban_trinh_bay_mentor.md
-docs/knowledge-answering.md
-docs/vehicle-vision-ai-plan.md
-docs/vision-cloud-baseline.md
-docs/vision-data-audit-2026-10-04.md
-docs/vision-evidence.example.json
-docs/vision-evidence.schema.json
+# Local ZIP exports
+*.zip
 
-# Local database migration config
-alembic.ini
+# Chroma local vector store
+chroma/
+# Local notebooks and Superpowers session artifacts
+/notebooks/
+/.superpowers/
+
+# Local conversation implementation and regression reports
+/docs/natural-conversation-implementation-2026-10-10.md
+/docs/previous-commit-regression-2026-10-10.md
+/docs/knowledge-answering.md
+/scratch/
+/eval/results/evidence-20261010/
+/eval/results/natural-conversation-20261010/
+/eval/results/topic-followup-20261010/

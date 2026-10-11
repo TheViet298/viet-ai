@@ -51,6 +51,8 @@ def build_7_layer_context(state: AgentState, task_objective: str, tool_outputs: 
                 "facts": state.get("captured_fields", {}),
                 "clarification_turn": state.get("clarification_turn", 0),
                 "intent": state.get("intent"),
+                'conversation': state.get('conversation_context', {}),
+                'reply_constraints': state.get('reply_constraints', {}),
             }
         ),
         retrieval_context="\n".join(

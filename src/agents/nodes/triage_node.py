@@ -64,7 +64,7 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
         r"(?:xe\s*(?:vf\s*(?:[356789]|e34)|e34)?\s*(?:cua\s*(?:toi|minh|em))?\s*(?:dang|bi|vua|bao|hien)|bay gio|dang\s*(?:o|bi|ket|dung|chay))|"
         r"(?:khong\s+(?:nhan\s*sac|sac duoc|khoi dong|di duoc|chay duoc|chay noi|di chuyen duoc|vao dien|len nguon|mo (?:cua|khoa) duoc))|"
         r"(?:bi|dang|bao)\s+(?:hong|ket|gay|vo|loi|do|den|mo den|ma)|"
-        r"(?:bao|hien|noi)\s+(?:(?:ma|loi|code)\s*[a-z0-9_-]{2,10}|(?=[a-z0-9_-]*\d)[a-z0-9_-]{3,10})|"
+        r"(?:bao|hien)\s+(?:(?:ma|loi|code)\s*[a-z0-9_-]{2,10}|(?=[a-z0-9_-]*\d)[a-z0-9_-]{3,10})|"
         r"(?:vo lang|tay lai)\s+(?:rung|lac|lech|giat|nang)|"
         r"(?:xe toi|vua bi|dang bi|xe dang|dang hien)\s+.*rua|"
         r"(?:chet may|nhay do|nhap nhay|sap nguon|mat lai|chay dau|xi lop)|"
@@ -324,6 +324,11 @@ async def triage_node(state: AgentState) -> dict:
         # A short reference without a resolved topic needs clarification first.
         intent, faq, general, confidence = "Sales/General Info", False, False, 0.90
     facts = dict(state.get("captured_fields", {}))
+    understood = state.get('turn_understanding') or {}
+    if understood.get('goal') and understood.get('move') != 'new_incident' and not is_crit and not foreign_domain and not complaint:
+        intent, confidence = 'Sales/General Info', .9
+        general = understood['goal'] == 'concept'
+        faq = not general
     history = state.get("fact_history", [])
     if "vehicle_context" in state:
         context = state["vehicle_context"]

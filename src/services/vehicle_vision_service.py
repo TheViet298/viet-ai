@@ -11,6 +11,7 @@ from src.agents.guardrails import sanitize_pii
 from src.config import get_settings
 from src.services.image_routing import get_async_openai_client
 from src.services.vision.contract import Candidate, VehicleResult
+from src.services.observability_usage import provider_generation
 
 LOGGER = logging.getLogger(__name__)
 
@@ -105,7 +106,8 @@ async def recognize_vehicle_model(data: bytes, mime_type: str) -> dict:
         async with asyncio.timeout(settings.exterior_vision_timeout_s):
             client = get_async_openai_client()
             b64 = base64.b64encode(data).decode("ascii")
-            res = await client.chat.completions.create(
+            res = await provider_generation('vision.exterior', 'openai', settings.vision_model,
+                                            lambda: client.chat.completions.create(
                 model=settings.vision_model,
                 **({"reasoning_effort": "low"} if settings.vision_model.startswith("gpt-6-luna") else {}),
                 response_format={"type": "json_schema", "json_schema": {
@@ -121,7 +123,7 @@ async def recognize_vehicle_model(data: bytes, mime_type: str) -> dict:
                     }
                 ],
                 max_completion_tokens=4096,
-            )
+            ))
             choice = res.choices[0]
             if choice.finish_reason not in ("stop", None):
                 return unavailable("incomplete_response")
@@ -169,5 +171,5 @@ async def recognize_vehicle_model(data: bytes, mime_type: str) -> dict:
     except TimeoutError:
         return unavailable("inference_timeout")
     except Exception:
-        LOGGER.exception("Vehicle model recognition failed")
+        LOGGER.warning("Vehicle model recognition failed: inference_failed")
         return unavailable("inference_failed")

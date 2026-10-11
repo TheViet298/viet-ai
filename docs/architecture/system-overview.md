@@ -66,6 +66,11 @@ graph TD
     StaffAPI -->|Đọc / Cập nhật Ticket| PostgreSQL
 ```
 
+> **Hệ thống Sơ đồ Trực quan Chính thức:**
+> - [Activity Tổng thể MVP Main (Khách hàng — AI LangGraph — Nhân viên)](Activity%20diagram%20system.jpg)
+> - [Sơ đồ Hoạt động Toàn hệ thống (End-to-End System Activity)](serviceflow-system-activity.png)
+> - [Sơ đồ Xử lý Một lượt Hội thoại Khách hàng](serviceflow-customer-activity.png)
+
 ---
 
 ## 2. Các Thành phần Cốt lõi (Core Components)

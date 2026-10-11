@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { ChatMessage } from "../types";
 import { ChatMessageItem } from "./ChatMessageItem";
 import { Sparkles, ArrowDown } from "lucide-react";
@@ -68,6 +68,14 @@ export function ChatFeed({
     return () => resizeObserver.disconnect();
   }, [scrollToBottom]);
 
+  // Xác định tin nhắn AI duy nhất vừa tạo case để hiển thị thẻ "Đã tiếp nhận CASE-..." (tránh lặp 3 lần)
+  const caseCreatedMessageId = useMemo(() => {
+    const agentMsg = messages.find((m) => m.sender === "AGENT" && Boolean(m.case_id));
+    if (agentMsg) return agentMsg.id;
+    const lastWithCase = [...messages].reverse().find((m) => Boolean(m.case_id));
+    return lastWithCase?.id || null;
+  }, [messages]);
+
   return (
     <div className="relative flex-1 min-h-0 flex flex-col">
       <div
@@ -80,6 +88,7 @@ export function ChatFeed({
             key={msg.id}
             message={msg}
             isLastMessage={idx === messages.length - 1}
+            showCaseBadge={msg.id === caseCreatedMessageId}
             onSelectReply={onSelectReply}
           />
         ))}

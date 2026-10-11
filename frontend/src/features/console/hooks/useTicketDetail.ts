@@ -7,7 +7,9 @@ import { getTicketDetail, submitStaffAction } from "../api/consoleApi";
 export const MOCK_DETAIL_DATA: TicketDetail = {
   case: {
     id: "CASE-20260924-001",
-    mock_customer_id: "CUST_MOCK_01",
+    mock_customer_id: "VF-CUST-001",
+    customer_name: "Nguyễn Văn Tuấn",
+    customer_phone: "0912345678",
     vehicle_code_mock: "VF-SF-00231",
     vehicle_model: "VF8",
     intent: "Charging/Battery",
@@ -169,7 +171,7 @@ export function useTicketDetail(initialId: string) {
     try {
       await submitStaffAction(initialId, {
         action: finalActionType,
-        staff_id: "STAFF_VINFAST_DEMO",
+        staff_id: "STAFF_001",
         updated_status: finalStatus,
         edited_brief: detail.case_brief.is_edited_by_staff ? { summary: editedSummary } : undefined,
         notes: notes || undefined,

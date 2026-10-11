@@ -27,7 +27,7 @@ import { getUploadError } from "../uploadState";
 import { useAuth, ProductMark } from "@/features/shared";
 
 export function CustomerChatContainer() {
-  const { user, role, loginAs } = useAuth();
+  const { user, role } = useAuth();
   const {
     messages,
     input,
@@ -56,6 +56,7 @@ export function CustomerChatContainer() {
   const [resolvedImageKind, setResolvedImageKind] = useState<"dashboard" | "charger" | "exterior" | null>(null);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const uploadRequestId = useRef(0);
+  const hasSentInitialPrompt = useRef(false);
   const [aiStatus, setAiStatus] = useState<string>("Trợ lý VF Serv • Hỗ trợ dịch vụ xe điện VinFast");
 
   // ===========================================================================
@@ -117,26 +118,35 @@ export function CustomerChatContainer() {
       .catch(() => { });
   }, []);
 
-  // Pre-load draft from Landing Hero if available
+  // Pre-load draft or auto-send prompt from Landing Hero if available
   useEffect(() => {
+    if (hasSentInitialPrompt.current) return;
+
     try {
       const savedPrompt = sessionStorage.getItem("vf_initial_prompt");
       sessionStorage.removeItem("vf_initial_model");
       const savedImg = sessionStorage.getItem("vf_initial_image");
       const savedImgName = sessionStorage.getItem("vf_initial_image_name");
 
-      if (savedPrompt) {
-        setInput(savedPrompt);
-        sessionStorage.removeItem("vf_initial_prompt");
-      }
       if (savedImg) {
         setImagePreview(savedImg);
         setImageName(savedImgName || "anh_canh_bao.jpg");
         sessionStorage.removeItem("vf_initial_image");
         sessionStorage.removeItem("vf_initial_image_name");
       }
+
+      if (savedPrompt) {
+        sessionStorage.removeItem("vf_initial_prompt");
+        if (!savedImg) {
+          // Gửi trực tiếp tin nhắn bằng sendMessage thay vì setInput rồi bắt bấm gửi lần 2
+          hasSentInitialPrompt.current = true;
+          sendMessage(savedPrompt.trim());
+        } else {
+          setInput(savedPrompt);
+        }
+      }
     } catch { }
-  }, [setInput]);
+  }, [sendMessage, setInput]);
 
   // ===========================================================================
   // LOCATION HANDLERS (Tuân thủ ADR-005: timeout 8s, không lấy GPS nền, 3 lựa chọn)
@@ -359,17 +369,16 @@ export function CustomerChatContainer() {
                 <span className="text-blue-700 font-medium">Đang tiếp nhận xử lý</span>
               </div>
               {role === "GUEST" ? (
-                <button
-                  type="button"
-                  onClick={() => loginAs("CUSTOMER")}
+                <Link
+                  href="/login"
                   className="text-[#1E40AF] font-bold hover:underline flex items-center gap-0.5 shrink-0 text-[11px]"
                 >
                   <span>Đăng nhập</span>
                   <ArrowRight className="w-3 h-3" />
-                </button>
+                </Link>
               ) : (
                 <Link
-                  href="/track-case"
+                  href={currentCaseId ? `/track-case?case_id=${encodeURIComponent(currentCaseId)}` : "/track-case"}
                   className="text-[#1E40AF] font-bold hover:underline flex items-center gap-0.5 shrink-0 text-[11px]"
                 >
                   <span>Xem tiến trình ›</span>

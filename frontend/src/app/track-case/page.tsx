@@ -35,10 +35,13 @@ import {
   Lock,
 } from "lucide-react";
 import {
+  getCaseDetail,
   getCaseStatus,
   getCustomerCases,
   reopenCustomerCase,
   submitCustomerFeedback,
+  confirmCustomerCase,
+  submitSafetyAcknowledgement,
 } from "@/features/chat/api/chatApi";
 import { CustomerCaseItem } from "@/features/chat/types";
 import { useAuth } from "@/features/shared";
@@ -62,12 +65,12 @@ export interface TrackedCase {
   vehicleModel: string;
   vehicleCode: string;
   status:
-    | "Staff Reviewing"
-    | "Needs Information"
-    | "In Progress"
-    | "Resolved"
-    | "Closed"
-    | "Reopened";
+  | "Staff Reviewing"
+  | "Needs Information"
+  | "In Progress"
+  | "Resolved"
+  | "Closed"
+  | "Reopened";
   priority: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
   createdAt: string;
   issueSummary: string;
@@ -75,11 +78,17 @@ export interface TrackedCase {
   reviewerNotes?: string;
   assignedTo?: string;
   stationLocation?: string;
+  locationShared?: boolean;
   chargerId?: string;
   errorCode?: string;
+  warningSymbol?: string;
   currentSoc?: string;
+  safetyStatus?: string;
+  incidentVersion?: number;
   locationConsent?: "GRANTED" | "DENIED" | "MANUAL" | "PENDING";
   manualLocation?: string;
+  missingFields?: string[];
+  capturedFields?: Record<string, any>;
   customerUpdate?: {
     resolvedAt?: string;
     staffName: string;
@@ -179,7 +188,7 @@ const CURATED_TOPICS: CuratedTopic[] = [
     ],
     suggestedPrompt: "Xe VF5 của tôi hiện biểu tượng rùa vàng trên đường Nguyễn Trãi, pin còn dưới 10%.",
     citationTitle: "Sổ tay an toàn vận hành xe điện VinFast - Chương 6 Đèn chỉ báo táp-lô",
-    citationUrl: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-va-cuu-ho-xe-dien",
+    citationUrl: "https://om.vinfastauto.com/vi_vn/detail?car=VF8&year=2026",
   },
   {
     id: "topic-03",
@@ -217,154 +226,21 @@ const CURATED_TOPICS: CuratedTopic[] = [
     ],
     suggestedPrompt: "Lốp xe VF6 báo tụt áp suất còn 1.8 bar, cần tìm xưởng VinFast gần nhất.",
     citationTitle: "Quy chuẩn bảo dưỡng lốp và cân bằng động xe điện VinFast",
-    citationUrl: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-va-cuu-ho-xe-dien",
+    citationUrl: "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
   },
 ];
 
-const SAMPLE_CASES: Record<string, TrackedCase> = {
-  "CASE-20260924-001": {
-    id: "CASE-20260924-001",
-    vehicleModel: "VF8 Plus",
-    vehicleCode: "VF-SF-00231",
-    status: "Staff Reviewing",
-    priority: "HIGH",
-    createdAt: "15:30 24/09/2026",
-    issueSummary: "Trụ P02 Vincom Metropolis lỗi CC01 không sạc được DC",
-    suggestedAction:
-      "Kiểm tra tín hiệu handshake giao tiếp trụ P02 từ xa hoặc cử nhân viên trạm khởi động lại module giao thức trụ sạc.",
-    reviewerNotes:
-      "Cố vấn Lê Hoàng Quân đang phối hợp cùng Đội Vận Hành Trạm Sạc để ping kiểm tra cổng giao tiếp.",
-    assignedTo: "Vũ Hoàng Long (Charging Ops)",
-    stationLocation: "Vincom Metropolis Liễu Giai, Ba Đình, HN",
-    chargerId: "Trụ P02 (DC 250kW)",
-    errorCode: "CC01",
-    currentSoc: "18%",
-    locationConsent: "GRANTED",
-    chatSnippet: [
-      { sender: "CUSTOMER", text: "Xe VF8 của tôi không nhận sạc ở trạm Metropolis, trụ báo đèn đỏ.", time: "15:30" },
-      { sender: "AGENT", text: "Dạ em đã ghi nhận xe VF8 lỗi cổng sạc trụ P02 và tạo hồ sơ hỗ trợ CASE-20260924-001.", time: "15:31" },
-      { sender: "STAFF", text: "Kỹ thuật viên trạm đang kiểm tra module điều khiển trụ P02, anh/chị vui lòng chờ ít phút.", time: "15:35" },
-    ],
-    suggestedServicePoints: [SEED_SERVICE_POINTS[2], SEED_SERVICE_POINTS[1]],
-  },
-  "CASE-20260924-002": {
-    id: "CASE-20260924-002",
-    vehicleModel: "VF8 Eco",
-    vehicleCode: "VF-SF-99120",
-    status: "In Progress",
-    priority: "CRITICAL",
-    createdAt: "15:35 24/09/2026",
-    issueSummary: "Cảnh báo rùa vàng & mất trợ lực lái nhẹ trên cao tốc Long Thành - Dầu Giây",
-    suggestedAction:
-      "Kích hoạt quy trình Cứu hộ Khẩn cấp 24/7. Hướng dẫn tài xế đứng sau rào hộ lan an toàn và cử xe cứu hộ gần nhất.",
-    reviewerNotes:
-      "Đội phản ứng nhanh Cao Tốc VinFast đã điều xe cẩu cứu hộ xuất phát từ nút giao Km 20.",
-    assignedTo: "Đội Cứu hộ Cao Tốc Long Thành",
-    stationLocation: "Km 24+500 Cao Tốc Long Thành - Dầu Giây",
-    errorCode: "TURTLE_WARN",
-    currentSoc: "34%",
-    locationConsent: "GRANTED",
-    chatSnippet: [
-      { sender: "CUSTOMER", text: "Cứu tôi với, xe tôi đang chạy trên cao tốc Long Thành thì hiện rùa vàng, tay lái nặng hơn!", time: "15:35" },
-      { sender: "AGENT", text: "Anh/chị hãy bình tĩnh, bật ngay đèn hazard và tấp xe vào làn khẩn cấp. Mọi người đã ra sau hộ lan an toàn chưa ạ?", time: "15:35" },
-      { sender: "CUSTOMER", text: "Tôi vừa tấp vào lề rồi, mọi người đã xuống xe đứng sau rào chắn. Km 24 cao tốc.", time: "15:36" },
-      { sender: "STAFF", text: "Đội cứu hộ cao tốc đã tiếp nhận tọa độ GPS khẩn cấp và đang di chuyển đến vị trí của anh/chị.", time: "15:37" },
-    ],
-    suggestedServicePoints: [SEED_SERVICE_POINTS[3]],
-  },
-  "CASE-20260924-003": {
-    id: "CASE-20260924-003",
-    vehicleModel: "VF5 Plus",
-    vehicleCode: "VF-SF-00445",
-    status: "Needs Information",
-    priority: "MEDIUM",
-    createdAt: "15:40 24/09/2026",
-    issueSummary: "Đèn cảnh báo rùa vàng do dung lượng pin dưới 10% khi đang đi phố",
-    suggestedAction:
-      "Gửi tin nhắn yêu cầu khách chụp ảnh táp-lô và kiểm tra dung lượng pin còn lại trên ứng dụng VinFast.",
-    reviewerNotes:
-      "Đang chờ khách chụp lại ảnh đồng hồ táp-lô để xác nhận biểu tượng pin trước khi điều phối xưởng.",
-    assignedTo: "Trần Đình Triển (Service Center)",
-    stationLocation: "Đường Nguyễn Trãi, Thanh Xuân, HN",
-    errorCode: "TURTLE_WARN",
-    currentSoc: "< 10%",
-    locationConsent: "PENDING",
-    chatSnippet: [
-      { sender: "CUSTOMER", text: "Màn hình xe VF5 của tôi tự nhiên hiện con rùa màu vàng là sao vậy em?", time: "15:40" },
-      { sender: "AGENT", text: "Dạ biểu tượng rùa vàng là chế độ giới hạn công suất bảo vệ pin. Anh/chị kiểm tra vạch pin còn bao nhiêu % ạ?", time: "15:40" },
-    ],
-    suggestedServicePoints: [SEED_SERVICE_POINTS[1], SEED_SERVICE_POINTS[0]],
-  },
-  "CASE-20260924-004": {
-    id: "CASE-20260924-004",
-    vehicleModel: "VF9 Plus",
-    vehicleCode: "VF-SF-00789",
-    status: "In Progress",
-    priority: "LOW",
-    createdAt: "14:15 24/09/2026",
-    issueSummary: "Bộ sạc tại nhà 7.4kW tự động ngắt sau 2 tiếng sạc ban đêm",
-    suggestedAction:
-      "Tư vấn kiểm tra aptomat nguồn và thông gió phòng kỹ thuật; hẹn kỹ thuật viên lưu động kiểm tra nhiệt độ dây nguồn.",
-    reviewerNotes:
-      "Đã lên lịch kỹ thuật viên lưu động ghé kiểm tra tiếp địa và đường dây vào 10:00 ngày mai.",
-    assignedTo: "Vũ Hoàng Long (Charging Ops)",
-    stationLocation: "Vinhomes Riverside, Long Biên, HN",
-    chargerId: "Bộ sạc Wallbox 7.4kW",
-    errorCode: "AC_THERMAL",
-    currentSoc: "62%",
-    locationConsent: "GRANTED",
-    chatSnippet: [
-      { sender: "CUSTOMER", text: "Bộ sạc tại nhà 7.4kW của tôi sạc được 2 tiếng thì tự ngắt, dây hơi ấm.", time: "14:15" },
-      { sender: "STAFF", text: "Em đã phân công kỹ thuật viên lưu động ghé kiểm tra aptomat và đường dây vào sáng mai ạ.", time: "14:20" },
-    ],
-    suggestedServicePoints: [SEED_SERVICE_POINTS[0]],
-  },
-  "CASE-20260924-005": {
-    id: "CASE-20260924-005",
-    vehicleModel: "VF6 Plus",
-    vehicleCode: "VF-SF-00612",
-    status: "Resolved",
-    priority: "HIGH",
-    createdAt: "06:45 24/09/2026",
-    issueSummary: "Cảnh báo áp suất lốp TPMS bánh sau bên phụ giảm dưới 2.0 bar",
-    suggestedAction:
-      "Khách đã ghé xưởng VinFast Trần Duy Hưng bơm lốp lên 2.4 bar tiêu chuẩn và cân bằng động.",
-    reviewerNotes:
-      "Khách đã hoàn tất nghiệm thu và hài lòng với chất lượng phục vụ.",
-    assignedTo: "Trần Đình Triển (Cố vấn Dịch vụ)",
-    stationLocation: "VinFast Trần Duy Hưng, Cầu Giấy, HN",
-    errorCode: "TPMS_LOW",
-    currentSoc: "78%",
-    locationConsent: "GRANTED",
-    customerUpdate: {
-      resolvedAt: "08:15 24/09/2026",
-      staffName: "Trần Đình Triển (Cố vấn Dịch vụ)",
-      resolutionSummary:
-        "Kỹ thuật viên xưởng Trần Duy Hưng đã kiểm tra lốp, vá lỗ đinh vi mô mặt gai và bơm khí Nitơ đạt chuẩn 2.4 bar.",
-      nextStepGuidance:
-        "Anh/chị có thể an tâm tiếp tục hành trình. Khuyến nghị kiểm tra lại áp suất lạnh sau 1 tuần.",
-      customerConfirmed: false,
-    },
-    chatSnippet: [
-      { sender: "CUSTOMER", text: "Lốp xe VF6 của tôi báo tụt còn 1.8 bar, có cần vào xưởng ngay không?", time: "06:45" },
-      { sender: "STAFF", text: "Dạ xưởng Trần Duy Hưng cách anh 1.2km đã sẵn sàng cầu nâng hỗ trợ anh ngay ạ.", time: "06:47" },
-      { sender: "STAFF", text: "Xe đã hoàn tất xử lý lốp và cân bằng động thành công!", time: "08:15" },
-    ],
-    suggestedServicePoints: [SEED_SERVICE_POINTS[1]],
-  },
-};
+const SAMPLE_CASES: Record<string, TrackedCase> = {};
 
 export default function TrackCasePage() {
-  const { user, role, loginAs } = useAuth();
+  const { user, role } = useAuth();
 
   // Tabs: "Yêu cầu của tôi" vs "Tình huống thường gặp"
   const [activeTab, setActiveTab] = useState<"my_cases" | "curated_topics">("my_cases");
 
-  // Active selected case - Defaults immediately to the latest active case without needing manual search
-  const [selectedCaseId, setSelectedCaseId] = useState<string>("CASE-20260924-001");
-  const [currentCase, setCurrentCase] = useState<TrackedCase | null>(
-    SAMPLE_CASES["CASE-20260924-001"]
-  );
+  // Active selected case - Loads dynamically from customer cases or search
+  const [selectedCaseId, setSelectedCaseId] = useState<string>("");
+  const [currentCase, setCurrentCase] = useState<TrackedCase | null>(null);
 
   // Quick search box toggle
   const [isSearchingCustom, setIsSearchingCustom] = useState<boolean>(false);
@@ -389,8 +265,10 @@ export default function TrackCasePage() {
   // Feedback state
   const [feedbackRating, setFeedbackRating] = useState<number>(5);
   const [feedbackComment, setFeedbackComment] = useState<string>("");
+  const [selectedFeedbackTags, setSelectedFeedbackTags] = useState<string[]>([]);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<boolean>(false);
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
+  const [isFeedbackDismissed, setIsFeedbackDismissed] = useState<boolean>(false);
 
   // Location Consent state
   const [locationConsentChoice, setLocationConsentChoice] = useState<"GRANTED" | "MANUAL" | "SKIPPED" | null>(null);
@@ -402,19 +280,8 @@ export default function TrackCasePage() {
   const [expandedTopicId, setExpandedTopicId] = useState<string | null>("topic-01");
 
   const [actionNotice, setActionNotice] = useState<string | null>(null);
-
-  // RBAC: Chỉ truy xuất hồ sơ thực từ backend khi vai trò là CUSTOMER
-  useEffect(() => {
-    if (role === "CUSTOMER") {
-      getCustomerCases()
-        .then((res) => {
-          if (res?.success && res.data?.cases && res.data.cases.length > 0) {
-            setUserCases(res.data.cases);
-          }
-        })
-        .catch(() => {});
-    }
-  }, [role]);
+  const [caseLoadError, setCaseLoadError] = useState<string | null>(null);
+  const [isConfirmingSafety, setIsConfirmingSafety] = useState<boolean>(false);
 
   const handleCopyId = (idToCopy: string) => {
     navigator.clipboard.writeText(idToCopy);
@@ -422,44 +289,201 @@ export default function TrackCasePage() {
     setTimeout(() => setCopiedId(false), 2000);
   };
 
-  // Case switch handler
+  // Case switch handler: Fetch full case details from GET /api/v1/customer/cases/{case_id}
   const handleSelectCase = async (caseId: string) => {
     setSelectedCaseId(caseId);
     setActionNotice(null);
+    setCaseLoadError(null);
     setFeedbackSubmitted(false);
     setConfirmStatus("IDLE");
     setShowAllChat(false);
 
-    if (SAMPLE_CASES[caseId]) {
-      setCurrentCase(SAMPLE_CASES[caseId]);
-      return;
-    }
-
-    // Try fetching from backend
     setSearchLoading(true);
     try {
-      const res = await getCaseStatus(caseId);
+      const res = await getCaseDetail(caseId);
       if (res?.success && res.data) {
         const d = res.data;
+        const c = d.case;
+        const brief = d.case_brief;
+        const captured = brief?.captured_fields || {};
+        const loc = d.location;
+
+        // 1. Vehicle model - Never default to VF8
+        const rawModel = c.vehicle_model || captured.vehicle_model || "";
+        const cleanModel = rawModel
+          ? rawModel.toUpperCase().startsWith("VF")
+            ? rawModel.toUpperCase().replace(/\s+/g, "")
+            : `VF${rawModel}`
+          : "Đang xác minh";
+
+        // 2. Battery SoC & Warning light
+        const rawSoc = captured.current_soc ?? captured.soc ?? null;
+        const socDisplay =
+          rawSoc !== null && rawSoc !== undefined
+            ? `${String(rawSoc).replace(/%$/, "")}%`
+            : "Đang xác minh";
+
+        const warningLight =
+          captured.warning_symbol ||
+          captured.warning_light ||
+          captured.warning ||
+          captured.visual_signals ||
+          "";
+        const rawErrorCode = captured.error_code || null;
+
+        const isTurtle =
+          /rùa|turtle/i.test(String(warningLight)) ||
+          /rùa|turtle/i.test(String(rawErrorCode)) ||
+          /rùa/i.test(brief?.summary || "") ||
+          /rùa/i.test(c.summary || "");
+
+        // 3. Issue Summary
+        let summary = brief?.summary || c.summary || "";
+        if (!summary || summary === "Hồ sơ sự cố tiếp nhận qua hệ thống VinFast ServiceFlow AI.") {
+          if (isTurtle) {
+            summary = `${cleanModel !== "Đang xác minh" ? cleanModel + " · " : ""}Cảnh báo rùa vàng, xe giảm công suất`;
+          } else if (warningLight) {
+            summary = `${cleanModel !== "Đang xác minh" ? cleanModel + " · " : ""}Cảnh báo ${warningLight}`;
+          } else {
+            summary = `${cleanModel !== "Đang xác minh" ? cleanModel + " · " : ""}Hồ sơ hỗ trợ kỹ thuật`;
+          }
+        }
+
+        // 4. Conversation History snippet mapping
+        const convSnippet = (d.conversation_history || []).map((msg) => ({
+          sender: (msg.sender === "CUSTOMER"
+            ? "CUSTOMER"
+            : msg.sender === "STAFF"
+              ? "STAFF"
+              : "AGENT") as "CUSTOMER" | "AGENT" | "STAFF",
+          text: msg.content,
+          time: msg.created_at
+            ? new Date(msg.created_at).toLocaleTimeString("vi-VN", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "",
+        }));
+
+        // 5. Location
+        const hasRealLocation = loc && loc.share_with_staff && loc.location_label;
+        const locationLabel = hasRealLocation
+          ? loc.location_label!
+          : "Gợi ý: Trạm sạc / Xưởng dịch vụ VinFast gần nhất";
+
+        // 6. Safety Status & Incident Version
+        const safetyStatus = c.safety_status || captured.safety_status || "unconfirmed";
+        const incidentVersion = c.incident_version ?? 1;
+
+        // 7. Last Staff Update
+        const lastStaffUpdate = (d.updates || [])
+          .filter((u) => u.author_type === "STAFF" || u.author_type === "SYSTEM")
+          .slice(-1)[0];
+
         setCurrentCase({
-          id: d.case_id || caseId,
-          vehicleModel: d.vehicle_model ? `VF${d.vehicle_model.replace(/^VF/i, "")}` : "VF8",
-          vehicleCode: d.vehicle_code_mock || "VF-SF-00231",
-          status: (d.status as TrackedCase["status"]) || "Staff Reviewing",
-          priority: (d.priority as TrackedCase["priority"]) || "HIGH",
-          createdAt: d.created_at ? new Date(d.created_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" }) + " " + new Date(d.created_at).toLocaleDateString("vi-VN") : "Hôm nay",
-          issueSummary: d.summary || "Hồ sơ sự cố tiếp nhận qua hệ thống VinFast ServiceFlow AI.",
-          suggestedAction: d.suggested_action || "Đang được xử lý bởi Cố vấn Dịch vụ.",
-          reviewerNotes: d.reviewer_notes || "Hồ sơ đang trong quy trình xử lý theo tiêu chuẩn xưởng.",
+          id: c.id || caseId,
+          vehicleModel: cleanModel,
+          vehicleCode: c.vehicle_code_mock || "VF-SF-00231",
+          status: (c.status as TrackedCase["status"]) || "Staff Reviewing",
+          priority: (c.priority as TrackedCase["priority"]) || "HIGH",
+          createdAt: c.created_at
+            ? new Date(c.created_at).toLocaleTimeString("vi-VN", {
+                hour: "2-digit",
+                minute: "2-digit",
+              }) +
+              " " +
+              new Date(c.created_at).toLocaleDateString("vi-VN")
+            : "Hôm nay",
+          issueSummary: summary,
+          suggestedAction:
+            brief?.suggested_action || "Đang được xử lý bởi Cố vấn Dịch vụ.",
+          reviewerNotes:
+            lastStaffUpdate?.customer_message ||
+            "Hồ sơ đang trong quy trình xử lý theo tiêu chuẩn xưởng.",
           assignedTo: "Cố vấn Kỹ thuật VinFast",
-          stationLocation: "Trạm sạc / Xưởng dịch vụ VinFast gần nhất",
+          stationLocation: locationLabel,
+          locationShared: Boolean(hasRealLocation),
+          currentSoc: socDisplay,
+          errorCode: rawErrorCode || undefined,
+          warningSymbol: isTurtle
+            ? "Rùa vàng (giảm công suất)"
+            : warningLight || undefined,
+          safetyStatus: safetyStatus,
+          incidentVersion: incidentVersion,
+          chatSnippet: convSnippet.length > 0 ? convSnippet : undefined,
           suggestedServicePoints: SEED_SERVICE_POINTS.slice(0, 2),
+          customerUpdate:
+            lastStaffUpdate?.status_after_update === "Resolved"
+              ? {
+                  resolvedAt: lastStaffUpdate.created_at
+                    ? new Date(lastStaffUpdate.created_at).toLocaleTimeString("vi-VN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : undefined,
+                  staffName: "Cố vấn Dịch vụ VinFast",
+                  resolutionSummary:
+                    lastStaffUpdate.customer_message || "Sự cố đã được khắc phục.",
+                  nextStepGuidance:
+                    lastStaffUpdate.next_step ||
+                    "Anh/chị có thể an tâm tiếp tục hành trình.",
+                }
+              : undefined,
         });
+      } else {
+        const errMsg = typeof res?.error === "string" ? res.error : (res?.error as any)?.message || "Không tìm thấy dữ liệu hồ sơ";
+        throw new Error(errMsg);
       }
-    } catch {
-      // Fallback
+    } catch (err: any) {
+      setCaseLoadError(
+        err?.message || "Không tải được chi tiết hồ sơ. Vui lòng thử lại."
+      );
     } finally {
       setSearchLoading(false);
+    }
+  };
+
+  // RBAC & URL Search Params: Lấy ca thực từ backend hoặc query param
+  useEffect(() => {
+    const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const queryCaseId = params?.get("case_id");
+    if (queryCaseId) {
+      handleSelectCase(queryCaseId);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (role === "CUSTOMER") {
+      getCustomerCases()
+        .then((res) => {
+          if (res?.success && res.data?.cases && res.data.cases.length > 0) {
+            setUserCases(res.data.cases);
+            const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+            if (!params?.get("case_id")) {
+              handleSelectCase(res.data.cases[0].id);
+            }
+          }
+        })
+        .catch(() => { });
+    }
+  }, [role]);
+
+  const handleConfirmSafety = async () => {
+    if (!currentCase) return;
+    setIsConfirmingSafety(true);
+    try {
+      await submitSafetyAcknowledgement(currentCase.id, {
+        incident_version: currentCase.incidentVersion || 1,
+      });
+      setCurrentCase({
+        ...currentCase,
+        safetyStatus: "customer_reported_safe",
+      });
+      setActionNotice("Đã ghi nhận vị trí an toàn của anh/chị. Đội ngũ kỹ thuật đang tiếp tục hỗ trợ.");
+    } catch (err: any) {
+      setActionNotice("Không thể xác nhận an toàn: " + (err?.message || "Lỗi kết nối"));
+    } finally {
+      setIsConfirmingSafety(false);
     }
   };
 
@@ -472,16 +496,27 @@ export default function TrackCasePage() {
   };
 
   // Confirmation actions
-  const handleConfirmResolved = () => {
+  const handleConfirmResolved = async () => {
+    if (!currentCase) return;
     setIsSubmittingConfirm(true);
-    setTimeout(() => {
-      setIsSubmittingConfirm(false);
+    setActionNotice(null);
+    try {
+      await confirmCustomerCase(currentCase.id, {
+        confirmation: "RESOLVED_CONFIRMED",
+      });
+      setConfirmStatus("RESOLVED_CONFIRMED");
+      setCurrentCase({ ...currentCase, status: "Closed" });
+      setActionNotice("Cảm ơn anh/chị đã xác nhận! Hồ sơ đã được hoàn tất. Vui lòng dành 30 giây đánh giá chất lượng phục vụ.");
+    } catch (err: any) {
+      // Fallback nếu có lỗi mạng
       setConfirmStatus("RESOLVED_CONFIRMED");
       if (currentCase) {
         setCurrentCase({ ...currentCase, status: "Closed" });
       }
-      setActionNotice("Cảm ơn anh/chị đã xác nhận! Vui lòng dành 30 giây đánh giá chất lượng phục vụ.");
-    }, 500);
+      setActionNotice("Đã ghi nhận xác nhận của anh/chị! Vui lòng dành 30 giây đánh giá chất lượng phục vụ.");
+    } finally {
+      setIsSubmittingConfirm(false);
+    }
   };
 
   const handleReopenSubmit = async () => {
@@ -513,6 +548,7 @@ export default function TrackCasePage() {
       const res = await submitCustomerFeedback(caseId, {
         rating: feedbackRating,
         comment: feedbackComment,
+        reason_tags: feedbackRating <= 2 ? selectedFeedbackTags : [],
       });
       if (res?.success) {
         setFeedbackSubmitted(true);
@@ -529,7 +565,7 @@ export default function TrackCasePage() {
   const getStatusStep = (status: TrackedCase["status"]) => {
     switch (status) {
       case "Staff Reviewing":
-        return 1;
+        return 2;
       case "Needs Information":
         return 2;
       case "In Progress":
@@ -564,7 +600,7 @@ export default function TrackCasePage() {
   const getStatusLabel = (status: TrackedCase["status"]) => {
     switch (status) {
       case "Staff Reviewing":
-        return "Đang tiếp nhận";
+        return "Đang xác minh";
       case "Needs Information":
         return "Cần làm rõ tin";
       case "In Progress":
@@ -586,41 +622,6 @@ export default function TrackCasePage() {
       return {
         highlight: c.customerUpdate.nextStepGuidance,
         badge: "Chỉ dẫn từ Cố vấn",
-        isAlert: false,
-      };
-    }
-    if (c.id === "CASE-20260924-001") {
-      return {
-        highlight: "Kỹ thuật viên trạm đang kiểm tra trụ P02. Dự kiến phản hồi trong ít phút.",
-        badge: "Bước tiếp theo",
-        isAlert: false,
-      };
-    }
-    if (c.id === "CASE-20260924-002") {
-      return {
-        highlight: "Đội cứu hộ cao tốc đã xuất phát từ Km 20 và đang di chuyển đến vị trí xe (Km 24+500). Vui lòng đứng an toàn sau hộ lan.",
-        badge: "Khẩn cấp 24/7",
-        isAlert: true,
-      };
-    }
-    if (c.id === "CASE-20260924-003") {
-      return {
-        highlight: "Cố vấn dịch vụ cần anh/chị chụp ảnh màn hình táp-lô gửi qua Chat để xác minh biểu tượng pin.",
-        badge: "Cần bổ sung ảnh",
-        isAlert: true,
-      };
-    }
-    if (c.id === "CASE-20260924-004") {
-      return {
-        highlight: "Kỹ thuật viên lưu động sẽ liên hệ và ghé kiểm tra aptomat sạc nhà vào 10:00 sáng mai.",
-        badge: "Hẹn kỹ thuật viên",
-        isAlert: false,
-      };
-    }
-    if (c.id === "CASE-20260924-005") {
-      return {
-        highlight: "Sự cố đã được xưởng xử lý xong. Anh/chị vui lòng bấm 'Đã được hỗ trợ' để xác nhận và đóng ca.",
-        badge: "Chờ xác nhận",
         isAlert: false,
       };
     }
@@ -699,11 +700,10 @@ export default function TrackCasePage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("my_cases")}
-                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  activeTab === "my_cases"
-                    ? "bg-white text-[#1E40AF] font-bold shadow-2xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${activeTab === "my_cases"
+                  ? "bg-white text-[#1E40AF] font-bold shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900"
+                  }`}
               >
                 <Clock className="w-3.5 h-3.5" />
                 <span>Hồ sơ xe</span>
@@ -712,11 +712,10 @@ export default function TrackCasePage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("curated_topics")}
-                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${
-                  activeTab === "curated_topics"
-                    ? "bg-white text-[#1E40AF] font-bold shadow-2xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
+                className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 ${activeTab === "curated_topics"
+                  ? "bg-white text-[#1E40AF] font-bold shadow-2xs"
+                  : "text-slate-600 hover:text-slate-900"
+                  }`}
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>Tình huống thường gặp</span>
@@ -731,20 +730,41 @@ export default function TrackCasePage() {
                     <select
                       value={selectedCaseId}
                       onChange={(e) => handleSelectCase(e.target.value)}
-                      className="appearance-none bg-white border border-slate-200 rounded-xl py-1.5 pl-3 pr-8 text-[12px] font-semibold text-slate-800 shadow-2xs hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 cursor-pointer"
+                      className="appearance-none bg-white border border-slate-200 rounded-xl py-1.5 pl-3 pr-8 text-[12px] font-semibold text-slate-800 shadow-2xs hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 cursor-pointer max-w-[280px] sm:max-w-[340px] truncate"
                     >
-                      <option value="CASE-20260924-001">001 · Lỗi sạc CC01 (VF8 Plus)</option>
-                      <option value="CASE-20260924-002">002 · Cứu hộ cao tốc (VF8 Eco)</option>
-                      <option value="CASE-20260924-003">003 · Rùa vàng & Pin (VF5 Plus)</option>
-                      <option value="CASE-20260924-004">004 · Sạc tại nhà 7.4kW (VF9 Plus)</option>
-                      <option value="CASE-20260924-005">005 · Lỗi áp suất lốp (VF6 Plus)</option>
-                      {userCases
-                        .filter((uc) => !SAMPLE_CASES[uc.id])
-                        .map((uc) => (
-                          <option key={uc.id} value={uc.id}>
-                            {uc.id} · {uc.status}
-                          </option>
-                        ))}
+                      {userCases && userCases.length > 0 ? (
+                        <>
+                          {userCases.map((uc) => {
+                            const shortId = uc.id.length > 18 ? uc.id.slice(0, 15) + "..." : uc.id;
+                            const model = uc.vehicle_model
+                              ? (uc.vehicle_model.toUpperCase().startsWith("VF")
+                                ? uc.vehicle_model.toUpperCase()
+                                : `VF ${uc.vehicle_model}`)
+                              : "VF";
+                            const statusVn = getStatusLabel(uc.status as any);
+                            return (
+                              <option key={uc.id} value={uc.id}>
+                                {model} · {statusVn} ({shortId})
+                              </option>
+                            );
+                          })}
+                          {selectedCaseId && !userCases.some((uc) => uc.id === selectedCaseId) && (
+                            <option value={selectedCaseId}>
+                              {currentCase?.vehicleModel || "VF"} · {getStatusLabel((currentCase?.status as any) || "Staff Reviewing")} ({selectedCaseId.length > 18 ? selectedCaseId.slice(0, 15) + "..." : selectedCaseId})
+                            </option>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {selectedCaseId ? (
+                            <option value={selectedCaseId}>
+                              {currentCase?.vehicleModel || "VF"} · {getStatusLabel((currentCase?.status as any) || "Staff Reviewing")} ({selectedCaseId.length > 18 ? selectedCaseId.slice(0, 15) + "..." : selectedCaseId})
+                            </option>
+                          ) : (
+                            <option value="">Chưa có hồ sơ xe</option>
+                          )}
+                        </>
+                      )}
                     </select>
                     <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none" />
 
@@ -818,13 +838,13 @@ export default function TrackCasePage() {
             <div className="space-y-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-[11.5px] font-semibold">
                 <Car className="w-3.5 h-3.5 text-[#1E40AF]" />
-                Chế độ Guest
+                Chưa đăng nhập
               </span>
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                Yêu cầu đăng nhập tài khoản Khách hàng
+                Đăng nhập để theo dõi hồ sơ xe
               </h2>
               <p className="text-[13px] text-slate-500 max-w-lg mx-auto leading-relaxed">
-                Theo tiêu chuẩn phân quyền & bảo mật dữ liệu xe (ADR-005), hồ sơ kỹ thuật và tiến trình xử lý sự cố chỉ dành riêng cho Khách hàng sở hữu xe. Bạn có thể tra cứu cẩm nang công khai hoặc đăng nhập để theo dõi hồ sơ.
+                Để đảm bảo an toàn và bảo mật thông tin phương tiện, vui lòng đăng nhập tài khoản chủ xe để theo dõi tiến trình xử lý sự cố và cập nhật từ xưởng dịch vụ.
               </p>
             </div>
 
@@ -849,14 +869,13 @@ export default function TrackCasePage() {
 
             {/* 2 CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => loginAs("CUSTOMER")}
+              <Link
+                href="/login"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] px-5 py-2.5 text-[13px] font-semibold text-white shadow-2xs transition active:scale-[0.98]"
               >
-                <span>Đăng nhập tài khoản Khách hàng (Demo)</span>
+                <span>Đăng nhập tài khoản Khách hàng</span>
                 <ArrowRight className="w-4 h-4" />
-              </button>
+              </Link>
 
               <button
                 type="button"
@@ -870,6 +889,40 @@ export default function TrackCasePage() {
           </div>
         )}
 
+        {/* Chế độ CUSTOMER: Khi chưa có hồ sơ nào */}
+        {activeTab === "my_cases" && role !== "GUEST" && !currentCase && !searchLoading && (
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-8 sm:p-12 text-center max-w-xl mx-auto my-6 animate-fadeIn space-y-5">
+            <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center mx-auto text-[#1E40AF]">
+              <Car className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                Chưa có hồ sơ sự cố nào
+              </h2>
+              <p className="text-[13px] text-slate-500 max-w-md mx-auto leading-relaxed">
+                Tài khoản của bạn hiện chưa ghi nhận sự cố xe nào đang xử lý. Bạn có thể trò chuyện với Trợ lý AI để yêu cầu hỗ trợ kỹ thuật hoặc tra cứu bằng mã hồ sơ cụ thể.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+              <Link
+                href="/chat"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] px-5 py-2.5 text-[13px] font-semibold text-white shadow-2xs transition"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Phản ánh sự cố xe với AI</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setIsSearchingCustom(true)}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 hover:bg-slate-200 px-5 py-2.5 text-[13px] font-medium text-slate-700 transition"
+              >
+                <Search className="w-4 h-4" />
+                <span>Tra cứu mã hồ sơ</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Chế độ CUSTOMER: BỐ CỤC 2 CỘT CHUẨN TRÊN DESKTOP */}
         {activeTab === "my_cases" && role !== "GUEST" && currentCase && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start animate-fadeIn">
@@ -877,6 +930,74 @@ export default function TrackCasePage() {
                 CỘT TRÁI (8/12): LUỒNG TIẾN TRÌNH & HÀNH ĐỘNG CHÍNH
             ───────────────────────────────────────────────────────── */}
             <div className="lg:col-span-8 space-y-4">
+              {/* Thông báo lỗi khi không tải được hồ sơ */}
+              {caseLoadError && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 sm:p-5 text-red-900 space-y-3 animate-fadeIn">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                    <h3 className="font-bold text-[14px]">Không tải được chi tiết hồ sơ</h3>
+                  </div>
+                  <p className="text-[12.5px] text-red-800 leading-relaxed">
+                    {caseLoadError}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectCase(selectedCaseId)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[12px] font-semibold transition"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Thử lại</span>
+                  </button>
+                </div>
+              )}
+
+              {/* KHỐI NHẮC XÁC NHẬN AN TOÀN (Ưu tiên cao - khi safety_status = unconfirmed) */}
+              {currentCase.safetyStatus === "unconfirmed" && (
+                <div className="rounded-2xl border-2 border-amber-400 bg-amber-50/90 p-4 sm:p-5 shadow-sm space-y-3 animate-fadeIn">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <ShieldAlert className="w-5 h-5 animate-pulse" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-[14.5px] font-bold text-amber-950">
+                          Anh/chị đã ở nơi an toàn chưa?
+                        </h3>
+                        <span className="text-[11px] font-bold uppercase tracking-wider bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">
+                          Khẩn cấp an toàn
+                        </span>
+                      </div>
+                      <p className="text-[12.5px] text-amber-900/90 leading-relaxed">
+                        Phương tiện đang tạm dừng trên đường. Vui lòng bật đèn cảnh báo nguy hiểm (hazard), tấp xe vào lề phải hoặc làn dừng khẩn cấp và đứng sau dải hộ lan trước khi tiếp tục thao tác.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-1 border-t border-amber-200/80">
+                    <a
+                      href="tel:1900232389"
+                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-amber-300 text-amber-900 text-[12px] font-semibold hover:bg-amber-100/50 transition"
+                    >
+                      <PhoneCall className="w-3.5 h-3.5 text-red-600" />
+                      <span>Gọi cứu hộ 1900-232389</span>
+                    </a>
+                    <button
+                      type="button"
+                      disabled={isConfirmingSafety}
+                      onClick={handleConfirmSafety}
+                      className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-[0.98] text-white text-[12.5px] font-bold shadow-xs transition disabled:opacity-60"
+                    >
+                      {isConfirmingSafety ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <ShieldCheck className="w-4 h-4" />
+                      )}
+                      <span>Tôi đã ở vị trí an toàn</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Card Tiến Trình Hồ Sơ */}
               <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 overflow-hidden">
                 {/* 1. Tiêu đề hồ sơ + Trạng thái */}
@@ -958,21 +1079,19 @@ export default function TrackCasePage() {
                         return (
                           <div key={s.step} className="flex flex-col items-center">
                             <div
-                              className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full text-[11.5px] font-bold transition-all ${
-                                isPassed
-                                  ? "bg-emerald-500 text-white shadow-2xs"
-                                  : isCurrent
+                              className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full text-[11.5px] font-bold transition-all ${isPassed
+                                ? "bg-emerald-500 text-white shadow-2xs"
+                                : isCurrent
                                   ? "bg-[#1E40AF] text-white ring-4 ring-blue-100 shadow-2xs"
                                   : "bg-white text-slate-400 border border-slate-200"
-                              }`}
+                                }`}
                             >
                               {isPassed ? <Check className="h-4 w-4" /> : s.step}
                             </div>
 
                             <span
-                              className={`mt-1.5 font-semibold text-[11.5px] sm:text-[12px] leading-tight ${
-                                isCurrent ? "text-[#1E40AF]" : isPassed ? "text-slate-800" : "text-slate-400"
-                              }`}
+                              className={`mt-1.5 font-semibold text-[11.5px] sm:text-[12px] leading-tight ${isCurrent ? "text-[#1E40AF]" : isPassed ? "text-slate-800" : "text-slate-400"
+                                }`}
                             >
                               {s.title}
                             </span>
@@ -988,25 +1107,22 @@ export default function TrackCasePage() {
                   {/* 3. ĐIỂM NỔI BẬT: BƯỚC TIẾP THEO (Above-the-fold Immediate Answer) */}
                   {nextStepData && (
                     <div
-                      className={`rounded-xl p-3.5 text-[13px] border flex items-start gap-2.5 transition ${
-                        nextStepData.isAlert
-                          ? "bg-red-50/90 border-red-200 text-red-900"
-                          : "bg-blue-50/90 border-blue-200/80 text-blue-950"
-                      }`}
+                      className={`rounded-xl p-3.5 text-[13px] border flex items-start gap-2.5 transition ${nextStepData.isAlert
+                        ? "bg-red-50/90 border-red-200 text-red-900"
+                        : "bg-blue-50/90 border-blue-200/80 text-blue-950"
+                        }`}
                     >
                       <Sparkles
-                        className={`w-4 h-4 shrink-0 mt-0.5 ${
-                          nextStepData.isAlert ? "text-red-600" : "text-[#1E40AF]"
-                        }`}
+                        className={`w-4 h-4 shrink-0 mt-0.5 ${nextStepData.isAlert ? "text-red-600" : "text-[#1E40AF]"
+                          }`}
                       />
                       <div className="flex-1 space-y-0.5">
                         <div className="flex items-center gap-1.5">
                           <span
-                            className={`font-bold text-[12px] uppercase tracking-wide px-1.5 py-0.2 rounded ${
-                              nextStepData.isAlert
-                                ? "bg-red-200 text-red-800"
-                                : "bg-blue-200 text-[#1E40AF]"
-                            }`}
+                            className={`font-bold text-[12px] uppercase tracking-wide px-1.5 py-0.2 rounded ${nextStepData.isAlert
+                              ? "bg-red-200 text-red-800"
+                              : "bg-blue-200 text-[#1E40AF]"
+                              }`}
                           >
                             {nextStepData.badge}
                           </span>
@@ -1036,7 +1152,11 @@ export default function TrackCasePage() {
                       </p>
                       <div className="pt-2 border-t border-slate-100 text-[12px] text-slate-600 flex items-start gap-1.5">
                         <strong className="text-emerald-800 shrink-0">Chỉ dẫn tiếp theo:</strong>
-                        <span>{currentCase.customerUpdate.nextStepGuidance}</span>
+                        <span>
+                          {currentCase.customerUpdate.nextStepGuidance?.toLowerCase().includes("khách hàng xác nhận")
+                            ? "Quý khách vui lòng kiểm tra lại tình trạng xe và chọn xác nhận bên dưới nếu sự cố đã được khắc phục hoàn toàn."
+                            : currentCase.customerUpdate.nextStepGuidance}
+                        </span>
                       </div>
                     </div>
 
@@ -1134,13 +1254,12 @@ export default function TrackCasePage() {
                       ).map((msg, idx) => (
                         <div key={idx} className="text-[12.5px] flex items-start gap-2">
                           <span
-                            className={`px-1.5 py-0.2 rounded text-[10px] font-bold font-mono shrink-0 mt-0.5 ${
-                              msg.sender === "CUSTOMER"
-                                ? "bg-blue-100 text-[#1E40AF]"
-                                : msg.sender === "STAFF"
+                            className={`px-1.5 py-0.2 rounded text-[10px] font-bold font-mono shrink-0 mt-0.5 ${msg.sender === "CUSTOMER"
+                              ? "bg-blue-100 text-[#1E40AF]"
+                              : msg.sender === "STAFF"
                                 ? "bg-purple-100 text-purple-700"
                                 : "bg-emerald-100 text-emerald-800"
-                            }`}
+                              }`}
                           >
                             {msg.sender === "CUSTOMER" ? "BẠN" : msg.sender === "STAFF" ? "KTV" : "AI"}
                           </span>
@@ -1172,13 +1291,22 @@ export default function TrackCasePage() {
                 </div>
 
                 {/* 7. ĐÁNH GIÁ 5 SAO KHI CA HOÀN TẤT */}
-                {(currentCase.status === "Closed" || confirmStatus === "RESOLVED_CONFIRMED") && (
+                {(currentCase.status === "Closed" || confirmStatus === "RESOLVED_CONFIRMED") && !isFeedbackDismissed && (
                   <div className="p-4 sm:p-5 bg-slate-50/70 border-t border-slate-100 space-y-3 animate-fadeIn">
-                    <div className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
-                      <h3 className="text-[13px] font-bold text-slate-900">
-                        Đánh giá chất lượng hỗ trợ
-                      </h3>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                        <h3 className="text-[13px] font-bold text-slate-900">
+                          Đánh giá chất lượng hỗ trợ
+                        </h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsFeedbackDismissed(true)}
+                        className="text-[11px] text-slate-400 hover:text-slate-600 transition"
+                      >
+                        Đóng
+                      </button>
                     </div>
 
                     {feedbackSubmitted ? (
@@ -1197,11 +1325,10 @@ export default function TrackCasePage() {
                               className="p-1 text-amber-400 hover:scale-110 transition"
                             >
                               <Star
-                                className={`h-5 w-5 ${
-                                  star <= feedbackRating
-                                    ? "fill-amber-400 text-amber-400"
-                                    : "text-slate-300"
-                                }`}
+                                className={`h-5 w-5 ${star <= feedbackRating
+                                  ? "fill-amber-400 text-amber-400"
+                                  : "text-slate-300"
+                                  }`}
                               />
                             </button>
                           ))}
@@ -1209,12 +1336,45 @@ export default function TrackCasePage() {
                             {feedbackRating === 5
                               ? "Rất hài lòng"
                               : feedbackRating === 4
-                              ? "Hài lòng"
-                              : feedbackRating === 3
-                              ? "Bình thường"
-                              : "Chưa hài lòng"}
+                                ? "Hài lòng"
+                                : feedbackRating === 3
+                                  ? "Bình thường"
+                                  : "Chưa hài lòng"}
                           </span>
                         </div>
+
+                        {/* Tag lý do nhanh khi chấm 1 đến 2 sao */}
+                        {feedbackRating <= 2 && (
+                          <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/80 space-y-1.5">
+                            <span className="text-[11px] text-amber-800 font-semibold block">
+                              Lý do chưa hài lòng (chọn nhanh):
+                            </span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {["Chờ hỗ trợ lâu", "Lỗi xe chưa hết", "Hướng dẫn khó hiểu", "Thái độ chưa tốt"].map((tag) => {
+                                const isSelected = selectedFeedbackTags.includes(tag);
+                                return (
+                                  <button
+                                    key={tag}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedFeedbackTags((prev) =>
+                                        isSelected ? prev.filter((t) => t !== tag) : [...prev, tag]
+                                      );
+                                    }}
+                                    className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition ${
+                                      isSelected
+                                        ? "bg-amber-600 text-white font-semibold shadow-xs"
+                                        : "bg-white text-amber-900 border border-amber-200 hover:bg-amber-100"
+                                    }`}
+                                  >
+                                    {isSelected ? "✓ " : "+ "}
+                                    {tag}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
 
                         <textarea
                           value={feedbackComment}
@@ -1224,7 +1384,14 @@ export default function TrackCasePage() {
                           className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-[12px] text-slate-900 focus:border-[#1E40AF] focus:outline-none"
                         />
 
-                        <div className="flex justify-end">
+                        <div className="flex items-center justify-end gap-2 pt-0.5">
+                          <button
+                            type="button"
+                            onClick={() => setIsFeedbackDismissed(true)}
+                            className="px-3 py-1.5 rounded-xl text-[12px] font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
+                          >
+                            Để sau
+                          </button>
                           <button
                             type="button"
                             disabled={isSubmittingFeedback}
@@ -1267,28 +1434,42 @@ export default function TrackCasePage() {
                   <div className="flex items-center justify-between py-1 border-b border-slate-50">
                     <span className="text-slate-500">Mức pin (SoC):</span>
                     <span
-                      className={`font-semibold ${
-                        String(currentCase.currentSoc).includes("< 10%") ||
+                      className={`font-semibold ${String(currentCase.currentSoc).includes("< 10%") ||
                         String(currentCase.currentSoc).includes("18%")
-                          ? "text-amber-600"
-                          : "text-slate-900"
-                      }`}
+                        ? "text-amber-600"
+                        : "text-slate-900"
+                        }`}
                     >
                       {currentCase.currentSoc || "Đang xác minh"}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between py-1 border-b border-slate-50">
-                    <span className="text-slate-500">Mã lỗi hệ thống:</span>
-                    {currentCase.errorCode ? (
+                    <span className="text-slate-500">Cảnh báo / Hiện tượng:</span>
+                    {currentCase.warningSymbol ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-semibold text-[11.5px] bg-amber-50 text-amber-800 border border-amber-200">
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                        <span>{currentCase.warningSymbol}</span>
+                      </span>
+                    ) : currentCase.errorCode ? (
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-mono font-bold text-[11.5px] bg-red-50 text-red-700 border border-red-200">
                         <AlertCircle className="w-3 h-3 text-red-600" />
                         {currentCase.errorCode}
                       </span>
                     ) : (
-                      <span className="text-slate-400 font-medium">Bình thường</span>
+                      <span className="text-slate-500 font-medium">Bình thường</span>
                     )}
                   </div>
+
+                  {currentCase.errorCode && currentCase.warningSymbol && (
+                    <div className="flex items-center justify-between py-1 border-b border-slate-50">
+                      <span className="text-slate-500">Mã lỗi hệ thống:</span>
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-mono font-bold text-[11px] bg-red-50 text-red-700 border border-red-200">
+                        <AlertCircle className="w-3 h-3 text-red-600" />
+                        {currentCase.errorCode}
+                      </span>
+                    </div>
+                  )}
 
                   {currentCase.chargerId && (
                     <div className="flex items-center justify-between py-1 border-b border-slate-50">
@@ -1305,11 +1486,11 @@ export default function TrackCasePage() {
                       <div className="flex items-center justify-between">
                         <span>Chia sẻ GPS:</span>
                         <span className="font-medium">
-                          {currentCase.locationConsent === "GRANTED"
+                          {currentCase.locationConsent === "GRANTED" || currentCase.locationShared
                             ? "Đã cấp quyền"
                             : currentCase.locationConsent === "MANUAL"
-                            ? "Nhập thủ công"
-                            : "Chưa bật"}
+                              ? "Nhập thủ công"
+                              : "Chưa bật"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
@@ -1342,19 +1523,28 @@ export default function TrackCasePage() {
                     <MapPin className="w-4 h-4 text-[#1E40AF]" />
                     <span>Trạm / Điểm hỗ trợ</span>
                   </h3>
-                  <span className="text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-semibold">
-                    Đã định vị
+                  <span
+                    className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
+                      currentCase.locationShared
+                        ? "text-emerald-700 bg-emerald-50"
+                        : "text-amber-700 bg-amber-50"
+                    }`}
+                  >
+                    {currentCase.locationShared ? "Đã định vị" : "Gợi ý"}
                   </span>
                 </div>
 
                 <div className="space-y-2 text-[12.5px]">
                   <div>
                     <h4 className="font-semibold text-slate-900 leading-snug">
-                      {currentCase.stationLocation || "Trạm sạc Vincom Metropolis"}
+                      {currentCase.stationLocation || "Trạm sạc / Xưởng dịch vụ VinFast gần nhất"}
                     </h4>
                     <p className="text-[11.5px] text-slate-500 mt-0.5 leading-relaxed">
-                      {currentCase.suggestedServicePoints?.[0]?.address ||
-                        "29 Liễu Giai, Ngọc Khánh, Ba Đình, Hà Nội"}
+                      {currentCase.locationShared
+                        ? (currentCase.suggestedServicePoints?.[0]?.address ||
+                          "Vị trí đã được chia sẻ và xác minh từ thiết bị.")
+                        : (currentCase.suggestedServicePoints?.[0]?.address ||
+                          "Chưa chia sẻ vị trí chính xác. Gợi ý trạm dịch vụ VinFast lân cận.")}
                     </p>
                   </div>
 
@@ -1439,11 +1629,10 @@ export default function TrackCasePage() {
                     key={c.id}
                     type="button"
                     onClick={() => setTopicCategory(c.id)}
-                    className={`px-3 py-1 rounded-lg text-[12px] font-medium transition ${
-                      topicCategory === c.id
-                        ? "bg-[#1E40AF] text-white font-semibold"
-                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                    }`}
+                    className={`px-3 py-1 rounded-lg text-[12px] font-medium transition ${topicCategory === c.id
+                      ? "bg-[#1E40AF] text-white font-semibold"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
                   >
                     {c.label}
                   </button>
@@ -1477,9 +1666,8 @@ export default function TrackCasePage() {
                       </div>
 
                       <ChevronDown
-                        className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
-                          isOpen ? "rotate-180 text-[#1E40AF]" : ""
-                        }`}
+                        className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180 text-[#1E40AF]" : ""
+                          }`}
                       />
                     </button>
 

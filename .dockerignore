@@ -1,7 +1,9 @@
 .git
 .gitignore
 .env
+.env.*
 .venv
+venv
 __pycache__
 *.pyc
 .pytest_cache
@@ -9,8 +11,27 @@ __pycache__
 docs/
 presentation/
 eval/
+dataset/
+notebooks/
+frontend/
+data/
 *.md
 !requirements.txt
 .dockerignore
 Dockerfile
 docker-compose.yml
+
+# Keep runtime source registry while excluding local documents and test runs
+!docs/
+docs/*
+!docs/data-sources.md
+!docs/data-source-url-verification.json
+.test-runs/
+.test-tmp*/
+.pytest-*/
+.superpowers/
+.agents/
+.ai-log/
+scratch/
+tests/
+chroma/

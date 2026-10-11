@@ -55,9 +55,6 @@ class Settings(BaseSettings):
     rag_max_distance: float = Field(default=0.70, ge=0.0)
     rag_context_max_bytes: int = Field(default=6000, gt=0)
     agent_context_max_bytes: int = Field(default=8000, gt=0)
-    # Backward compatibility for the current branch's demo-token auth routes.
-    customer_demo_token: str = ""
-    staff_demo_token: str = ""
     service_points_file: str = "./fixtures/service_points.demo.json"
 
     @model_validator(mode="after")
