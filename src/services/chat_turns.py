@@ -58,12 +58,8 @@ async def run_chat_turn(payload, user, db, handler):
                 db.rollback()
                 session = db.get(ChatSession, payload.session_id)
         if session.owner != owner:
-            if session.owner and (session.owner.startswith('guest:') or session.owner == 'guest:None'):
-                session.owner = owner
-                db.commit()
-            else:
-                logger.warning(f"[403 FORBIDDEN] session.owner mismatch: db_owner='{session.owner}', request_owner='{owner}', session_id='{payload.session_id}'")
-                raise HTTPException(403, f'Phiên hội thoại không thuộc khách hàng này (owner={session.owner}).')
+            logger.warning(f"[404 NOT FOUND] session.owner mismatch: db_owner='{session.owner}', request_owner='{owner}', session_id='{payload.session_id}'")
+            raise HTTPException(404, "Không tìm thấy phiên trò chuyện.")
         request_key = hashlib.sha256(f'{owner}:{payload.request_id}'.encode()).hexdigest() if payload.request_id else None
         fingerprint = hashlib.sha256(json.dumps(payload.model_dump(), sort_keys=True, ensure_ascii=False).encode()).hexdigest()
         record = db.get(ChatRequestRecord, request_key) if request_key else None

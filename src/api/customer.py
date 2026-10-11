@@ -8,6 +8,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from sqlalchemy import func, update
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm.attributes import flag_modified
 
 from src.agents.chatbot_agent import process_chat_message
 from src.agents.guardrails import (
@@ -28,6 +29,8 @@ from src.models.db_models import (
     CaseBrief,
     CaseLocation,
     CaseUpdate,
+    ChatRequestRecord,
+    ChatSession,
     CustomerFeedback,
     Intent,
     Message,
@@ -48,6 +51,8 @@ from src.models.schemas import (
     CaseLocationPayload,
     CaseUpdateOut,
     ChatResponseData,
+    ChatSessionListItem,
+    ChatSessionListResponseData,
     Citation,
     ConversationItem,
     CustomerActionPayload,
@@ -69,6 +74,7 @@ from src.models.schemas import (
     ServicePointsData,
     SessionHistoryMessageItem,
     SessionHistoryResponseData,
+    UpdateSessionTitleRequest,
 )
 from src.services.auth import check_case_ownership, get_optional_user, require_customer
 from src.services.chat_cases import (
@@ -2813,6 +2819,7 @@ def acknowledge_safety(case_id: str, payload: SafetyAcknowledgementPayload,
 
 
 @router.get("/sessions/{session_id}/history", response_model=ApiResponse[SessionHistoryResponseData])
+@router.get("/chat/sessions/{session_id}/history", response_model=ApiResponse[SessionHistoryResponseData], deprecated=True, include_in_schema=False)
 def get_session_chat_history(
     session_id: str,
     guest_session_id: str | None = Query(None),
@@ -2822,10 +2829,21 @@ def get_session_chat_history(
 ):
     """
     Lấy toàn bộ lịch sử hội thoại của một phiên chat theo session_id.
-    Bảo đảm phân quyền truy cập:
-    - Nếu phiên có tin nhắn của khách hàng đã đăng nhập, chỉ chính tài khoản đó mới xem được.
-    - Nếu là phiên thử nghiệm guest, khách hàng phải cung cấp guest_session_id hoặc X-Session-Id khớp.
+    Bảo đảm phân quyền truy cập: nếu không tìm thấy hoặc không thuộc về user/guest, trả về 404 để chống dò session.
     """
+    session = db.get(ChatSession, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+
+    if current_user:
+        if session.owner != f"user:{current_user.id}" and current_user.role != "STAFF":
+            raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+    else:
+        provided_guest = guest_session_id or x_session_id
+        expected_owner = f"guest:{provided_guest}" if provided_guest else None
+        if not provided_guest or session.owner != expected_owner:
+            raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+
     messages = (
         db.query(Message)
         .filter(Message.session_id == session_id)
@@ -2839,17 +2857,12 @@ def get_session_chat_history(
             active_case_id = msg.case_id
         meta = msg.msg_metadata or {}
         msg_user_id = meta.get("user_id")
-        msg_guest_id = meta.get("guest_session_id")
 
         if msg_user_id:
             if not current_user:
-                raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để xem lịch sử phiên này.")
+                raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
             if current_user.id != msg_user_id and current_user.role != "STAFF":
-                raise HTTPException(status_code=403, detail="Bạn không có quyền truy cập lịch sử phiên này.")
-        elif msg_guest_id and not current_user:
-            provided_guest = guest_session_id or x_session_id
-            if provided_guest and provided_guest != msg_guest_id and session_id != msg_guest_id:
-                raise HTTPException(status_code=403, detail="Bạn không có quyền truy cập lịch sử phiên này.")
+                raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
 
     items = []
     for msg in messages:
@@ -2886,4 +2899,229 @@ def get_session_chat_history(
         ),
         error=None,
     )
+
+
+GREETING_PREFIX_REGEX = re.compile(
+    r"^(?:dạ\s+)?(?:em\s+)?(?:(?:xin\s+)?chào(?:\s+(?:bạn|em|ad|admin|trợ\s+lý|vinfast|vfserv|anh|chị|quý\s+khách|cô|chú|bác))?|"
+    r"hello|hi|alo|hé\s+lô|hey)[\s,!\.:;~-]*",
+    re.IGNORECASE,
+)
+
+
+def truncate_title(text: str, max_chars: int = 40) -> str:
+    """Cắt tối đa max_chars theo ranh giới từ tiếng Việt, tránh cắt giữa chữ."""
+    text = text.strip()
+    if not text:
+        return "Cuộc trò chuyện mới"
+    if len(text) <= max_chars:
+        return text
+    truncated = text[:max_chars]
+    last_space = truncated.rfind(" ")
+    if last_space >= 15:
+        truncated = truncated[:last_space]
+    return truncated.rstrip() + "..."
+
+
+def extract_session_title(messages: list[Message], default: str = "Cuộc trò chuyện mới") -> str:
+    """
+    Lấy tiêu đề tự động từ tin nhắn đầu có nội dung thực.
+    Cắt bỏ phần chào đầu câu nếu câu có nội dung hỏi thực sự.
+    Nếu toàn bộ là câu chào, trả về default để không đóng băng tiêu đề sớm.
+    """
+    for msg in messages:
+        if msg.sender_type == "CUSTOMER" and msg.content:
+            clean = msg.content.strip()
+            first_line = clean.splitlines()[0].strip() if clean else ""
+            if not first_line:
+                continue
+            stripped = GREETING_PREFIX_REGEX.sub("", first_line).strip()
+            if not stripped or stripped.lower() in ("trợ lý", "bot", "vinfast", "vfserv", "ad", "admin", "bạn", "em", "anh", "chị", "quý khách"):
+                continue
+            capitalized = stripped[0].upper() + stripped[1:] if len(stripped) > 1 else stripped.upper()
+            return truncate_title(capitalized, 40)
+
+    return default
+
+
+@router.get("/sessions", response_model=ApiResponse[ChatSessionListResponseData])
+@router.get("/chat/sessions", response_model=ApiResponse[ChatSessionListResponseData], deprecated=True, include_in_schema=False)
+def list_chat_sessions(
+    guest_session_id: str | None = Query(None),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    current_user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    """Lấy danh sách các phiên trò chuyện của người dùng hiện tại hoặc guest."""
+    if current_user:
+        owner = f"user:{current_user.id}"
+        sessions = db.query(ChatSession).filter(ChatSession.owner == owner).all()
+    else:
+        guest_id = guest_session_id or x_session_id
+        if not guest_id:
+            return ApiResponse(success=True, data=ChatSessionListResponseData(sessions=[], total=0))
+        sessions = db.query(ChatSession).filter(
+            ChatSession.owner == f"guest:{guest_id}"
+        ).all()
+
+    session_ids = [s.id for s in sessions]
+    if not session_ids:
+        return ApiResponse(success=True, data=ChatSessionListResponseData(sessions=[], total=0))
+
+    messages = (
+        db.query(Message)
+        .filter(Message.session_id.in_(session_ids))
+        .order_by(Message.created_at.asc(), Message.id.asc())
+        .all()
+    )
+
+    messages_by_session: dict[str, list[Message]] = {sid: [] for sid in session_ids}
+    for m in messages:
+        if m.session_id in messages_by_session:
+            messages_by_session[m.session_id].append(m)
+
+    items = []
+    has_dirty_titles = False
+    for s in sessions:
+        s_msgs = messages_by_session.get(s.id, [])
+        mem = s.memory_states or {}
+        custom_title = mem.get("title")
+        title_edited = mem.get("title_edited", False)
+
+        if title_edited and custom_title:
+            title = custom_title
+        elif custom_title and custom_title != "Cuộc trò chuyện mới":
+            title = custom_title
+        else:
+            title = extract_session_title(s_msgs)
+            # Chỉ lưu title khi đã lấy được nội dung thực (không lưu nếu vẫn là "Cuộc trò chuyện mới")
+            if title and title != "Cuộc trò chuyện mới":
+                mem_copy = dict(mem)
+                mem_copy["title"] = title
+                s.memory_states = mem_copy
+                flag_modified(s, "memory_states")
+                has_dirty_titles = True
+
+        last_msg = s_msgs[-1].content if s_msgs else None
+        created_at = s_msgs[0].created_at if s_msgs else utcnow()
+        updated_at = s_msgs[-1].created_at if s_msgs else created_at
+
+        items.append(
+            ChatSessionListItem(
+                session_id=s.id,
+                title=title,
+                last_message=last_msg,
+                created_at=created_at.isoformat() if created_at else utcnow().isoformat(),
+                updated_at=updated_at.isoformat() if updated_at else utcnow().isoformat(),
+                message_count=len(s_msgs),
+            )
+        )
+
+    if has_dirty_titles:
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+
+    items = [item for item in items if item.message_count > 0]
+    items.sort(key=lambda x: x.updated_at, reverse=True)
+    return ApiResponse(success=True, data=ChatSessionListResponseData(sessions=items, total=len(items)))
+
+
+@router.patch("/sessions/{session_id}", response_model=ApiResponse[dict])
+@router.patch("/chat/sessions/{session_id}", response_model=ApiResponse[dict], deprecated=True, include_in_schema=False)
+def update_chat_session_title(
+    session_id: str,
+    payload: UpdateSessionTitleRequest,
+    guest_session_id: str | None = Query(None),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    current_user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    """Đổi tên phiên trò chuyện. Kiểm tra quyền sở hữu chặt chẽ, trả 404 nếu không khớp."""
+    session = db.get(ChatSession, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+
+    if current_user:
+        if session.owner != f"user:{current_user.id}" and current_user.role != "STAFF":
+            raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+    else:
+        provided_guest = guest_session_id or x_session_id
+        expected_owner = f"guest:{provided_guest}" if provided_guest else None
+        if not provided_guest or session.owner != expected_owner:
+            raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+
+    new_title = payload.title.strip()
+    if not new_title:
+        raise HTTPException(status_code=400, detail="Tiêu đề cuộc trò chuyện không được để trống.")
+
+    memories = dict(session.memory_states or {})
+    memories["title"] = truncate_title(new_title, 50)
+    memories["title_edited"] = True  # Đánh dấu đã đổi thủ công để auto-title không bao giờ ghi đè
+    session.memory_states = memories
+    flag_modified(session, "memory_states")
+    db.commit()
+    return ApiResponse(success=True, data={"session_id": session_id, "title": memories["title"]})
+
+
+@router.delete("/sessions/{session_id}", response_model=ApiResponse[dict])
+@router.delete("/chat/sessions/{session_id}", response_model=ApiResponse[dict], deprecated=True, include_in_schema=False)
+def delete_chat_session(
+    session_id: str,
+    guest_session_id: str | None = Query(None),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    current_user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    """Xóa một phiên trò chuyện và các tin nhắn liên quan. Trả 404 nếu không tìm thấy hoặc không thuộc sở hữu."""
+    session = db.get(ChatSession, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+
+    if current_user:
+        if session.owner != f"user:{current_user.id}" and current_user.role != "STAFF":
+            raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+    else:
+        provided_guest = guest_session_id or x_session_id
+        expected_owner = f"guest:{provided_guest}" if provided_guest else None
+        if not provided_guest or session.owner != expected_owner:
+            raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+
+    db.query(Message).filter(Message.session_id == session_id).delete(synchronize_session=False)
+    db.query(ChatRequestRecord).filter(ChatRequestRecord.session_id == session_id).delete(synchronize_session=False)
+    db.delete(session)
+    db.commit()
+    return ApiResponse(success=True, data={"deleted_session_id": session_id})
+
+
+@router.delete("/sessions", response_model=ApiResponse[dict])
+@router.delete("/chat/sessions", response_model=ApiResponse[dict], deprecated=True, include_in_schema=False)
+def delete_all_chat_sessions(
+    guest_session_id: str | None = Query(None),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    current_user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    """Xóa toàn bộ lịch sử trò chuyện của người dùng hiện tại (chỉ xóa đúng owner hiện tại)."""
+    if current_user:
+        owner = f"user:{current_user.id}"
+        sessions = db.query(ChatSession).filter(ChatSession.owner == owner).all()
+    else:
+        provided_guest = guest_session_id or x_session_id
+        if not provided_guest:
+            raise HTTPException(status_code=400, detail="Thiếu thông tin phiên guest.")
+        owner = f"guest:{provided_guest}"
+        sessions = db.query(ChatSession).filter(ChatSession.owner == owner).all()
+
+    deleted_count = len(sessions)
+    session_ids = [s.id for s in sessions]
+    if session_ids:
+        db.query(Message).filter(Message.session_id.in_(session_ids)).delete(synchronize_session=False)
+        db.query(ChatRequestRecord).filter(ChatRequestRecord.session_id.in_(session_ids)).delete(synchronize_session=False)
+        for s in sessions:
+            db.delete(s)
+        db.commit()
+
+    return ApiResponse(success=True, data={"deleted_sessions_count": deleted_count})
+
 

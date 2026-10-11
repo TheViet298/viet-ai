@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from src.config import get_settings
 from src.db import get_db
-from src.models.db_models import Case, StaffAuditLog, User, UserRole, utcnow
+from src.models.db_models import Case, ChatSession, Message, StaffAuditLog, User, UserRole, utcnow
 from src.models.schemas import (
     ApiResponse,
     AuthResponseData,
@@ -81,49 +81,17 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
         db.refresh(user)
     _clear_login_failures(client_key)
 
-    # ── Claim Guest Cases khi đăng nhập (Audit vết rõ ràng, kiểm soát chặt IDOR) ──
+    # ── Claim Guest Cases & Sessions khi đăng nhập (Audit vết rõ ràng, kiểm soát chặt IDOR) ──
     raw_claim = (payload.guest_session_id or payload.session_id or request.headers.get("x-session-id") or "").strip()
-    # Kiểm tra entropy: 16-64 ký tự an toàn alphanumeric/hyphen/underscore VÀ tối thiểu 8 ký tự khác nhau (chống lặp chuỗi aaaaa... hay 1234567812345678)
-    is_valid_claim = bool(
-        raw_claim
-        and 16 <= len(raw_claim) <= 64
-        and len(set(raw_claim)) >= 8
-        and re.match(r"^[a-zA-Z0-9_\-]+$", raw_claim)
-    )
-    if is_valid_claim and user.role == UserRole.CUSTOMER.value:
-        cutoff_claim = utcnow() - timedelta(hours=72)
-        # Thao tác nguyên tử có điều kiện: UPDATE ... WHERE session_id = ? AND user_id IS NULL
-        # Ngăn chặn hoàn toàn race condition nếu có 2 request đăng nhập/claim gửi đến đồng thời
-        rows_claimed = (
-            db.query(Case)
-            .filter(
-                Case.session_id == raw_claim,
-                Case.user_id.is_(None),
-                Case.created_at >= cutoff_claim,
-            )
-            .update({"user_id": user.id}, synchronize_session=False)
-        )
-        if rows_claimed > 0:
-            claimed_cases = db.query(Case).filter(Case.session_id == raw_claim, Case.user_id == user.id).all()
-            for uc in claimed_cases:
-                db.add(
-                    StaffAuditLog(
-                        id=str(uuid.uuid4()),
-                        case_id=uc.id,
-                        staff_id=f"CUSTOMER_{user.id}",
-                        action="CLAIM_CASE",
-                        # Không in chi tiết session_id vào log để tránh lộ token của phiên
-                        notes=f"[AUTH_CLAIM] Khách hàng '{user.username}' liên kết quyền sở hữu hồ sơ từ phiên khách vãng lai hợp lệ.",
-                        created_at=utcnow(),
-                    )
-                )
-            db.commit()
+    claimed_count = _claim_guest_session_data(db, user, raw_claim)
+    db.commit()
 
     token = create_token(user.id, user.role)
     return ApiResponse(
         success=True,
         data=AuthResponseData(
             token=token,
+            claimed_sessions=claimed_count,
             user=UserOut(
                 id=user.id,
                 username=user.username,
@@ -138,10 +106,83 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
     )
 
 
+def _claim_guest_session_data(db: Session, user: User, raw_claim: str | None) -> int:
+    """
+    Gộp các hồ sơ case và chat session của đúng khách vãng lai (owner == guest:{raw_claim}) vào tài khoản.
+    Thực thi nguyên tử trong cùng transaction với login / register.
+    Bảo mật tuyệt đối: CHỈ gộp session đang có owner == guest:{raw_claim}, ngăn chặn hoàn toàn việc chiếm đoạt session của user khác.
+    """
+    if not raw_claim or user.role != UserRole.CUSTOMER.value:
+        return 0
+    raw_claim = raw_claim.strip()
+    # Kiểm tra entropy: tối thiểu 8 ký tự alphanumeric/hyphen/underscore
+    if not (8 <= len(raw_claim) <= 64 and re.match(r"^[a-zA-Z0-9_\-]+$", raw_claim)):
+        return 0
+
+    cutoff_claim = utcnow() - timedelta(hours=72)
+
+    # 1. Gộp ChatSession: CHỈ tìm các phiên có owner chính xác là guest:{raw_claim}
+    guest_owner_claim = f"guest:{raw_claim}"
+    guest_sessions = (
+        db.query(ChatSession)
+        .filter(ChatSession.owner == guest_owner_claim)
+        .all()
+    )
+    claimed_session_ids = [s.id for s in guest_sessions]
+
+    # Cập nhật quyền sở hữu các phiên guest đã xác thực
+    for s in guest_sessions:
+        s.owner = f"user:{user.id}"
+
+    # 2. Gộp Cases: CHỈ cập nhật Case có user_id IS NULL và session_id thuộc các session hợp lệ của đúng guest đó
+    target_case_session_ids = set(claimed_session_ids)
+    if raw_claim and not db.query(ChatSession).filter(ChatSession.id == raw_claim, ChatSession.owner.like("user:%")).first():
+        target_case_session_ids.add(raw_claim)
+
+    if target_case_session_ids:
+        claimed_cases = (
+            db.query(Case)
+            .filter(
+                Case.session_id.in_(target_case_session_ids),
+                Case.user_id.is_(None),
+                Case.created_at >= cutoff_claim,
+            )
+            .all()
+        )
+        for uc in claimed_cases:
+            uc.user_id = user.id
+            db.add(
+                StaffAuditLog(
+                    id=str(uuid.uuid4()),
+                    case_id=uc.id,
+                    staff_id=f"CUSTOMER_{user.id}",
+                    action="CLAIM_CASE",
+                    notes=f"[AUTH_CLAIM] Khách hàng '{user.username}' liên kết quyền sở hữu hồ sơ từ phiên khách vãng lai hợp lệ.",
+                    created_at=utcnow(),
+                )
+            )
+
+    # 3. Cập nhật Messages: CHỈ cập nhật tin nhắn trong các session đã được xác nhận là của guest
+    if claimed_session_ids:
+        claimed_messages = (
+            db.query(Message)
+            .filter(Message.session_id.in_(claimed_session_ids))
+            .all()
+        )
+        for m in claimed_messages:
+            meta = dict(m.msg_metadata or {})
+            if not meta.get("user_id"):
+                meta["user_id"] = user.id
+                m.msg_metadata = meta
+
+    return len(claimed_session_ids)
+
+
 @router.post("/register", response_model=ApiResponse[AuthResponseData])
-def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+def register(payload: RegisterRequest, request: Request, db: Session = Depends(get_db)):
     """
     Đăng ký tài khoản Customer mới (auth-and-rbac.md: Chỉ tạo Customer; không public register Staff).
+    Tự động gộp phiên guest vào tài khoản mới tạo trong cùng một transaction.
     """
     username = payload.username.strip()
     existing = db.query(User).filter(User.username == username).first()
@@ -164,6 +205,12 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         mock_customer_id=None,
     )
     db.add(new_user)
+    db.flush()
+
+    # Gộp session guest (nếu có) vào tài khoản mới tạo trong cùng transaction
+    raw_claim = (payload.guest_session_id or payload.session_id or request.headers.get("x-session-id") or "").strip()
+    claimed_count = _claim_guest_session_data(db, new_user, raw_claim)
+
     try:
         db.commit()
     except IntegrityError as exc:
@@ -176,6 +223,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         success=True,
         data=AuthResponseData(
             token=token,
+            claimed_sessions=claimed_count,
             user=UserOut(
                 id=new_user.id,
                 username=new_user.username,
