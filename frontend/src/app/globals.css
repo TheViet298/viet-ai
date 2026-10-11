@@ -59,11 +59,3 @@ body {
     transition: none;
   }
 }
-
-/* Triệt tiêu viền outline/focus-visible mặc định của trình duyệt */
-textarea:focus,
-textarea:focus-visible,
-input:focus,
-input:focus-visible {
-  outline: none !important;
-}

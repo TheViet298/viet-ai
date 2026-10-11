@@ -380,7 +380,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             ), error=None)
         if guest_count >= 5:
             logger.warning(f"[403 FORBIDDEN] Guest session='{payload.session_id}' reached limit: guest_count={guest_count} >= 5")
-            raise HTTPException(403, "Bạn đã sử dụng hết 5 lượt chat thử nghiệm. Vui lòng đăng nhập để tiếp tục.")
+            raise HTTPException(403, "Quý khách đã sử dụng hết 5 lượt chat thử nghiệm. Quý khách vui lòng đăng nhập để tiếp tục trải nghiệm ạ.")
     mock_cust_id = (current_user.mock_customer_id if current_user and current_user.mock_customer_id else
                     (ctx.mock_customer_id if ctx and ctx.mock_customer_id else f"GUEST_{(payload.guest_session_id or '')[:8]}"))
     previous_context = {}
@@ -1286,9 +1286,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
 
         if is_capabilities:
             greeting_reply = (
-                "Chào bạn! Tôi có thể hỗ trợ tìm hiểu xe VinFast, tra cứu bảo hành và bảo dưỡng, "
+                "Chào Quý khách! Em có thể hỗ trợ tìm hiểu xe VinFast, tra cứu bảo hành và bảo dưỡng, "
                 "hướng dẫn về sạc và ứng dụng, tiếp nhận sự cố kỹ thuật hoặc khiếu nại, "
-                "và theo dõi hồ sơ hỗ trợ. Bạn muốn được hỗ trợ nội dung nào?"
+                "và theo dõi hồ sơ hỗ trợ. Quý khách cần em hỗ trợ nội dung nào ạ?"
             )
         elif short_name:
             full_lower = customer_name.lower()
@@ -1305,9 +1305,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             if title:
                 greeting_reply = f"Chào {title} {short_name}! Em giúp gì được cho {title} hôm nay ạ?"
             else:
-                greeting_reply = f"Chào {short_name}! Em giúp gì được cho bạn hôm nay ạ?"
+                greeting_reply = f"Chào {short_name}! Em giúp gì được cho Quý khách hôm nay ạ?"
         else:
-            greeting_reply = "Chào bạn! Em là Trợ lý VF Serv. Em có thể hỗ trợ gì cho bạn hôm nay ạ?"
+            greeting_reply = "Chào Quý khách! Em là Trợ lý VFServ. Em có thể hỗ trợ gì cho Quý khách hôm nay ạ?"
 
         suggested_replies = [
             "Tư vấn xe",

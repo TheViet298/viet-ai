@@ -372,7 +372,7 @@ export function LandingPage() {
           setArticles(res.data.articles);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     // RBAC: Chỉ truy xuất và hiển thị hồ sơ cá nhân khi vai trò là CUSTOMER đã đăng nhập (Guest không có thẻ này)
     if (role === "CUSTOMER" && user) {
@@ -475,7 +475,7 @@ export function LandingPage() {
         sessionStorage.setItem("vf_initial_image", imagePreview);
         sessionStorage.setItem("vf_initial_image_name", imageName || "anh_canh_bao.jpg");
       }
-    } catch {}
+    } catch { }
 
     const queryParams = new URLSearchParams();
     if (textToSend) queryParams.set("prompt", textToSend);
@@ -647,9 +647,8 @@ export function LandingPage() {
 
           {/* Gợi ý cuộn xuống (Tự ẩn khi cuộn) */}
           <div
-            className={`pt-6 transition-all duration-300 ${
-              hasScrolled ? "opacity-0 pointer-events-none translate-y-2" : "opacity-100"
-            }`}
+            className={`pt-6 transition-all duration-300 ${hasScrolled ? "opacity-0 pointer-events-none translate-y-2" : "opacity-100"
+              }`}
           >
             <a
               href="#issue-categories"
@@ -819,13 +818,12 @@ export function LandingPage() {
                       ].map((st) => (
                         <div key={st.step} className="flex flex-col items-center">
                           <div
-                            className={`h-6 w-full rounded-md flex items-center justify-center text-[10px] font-bold transition ${
-                              st.done
+                            className={`h-6 w-full rounded-md flex items-center justify-center text-[10px] font-bold transition ${st.done
                                 ? "bg-emerald-500 text-white"
                                 : st.current
-                                ? "bg-[#1E40AF] text-white ring-2 ring-blue-100"
-                                : "bg-slate-100 text-slate-400"
-                            }`}
+                                  ? "bg-[#1E40AF] text-white ring-2 ring-blue-100"
+                                  : "bg-slate-100 text-slate-400"
+                              }`}
                           >
                             {st.done ? "✓" : st.step}
                           </div>
@@ -973,11 +971,10 @@ export function LandingPage() {
                   key={c.id}
                   type="button"
                   onClick={() => setSelectedArticleCategory(c.id)}
-                  className={`px-3 py-1 rounded-lg text-[12px] font-medium transition ${
-                    selectedArticleCategory === c.id
+                  className={`px-3 py-1 rounded-lg text-[12px] font-medium transition ${selectedArticleCategory === c.id
                       ? "bg-[#1E40AF] text-white font-semibold shadow-2xs"
                       : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-                  }`}
+                    }`}
                 >
                   {c.label}
                 </button>
@@ -1087,7 +1084,7 @@ export function LandingPage() {
               Sẵn sàng đồng hành cùng bạn trên mọi nẻo đường
             </h2>
             <p className="mx-auto max-w-lg text-[13.5px] text-slate-300 leading-relaxed">
-              Trợ lý VF Serv AI túc trực 24/7 để tiếp nhận, hỗ trợ và kết nối kỹ thuật viên giải quyết sự cố tức thời.
+              Trợ lý VFServ AI túc trực 24/7 để tiếp nhận, hỗ trợ và kết nối kỹ thuật viên giải quyết sự cố tức thời.
             </p>
           </div>
 
@@ -1121,11 +1118,10 @@ export function LandingPage() {
           {/* Màn hình lớn (Desktop / Tablet >= sm): Bong bóng góc dưới phải */}
           <aside
             aria-label="Thông báo hồ sơ đang xử lý"
-            className={`hidden sm:block fixed bottom-6 right-6 z-40 transition-all duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none ${
-              isBubbleMounted
+            className={`hidden sm:block fixed bottom-6 right-6 z-40 transition-all duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none ${isBubbleMounted
                 ? "opacity-100 translate-y-0 translate-x-0"
                 : "opacity-0 translate-y-4 translate-x-2 pointer-events-none"
-            }`}
+              }`}
           >
             {isCaseBubbleExpanded ? (
               /* Thẻ mở rộng rút gọn đúng 2 dòng, cả thẻ bấm được */
@@ -1218,11 +1214,10 @@ export function LandingPage() {
           {/* Màn hình hẹp (< sm / Mobile): Thanh mỏng cố định phía dưới, không dùng thẻ nổi che màn hình */}
           <aside
             aria-label="Hồ sơ đang xử lý trên di động"
-            className={`sm:hidden fixed bottom-0 left-0 right-0 z-40 border-t px-3.5 py-2 backdrop-blur-md shadow-[0_-4px_16px_rgba(0,0,0,0.06)] transition-all duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none ${bubbleConfig.mobileClass} ${
-              isBubbleMounted
+            className={`sm:hidden fixed bottom-0 left-0 right-0 z-40 border-t px-3.5 py-2 backdrop-blur-md shadow-[0_-4px_16px_rgba(0,0,0,0.06)] transition-all duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none ${bubbleConfig.mobileClass} ${isBubbleMounted
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-full pointer-events-none"
-            }`}
+              }`}
           >
             <Link
               href="/track-case"
