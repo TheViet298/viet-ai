@@ -60,7 +60,7 @@ export async function sendChatMessage(params: {
       "Content-Type": "application/json",
       ...authHeaders,
     },
-    signal: typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(8000) : undefined,
+    signal: typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(30000) : undefined,
     body: JSON.stringify({
       request_id: params.requestId,
       session_id: params.sessionId,
