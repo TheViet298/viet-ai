@@ -2,6 +2,8 @@
 import asyncio
 import hashlib
 import json
+import logging
+import time
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 from weakref import WeakValueDictionary
@@ -10,13 +12,18 @@ from fastapi import HTTPException
 from sqlalchemy import or_, update
 from sqlalchemy.exc import IntegrityError
 
-from src.models.db_models import Case, ChatRequestRecord, ChatSession, Message
+from src.agents.guardrails import sanitize_pii
+from src.models.db_models import Case, CaseBrief, ChatRequestRecord, ChatSession, Message
 from src.models.schemas import ApiResponse, ChatResponseData, EmergencyContext
 from src.services.application_memory import accept_application_memory
 from src.services.chat_cases import resolve_authorized_active_case
+from src.services.conversation_context import ConversationContext, apply_turn, understand_turn
+from src.services.conversation_progress import derive_progress
+from src.services.observability import observation
 from src.services.session_store import encode_state, get_store
 
 _LOCKS: WeakValueDictionary = WeakValueDictionary()
+logger = logging.getLogger("chat_turns")
 
 
 def safety_fields(case: Case) -> dict:
@@ -34,6 +41,8 @@ def session_emergency_context(db, owner_id: str, session_id: str) -> EmergencyCo
 
 
 async def run_chat_turn(payload, user, db, handler):
+    if not user and not payload.guest_session_id:
+        payload = payload.model_copy(update={'guest_session_id': payload.session_id})
     owner = f'user:{user.id}' if user else f'guest:{payload.guest_session_id}'
     lock = _LOCKS.setdefault((str(db.get_bind().url), payload.session_id), asyncio.Lock())
     async with lock:
@@ -49,7 +58,12 @@ async def run_chat_turn(payload, user, db, handler):
                 db.rollback()
                 session = db.get(ChatSession, payload.session_id)
         if session.owner != owner:
-            raise HTTPException(403, 'Phiên hội thoại không thuộc khách hàng này.')
+            if session.owner and (session.owner.startswith('guest:') or session.owner == 'guest:None'):
+                session.owner = owner
+                db.commit()
+            else:
+                logger.warning(f"[403 FORBIDDEN] session.owner mismatch: db_owner='{session.owner}', request_owner='{owner}', session_id='{payload.session_id}'")
+                raise HTTPException(403, f'Phiên hội thoại không thuộc khách hàng này (owner={session.owner}).')
         request_key = hashlib.sha256(f'{owner}:{payload.request_id}'.encode()).hexdigest() if payload.request_id else None
         fingerprint = hashlib.sha256(json.dumps(payload.model_dump(), sort_keys=True, ensure_ascii=False).encode()).hexdigest()
         record = db.get(ChatRequestRecord, request_key) if request_key else None
@@ -78,6 +92,15 @@ async def run_chat_turn(payload, user, db, handler):
                     if legacy:
                         session.memory_states = {**(session.memory_states or {}), payload.session_id: json.loads(encode_state(legacy))}
             before_turn = (session.memory_states or {}).get(payload.session_id, {}).get('turn', 0)
+            snapshot = (session.memory_states or {}).get(payload.session_id, {})
+            conversation = ConversationContext.model_validate(snapshot.get('conversation_context') or {})
+            from src.config import get_settings
+            budget = {'deadline': time.monotonic() + get_settings().agent_turn_timeout_s, 'attempts': 0}
+            recent = [{'role': m.get('type'), 'content': str(m.get('data', {}).get('content', ''))[:400]}
+                      for m in snapshot.get('messages', [])[-4:]]
+            turn = await understand_turn(sanitize_pii(payload.message)[0], conversation, recent, budget)
+            conversation = apply_turn(conversation, turn, before_turn + 1)
+            db.info['conversation_turn'] = {'context': conversation.model_dump(), 'understanding': turn.model_dump(), 'budget': budget}
             response = await handler(payload, user, db)
             data = response.data
             if data.case_id and not user:
@@ -109,11 +132,30 @@ async def run_chat_turn(payload, user, db, handler):
                     meta['vehicle_context'] = context
                     latest.msg_metadata = meta
                 accept_application_memory(session, payload.session_id, latest.content, data, context, before_turn)
+            stored = (session.memory_states or {}).get(payload.session_id, {})
+            case = db.get(Case, data.case_id) if data.case_id else None
+            brief = db.query(CaseBrief).filter_by(case_id=case.id).first() if case else None
+            case_snapshot = {'id': case.id, 'status': case.status,
+                             'facts': dict(brief.captured_fields or {}) if brief else {}} if case else None
+            progress = derive_progress(conversation, {}, case_snapshot, None)
+            conversation.pending_question = {'slots': progress.missing_fields, 'purpose': progress.next_action}
+            claims = db.info.pop('conversation_claims', [])
+            if claims:
+                conversation.last_answer = [*conversation.last_answer, {'turn': before_turn + 1, 'claims': claims}][-3:]
+            session.memory_states = {**(session.memory_states or {}), payload.session_id: {
+                **stored, 'conversation_context': conversation.model_dump(), 'turn_understanding': turn.model_dump(),
+                'conversation_progress': progress.model_dump(),
+                'conversation_retrieval': db.info.pop('conversation_retrieval', {}),
+                'conversation_route': db.info.pop('conversation_route', None) or (
+                    'safety' if turn.move == 'new_incident' and data.priority == 'CRITICAL' else
+                    'incident' if conversation.active_goal == 'incident' else data.response_type),
+            }}
             released = db.execute(update(ChatSession).where(ChatSession.id == payload.session_id, ChatSession.lease_token == token)
                                   .values(lease_token=None, lease_until=None), execution_options={'synchronize_session': False})
             if released.rowcount != 1:
                 raise HTTPException(409, 'Phiên đã thay đổi trong lúc xử lý. Vui lòng thử lại.')
-            db.commit()
+            with observation('business.persist'):
+                db.commit()
             return response
         except BaseException:
             db.info.pop('chat_turn_customer_id', None)
@@ -122,3 +164,8 @@ async def run_chat_turn(payload, user, db, handler):
                        .values(lease_token=None, lease_until=None), execution_options={'synchronize_session': False})
             db.commit()
             raise
+        finally:
+            db.info.pop('conversation_turn', None)
+            db.info.pop('conversation_claims', None)
+            db.info.pop('conversation_retrieval', None)
+            db.info.pop('conversation_route', None)

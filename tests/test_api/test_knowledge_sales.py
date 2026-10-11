@@ -4,6 +4,66 @@ pytest_plugins = ["tests.test_api.test_customer_chat_regressions"]
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("followup", [
+    "Sao không có giá chính xác?",
+    "Sao không có giá lăn bánh?",
+    "Tại sao không báo giá cụ thể?",
+    "Vì sao chưa đưa ra giá chính xác?",
+])
+async def test_price_followup_explains_uncertainty_in_same_session(client, customer_db, monkeypatch, followup):
+    from src.agents.nodes import rag_node as node
+
+    calls = []
+
+    async def missing(query, vehicle_model=None):
+        calls.append(query)
+        return {"status": "NO_SOURCE", "citations": [], "diagnostics": {"category": "no_eligible_evidence"}}
+
+    monkeypatch.setattr(node, "vinfast_manual_search", missing)
+    first = await client.post("/api/v1/customer/chat", json={
+        "session_id": "vf8-price-followup", "message": "Giá lăn bánh của xe VF8 là bao nhiêu?",
+    })
+    assert first.status_code == 200
+    second = await client.post("/api/v1/customer/chat", json={
+        "session_id": "vf8-price-followup", "message": followup,
+    })
+    assert second.status_code == 200
+    data = second.json()["data"]
+    reply = data["message"]
+    assert reply != first.json()["data"]["message"]
+    assert "VF8" in reply
+    for reason in ("phiên bản", "mua pin", "thuê pin", "nếu còn áp dụng", "đăng ký", "showroom", "thời điểm mua"):
+        assert reason in reply
+    assert 'chưa có nguồn giá bán công bố đã xác minh' in reply
+    assert 'chi-phi-lan-banh' in reply
+    assert len(calls) == 2
+    assert data["response_type"] == "FAQ_ANSWER"
+    assert data["case_id"] is None
+    assert not data["citations"]
+    assert not data["show_emergency_banner"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("question", ["Tại sao VF8 không giảm giá?", "Tại sao VF8 không có giá ưu đãi?"])
+async def test_discount_question_still_retrieves_sales_evidence(client, customer_db, monkeypatch, question):
+    from src.agents.nodes import rag_node as node
+
+    calls = []
+
+    async def missing(query, vehicle_model=None):
+        calls.append(query)
+        return {"status": "NO_SOURCE", "citations": [], "diagnostics": {"category": "no_eligible_evidence"}}
+
+    monkeypatch.setattr(node, "vinfast_manual_search", missing)
+    response = await client.post("/api/v1/customer/chat", json={
+        "session_id": "vf8-discount", "message": question,
+    })
+    assert response.status_code == 200
+    assert len(calls) == 1
+    assert "chưa đủ thông tin" not in response.json()["data"]["message"]
+
+
+@pytest.mark.asyncio
 async def test_multi_topic_sales_answers_every_part_without_fixed_vf8_filter(client, customer_db, monkeypatch):
     from src.agents.nodes import rag_node as node
     calls = []

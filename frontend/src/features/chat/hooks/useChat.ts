@@ -4,8 +4,22 @@ import { useState, useEffect, useRef } from "react";
 import { ChatMessage } from "../types";
 import { sendChatMessage, getCaseStatus, acknowledgeCaseSafety, getSessionHistory } from "../api/chatApi";
 
+function getAuthOwner(): string {
+  if (typeof window === "undefined") return "guest";
+  try {
+    const auth = localStorage.getItem("vf_serviceflow_auth");
+    if (auth) {
+      const parsed = JSON.parse(auth);
+      if (parsed?.id) return `user_${parsed.id}`;
+    }
+    const token = localStorage.getItem("vf_access_token");
+    if (token) return `token_${token.slice(-8)}`;
+  } catch {}
+  return "guest";
+}
+
 function storageKey(kind = "case") {
-  return typeof window === "undefined" ? null : `vf_chat_${kind}:${localStorage.getItem("vf_customer_token") || "guest"}`;
+  return typeof window === "undefined" ? null : `vf_chat_${kind}:${getAuthOwner()}`;
 }
 
 function storedCaseId(): string | null {
@@ -335,12 +349,26 @@ export function useChat(context?: ChatUserContext | string) {
         // 3. AI trả lời xuất hiện sau khi suy nghĩ xong
         setMessages((prev) => [...prev, agentMsg]);
       }
-    } catch {
+    } catch (err: any) {
       if (generation !== conversationGeneration.current) return;
+      let errorContent = "Chưa nhận được phản hồi từ hệ thống. Anh/chị vui lòng gửi lại câu hỏi sau ít phút. Lượt gửi này chưa xác nhận tạo hồ sơ hoặc thông báo cứu hộ.";
+      if (err?.message) {
+        try {
+          const match = err.message.match(/Chat API error \(\d+\): (.*)/);
+          if (match && match[1]) {
+            const parsed = JSON.parse(match[1]);
+            if (parsed.detail) {
+              errorContent = parsed.detail;
+            }
+          }
+        } catch {
+          // Keep default message if parsing fails
+        }
+      }
       const errorMsg: ChatMessage = {
         id: `error_${Date.now()}`,
         sender: "AGENT",
-        content: "Chưa nhận được phản hồi từ hệ thống. Anh/chị vui lòng gửi lại câu hỏi sau ít phút. Lượt gửi này chưa xác nhận tạo hồ sơ hoặc thông báo cứu hộ.",
+        content: errorContent,
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, errorMsg]);

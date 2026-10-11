@@ -532,7 +532,7 @@ Khi chạy lệnh nạp dữ liệu mẫu, hệ thống sẽ tự động tạo 
 
 | Tên đăng nhập | Mật khẩu | Vai trò | Mục đích sử dụng |
 | :--- | :--- | :--- | :--- |
-| `staff@vinfast.vn` | `staff123` | **STAFF** | Truy cập Console điều phối, xem ticket queue, dashboard, routing directory, duyệt HITL actions |
+| `staff@vinfast.vn` | `STAFF_SEED_PASSWORD` (mặc định: `VinFast@ServiceFlow2026!Sec`) | **STAFF** | Truy cập Console điều phối, xem ticket queue, dashboard, routing directory, duyệt HITL actions |
 | `customer@vinfast.vn` | `customer123` | **CUSTOMER** | Đóng vai khách hàng Demo 01 (`CUST_MOCK_01`), sở hữu Case 001 (Metropolis), 002 (Cao tốc), 003 (Sạc chậm) |
 | `customer2@vinfast.vn` | `customer123` | **CUSTOMER** | Đóng vai khách hàng Demo 02 (`CUST_MOCK_02`), sở hữu Case 004 đã giải quyết |
 

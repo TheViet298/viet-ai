@@ -8,6 +8,10 @@
 
 ## 1. Trạng thái Máy hữu hạn của Agent (Agent State Machine)
 
+> **Sơ đồ Trực quan Chính thức:**
+> - [Activity Tổng thể MVP Main (Khách hàng — AI LangGraph — Nhân viên)](Activity%20diagram%20system.jpg)
+> - [Sơ đồ Một lượt Hội thoại Khách hàng](serviceflow-customer-activity.png)
+
 Agent hoạt động theo quy trình tuần tự có kiểm soát chặt chẽ:
 
 ```text

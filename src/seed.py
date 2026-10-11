@@ -17,6 +17,7 @@ if hasattr(sys.stdout, "reconfigure"):
         pass
 
 from src.db import Base, SessionLocal, engine
+from src.config import get_settings
 from src.models.db_models import (
     Attachment,
     AttachmentStatus,
@@ -43,10 +44,24 @@ from src.services.auth import hash_password
 
 
 def seed_database() -> None:
+    if get_settings().app_env == "production":
+        raise RuntimeError("Demo seed data is disabled in production")
     # Đảm bảo các bảng SQLite đã được khởi tạo
     Base.metadata.create_all(bind=engine)
 
     reset = "--reset" in sys.argv
+    if reset and "--yes" not in sys.argv:
+        if sys.stdin.isatty():
+            confirm = input("[CẢNH BÁO] Thao tác này sẽ xóa sạch toàn bộ DB và seed lại từ đầu. Tiếp tục? (y/N): ")
+            if confirm.strip().lower() not in ("y", "yes"):
+                print("[seed] Đã hủy thao tác reset.")
+                return
+        else:
+            raise RuntimeError("Yêu cầu thêm cờ '--yes' khi chạy '--reset' trong môi trường script (python -m src.seed --reset --yes).")
+
+    settings = get_settings()
+    staff_pwd = settings.staff_seed_password or "VinFast@ServiceFlow2026!Sec"
+
     with SessionLocal() as db:
         if reset:
             for model in (
@@ -64,19 +79,22 @@ def seed_database() -> None:
             db.commit()
             print("[seed] Đã xóa toàn bộ dữ liệu cũ.")
         elif db.query(Case).count() > 0:
-            print("[seed] DB đã có dữ liệu. Sử dụng flag --reset nếu muốn seed lại.")
+            print("[seed] DB đã có dữ liệu. Sử dụng flag '--reset --yes' nếu muốn seed lại.")
             return
 
         now = datetime.now(UTC)
 
         # ======================================================================
-        # 0. TÀI KHOẢN NGƯỜI DÙNG DEMO (auth-and-rbac.md & ADR-004)
+        # 0. TÀI KHOẢN NGƯỜI DÙNG THỰC (auth-and-rbac.md & ADR-004)
         # ======================================================================
         user_staff = User(
             id="STAFF_001",
             username="staff@vinfast.vn",
-            password_hash=hash_password("staff123"),
+            password_hash=hash_password(staff_pwd),
             role=UserRole.STAFF.value,
+            full_name="Cố vấn Dịch vụ VinFast",
+            phone="1900232389",
+            vehicle_model=None,
             mock_customer_id=None,
             created_at=now - timedelta(days=30),
         )
@@ -85,6 +103,9 @@ def seed_database() -> None:
             username="customer@vinfast.vn",
             password_hash=hash_password("customer123"),
             role=UserRole.CUSTOMER.value,
+            full_name="Nguyễn Văn Tuấn",
+            phone="0912345678",
+            vehicle_model="VF8",
             mock_customer_id="CUST_MOCK_01",
             created_at=now - timedelta(days=10),
         )
@@ -93,6 +114,9 @@ def seed_database() -> None:
             username="customer2@vinfast.vn",
             password_hash=hash_password("customer123"),
             role=UserRole.CUSTOMER.value,
+            full_name="Trần Thị Mai",
+            phone="0987654321",
+            vehicle_model="VF5",
             mock_customer_id="CUST_MOCK_02",
             created_at=now - timedelta(days=5),
         )

@@ -2,21 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShieldAlert, ArrowLeft, KeyRound, Lock, UserCheck, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { ShieldAlert, ArrowLeft, KeyRound, Lock } from "lucide-react";
 import { useAuth } from "@/features/shared";
 
 export function StaffGuardGate() {
   const router = useRouter();
-  const { role, loginAs } = useAuth();
-
-  const handleDemoStaffLogin = () => {
-    // 1-Click Demo Login với tài khoản seed KTV chính thức
-    loginAs("STAFF", {
-      id: "STAFF_01",
-      name: "Lê Hoàng Quân (KTV)",
-      email: "quan.lh@vinfast.vn",
-    });
-  };
+  const { role } = useAuth();
 
   const returnHref = role === "CUSTOMER" ? "/track-case" : "/";
   const returnLabel = role === "CUSTOMER" ? "Quay lại Trung tâm hỗ trợ" : "Quay lại Trang chủ";
@@ -52,15 +44,13 @@ export function StaffGuardGate() {
 
         {/* Action Buttons */}
         <div className="space-y-3 pt-2">
-          {/* Nút 1: Đăng nhập Staff Demo 1-Click */}
-          <button
-            type="button"
-            onClick={handleDemoStaffLogin}
+          <Link
+            href="/login"
             className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] px-4 py-3 text-[13px] font-semibold text-white shadow-md transition-all group"
           >
             <KeyRound className="w-4 h-4 text-[#A5B4FC] group-hover:rotate-12 transition-transform" />
-            <span>Đăng nhập Staff Demo (KTV Lê Hoàng Quân)</span>
-          </button>
+            <span>Đăng nhập Tài khoản Điều phối (Staff)</span>
+          </Link>
 
           {/* Nút 2: Quay lại trang phù hợp */}
           <Link
@@ -72,12 +62,9 @@ export function StaffGuardGate() {
           </Link>
         </div>
 
-        {/* Secondary link */}
-        <div className="pt-2 border-t border-[#F1F5F9] text-[11px] text-[#94A3B8]">
-          Bạn có tài khoản chuyên viên riêng?{" "}
-          <Link href="/login" className="text-[#1E40AF] font-semibold hover:underline">
-            Đăng nhập bằng form
-          </Link>
+        {/* Secondary note */}
+        <div className="pt-2 border-t border-[#F1F5F9] text-[11px] text-[#64748B]">
+          Liên hệ quản trị viên nội bộ VinFast nếu bạn chưa được cấp quyền truy cập.
         </div>
       </div>
     </div>

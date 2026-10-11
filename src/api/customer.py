@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import uuid
@@ -36,6 +37,7 @@ from src.models.db_models import (
     StaffAuditLog,
     TicketStatus,
     User,
+    UserRole,
     utcnow,
 )
 from src.models.schemas import (
@@ -75,8 +77,10 @@ from src.services.chat_cases import (
     resolve_authorized_active_case,
     upsert_case_brief,
 )
-from src.services.chat_classification import classify_chat_context
+from src.services.chat_classification import classify_chat_context, normalized
 from src.services.chat_turns import run_chat_turn, safety_fields, session_emergency_context
+from src.services.conversation_context import ConversationContext, TurnUnderstanding
+from src.services.conversation_progress import build_reply_constraints, derive_progress, progress_reply
 from src.services.dashboard_conversation import (
     DASHBOARD_CHOICES,
     DASHBOARD_SAFE_GUIDANCE,
@@ -101,10 +105,13 @@ from src.services.exterior_conversation import (
 )
 from src.services.image_routing import classify_vehicle_image
 from src.services.knowledge_questions import answer_sales_question, sales_parts
+from src.services.observability import observation, trace_endpoint, update_trace_identity
 from src.services.vehicle_context import resolve_vehicle_context
 from src.services.vehicle_knowledge import is_general_vehicle_question
 from src.services.vehicle_vision_service import recognize_vehicle_model
 from src.services.vision.cardd_runtime import analyze_exterior_image
+
+logger = logging.getLogger("customer_api")
 
 
 def to_iso(dt: datetime | None) -> str:
@@ -130,12 +137,23 @@ def generate_attachment_id(db: Session) -> str:
     return f"{prefix}{count + 1:03d}"
 
 
+def elevate_priority_one_level(current_priority: str | None) -> str:
+    """Nâng ưu tiên lên 1 bậc khi khách mở lại ca (LOW -> MEDIUM -> HIGH -> CRITICAL)."""
+    p = (current_priority or "LOW").upper()
+    if p == Priority.LOW.value:
+        return Priority.MEDIUM.value
+    elif p == Priority.MEDIUM.value:
+        return Priority.HIGH.value
+    return Priority.CRITICAL.value
+
+
 # ==============================================================================
 # 1. ATTACHMENT UPLOAD API — Nguồn: api-contract.md 1.1 & ADR-004
 # ==============================================================================
 
 
 @router.post("/attachments", response_model=ApiResponse[AttachmentOut])
+@trace_endpoint('p142.upload')
 async def upload_attachment(
     file: UploadFile = File(...),
     image_kind: Literal["auto", "dashboard", "exterior"] = Form("dashboard"),
@@ -147,6 +165,7 @@ async def upload_attachment(
     Lưu trữ file tại đường dẫn riêng tư (private storage), trích xuất tín hiệu sơ bộ qua OCR/Vision.
     Cảnh báo: Khách hàng không tải VIN, biển số xe, khuôn mặt hoặc giấy tờ cá nhân.
     """
+    update_trace_identity(session_id=None, user_id=current_user.id)
     settings = get_settings()
     att_id = f"ATT-{uuid.uuid4().hex}"
     storage_path = f"data/attachments/{att_id}.png"
@@ -206,8 +225,9 @@ async def upload_attachment(
         created_at=utcnow(),
     )
     db.add(attachment)
-    db.commit()
-    db.refresh(attachment)
+    with observation('attachment.persist'):
+        db.commit()
+        db.refresh(attachment)
 
     return ApiResponse(
         success=True,
@@ -304,6 +324,7 @@ def determine_incident_clarification_prompt(
 
 
 @router.post("/chat", response_model=ApiResponse[ChatResponseData])
+@trace_endpoint('p142.chat.customer')
 async def customer_chat(
     payload: CustomerChatRequest,
     current_user: User | None = Depends(get_optional_user),
@@ -322,6 +343,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     - Sinh Case Brief và lưu vết vào Database SQLite
     - Guest trial: giới hạn 5 lượt/phiên, trả remaining_guest_messages
     """
+    if current_user and current_user.role != UserRole.CUSTOMER.value:
+        logger.warning(f"[403 FORBIDDEN] User {current_user.id} role '{current_user.role}' is not CUSTOMER")
+        raise HTTPException(status_code=403, detail="Customer account required")
+
     text = sanitize_pii(payload.message.strip())[0]
     lower_text = text.lower()
     ctx = payload.client_context
@@ -334,12 +359,13 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     remaining_guest_msgs: int | None = None
     if not current_user:
         if not payload.guest_session_id:
-            raise HTTPException(401, "Vui lòng đăng nhập hoặc cung cấp guest_session_id.")
+            payload = payload.model_copy(update={"guest_session_id": payload.session_id})
         guest_count = db.query(func.count(Message.id)).filter(
             (Message.session_id == payload.guest_session_id) | (Message.session_id == payload.session_id),
             Message.sender_type == SenderType.CUSTOMER.value,
         ).scalar() or 0
         remaining_guest_msgs = max(0, 5 - guest_count - 1)
+        logger.info(f"[CHAT TRACE] Guest session='{payload.session_id}', guest_count={guest_count}, remaining={remaining_guest_msgs}")
         if classification.is_critical:
             reply = EMERGENCY_SAFE_GUIDANCE + " Vui lòng đăng nhập để tạo và theo dõi hồ sơ hỗ trợ."
             emergency_message = Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='CUSTOMER', content=text,
@@ -353,6 +379,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 show_emergency_banner=True, request_location=True, remaining_guest_messages=remaining_guest_msgs,
             ), error=None)
         if guest_count >= 5:
+            logger.warning(f"[403 FORBIDDEN] Guest session='{payload.session_id}' reached limit: guest_count={guest_count} >= 5")
             raise HTTPException(403, "Bạn đã sử dụng hết 5 lượt chat thử nghiệm. Vui lòng đăng nhập để tiếp tục.")
     mock_cust_id = (current_user.mock_customer_id if current_user and current_user.mock_customer_id else
                     (ctx.mock_customer_id if ctx and ctx.mock_customer_id else f"GUEST_{(payload.guest_session_id or '')[:8]}"))
@@ -371,6 +398,16 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             exterior_image_context = metadata.get("exterior_image_context", {})
             break
     vehicle_context = resolve_vehicle_context(text, previous_context)
+    understood = db.info.get('conversation_turn') or {}
+    conversation = ConversationContext.model_validate(understood.get('context') or {})
+    turn_understanding = TurnUnderstanding.model_validate(understood.get('understanding') or {
+        'original_text': text, 'resolved_query': text,
+    })
+    if (turn_understanding.move in {'correct', 'verify_claim'} and conversation.active_goal != 'incident'
+            and not classification.is_critical):
+        vehicle_context['is_incident'] = False
+    if conversation.subject and not vehicle_context['models'] and turn_understanding.move != 'new_incident':
+        vehicle_context['models'] = [conversation.subject]
     if vehicle_context.get('scope_changed') or ('incident_case_id' in previous_context and vehicle_context['is_incident']):
         bound_case_id = vehicle_context.get('incident_case_id')
         active_case = resolve_authorized_active_case(db, current_user, payload.session_id, bound_case_id, payload.guest_session_id) if bound_case_id else None
@@ -379,11 +416,15 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     vehicle_model = vehicle_context.get("incident_model") if vehicle_context["is_incident"] else (
         vehicle_context["models"][0] if len(vehicle_context["models"]) == 1 else None
     )
-    # Compatibility for clients explicitly supplying a model, never a server default.
+    # Compatibility for clients explicitly supplying a model, or authenticated customer model, never a server default.
     if not vehicle_model and ctx and ctx.vehicle_model and len(vehicle_context["models"]) < 2:
         vehicle_model = ctx.vehicle_model
-    vehicle_code = ctx.vehicle_code_mock if ctx else None
+    elif not vehicle_model and current_user and current_user.vehicle_model:
+        vehicle_model = current_user.vehicle_model
+    vehicle_code = (ctx.vehicle_code_mock if ctx else None) or "VF-SF-00231"
     resolved_text = vehicle_context["resolved_query"]
+    if conversation.active_goal and turn_understanding.move not in {'new_incident', 'new_question'}:
+        resolved_text = turn_understanding.resolved_query
     vehicle_label = vehicle_model or "chưa xác định dòng"
 
     if active_case:
@@ -648,6 +689,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 user_id=user_id,
                 session_id=payload.session_id,
                 mock_customer_id=mock_cust_id,
+                mock_customer_name=current_user.full_name if current_user and current_user.full_name else None,
+                mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=vehicle_model,
                 intent=Intent.SERVICE_INCIDENT.value,
@@ -1083,6 +1126,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 user_id=user_id,
                 session_id=payload.session_id,
                 mock_customer_id=mock_cust_id,
+                mock_customer_name=current_user.full_name if current_user and current_user.full_name else None,
+                mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=vehicle_model,
                 intent=Intent.COMPLAINT_FEEDBACK.value,
@@ -1197,17 +1242,55 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     elif classification.request_kind == "incident":
         is_technical_incident = True
 
+    if not classification.is_critical and not payload.attachment_ids:
+        case_snapshot = None
+        if active_case:
+            brief = db.query(CaseBrief).filter_by(case_id=active_case.id).first()
+            case_snapshot = {'id': active_case.id, 'status': active_case.status,
+                             'facts': dict(brief.captured_fields or {}) if brief else {}}
+        progress = derive_progress(conversation, {}, case_snapshot, None)
+        reply_constraints = build_reply_constraints(turn_understanding, conversation, progress)
+        reply = progress_reply(turn_understanding, conversation, progress, case_snapshot)
+        if reply:
+            db.info['conversation_route'] = 'progress'
+            db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
+                           sender_type=SenderType.AGENT.value, content=reply, created_at=reply_created_at,
+                           msg_metadata={'user_id': user_id, 'response_type': 'FAQ_ANSWER'}))
+            db.flush()
+            return ApiResponse(success=True, data=ChatResponseData(
+                response_type='FAQ_ANSWER', message=reply, case_id=active_case_id,
+                remaining_guest_messages=remaining_guest_msgs,
+            ), error=None)
+        if conversation.active_goal in {'quote', 'test_drive', 'maintenance', 'warranty', 'range', 'charging', 'capacity', 'concept'}:
+            is_technical_incident = False
+
     # --------------------------------------------------------------------------
     # NHÓM A: CHÀO HỎI & GIAO TIẾP XÃ GIAO (GREETINGS)
     # --------------------------------------------------------------------------
-    greeting_keywords = ["xin chào", "chào em", "chào bạn", "chào bot", "chào trợ lý", "hello", "hi vinfast", "chào", "hi"]
-    is_greeting = any(lower_text == kw or lower_text.startswith(f"{kw} ") for kw in greeting_keywords) and not is_technical_incident
+    intro_text = re.sub(r"\s+", " ", normalized(text)).strip()
+    greeting_pattern = r"^(?:xin chao(?: ban|em|bot|tro ly)?|chao(?: ban|em|bot|tro ly)?|hello|hi(?: vinfast)?)\b[\s,.!?;:]*"
+    greeting = re.match(greeting_pattern, intro_text)
+    question = intro_text[greeting.end():] if greeting else intro_text
+    question = question.strip(" .,!?:;")
+    is_greeting = bool(greeting) and not question and not is_technical_incident
+    is_capabilities = not is_technical_incident and bool(re.fullmatch(
+        r"(?:(?:ban|em|bot|tro ly) )?(?:co the )?"
+        r"(?:(?:ho tro|giup)(?: toi|minh|khach hang)? (?:nhung gi|gi|duoc gi)"
+        r"(?: cho (?:toi|minh|khach hang))?|"
+        r"lam (?:duoc )?(?:nhung )?gi|co (?:nhung )?chuc nang (?:gi|nao))", question,
+    ))
 
-    if is_greeting:
+    if is_greeting or is_capabilities:
         customer_name = payload.client_context.customer_name if payload.client_context else None
         short_name = customer_name.strip().split()[-1] if (customer_name and customer_name.strip()) else None
 
-        if short_name:
+        if is_capabilities:
+            greeting_reply = (
+                "Chào bạn! Tôi có thể hỗ trợ tìm hiểu xe VinFast, tra cứu bảo hành và bảo dưỡng, "
+                "hướng dẫn về sạc và ứng dụng, tiếp nhận sự cố kỹ thuật hoặc khiếu nại, "
+                "và theo dõi hồ sơ hỗ trợ. Bạn muốn được hỗ trợ nội dung nào?"
+            )
+        elif short_name:
             full_lower = customer_name.lower()
             is_female = "thị" in full_lower or any(
                 short_name.lower() == fn
@@ -1238,7 +1321,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             session_id=payload.session_id,
             sender_type=SenderType.AGENT.value,
             content=greeting_reply,
-            msg_metadata={"type": "GREETING", "suggested_replies": suggested_replies},
+            msg_metadata={"type": "CAPABILITIES" if is_capabilities else "GREETING", "suggested_replies": suggested_replies},
         )
         db.add(agent_msg)
         if active_case:
@@ -1262,6 +1345,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     # NHÓM B: TƯ VẤN BÁN HÀNG, LÁI THỬ & GIÁ XE (SALES & SERVICES)
     # --------------------------------------------------------------------------
     knowledge_parts = sales_parts(resolved_text, vehicle_model) if not is_technical_incident else []
+    if conversation.active_goal and conversation.active_goal not in {'quote', 'test_drive'} and turn_understanding.move != 'new_question':
+        knowledge_parts = []
 
     # --------------------------------------------------------------------------
     # NHÓM B2: BIỂU TƯỢNG RÙA VÀNG TRÊN XE HIỆN TẠI (ACTIVE TURTLE ON VEHICLE)
@@ -1360,8 +1445,13 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             None if len(models_in_question) > 1 else vehicle_model
         )
         if knowledge_parts:
-            ai_res = await answer_sales_question(resolved_text, knowledge_model, payload.session_id)
+            db.info['conversation_route'] = 'sales'
+            ai_res = await answer_sales_question(resolved_text, knowledge_model, payload.session_id,
+                                                conversation_context=conversation.model_dump(),
+                                                turn_understanding=turn_understanding.model_dump(),
+                                                llm_budget=understood.get('budget'))
         else:
+            db.info['conversation_route'] = 'knowledge'
             ai_res = await process_chat_message(
                 resolved_text, session_id=payload.session_id,
                 user_role="customer" if current_user else "guest",
@@ -1372,6 +1462,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                     "vehicle_model": knowledge_model,
                     "vehicle_context": vehicle_context,
                     "original_user_message": text,
+                    "conversation_context": conversation.model_dump(),
+                    "turn_understanding": turn_understanding.model_dump(),
+                    "llm_budget": understood.get('budget'),
+                    "reply_constraints": reply_constraints if not payload.attachment_ids else {},
                     "reset_faq_context": bool(history and "citations" not in (history[0].msg_metadata or {})),
                 },
             )
@@ -1380,6 +1474,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             "quản lý tình trạng xe và đặt lịch dịch vụ trực tiếp trên Ứng dụng VinFast.\n\n"
             "Anh/chị cần em hỗ trợ thao tác cụ thể nào không ạ?"
         )
+        db.info['conversation_claims'] = ai_res.get('answer_claims', [])
+        db.info['conversation_retrieval'] = ai_res.get('retrieval_diagnostics', {})
         if isinstance(agent_reply, list):
             agent_reply = "".join(
                 b.get("text", "") if isinstance(b, dict) else getattr(b, "text", str(b))
@@ -1388,7 +1484,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         elif not isinstance(agent_reply, str):
             agent_reply = str(agent_reply)
         agent_reply = clean_case_references(agent_reply, active_case_id)
-        if ai_res.get("is_no_source") and not knowledge_parts:
+        if (ai_res.get("is_no_source") and not knowledge_parts
+                and turn_understanding.move not in {'elaborate', 'ask_status', 'ask_next_step', 'verify_claim'}):
             diag = ai_res.get("retrieval_diagnostics") or {}
             diag_cat = diag.get("category")
             diag_stage = diag.get("stage")
@@ -1565,6 +1662,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 user_id=user_id,
                 session_id=payload.session_id,
                 mock_customer_id=mock_cust_id,
+                mock_customer_name=current_user.full_name if current_user and current_user.full_name else None,
+                mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=car_model,
                 intent=target_intent,
@@ -1669,10 +1768,12 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             db.add(case_brief)
 
             safe_guidance = "Anh/chị vui lòng giữ xe ở vị trí đỗ an toàn, bật đèn cảnh báo nguy hiểm và theo dõi cập nhật trên giao diện này."
+            soc_display = f"{current_soc}%" if current_soc and not str(current_soc).endswith("%") else (current_soc or "chưa rõ")
             agent_reply = (
-                f"Dạ VinFast đã ghi nhận sự cố vận hành của xe {car_label}:\n"
-                f"Tình trạng: Cảnh báo rùa vàng, xe chạy yếu (Mức pin: {current_soc or '18%'})\n"
-                f"Trạng thái: Khách hàng đã dừng đỗ ở vị trí an toàn\n\n"
+                f"Dạ VinFast đã ghi nhận sự cố vận hành của xe {car_label}:\n\n"
+                f"- **Tình trạng:** Cảnh báo rùa vàng, xe chạy yếu\n"
+                f"- **Mức pin:** {soc_display}\n"
+                f"- **Trạng thái:** Anh/chị đã dừng đỗ ở vị trí an toàn\n\n"
                 f"Hệ thống đã tự động tạo hồ sơ hỗ trợ (Mã: {case.id}) và chuyển dữ liệu trực tiếp tới Đội ngũ Kỹ thuật Dịch vụ VinFast. "
                 f"Anh/chị vui lòng theo dõi cập nhật tiến độ giải quyết trực tiếp trên màn hình này ạ."
             )
@@ -1788,6 +1889,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             user_id=user_id,
             session_id=payload.session_id,
             mock_customer_id=mock_cust_id,
+            mock_customer_name=current_user.full_name if current_user and current_user.full_name else None,
+            mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
             vehicle_code_mock=vehicle_code,
             vehicle_model=car_model,
             intent=Intent.SERVICE_INCIDENT.value,
@@ -2063,7 +2166,7 @@ def confirm_customer_case_resolution(
             action=StaffAction.CLOSE.value,
             previous_state={"status": prev_status},
             new_state={"status": TicketStatus.CLOSED.value},
-            notes=f"Khách hàng xác nhận đã được hỗ trợ thỏa đáng. {payload.feedback_note or ''}".strip(),
+            notes=f"[ACTOR: CUSTOMER] Khách hàng ({current_user.full_name or current_user.username}) xác nhận đã được hỗ trợ thỏa đáng. {payload.feedback_note or ''}".strip(),
             created_at=utcnow(),
         )
         db.add(audit)
@@ -2071,7 +2174,7 @@ def confirm_customer_case_resolution(
         update = CaseUpdate(
             id=str(uuid.uuid4()),
             case_id=case.id,
-            author_type=AuthorType.SYSTEM.value,
+            author_type=AuthorType.CUSTOMER.value,
             status_after_update=TicketStatus.CLOSED.value,
             customer_message="Cảm ơn quý khách đã xác nhận. Hồ sơ sự cố đã được đóng thành công.",
             next_step="Cảm ơn quý khách đã tin tưởng và đồng hành cùng VinFast.",
@@ -2094,7 +2197,13 @@ def confirm_customer_case_resolution(
     else:
         prev_status = case.status
         case.status = TicketStatus.REOPENED.value
+        case.priority = elevate_priority_one_level(case.priority)
         case.updated_at = utcnow()
+
+        if case.brief:
+            fields = dict(case.brief.captured_fields or {})
+            fields["reopen_reason"] = payload.feedback_note or "Khách hàng báo chưa được khắc phục triệt để"
+            case.brief.captured_fields = fields
 
         audit = StaffAuditLog(
             id=str(uuid.uuid4()),
@@ -2103,7 +2212,7 @@ def confirm_customer_case_resolution(
             action=StaffAction.REOPEN.value,
             previous_state={"status": prev_status},
             new_state={"status": TicketStatus.REOPENED.value},
-            notes=f"Khách hàng báo vẫn chưa được giải quyết xong: {payload.feedback_note or ''}".strip(),
+            notes=f"[ACTOR: CUSTOMER] Khách hàng báo vẫn chưa được giải quyết xong: {payload.feedback_note or ''}".strip(),
             created_at=utcnow(),
         )
         db.add(audit)
@@ -2111,7 +2220,7 @@ def confirm_customer_case_resolution(
         update = CaseUpdate(
             id=str(uuid.uuid4()),
             case_id=case.id,
-            author_type=AuthorType.SYSTEM.value,
+            author_type=AuthorType.CUSTOMER.value,
             status_after_update=TicketStatus.REOPENED.value,
             customer_message="Hệ thống ghi nhận sự cố chưa được khắc phục hoàn toàn và đã chuyển lại hồ sơ sang hàng đợi chuyên viên kỹ thuật.",
             next_step="Chuyên viên dịch vụ sẽ liên hệ lại quý khách trong thời gian sớm nhất.",
@@ -2150,6 +2259,8 @@ def handle_customer_action(
     case = db.get(Case, case_id)
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
+    if current_user and current_user.role != UserRole.CUSTOMER.value:
+        raise HTTPException(status_code=403, detail="Customer account required")
     check_case_ownership(case, current_user, session_id=x_session_id)
 
     actor_id = current_user.id if current_user else f"SESSION_{x_session_id or 'GUEST'}"
@@ -2209,7 +2320,13 @@ def handle_customer_action(
     elif payload.action == "REOPEN":
         prev_status = case.status
         case.status = TicketStatus.REOPENED.value
+        case.priority = elevate_priority_one_level(case.priority)
         case.updated_at = utcnow()
+
+        if case.brief:
+            fields = dict(case.brief.captured_fields or {})
+            fields["reopen_reason"] = payload.reason or payload.feedback_note or "Khách hàng yêu cầu kiểm tra lại"
+            case.brief.captured_fields = fields
 
         audit = StaffAuditLog(
             id=str(uuid.uuid4()),
@@ -2461,6 +2578,9 @@ def get_customer_case_status(
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
 
+    if current_user and current_user.role != UserRole.CUSTOMER.value:
+        raise HTTPException(status_code=403, detail="Customer account required")
+
     check_case_ownership(case, current_user, session_id=x_session_id)
 
     status_descriptions = {
@@ -2484,8 +2604,9 @@ def get_customer_case_status(
     )
     cust_msg = latest_update.customer_message if latest_update else status_desc
 
+    user_id = current_user.id if current_user else None
     data = CustomerCaseStatusData(
-        emergency_context=session_emergency_context(db, current_user.id, case.session_id),
+        emergency_context=session_emergency_context(db, user_id, case.session_id),
         case_id=case.id,
         priority=case.priority,
         **safety_fields(case),
@@ -2565,41 +2686,103 @@ def reopen_customer_case(
     )
 
 
-@router.post("/cases/{case_id}/feedback", response_model=ApiResponse[CustomerFeedbackResponseData])
-def submit_customer_feedback(
-    case_id: str,
+def _handle_submit_feedback(
+    target_case_id: str,
     payload: CustomerFeedbackPayload,
-    current_user: User = Depends(require_customer),
-    db: Session = Depends(get_db),
-):
-    """
-    Khách hàng gửi đánh giá và nhận xét sau khi xử lý hồ sơ theo api-contract.md Mục 2.3.
-    """
-    case = db.get(Case, case_id)
+    current_user: User | None,
+    x_session_id: str | None,
+    db: Session,
+) -> ApiResponse[CustomerFeedbackResponseData]:
+    if not target_case_id:
+        raise HTTPException(status_code=400, detail="Mã hồ sơ (case_id) không được để trống.")
+
+    case = db.get(Case, target_case_id)
     if not case:
-        raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {target_case_id}")
 
-    check_case_ownership(case, current_user)
+    # Kiểm tra quyền sở hữu chặt chẽ: chỉ chủ sở hữu tài khoản hoặc guest session tạo ca mới có quyền đánh giá
+    check_case_ownership(case, current_user, session_id=x_session_id)
 
-    feedback = CustomerFeedback(
-        id=str(uuid.uuid4()),
-        case_id=case.id,
-        rating=payload.rating,
-        comment=payload.comment,
-        created_at=utcnow(),
-    )
-    db.add(feedback)
-    db.commit()
+    if case.status not in (TicketStatus.RESOLVED.value, TicketStatus.CLOSED.value):
+        raise HTTPException(
+            status_code=409,
+            detail=f"Hồ sơ ở trạng thái '{case.status}' chưa thể đánh giá dịch vụ. Chỉ có thể đánh giá khi ca đã được giải quyết (Resolved) hoặc đóng (Closed).",
+        )
+
+    # Ràng buộc Unique / Upsert: Nếu khách đã gửi feedback trước đó thì cập nhật
+    existing = db.query(CustomerFeedback).filter(CustomerFeedback.case_id == case.id).first()
+    if existing:
+        # Giới hạn thời gian cho phép chỉnh sửa: tối đa 7 ngày kể từ lần gửi đầu
+        if existing.created_at:
+            created_ts = existing.created_at.replace(tzinfo=UTC) if existing.created_at.tzinfo is None else existing.created_at
+            if (utcnow() - created_ts) > timedelta(days=7):
+                raise HTTPException(
+                    status_code=409,
+                    detail="Đã quá thời hạn 7 ngày cho phép chỉnh sửa đánh giá dịch vụ.",
+                )
+        existing.rating = payload.rating
+        existing.comment = payload.comment
+        existing.reason_tags = payload.reason_tags
+        existing.updated_at = utcnow()
+        db.commit()
+        feedback_id = existing.id
+    else:
+        now_ts = utcnow()
+        feedback = CustomerFeedback(
+            id=str(uuid.uuid4()),
+            case_id=case.id,
+            rating=payload.rating,
+            comment=payload.comment,
+            reason_tags=payload.reason_tags,
+            created_at=now_ts,
+            updated_at=now_ts,
+        )
+        db.add(feedback)
+        db.commit()
+        feedback_id = feedback.id
 
     return ApiResponse(
         success=True,
         data=CustomerFeedbackResponseData(
             success=True,
-            feedback_id=feedback.id,
+            feedback_id=feedback_id,
             case_id=case.id,
+            rating=payload.rating,
+            reason_tags=payload.reason_tags,
         ),
         error=None,
     )
+
+
+@router.post("/cases/{case_id}/feedback", response_model=ApiResponse[CustomerFeedbackResponseData])
+def submit_customer_feedback(
+    case_id: str,
+    payload: CustomerFeedbackPayload,
+    current_user: User | None = Depends(get_optional_user),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    db: Session = Depends(get_db),
+):
+    """
+    Khách hàng gửi đánh giá và nhận xét sau khi xử lý hồ sơ theo api-contract.md Mục 2.3.
+    Hỗ trợ cả người dùng đã đăng nhập hoặc khách vãng lai (qua header X-Session-Id).
+    """
+    return _handle_submit_feedback(case_id, payload, current_user, x_session_id, db)
+
+
+@router.post("/feedback", response_model=ApiResponse[CustomerFeedbackResponseData])
+def submit_customer_feedback_alias(
+    payload: CustomerFeedbackPayload,
+    current_user: User | None = Depends(get_optional_user),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    db: Session = Depends(get_db),
+):
+    """
+    Endpoint alias: Nhận đánh giá dịch vụ với case_id truyền trong body.
+    Bắt buộc kiểm tra quyền sở hữu như endpoint chính.
+    """
+    if not payload.case_id:
+        raise HTTPException(status_code=400, detail="Trường 'case_id' trong nội dung gửi là bắt buộc.")
+    return _handle_submit_feedback(payload.case_id, payload, current_user, x_session_id, db)
 
 
 @router.post("/cases/{case_id}/safety-acknowledgement", response_model=ApiResponse[SafetyAcknowledgementData])
@@ -2611,7 +2794,7 @@ def acknowledge_safety(case_id: str, payload: SafetyAcknowledgementPayload,
     check_case_ownership(case, current_user)
     if case.incident_version != payload.incident_version:
         raise HTTPException(409, "Tình trạng sự cố đã thay đổi. Vui lòng tải lại.")
-    if case.priority != "CRITICAL" or case.status in {"Closed", "Resolved"}:
+    if case.priority not in {"CRITICAL", "HIGH"} or case.status in {"Closed", "Resolved"}:
         raise HTTPException(409, "Hồ sơ không có cảnh báo khẩn cấp đang mở.")
     changed = db.execute(update(Case).where(Case.id == case_id,
         Case.incident_version == payload.incident_version, Case.safety_status == "unconfirmed")

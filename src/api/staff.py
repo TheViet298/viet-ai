@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
@@ -38,6 +38,7 @@ from src.models.schemas import (
     TicketQueueData,
 )
 from src.services.auth import require_staff
+from src.services.case_lifecycle import AUTO_CLOSE_HOURS, process_auto_close_expired_cases
 from src.services.chat_turns import safety_fields
 
 
@@ -165,13 +166,22 @@ def get_ticket_queue(
     Lấy danh sách Ticket trong hàng đợi Service Agent Console theo api-contract.md Mục 3.1.
     RBAC: Chỉ nhân viên (Staff) mới có quyền truy cập.
     """
-    query = db.query(Case).options(joinedload(Case.brief), joinedload(Case.messages))
+    query = db.query(Case).options(
+        joinedload(Case.brief),
+        joinedload(Case.messages),
+        joinedload(Case.user),
+        joinedload(Case.feedback),
+        joinedload(Case.audit_logs),
+    )
 
     if status and status != "ALL":
         query = query.filter(Case.status == status)
 
     if priority and priority != "ALL":
         query = query.filter(Case.priority == priority.upper())
+
+    # ── Auto-close Rule: Các ca Resolved quá 72h khách không phản hồi tự động đóng ──
+    process_auto_close_expired_cases(db, AUTO_CLOSE_HOURS)
 
     cases = query.order_by(Case.created_at.desc()).all()
 
@@ -201,11 +211,25 @@ def get_ticket_queue(
                 trimmed = cust_msg.strip().replace("\n", " ")
                 summary = (trimmed[:60] + "...") if len(trimmed) > 60 else trimmed
 
+        cust_name = (c.user.full_name if c.user and c.user.full_name else None) or c.mock_customer_name or None
+        cust_phone = (c.user.phone if c.user and c.user.phone else None) or c.mock_customer_phone or None
+        raw_cust_id = c.mock_customer_id or f"CUST_{c.id}"
+        clean_cust_id = raw_cust_id.replace("CUST_MOCK_", "VF-CUST-") if "CUST_MOCK_" in raw_cust_id else raw_cust_id
+
+        fb_score: int | None = c.feedback[0].rating if c.feedback else None
+        fb_comment: str | None = c.feedback[0].comment if c.feedback else None
+        fb_tags: list[str] = (c.feedback[0].reason_tags if (c.feedback and c.feedback[0].reason_tags) else [])
+        is_auto = (c.status == TicketStatus.CLOSED.value) and any(
+            getattr(a, "staff_id", None) == "SYSTEM_AUTO_CLOSE" for a in (c.audit_logs or [])
+        )
+
         items.append(
             TicketItem(
                 id=c.id,
-                mock_customer_id=c.mock_customer_id or f"CUST_{c.id}",
-                vehicle_model=c.vehicle_model or "Chưa xác định",
+                mock_customer_id=clean_cust_id,
+                customer_name=cust_name,
+                customer_phone=cust_phone,
+                vehicle_model=c.vehicle_model or (c.user.vehicle_model if c.user else None) or "VF8",
                 vehicle_code_mock=c.vehicle_code_mock,
                 intent=c.intent,
                 priority=c.priority,
@@ -217,6 +241,12 @@ def get_ticket_queue(
                 suggested_action=suggested,
                 has_location_consent=has_loc,
                 error_code_short=err_code,
+                safety_status=c.safety_status,
+                safety_acknowledged_at=to_iso(c.safety_acknowledged_at) if c.safety_acknowledged_at else None,
+                customer_feedback_score=fb_score,
+                customer_feedback_comment=fb_comment,
+                customer_feedback_tags=fb_tags,
+                is_auto_closed=is_auto,
             )
         )
 
@@ -245,6 +275,7 @@ def get_ticket_detail(
             joinedload(Case.updates),
             joinedload(Case.messages),
             joinedload(Case.attachments),
+            joinedload(Case.user),
         )
         .filter(Case.id == case_id)
         .first()
@@ -341,15 +372,22 @@ def get_ticket_detail(
                 )
             )
 
+    cust_name = (case.user.full_name if case.user and case.user.full_name else None) or case.mock_customer_name or None
+    cust_phone = (case.user.phone if case.user and case.user.phone else None) or case.mock_customer_phone or None
+    raw_cust_id = case.mock_customer_id or f"CUST_{case.id}"
+    clean_cust_id = raw_cust_id.replace("CUST_MOCK_", "VF-CUST-") if "CUST_MOCK_" in raw_cust_id else raw_cust_id
+
     return ApiResponse(
         success=True,
         data=TicketDetailData(
             case=TicketDetailCase(
                 **safety_fields(case),
                 id=case.id,
-                mock_customer_id=case.mock_customer_id or f"CUST_{case.id}",
+                mock_customer_id=clean_cust_id,
+                customer_name=cust_name,
+                customer_phone=cust_phone,
                 vehicle_code_mock=case.vehicle_code_mock,
-                vehicle_model=case.vehicle_model or "Chưa xác định",
+                vehicle_model=case.vehicle_model or (case.user.vehicle_model if case.user else None) or "VF8",
                 intent=case.intent,
                 priority=case.priority,
                 status=case.status,
@@ -452,10 +490,15 @@ def handle_staff_action(
     }
 
     # Ghi nhận Audit Log
+    staff_display_id = (
+        payload.staff_id
+        if (payload.staff_id and not payload.staff_id.startswith("STAFF_LE_HOANG_QUAN"))
+        else (current_user.full_name or current_user.username)
+    )
     audit_entry = StaffAuditLog(
         id=str(uuid.uuid4()),
         case_id=case.id,
-        staff_id=payload.staff_id or current_user.username,
+        staff_id=staff_display_id,
         action=payload.action,
         previous_state=previous_state,
         new_state=new_state,
@@ -490,6 +533,19 @@ def handle_staff_action(
             customer_message=payload.notes
             or "Chuyên viên kỹ thuật đã tiếp nhận hồ sơ và đang triển khai phương án xử lý.",
             next_step="Đang phối hợp bộ phận chuyên trách xử lý.",
+            awaiting_customer_confirmation=False,
+            created_at=utcnow(),
+        )
+        db.add(case_update)
+    elif payload.action == StaffAction.REQUEST_INFO.value:
+        case_update = CaseUpdate(
+            id=str(uuid.uuid4()),
+            case_id=case.id,
+            author_type=AuthorType.STAFF.value,
+            status_after_update=TicketStatus.NEEDS_INFORMATION.value,
+            customer_message=payload.notes
+            or "Chuyên viên kỹ thuật cần Quý khách bổ sung thêm thông tin về sự cố.",
+            next_step="Vui lòng cung cấp thêm hình ảnh hoặc mô tả chi tiết tại khung chat.",
             awaiting_customer_confirmation=False,
             created_at=utcnow(),
         )

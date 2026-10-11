@@ -11,6 +11,7 @@ from src.agents.context_manager import build_7_layer_context, load_prompt, trim_
 from src.agents.state import AgentState
 from src.config import get_settings
 from src.services.tracer import record_trace_step, sanitized_snapshot
+from src.services.observability import observation, current_trace_id
 
 T = TypeVar("T", bound=BaseModel)
 _circuits: dict[str, dict] = {}
@@ -18,8 +19,8 @@ _circuits: dict[str, dict] = {}
 
 def circuit_key() -> str:
     s = get_settings()
-    key = s.openai_api_key if (s.model_name.startswith("gpt") or s.openai_api_key) else s.google_api_key
-    return sha256((str(key) + str(getattr(s, "model_name", "model"))).encode()).hexdigest()
+    key_val = s.openai_api_key or s.google_api_key or ""
+    return sha256((str(key_val) + str(getattr(s, "model_name", "model"))).encode()).hexdigest()
 
 
 def open_circuit() -> None:
@@ -45,6 +46,8 @@ def classify_provider_error(error: Exception) -> str:
 def record_outcome(state: AgentState, prompt: str, decision: str, usage: dict | None = None, parsed=None) -> None:
     usage = usage or {}
     state["last_llm_outcome"] = decision
+    with observation('llm.outcome', metadata={'outcome': decision, 'prompt_name': prompt}):
+        pass
     try:
         record_trace_step(
             state.get("session_id", "unspecified"), state.get("turn", 0), "llm", prompt, decision,
@@ -55,12 +58,11 @@ def record_outcome(state: AgentState, prompt: str, decision: str, usage: dict | 
         pass
 
 
-async def structured_call(state: AgentState, prompt: str, schema: type[T]) -> T | None:
+async def structured_call(state: AgentState, prompt: str, schema: type[T], *, callbacks=None) -> T | None:
     """Optional online generation; deterministic, safe fallback when unavailable."""
     settings = get_settings()
-    is_openai = bool(settings.model_name and settings.model_name.lower().startswith("gpt")) or bool(settings.openai_api_key)
-    has_api_key = bool(settings.openai_api_key) if is_openai else bool(settings.google_api_key)
-    if not has_api_key or not settings.agent_llm_enabled:
+    has_key = bool(settings.openai_api_key or settings.google_api_key)
+    if not has_key or not settings.agent_llm_enabled:
         return None
     budget = state.setdefault("llm_budget", {"deadline": time.monotonic() + settings.agent_turn_timeout_s, "attempts": 0})
     remaining = budget["deadline"] - time.monotonic()
@@ -88,7 +90,9 @@ async def structured_call(state: AgentState, prompt: str, schema: type[T]) -> T 
             record_outcome(state, prompt, "context_budget_exceeded")
             return None
         result = await asyncio.wait_for(
-            get_llm().with_structured_output(schema, include_raw=True).ainvoke(messages), timeout=min(remaining, settings.agent_llm_timeout_s)
+            get_llm().with_structured_output(schema, include_raw=True).ainvoke(
+                messages, **({'config': {'callbacks': callbacks}} if callbacks is not None else {})
+            ), timeout=min(remaining, settings.agent_llm_timeout_s)
         )
         raw = result.get("raw")
         usage = getattr(raw, "usage_metadata", None) or {}

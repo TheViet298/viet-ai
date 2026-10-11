@@ -1,0 +1,11 @@
+[
+  {"id": "price-control", "topic": "Giá lăn bánh (đối chứng)", "first": "Giá lăn bánh của xe VF8 là bao nhiêu?", "followup": "Sao không có giá chính xác?"},
+  {"id": "warranty", "topic": "Bảo hành xe", "first": "Xe VF8 được bảo hành bao lâu?", "followup": "Sao không có thời hạn bảo hành chính xác?"},
+  {"id": "battery-warranty", "topic": "Bảo hành pin", "first": "Pin cao áp VF8 được bảo hành bao lâu?", "followup": "Sao không có thời hạn bảo hành pin chính xác?"},
+  {"id": "charging-time", "topic": "Thời gian sạc", "first": "Sạc VF8 từ 10% lên 80% mất bao lâu?", "followup": "Sao không có thời gian sạc chính xác?"},
+  {"id": "range", "topic": "Quãng đường sau sạc", "first": "VF8 sạc đầy đi được bao nhiêu km?", "followup": "Sao không có quãng đường chính xác?"},
+  {"id": "battery-capacity", "topic": "Dung lượng pin", "first": "Dung lượng pin VF8 là bao nhiêu kWh?", "followup": "Sao không có dung lượng pin chính xác?"},
+  {"id": "test-drive", "topic": "Đăng ký lái thử", "first": "Tôi muốn đăng ký lái thử VF8 tại Hà Nội, có lịch nào?", "followup": "Sao không có lịch lái thử cụ thể?"},
+  {"id": "maintenance", "topic": "Lịch bảo dưỡng", "first": "VF8 cần bảo dưỡng sau bao nhiêu km?", "followup": "Sao không có mốc bảo dưỡng chính xác?"},
+  {"id": "concept", "topic": "Khái niệm SOH", "first": "SOH là gì?", "followup": "Sao chưa giải thích rõ SOH được tính như thế nào?"}
+]

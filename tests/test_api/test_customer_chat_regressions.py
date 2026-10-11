@@ -25,6 +25,73 @@ def customer_db(tmp_path):
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("message", [
+    "Chào bạn, bạn có thể hỗ trợ tôi những gì?",
+    "Chào bạn có thể hỗ trợ tôi những gì?",
+    "Bạn có thể hỗ trợ tôi những gì?",
+    "Bạn làm được gì?",
+    "Bạn có thể làm những gì?",
+    "Bạn có thể giúp gì cho tôi?",
+    "Chào bạn, bạn có thể hỗ trợ những gì cho tôi?",
+    "Xin chào! Bạn có những chức năng nào?",
+    "chao ban, ban co the ho tro toi nhung gi?",
+])
+async def test_capabilities_answer_question_without_llm(client, customer_db, monkeypatch, message):
+    import src.api.customer as api
+
+    async def unexpected_llm(*args, **kwargs):
+        pytest.fail("Capabilities should not require LLM generation")
+
+    monkeypatch.setattr(api, "process_chat_message", unexpected_llm)
+    response = await client.post("/api/v1/customer/chat", json={"session_id": "capabilities", "message": message})
+    assert response.status_code == 200
+    data = response.json()["data"]
+    for topic in ["VinFast", "bảo hành", "bảo dưỡng", "sạc", "ứng dụng", "sự cố", "khiếu nại", "hồ sơ"]:
+        assert topic in data["message"]
+    assert data["case_id"] is None
+    assert data["response_type"] == "FAQ_ANSWER"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("message", ["Chào bạn!", "Xin chào.", "Hello!"])
+async def test_pure_greeting_still_greets(client, customer_db, message):
+    response = await client.post("/api/v1/customer/chat", json={"session_id": "pure-greeting", "message": message})
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert "Chào" in data["message"]
+    assert data["case_id"] is None
+
+
+@pytest.mark.asyncio
+async def test_greeting_with_question_reaches_question_handler(client, customer_db, monkeypatch):
+    import src.api.customer as api
+    calls = []
+
+    async def faq(text, **kwargs):
+        calls.append(text)
+        return {"reply": "Thông tin bảo hành từ luồng FAQ", "citations": [], "is_no_source": False}
+
+    monkeypatch.setattr(api, "process_chat_message", faq)
+    message = "Chào bạn, thời hạn bảo hành VF8 là bao lâu?"
+    response = await client.post("/api/v1/customer/chat", json={"session_id": "greet-question", "message": message})
+    assert response.status_code == 200
+    assert calls == [message]
+    assert "Thông tin bảo hành" in response.json()["data"]["message"]
+
+
+@pytest.mark.asyncio
+async def test_emergency_with_greeting_and_capabilities_is_prioritized(client, customer_db):
+    response = await client.post("/api/v1/customer/chat", json={
+        "session_id": "greet-emergency", "message": "Chào bạn, bạn có thể hỗ trợ gì? Xe tôi đang bốc khói.",
+    })
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["priority"] == "CRITICAL"
+    assert data["show_emergency_banner"] is True
+    assert data["case_id"]
+
+
+@pytest.mark.asyncio
 async def test_faq_does_not_consume_two_incident_clarifications(client, customer_db, monkeypatch):
     import src.api.customer as api
     async def faq(*args, **kwargs):

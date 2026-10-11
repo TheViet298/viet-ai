@@ -3,6 +3,8 @@ fastapi>=0.115.0
 uvicorn[standard]>=0.34.0
 pydantic>=2.10.0
 pydantic-settings>=2.7.0
+PyJWT>=2.10,<3
+argon2-cffi>=23.1
 python-dotenv>=1.0.0
 python-multipart>=0.0.18
 Pillow>=11,<13
@@ -27,4 +29,4 @@ pytest>=8.0.0
 pytest-asyncio>=0.24.0
 httpx>=0.28.0
 beautifulsoup4>=4.12,<5
-# Optional cloud tracing: pip install langfuse>=3,<4
+langfuse==3.15.0

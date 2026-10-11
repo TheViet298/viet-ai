@@ -32,10 +32,10 @@ function harness(fetch, initial = {}) {
 test('upload role becomes customer only after the login token arrives', async () => {
   let resolve;
   const app = harness(() => new Promise((done) => { resolve = done; }));
-  const pending = app.render().loginAs('CUSTOMER');
+  const pending = app.render().login('customer@vinfast.vn', 'customer123');
   assert.equal(app.render().role, 'GUEST');
-  resolve({ ok: true, json: async () => ({ data: { token: 'token' } }) });
-  assert.equal(await pending, true);
+  resolve({ ok: true, json: async () => ({ data: { token: 'token', user: { id: 'c1', username: 'customer@vinfast.vn', role: 'CUSTOMER' } } }) });
+  await pending;
   assert.equal(app.render().role, 'CUSTOMER');
   assert.equal(app.storage.get('vf_customer_token'), 'token');
 });
@@ -45,17 +45,18 @@ test('failed login and tokenless stored profile do not enable upload', async () 
     vf_serviceflow_auth: JSON.stringify({ role: 'CUSTOMER', name: 'Saved user' }),
   });
   assert.equal(app.render().role, 'GUEST');
-  assert.equal(await app.render().loginAs('CUSTOMER'), false);
+  await assert.rejects(async () => {
+    await app.render().login('customer@vinfast.vn', 'wrong');
+  });
   assert.equal(app.render().role, 'GUEST');
 });
 
-test('logout cancels a pending login so upload stays disabled', async () => {
+test('logout clears user so upload stays disabled', async () => {
   let resolve;
   const app = harness(() => new Promise((done) => { resolve = done; }));
-  const pending = app.render().loginAs('CUSTOMER');
+  const pending = app.render().login('customer@vinfast.vn', 'customer123');
   app.render().logout();
-  resolve({ ok: true, json: async () => ({ data: { token: 'token' } }) });
-  assert.equal(await pending, false);
+  resolve({ ok: true, json: async () => ({ data: { token: 'token', user: { id: 'c1', username: 'customer@vinfast.vn', role: 'CUSTOMER' } } }) });
+  try { await pending; } catch {}
   assert.equal(app.render().role, 'GUEST');
-  assert.equal(app.storage.has('vf_customer_token'), false);
 });

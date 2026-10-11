@@ -24,6 +24,7 @@ import { ServicePointSeed, UserLocationState } from "../types";
 import {
   calculateHaversineDistanceKm,
   formatDistanceKm,
+  getDirectionsUrl,
   MAX_SUPPORT_RADIUS_KM,
 } from "../utils/distance";
 
@@ -34,6 +35,7 @@ interface ServiceMapPanelProps {
   servicePoints: ServicePointSeed[];
   selectedPointId: string | null;
   onSelectPoint: (id: string) => void;
+  onSelectDestination?: (point: ServicePointSeed) => void;
   suggestedCategory?: "ALL" | "EXPRESSWAY_RESCUE" | "CHARGING_STATION" | "SERVICE_WORKSHOP";
   isMobileModal?: boolean;
 }
@@ -50,6 +52,7 @@ export function ServiceMapPanel({
   servicePoints,
   selectedPointId,
   onSelectPoint,
+  onSelectDestination,
   suggestedCategory = "ALL",
   isMobileModal = false,
 }: ServiceMapPanelProps) {
@@ -367,16 +370,31 @@ export function ServiceMapPanel({
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                <a
-                  href={`https://maps.google.com/?q=${encodeURIComponent(activePoint.address)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#1E40AF] hover:underline"
-                >
-                  <Navigation className="w-3.5 h-3.5" />
-                  <span>Chỉ đường Maps</span>
-                </a>
+              <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <a
+                    href={getDirectionsUrl(
+                      { lat: activePoint.coords.lat, lng: activePoint.coords.lng, address: activePoint.address },
+                      userCoord
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#1E40AF] hover:underline"
+                  >
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span>Chỉ đường Maps</span>
+                  </a>
+                  {onSelectDestination && (
+                    <button
+                      type="button"
+                      onClick={() => onSelectDestination(activePoint)}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-[#1E40AF] text-[11px] font-semibold border border-blue-200 transition"
+                    >
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>Chọn điểm này</span>
+                    </button>
+                  )}
+                </div>
 
                 <a
                   href={`tel:${activePoint.hotline.replace(/-/g, "")}`}
@@ -518,17 +536,35 @@ export function ServiceMapPanel({
                 </p>
 
                 {/* Nút hành động */}
-                <div className="mt-2.5 pt-2 border-t border-blue-100 flex items-center justify-between gap-2">
-                  <a
-                    href={`https://maps.google.com/?q=${encodeURIComponent(nearestPoint.address)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#1E40AF] hover:underline"
-                  >
-                    <Navigation className="w-3.5 h-3.5" />
-                    <span>Chỉ đường Maps</span>
-                  </a>
+                <div className="mt-2.5 pt-2 border-t border-blue-100 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={getDirectionsUrl(
+                        { lat: nearestPoint.coords.lat, lng: nearestPoint.coords.lng, address: nearestPoint.address },
+                        userCoord
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#1E40AF] hover:underline"
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      <span>Chỉ đường Maps</span>
+                    </a>
+                    {onSelectDestination && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectDestination(nearestPoint);
+                        }}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-[#1E40AF] text-[11px] font-semibold border border-blue-200 transition"
+                      >
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Chọn điểm này</span>
+                      </button>
+                    )}
+                  </div>
 
                   <a
                     href={`tel:${nearestPoint.hotline.replace(/-/g, "")}`}
@@ -584,6 +620,43 @@ export function ServiceMapPanel({
                           <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed line-clamp-1">
                             {point.address}
                           </p>
+                          <div className="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={getDirectionsUrl(
+                                  { lat: point.coords.lat, lng: point.coords.lng, address: point.address },
+                                  userCoord
+                                )}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1E40AF] hover:underline"
+                              >
+                                <Navigation className="w-3 h-3" />
+                                <span>Chỉ đường</span>
+                              </a>
+                              {onSelectDestination && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onSelectDestination(point);
+                                  }}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-[#1E40AF] text-[10.5px] font-semibold border border-blue-200"
+                                >
+                                  <CheckCircle2 className="w-2.5 h-2.5" />
+                                  <span>Chọn điểm này</span>
+                                </button>
+                              )}
+                            </div>
+                            <a
+                              href={`tel:${point.hotline.replace(/-/g, "")}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-[10px] text-slate-500 font-mono hover:text-[#1E40AF]"
+                            >
+                              {point.hotline}
+                            </a>
+                          </div>
                         </div>
                       ))}
                     </div>

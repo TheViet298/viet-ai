@@ -4,6 +4,7 @@ import {
   AttachmentOut,
   ChatResponseData,
   ClientContext,
+  CustomerCaseDetailData,
   CustomerCaseItem,
 } from "../types";
 
@@ -11,7 +12,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function getCustomerAuthHeaders(): Promise<Record<string, string>> {
   if (typeof window === "undefined") return {};
-  const token = localStorage.getItem("vf_customer_token");
+  const token = localStorage.getItem("vf_access_token") || localStorage.getItem("vf_customer_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -59,7 +60,7 @@ export async function sendChatMessage(params: {
       "Content-Type": "application/json",
       ...authHeaders,
     },
-    signal: AbortSignal.timeout(8000),
+    signal: typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(8000) : undefined,
     body: JSON.stringify({
       request_id: params.requestId,
       session_id: params.sessionId,
@@ -68,6 +69,7 @@ export async function sendChatMessage(params: {
       message: params.message,
       attachment_ids: params.attachmentIds || [],
       client_context: params.clientContext || {},
+      guest_session_id: params.sessionId,
     }),
   });
 
@@ -128,6 +130,23 @@ export async function getCaseStatus(caseId: string) {
   return res.json();
 }
 
+/**
+ * Lấy chi tiết hồ sơ sự cố bao gồm brief, vị trí, timeline, và lịch sử trao đổi (api-contract.md Mục 2.3)
+ */
+export async function getCaseDetail(caseId: string): Promise<ApiResponse<CustomerCaseDetailData>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const res = await fetch(`${BASE_URL}/api/v1/customer/cases/${caseId}`, {
+    headers: {
+      ...authHeaders,
+    },
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to fetch case detail (${res.status}): ${errorText}`);
+  }
+  return res.json();
+}
+
 export async function acknowledgeCaseSafety(caseId: string, incidentVersion: number) {
   const authHeaders = await getCustomerAuthHeaders();
   const res = await fetch(`${BASE_URL}/api/v1/customer/cases/${caseId}/safety-acknowledgement`, {
@@ -174,11 +193,34 @@ export async function reopenCustomerCase(caseId: string): Promise<ApiResponse<{ 
 }
 
 /**
+ * Khách hàng xác nhận kết quả xử lý (RESOLVED_CONFIRMED hoặc STILL_UNRESOLVED)
+ */
+export async function confirmCustomerCaseResolution(
+  caseId: string,
+  payload: { confirmation: "RESOLVED_CONFIRMED" | "STILL_UNRESOLVED"; feedback_note?: string }
+): Promise<ApiResponse<{ success: boolean; case_id: string; status: string; message: string }>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const res = await fetch(`${BASE_URL}/api/v1/customer/cases/${caseId}/confirmation`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to confirm resolution: ${errorText}`);
+  }
+  return res.json();
+}
+
+/**
  * Khách hàng gửi đánh giá và nhận xét chất lượng xử lý
  */
 export async function submitCustomerFeedback(
   caseId: string,
-  payload: { rating: number; comment?: string }
+  payload: { rating: number; comment?: string; reason_tags?: string[] }
 ): Promise<ApiResponse<{ success: boolean; feedback_id: string; case_id: string }>> {
   const authHeaders = await getCustomerAuthHeaders();
   const res = await fetch(`${BASE_URL}/api/v1/customer/cases/${caseId}/feedback`, {
@@ -249,4 +291,52 @@ export async function getAiSystemStatus(): Promise<{
   return res.json();
 }
 
+/**
+ * Khách hàng xác nhận kết quả ca đã xử lý hoặc yêu cầu hỗ trợ tiếp (ADR-005)
+ */
+export async function confirmCustomerCase(
+  caseId: string,
+  payload: {
+    confirmation: "RESOLVED_CONFIRMED" | "STILL_UNRESOLVED";
+    feedback_note?: string;
+  }
+): Promise<ApiResponse<{ success: boolean; case_id: string; status: string }>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const res = await fetch(`${BASE_URL}/api/v1/customer/cases/${caseId}/confirmation`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to confirm case: ${errorText}`);
+  }
+  return res.json();
+}
+
+/**
+ * Khách hàng xác nhận đã an toàn (ADR-005)
+ */
+export async function submitSafetyAcknowledgement(
+  caseId: string,
+  payload: { incident_version: number }
+): Promise<ApiResponse<{ success: boolean; case_id: string; safety_status: string }>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const res = await fetch(`${BASE_URL}/api/v1/customer/cases/${caseId}/safety-acknowledgement`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to acknowledge safety: ${errorText}`);
+  }
+  return res.json();
+}
 

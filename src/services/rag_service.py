@@ -186,6 +186,28 @@ class RAGService:
 
     def retrieve(self, query: str, top_k: int = 3, vehicle_model: str | None = None) -> dict:
         settings = get_settings()
+        # Reviewed public catalog snapshots are data, never hardcoded runtime
+        # prices. Expired or unregistered snapshots fall back to normal retrieval.
+        from src.services.answer_evidence import normalized
+        if vehicle_model and re.search(r'\bgia\b', normalized(query)):
+            snapshot_path = PROJECT_ROOT / 'fixtures' / 'verified_public_prices.json'
+            if snapshot_path.is_file():
+                records = json.loads(snapshot_path.read_text(encoding='utf-8'))
+                variant = re.search(r'\b(plus|eco)\b', query, re.I)
+                evidence = []
+                for record in records:
+                    if record.get('model') != vehicle_model or variant and record.get('version', '').casefold() != variant[0].casefold():
+                        continue
+                    age = (date.today() - date.fromisoformat(record['verified_at'])).days
+                    if not 0 <= age <= 7:
+                        continue
+                    citation = {**source_registry().get(record['source_id'], {}), **record,
+                                'applicable_models': [record['model']], 'distance': 0.0}
+                    if valid_citation(citation, vehicle_model):
+                        evidence.append(citation)
+                if evidence:
+                    return {'status': 'SUCCESS', 'citations': evidence[:top_k], 'best_distance': 0.0,
+                            'diagnostics': {'stage': 'retrieval', 'category': 'verified_public_price_snapshot'}}
         if not Path(settings.chroma_persist_dir, "chroma.sqlite3").is_file():
             return self.failure("UNAVAILABLE", "missing_index")
         try:
