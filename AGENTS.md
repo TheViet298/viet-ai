@@ -8,3 +8,17 @@
 - When the worktree has uncommitted changes, do not merge, reset, stash, or switch branches on your own.
 - Do not add secrets, personal logs, or sensitive data to documentation or memory.
 - At the end of the task, clearly record which files were modified, what tests were run, and whether commit and push were completed.
+
+---
+
+- Mục tiêu: thêm vị trí hiện tại để tìm địa điểm gần người dùng và chỉ đường.
+
+- Chỉ lấy vị trí sau khi người dùng chọn cho phép.
+
+- Luôn có cách nhập/chọn địa điểm thủ công nếu họ từ chối quyền.
+
+- Không lưu lịch sử tọa độ mặc định.
+
+- Mỗi thay đổi phải nêu tệp đã sửa, cách kiểm thử và giới hạn còn lại.
+
+- Không tự triển khai production hoặc tạo khóa API.
