@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 import re
 import uuid
@@ -2063,7 +2064,7 @@ DEMO_SERVICE_POINTS = [
     ServicePointItem(
         id="SP-DN-001",
         name="Trạm Cứu hộ Cao tốc Long Thành - Dầu Giây",
-        category="RESCUE_POST",
+        category="OTHER",
         address="Km 28 Cao tốc TP.HCM - Long Thành - Dầu Giây",
         distance_km=5.0,
         latitude=10.7712,
@@ -2075,7 +2076,7 @@ DEMO_SERVICE_POINTS = [
     ServicePointItem(
         id="SP-HCM-002",
         name="Xưởng Dịch vụ VinFast Thảo Điền",
-        category="SERVICE_CENTER",
+        category="SERVICE_WORKSHOP",
         address="159 Xa Lộ Hà Nội, Thảo Điền, TP. Thủ Đức, TP.HCM",
         distance_km=3.8,
         latitude=10.8030,
@@ -2097,6 +2098,29 @@ DEMO_SERVICE_POINTS = [
         charger_types=["DC 150kW", "DC 60kW"],
     ),
 ]
+
+
+@router.get("/service-points/nearby")
+async def get_nearby_service_points(
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+    category: Literal["ALL", "CHARGING_STATION", "SHOWROOM", "SERVICE_WORKSHOP", "OTHER"] = "ALL",
+    radius_km: float = Query(50, gt=0, le=1000),
+    limit: int = Query(10, ge=1, le=100),
+):
+    """Demo directory only. No coordinate storage or request logging."""
+    if not math.isfinite(lat) or not math.isfinite(lng) or not math.isfinite(radius_km):
+        raise HTTPException(status_code=422, detail="Tọa độ hoặc bán kính không hợp lệ")
+
+    def distance(point: ServicePointItem) -> float:
+        dlat = math.radians(point.latitude - lat)
+        dlng = math.radians(point.longitude - lng)
+        a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat)) * math.cos(math.radians(point.latitude)) * math.sin(dlng / 2) ** 2
+        return 6371.0 * 2 * math.atan2(math.sqrt(a), math.sqrt(max(0, 1 - a)))
+
+    matches = [(distance(point), point) for point in DEMO_SERVICE_POINTS if category == "ALL" or point.category == category]
+    points = [{**point.model_dump(), "distance_km": round(km, 3), "demo": True} for km, point in sorted(matches, key=lambda item: item[0]) if km <= radius_km][:limit]
+    return ApiResponse(success=True, data={"points": points, "demo": True}, error=None)
 
 
 @router.get("/cases/{case_id}/service-points", response_model=ApiResponse[ServicePointsData])

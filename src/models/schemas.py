@@ -350,7 +350,7 @@ class CaseLocationOut(BaseModel):
 class ServicePointItem(BaseModel):
     id: str
     name: str
-    category: Literal["CHARGING_STATION", "SERVICE_CENTER", "RESCUE_POST", "SHOWROOM"]
+    category: Literal["CHARGING_STATION", "SERVICE_CENTER", "RESCUE_POST", "SHOWROOM", "SERVICE_WORKSHOP", "OTHER"]
     address: str
     distance_km: float | None = None
     latitude: float

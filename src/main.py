@@ -17,6 +17,7 @@ from src.db import ensure_schema
 from src.models import db_models  # noqa: F401 - Đảm bảo tất cả models được nạp vào metadata
 from src.services.case_lifecycle import auto_close_background_loop
 from src.services.observability import flush_observability, initialize_observability
+from src.services.location_privacy import LocationQueryPrivacyMiddleware
 
 
 @asynccontextmanager
@@ -60,6 +61,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(LocationQueryPrivacyMiddleware)
 
 # Đăng ký các Router API
 app.include_router(agent_customer_router, prefix="/api/v1/agent")
