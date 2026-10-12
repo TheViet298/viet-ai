@@ -19,6 +19,7 @@ interface LocationConsentCardProps {
   onSkip: () => void;
   onToggleMap: () => void;
   onResetLocation: () => void;
+  onStopSharing: () => void;
 }
 
 export function LocationConsentCard({
@@ -30,6 +31,7 @@ export function LocationConsentCard({
   onSkip,
   onToggleMap,
   onResetLocation,
+  onStopSharing,
 }: LocationConsentCardProps) {
   const [isManualInputMode, setIsManualInputMode] = useState(false);
   const [manualText, setManualText] = useState("");
@@ -42,7 +44,7 @@ export function LocationConsentCard({
   };
 
   // 1. Khi ĐÃ CÓ VỊ TRÍ (GPS hoặc Nhập tay): Thanh mỏng 1 dòng dính trên ô nhập
-  if (locationState.status === "CONSENTED" || locationState.status === "MANUAL") {
+  if (locationState.status === "CONSENTED" || (locationState.status === "MANUAL" && !locationState.errorCode)) {
     const isLowAccuracy =
       locationState.status === "CONSENTED" &&
       typeof locationState.accuracy === "number" &&
@@ -75,6 +77,7 @@ export function LocationConsentCard({
           >
             {isMapOpen ? "Ẩn bản đồ" : "Xem bản đồ ›"}
           </button>
+          {locationState.status === "CONSENTED" && <><button type="button" onClick={() => { onStopSharing(); setIsManualInputMode(true); onResetLocation(); }} className="text-blue-700 font-semibold">Nhập khu vực</button><button type="button" onClick={onStopSharing} className="text-red-700 font-semibold">Dừng chia sẻ</button></>}
           <button
             type="button"
             onClick={onResetLocation}
@@ -202,7 +205,6 @@ export function LocationConsentCard({
             </button>
             <button
               type="button"
-              disabled={isLocating}
               onClick={() => setIsManualInputMode(true)}
               className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-medium transition active:scale-95 shadow-2xs"
             >

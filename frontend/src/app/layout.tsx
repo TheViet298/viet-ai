@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Navbar, Footer, AuthProvider } from "@/features/shared";
 import "./globals.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 export const metadata: Metadata = {
   title: "VFServ — Dịch vụ & Điều phối Kỹ thuật Xe điện VinFast",

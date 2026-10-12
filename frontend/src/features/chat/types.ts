@@ -109,9 +109,10 @@ export interface ArticleItem {
 export interface ServicePointSeed {
   id: string;
   name: string;
-  type: "SERVICE_WORKSHOP" | "CHARGING_STATION" | "EXPRESSWAY_RESCUE";
+  type: "SERVICE_WORKSHOP" | "CHARGING_STATION" | "SHOWROOM" | "OTHER";
   address: string;
   distance?: string;
+  demo?: boolean;
   hotline: string;
   coords: { lat: number; lng: number };
 }
@@ -122,6 +123,7 @@ export interface UserLocationState {
   label: string;
   coords?: { lat: number; lng: number };
   accuracy?: number;
+  isTracking?: boolean;
   errorCode?: "PERMISSION_DENIED" | "POSITION_UNAVAILABLE" | "TIMEOUT" | "ACCURACY_LOW" | "UNSUPPORTED";
   errorMessage?: string;
 }

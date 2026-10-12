@@ -4,7 +4,7 @@ export const CHAT_SEED_SERVICE_POINTS: ServicePointSeed[] = [
   {
     id: "sp-04",
     name: "Đội Cứu hộ Phản ứng nhanh Cao Tốc Long Thành",
-    type: "EXPRESSWAY_RESCUE",
+    type: "OTHER",
     address: "Trạm điều hành nút giao Km 20, Cao tốc Long Thành - Dầu Giây",
     distance: "4.5 km",
     hotline: "1900-232389",

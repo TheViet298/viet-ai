@@ -372,3 +372,13 @@ export async function submitSafetyAcknowledgement(
   return res.json();
 }
 
+
+export async function getNearbyServicePoints(coord: { lat: number; lng: number }, category: string, signal?: AbortSignal) {
+  const query = new URLSearchParams({ lat: String(coord.lat), lng: String(coord.lng), category, radius_km: "50", limit: "100" });
+  const res = await fetch(`${BASE_URL}/api/v1/customer/service-points/nearby?${query}`, { signal });
+  if (!res.ok) throw new Error(`Không thể tải điểm demo (${res.status}).`);
+  const body = await res.json();
+  return (body.data.points as Array<{ id: string; name: string; category: string; address: string; latitude: number; longitude: number; hotline: string; demo: boolean }>).map((point) => ({
+    id: point.id, name: point.name, type: point.category as import("../types").ServicePointSeed["type"], address: point.address, hotline: point.hotline, coords: { lat: point.latitude, lng: point.longitude }, demo: true,
+  }));
+}

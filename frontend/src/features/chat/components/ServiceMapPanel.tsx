@@ -1,32 +1,32 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import {
-  Navigation,
-  PhoneCall,
-  X,
-  Maximize2,
-  Minimize2,
-  ShieldAlert,
-  BatteryCharging,
-  Wrench,
-  Car,
-  Compass,
-  CheckCircle2,
-  Info,
-  ChevronDown,
-  ChevronUp,
-  AlertTriangle,
-} from "lucide-react";
-import { ServicePointSeed, UserLocationState } from "../types";
-import {
-  calculateHaversineDistanceKm,
-  formatDistanceKm,
-  getDirectionsUrl,
-  MAX_SUPPORT_RADIUS_KM,
-} from "../utils/distance";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Map as MapLibreMap, Marker } from "maplibre-gl";
+import type { ServicePointSeed, UserLocationState } from "../types";
+import { calculateHaversineDistanceKm, formatDistanceKm, getDirectionsUrl, getOsmDirectionsUrl } from "../utils/distance";
+import { getNearbyServicePoints } from "../api/chatApi";
 
-interface ServiceMapPanelProps {
+type Category = "ALL" | ServicePointSeed["type"];
+const categories: [Category, string][] = [["ALL", "Tất cả"], ["CHARGING_STATION", "Trụ sạc"], ["SHOWROOM", "Showroom"], ["SERVICE_WORKSHOP", "Xưởng kỹ thuật"], ["OTHER", "Loại khác / Cứu hộ"]];
+const areas = [
+  { names: ["hà nội"], coord: { lat: 21.0285, lng: 105.8542 } },
+  { names: ["hồ chí minh", "hcm", "sài gòn"], coord: { lat: 10.8231, lng: 106.6297 } },
+  { names: ["đà nẵng"], coord: { lat: 16.0544, lng: 108.2022 } },
+  { names: ["long thành", "dầu giây", "đồng nai"], coord: { lat: 10.7712, lng: 106.945 } },
+];
+function reference(label: string) {
+  return areas.find((area) => area.names.some((name) => label.toLocaleLowerCase("vi").includes(name)))?.coord;
+}
+function accuracyPolygon(lat: number, lng: number, meters: number): GeoJSON.Feature<GeoJSON.Polygon> {
+  const coordinates: [number, number][] = [];
+  for (let i = 0; i <= 64; i++) {
+    const angle = 2 * Math.PI * i / 64;
+    coordinates.push([lng + meters * Math.cos(angle) / (111320 * Math.max(0.01, Math.cos(lat * Math.PI / 180))), lat + meters * Math.sin(angle) / 111320]);
+  }
+  return { type: "Feature", geometry: { type: "Polygon", coordinates: [coordinates] }, properties: {} };
+}
+
+interface Props {
   isOpen: boolean;
   onClose: () => void;
   locationState: UserLocationState;
@@ -34,704 +34,103 @@ interface ServiceMapPanelProps {
   selectedPointId: string | null;
   onSelectPoint: (id: string) => void;
   onSelectDestination?: (point: ServicePointSeed) => void;
-  suggestedCategory?: "ALL" | "EXPRESSWAY_RESCUE" | "CHARGING_STATION" | "SERVICE_WORKSHOP";
-  isMobileModal?: boolean;
+  suggestedCategory?: Category;
 }
+export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints, selectedPointId, onSelectPoint, onSelectDestination, suggestedCategory = "ALL" }: Props) {
+  const [category, setCategory] = useState<Category>("ALL");
+  const [nearby, setNearby] = useState<ServicePointSeed[] | null>(null);
+  const [mapError, setMapError] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
+  const mapElement = useRef<HTMLDivElement>(null);
+  const map = useRef<MapLibreMap | null>(null);
+  const markers = useRef<Marker[]>([]);
+  const requestId = useRef(0);
+  const nearbyAbort = useRef<AbortController | null>(null);
+  const lastQuery = useRef<{ coord: { lat: number; lng: number }; time: number; category: Category } | null>(null);
+  const origin = locationState.status === "CONSENTED" ? locationState.coords : undefined;
+  const center = origin ?? (locationState.status === "MANUAL" ? reference(locationState.label) : undefined);
+  const points = nearby ?? servicePoints;
+  const filtered = useMemo(() => points.filter((point) => category === "ALL" || point.type === category).map((point) => ({ ...point, km: center ? calculateHaversineDistanceKm(center, point.coords) : null })).filter((point) => point.km === null || point.km <= 50).sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity)), [points, category, center?.lat, center?.lng]);
+  const selected = filtered.find((point) => point.id === selectedPointId) ?? filtered[0];
 
-interface EnrichedServicePoint extends ServicePointSeed {
-  distKm: number;
-  distText: string;
-}
-
-export function ServiceMapPanel({
-  isOpen,
-  onClose,
-  locationState,
-  servicePoints,
-  selectedPointId,
-  onSelectPoint,
-  onSelectDestination,
-  suggestedCategory = "ALL",
-  isMobileModal = false,
-}: ServiceMapPanelProps) {
-  const [filterType, setFilterType] = useState<string>("ALL");
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showMorePoints, setShowMorePoints] = useState(false);
-  const [activePopoverId, setActivePopoverId] = useState<string | null>(null);
-
-  // Tự động chọn chip lọc theo ngữ cảnh sự cố (khi chat phát hiện loại lỗi)
+  useEffect(() => { setCategory(suggestedCategory); }, [suggestedCategory]);
   useEffect(() => {
-    if (suggestedCategory && suggestedCategory !== "ALL") {
-      setFilterType(suggestedCategory);
-    }
-  }, [suggestedCategory]);
+    if (!isOpen || !center) { requestId.current++; nearbyAbort.current?.abort(); lastQuery.current = null; setNearby(null); return; }
+    const now = Date.now();
+    const previous = lastQuery.current;
+    if (previous && previous.category === category && calculateHaversineDistanceKm(previous.coord, center) < 0.15 && now - previous.time < 30000) return;
+    lastQuery.current = { coord: center, time: now, category };
+    const id = ++requestId.current;
+    nearbyAbort.current?.abort();
+    const controller = new AbortController();
+    nearbyAbort.current = controller;
+    setNearby(null);
+    getNearbyServicePoints(center, category, controller.signal).then((result) => {
+      if (id === requestId.current) setNearby(result);
+    }).catch(() => { if (id === requestId.current) setNearby(null); });
+    // Keep an in-flight query across small GPS updates that do not pass the throttle.
+    // It is cancelled only by a replacement query, close, or unmount.
+  }, [isOpen, center?.lat, center?.lng, category]);
+  useEffect(() => () => { nearbyAbort.current?.abort(); requestId.current++; }, []);
 
-  // Vị trí khách hàng (GPS thật hoặc vị trí tham chiếu)
-  const userCoord = useMemo(() => {
-    if (locationState.coords) {
-      return locationState.coords;
-    }
-    // Tự động phân giải vị trí tham chiếu theo khu vực nhập tay nếu có
-    if (locationState.status === "MANUAL" && locationState.label) {
-      const lower = locationState.label.toLowerCase();
-      if (lower.includes("hồ chí minh") || lower.includes("hcm") || lower.includes("sài gòn")) {
-        return { lat: 10.795, lng: 106.7218 };
-      }
-      if (lower.includes("long thành") || lower.includes("dầu giây") || lower.includes("đồng nai")) {
-        return { lat: 10.7712, lng: 106.945 };
-      }
-      if (lower.includes("đà nẵng")) {
-        return { lat: 16.0544, lng: 108.2022 };
-      }
-      if (lower.includes("hà nội") || lower.includes("hn")) {
-        return { lat: 21.0315, lng: 105.8145 };
-      }
-    }
-    // Vị trí tham chiếu mặc định nếu khách chưa chia sẻ GPS
-    return { lat: 20.9889, lng: 105.9449 };
-  }, [locationState.coords, locationState.status, locationState.label]);
+  useEffect(() => {
+    if (!isOpen || !mapElement.current || !center) return;
+    let cancelled = false;
+    import("maplibre-gl").then((maplibre) => {
+      if (cancelled || !mapElement.current) return;
+      try {
+        // Next.js 14 cannot bundle MapLibre v6's ESM worker reliably. Serve
+        // the copied worker from /public and configure it before map creation.
+        maplibre.setWorkerUrl("/maplibre-gl-worker.mjs");
+        const instance = new maplibre.Map({ container: mapElement.current, center: [center.lng, center.lat], zoom: 11, style: { version: 8, sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap contributors" } }, layers: [{ id: "osm", type: "raster", source: "osm" }] } });
+        map.current = instance;
+        instance.addControl(new maplibre.NavigationControl(), "top-right");
+        instance.on("error", () => setMapError(true));
+        instance.on("style.load", () => { if (!cancelled) { setMapError(false); setMapReady(true); } });
+      } catch { setMapError(true); }
+    }).catch(() => setMapError(true));
+    return () => { cancelled = true; markers.current.forEach((marker) => marker.remove()); markers.current = []; map.current?.remove(); map.current = null; setMapReady(false); };
+  }, [isOpen, Boolean(center)]);
 
-  const hasRealGps = locationState.status === "CONSENTED" && Boolean(locationState.coords);
-
-  // 1. Tính khoảng cách thực tế bằng công thức Haversine và sắp xếp điểm gần nhất lên đầu
-  const enrichedPoints: EnrichedServicePoint[] = useMemo(() => {
-    return servicePoints
-      .map((sp) => {
-        const distKm = calculateHaversineDistanceKm(userCoord, sp.coords);
-        return {
-          ...sp,
-          distKm,
-          distText: formatDistanceKm(distKm),
-        };
-      })
-      .sort((a, b) => a.distKm - b.distKm);
-  }, [servicePoints, userCoord]);
-
-  // 2. Lọc theo danh mục chip được chọn
-  const filteredPoints = useMemo(() => {
-    if (filterType === "ALL") return enrichedPoints;
-    return enrichedPoints.filter((sp) => sp.type === filterType);
-  }, [filterType, enrichedPoints]);
-
-  // Điểm gần nhất trong danh mục đang chọn
-  const nearestPoint = filteredPoints[0] || null;
-
-  // Kiểm tra ngưỡng "quá xa" (> 50 km) theo yêu cầu
-  const isNearestTooFar = Boolean(
-    hasRealGps && nearestPoint && nearestPoint.distKm > MAX_SUPPORT_RADIUS_KM
-  );
-
-  // Điểm đang được chọn hiển thị chi tiết (hoặc điểm gần nhất)
-  const activePoint = useMemo(() => {
-    if (selectedPointId) {
-      return enrichedPoints.find((sp) => sp.id === selectedPointId) || nearestPoint;
-    }
-    return nearestPoint;
-  }, [selectedPointId, enrichedPoints, nearestPoint]);
-
-  // Điểm còn lại khi hiển thị 1 điểm gần nhất
-  const remainingPoints = useMemo(() => {
-    if (!nearestPoint) return [];
-    return filteredPoints.filter((p) => p.id !== nearestPoint.id);
-  }, [filteredPoints, nearestPoint]);
-
-  // 3. Tính toán Bounding Box chính xác để bản đồ vừa khít vị trí khách và điểm gần nhất
-  const mapBounds = useMemo(() => {
-    // Các điểm nằm trong bán kính gần để đưa vào khung nhìn bản đồ
-    const nearbyPoints = enrichedPoints.filter((p) => p.distKm <= MAX_SUPPORT_RADIUS_KM);
-
-    const lats = [userCoord.lat];
-    const lngs = [userCoord.lng];
-
-    if (!isNearestTooFar && nearbyPoints.length > 0) {
-      nearbyPoints.forEach((p) => {
-        lats.push(p.coords.lat);
-        lngs.push(p.coords.lng);
+  useEffect(() => {
+    const instance = map.current;
+    if (!instance || !center || !mapReady) return;
+    let disposed = false;
+    import("maplibre-gl").then((maplibre) => {
+      if (disposed || map.current !== instance) return;
+      markers.current.forEach((marker) => marker.remove());
+      markers.current = [];
+      const user = document.createElement("div"); user.className = "w-5 h-5 rounded-full bg-blue-700 border-2 border-white shadow-md";
+      user.title = origin ? "Vị trí hiện tại" : "Tâm khu vực tham chiếu";
+      markers.current.push(new maplibre.Marker({ element: user }).setLngLat([center.lng, center.lat]).addTo(instance));
+      filtered.forEach((point) => {
+        const button = document.createElement("button"); button.type = "button"; button.className = "w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-md"; button.title = `[Demo] ${point.name}`;
+        button.onclick = () => onSelectPoint(point.id);
+        markers.current.push(new maplibre.Marker({ element: button }).setLngLat([point.coords.lng, point.coords.lat]).addTo(instance));
       });
-    }
-
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
-
-    // Bổ sung padding tỷ lệ để các ghim không bị tràn sát viền mép bản đồ
-    const latSpan = Math.max(maxLat - minLat, 0.035);
-    const lngSpan = Math.max(maxLng - minLng, 0.045);
-
-    const padLat = latSpan * 0.28;
-    const padLng = lngSpan * 0.28;
-
-    return {
-      minLat: minLat - padLat,
-      maxLat: maxLat + padLat,
-      minLng: minLng - padLng,
-      maxLng: maxLng + padLng,
-    };
-  }, [userCoord, enrichedPoints, isNearestTooFar]);
-
-  // URL nhúng OpenStreetMap căn vừa Bounding Box thực tế (không dùng marker tĩnh mặc định của OSM)
-  const osmEmbedUrl = useMemo(() => {
-    const { minLat, maxLat, minLng, maxLng } = mapBounds;
-    return `https://www.openstreetmap.org/export/embed.html?bbox=${minLng}%2C${minLat}%2C${maxLng}%2C${maxLat}&layer=mapnik`;
-  }, [mapBounds]);
-
-  // Tính phần trăm tọa độ để cắm Ghim tương tác trực tiếp lên bản đồ
-  const getMarkerPosition = (lat: number, lng: number) => {
-    const { minLat, maxLat, minLng, maxLng } = mapBounds;
-    const x = ((lng - minLng) / (maxLng - minLng)) * 100;
-    const y = (1 - (lat - minLat) / (maxLat - minLat)) * 100;
-    return {
-      left: `${Math.min(Math.max(x, 8), 92)}%`,
-      top: `${Math.min(Math.max(y, 10), 90)}%`,
-    };
-  };
+      instance.jumpTo({ center: [center.lng, center.lat] });
+      const source = instance.getSource("accuracy") as import("maplibre-gl").GeoJSONSource | undefined;
+      const data = origin && locationState.accuracy ? accuracyPolygon(center.lat, center.lng, locationState.accuracy) : { type: "FeatureCollection", features: [] } as GeoJSON.FeatureCollection;
+      if (source) source.setData(data);
+      else if (instance.isStyleLoaded()) { instance.addSource("accuracy", { type: "geojson", data }); instance.addLayer({ id: "accuracy-fill", type: "fill", source: "accuracy", paint: { "fill-color": "#2563eb", "fill-opacity": 0.16 } }); }
+    });
+    return () => { disposed = true; };
+  }, [center?.lat, center?.lng, filtered, locationState.accuracy, origin, onSelectPoint, mapReady]);
 
   if (!isOpen) return null;
-
-  const renderContent = () => (
-    <div className="flex flex-col h-full bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden animate-fadeIn">
-      {/* ─────────────────────────────────────────────────────────────
-          1. HEADER THANH ĐIỀU KHIỂN BẢN ĐỒ (RÕ RÀNG, KHÔNG BỊ CHE)
-      ───────────────────────────────────────────────────────────── */}
-      <div className="px-4 py-3 bg-slate-50/95 border-b border-slate-200/80 flex items-center justify-between gap-3 shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-[#1E40AF] text-white flex items-center justify-center shrink-0 shadow-2xs">
-            <Compass className="w-4 h-4 text-white" />
-          </div>
-          <div className="min-w-0">
-            <h3 className="font-bold text-[13.5px] text-slate-900 truncate">
-              Bản đồ Điểm hỗ trợ & Trạm dịch vụ
-            </h3>
-            <p className="text-[11px] text-slate-500 truncate">
-              {locationState.source === "BROWSER_GPS"
-                ? "📍 Đã ghi nhận vị trí của bạn (GPS)"
-                : locationState.status === "MANUAL"
-                ? `📍 Khu vực: ${locationState.label}`
-                : "Chưa chia sẻ vị trí"}
-            </p>
-          </div>
-        </div>
-
-        {/* Right Window Controls */}
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-200/60 transition hidden sm:inline-flex"
-            title={isFullscreen ? "Thu nhỏ lại cạnh chat" : "Toàn màn hình"}
-          >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
-            title="Đóng bản đồ"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+  return <section className="h-full min-h-[500px] rounded-xl border bg-white overflow-hidden flex flex-col" aria-label="Bản đồ điểm dịch vụ demo">
+    <header className="flex items-center justify-between p-3 border-b"><strong>Điểm dịch vụ [Demo]</strong><button type="button" onClick={onClose} aria-label="Đóng bản đồ">Đóng</button></header>
+    <div className="flex flex-1 min-h-0">
+      <div className="w-1/2 overflow-auto p-3 space-y-3">
+        <p className="text-xs text-slate-600">Dữ liệu giả lập, chưa xác minh địa điểm hoặc tình trạng hoạt động.</p>
+        {locationState.status === "MANUAL" && <p className="text-xs text-amber-800">{center ? "Tâm khu vực tham chiếu/ước lượng, không phải GPS. Khoảng cách chỉ để tham khảo." : "Chưa nhận diện khu vực. Chọn nhanh Hà Nội, TP.HCM, Đà Nẵng hoặc Long Thành để xem khoảng cách tham khảo."}</p>}
+        {locationState.accuracy && locationState.accuracy > 500 && <p className="text-xs text-amber-800">Vị trí ước lượng ±{Math.round(locationState.accuracy)}m</p>}
+        <div className="flex flex-wrap gap-1">{categories.map(([value, label]) => <button key={value} type="button" aria-pressed={category === value} className={`px-2 py-1 rounded border text-xs ${category === value ? "bg-blue-700 text-white" : "bg-white"}`} onClick={() => { if (value === category) return; nearbyAbort.current?.abort(); requestId.current++; setNearby(null); setCategory(value); onSelectPoint(""); }}>{label}</button>)}</div>
+        {filtered.length === 0 && <div><p>Không có điểm demo phù hợp{center ? " trong bán kính 50 km" : " trong bộ lọc này"}.</p><a href="tel:1900232389" className="text-blue-700 underline">Gọi hỗ trợ 1900-232389</a></div>}
+        {filtered.map((point) => <button type="button" key={point.id} onClick={() => onSelectPoint(point.id)} className={`block w-full text-left p-2 rounded border ${selected?.id === point.id ? "border-blue-700" : "border-slate-200"}`}><strong>[Demo] {point.name}</strong><span className="block text-xs">{point.address}</span>{point.km !== null && <span className="text-xs">{formatDistanceKm(point.km)} đường chim bay</span>}</button>)}
+        {selected && <div className="border-t pt-2 text-sm"><strong>[Demo] {selected.name}</strong><p>{selected.address}</p><div className="flex flex-wrap gap-3 mt-2"><a target="_blank" rel="noopener noreferrer" href={getDirectionsUrl({ ...selected.coords, address: selected.address }, origin)}>Google Maps{origin ? " chỉ đường" : " tìm địa chỉ"}</a>{origin && <a target="_blank" rel="noopener noreferrer" href={getOsmDirectionsUrl(selected.coords, origin)}>OpenStreetMap chỉ đường</a>}{onSelectDestination && <button type="button" onClick={() => onSelectDestination(selected)}>Chọn làm điểm đến</button>}</div></div>}
       </div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          2. VÙNG BẢN ĐỒ TƯƠNG TÁC (~45% CHIỀU CAO PANEL ĐỂ THẺ ĐẦU HIỆN ĐỦ NÚT)
-      ───────────────────────────────────────────────────────────── */}
-      <div className="relative w-full h-[45%] min-h-[240px] shrink-0 bg-slate-100 border-b border-slate-200 overflow-hidden">
-        {/* OpenStreetMap Tile Layer Canvas */}
-        {hasRealGps && <iframe
-          title="OpenStreetMap Viewport"
-          src={osmEmbedUrl}
-          className="w-full h-full border-none opacity-90 filter contrast-[1.05]"
-          loading="lazy"
-        />}
-        {!hasRealGps && <p className="p-6 text-sm text-slate-600">Anh/chị có thể chia sẻ GPS hoặc tra cứu khu vực đã nhập trên ứng dụng VinFast.</p>}
-
-        {/* ─────────────────────────────────────────────────────────────
-            LỚP GHIM TƯƠNG TÁC (INTERACTIVE CAR-WEB PINS)
-        ───────────────────────────────────────────────────────────── */}
-        <div className="absolute inset-0 pointer-events-none">
-          {/* A. GHIM VỊ TRÍ XE KHÁCH HÀNG (USER GPS BEACON) */}
-          {hasRealGps && (
-            <div
-              className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto z-20"
-              style={getMarkerPosition(userCoord.lat, userCoord.lng)}
-            >
-              <div className="relative flex flex-col items-center group cursor-pointer">
-                {/* Sóng radar tỏa nhẹ (tuân thủ prefers-reduced-motion) */}
-                <span className="absolute -inset-2 rounded-full bg-blue-500/30 animate-ping motion-reduce:animate-none" />
-
-                {/* Vòng tròn ghim trung tâm */}
-                <div className="relative w-7 h-7 rounded-full bg-[#1E40AF] text-white flex items-center justify-center border-2 border-white shadow-md">
-                  <Car className="w-3.5 h-3.5 text-white" />
-                </div>
-
-                {/* Nhãn gắn trực tiếp vào ghim */}
-                <div className="mt-1 px-2 py-0.5 rounded-md bg-slate-900/85 backdrop-blur-xs text-white text-[10px] font-semibold whitespace-nowrap shadow-xs">
-                  Xe của bạn
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* B. GHIM CÁC ĐIỂM HỖ TRỢ TRONG KHU VỰC */}
-          {enrichedPoints
-            .filter((p) => p.distKm <= MAX_SUPPORT_RADIUS_KM)
-            .map((point) => {
-              const isSelected = activePoint?.id === point.id;
-              const isNearest = nearestPoint?.id === point.id;
-              const isRescue = point.type === "EXPRESSWAY_RESCUE";
-              const isCharging = point.type === "CHARGING_STATION";
-              const isFilteredOut = filterType !== "ALL" && point.type !== filterType;
-
-              return (
-                <div
-                  key={point.id}
-                  className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${
-                    isFilteredOut
-                      ? "opacity-25 grayscale scale-90 pointer-events-none z-10"
-                      : "opacity-100 pointer-events-auto z-20"
-                  }`}
-                  style={getMarkerPosition(point.coords.lat, point.coords.lng)}
-                >
-                  <div
-                    onClick={() => {
-                      if (!isFilteredOut) {
-                        onSelectPoint(point.id);
-                        setActivePopoverId(point.id);
-                      }
-                    }}
-                    className={`relative flex flex-col items-center group cursor-pointer transition-transform ${
-                      !isFilteredOut ? "hover:scale-110" : ""
-                    }`}
-                  >
-                    {/* Viền sáng nổi bật nếu là điểm phù hợp nhất thuộc nhóm lọc hoặc đang chọn */}
-                    {!isFilteredOut && (isSelected || isNearest) && (
-                      <span className="absolute -inset-1.5 rounded-full bg-[#1E40AF]/25 ring-2 ring-[#1E40AF] shadow-sm animate-pulse" />
-                    )}
-
-                    {/* Icon Ghim theo loại chuẩn Automotive */}
-                    <div
-                      className={`relative w-8 h-8 rounded-full text-white flex items-center justify-center border-2 border-white shadow-md transition ${
-                        isRescue
-                          ? "bg-red-600"
-                          : isCharging
-                          ? "bg-sky-600"
-                          : "bg-emerald-600"
-                      }`}
-                    >
-                      {isRescue ? (
-                        <ShieldAlert className="w-4 h-4 text-white" />
-                      ) : isCharging ? (
-                        <BatteryCharging className="w-4 h-4 text-white" />
-                      ) : (
-                        <Wrench className="w-4 h-4 text-white" />
-                      )}
-                    </div>
-
-                    {/* Tag tên & khoảng cách gắn với ghim */}
-                    <div className="mt-1 px-2 py-0.5 rounded-md bg-white/95 border border-slate-200/90 text-slate-800 text-[10px] font-bold whitespace-nowrap shadow-xs flex items-center gap-1">
-                      <span>{point.distText}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-        </div>
-
-        {/* ─────────────────────────────────────────────────────────────
-            POPOVER CARD KHI BẤM VÀO GHIM (HOẶC ĐIỂM ĐANG CHỌN)
-        ───────────────────────────────────────────────────────────── */}
-        {activePoint && activePopoverId === activePoint.id && (
-          <div className="absolute top-3 left-3 right-3 sm:right-auto sm:max-w-sm z-30 animate-fadeIn">
-            <div className="p-3 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-lg text-[12px] space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  {activePoint.type === "EXPRESSWAY_RESCUE" ? (
-                    <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-red-100 text-red-700 uppercase">
-                      🚨 Cứu hộ 24/7
-                    </span>
-                  ) : activePoint.type === "CHARGING_STATION" ? (
-                    <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-blue-100 text-[#1E40AF] uppercase">
-                      ⚡ Trạm sạc Siêu Nhanh
-                    </span>
-                  ) : (
-                    <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-emerald-100 text-emerald-800 uppercase">
-                      🔧 Xưởng dịch vụ 3S
-                    </span>
-                  )}
-                  <span className="font-mono text-[11px] font-bold text-slate-700">
-                    {activePoint.distText}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setActivePopoverId(null)}
-                  className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div>
-                <h4 className="font-bold text-[13px] text-slate-900 leading-snug">
-                  {activePoint.name}
-                </h4>
-                <p className="text-[11.5px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">
-                  {activePoint.address}
-                </p>
-              </div>
-
-              <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <a
-                    href={getDirectionsUrl(
-                      { lat: activePoint.coords.lat, lng: activePoint.coords.lng, address: activePoint.address },
-                      userCoord
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#1E40AF] hover:underline"
-                  >
-                    <Navigation className="w-3.5 h-3.5" />
-                    <span>Chỉ đường Maps</span>
-                  </a>
-                  {onSelectDestination && (
-                    <button
-                      type="button"
-                      onClick={() => onSelectDestination(activePoint)}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-[#1E40AF] text-[11px] font-semibold border border-blue-200 transition"
-                    >
-                      <CheckCircle2 className="w-3 h-3" />
-                      <span>Chọn điểm này</span>
-                    </button>
-                  )}
-                </div>
-
-                <a
-                  href={`tel:${activePoint.hotline.replace(/-/g, "")}`}
-                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-bold text-white transition ${
-                    activePoint.type === "EXPRESSWAY_RESCUE"
-                      ? "bg-red-600 hover:bg-red-700"
-                      : "bg-[#1E40AF] hover:bg-[#1D4ED8]"
-                  }`}
-                >
-                  <PhoneCall className="w-3 h-3" />
-                  <span>{activePoint.hotline}</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          3. DANH SÁCH BÊN DƯỚI: 1 ĐIỂM GẦN NHẤT + NÚT XEM THÊM
-      ───────────────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-h-0 bg-slate-50/60">
-        {/* Thanh Bộ Lọc Phân Loại (Semantic Filter Pills) */}
-        <div className="p-2.5 border-b border-slate-200/80 bg-white flex items-center gap-1.5 overflow-x-auto shrink-0">
-          <button
-            type="button"
-            onClick={() => setFilterType("ALL")}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition shrink-0 ${
-              filterType === "ALL"
-                ? "bg-[#1E40AF] text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-          >
-            Tất cả ({enrichedPoints.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterType("CHARGING_STATION")}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition shrink-0 flex items-center gap-1 ${
-              filterType === "CHARGING_STATION"
-                ? "bg-sky-700 text-white"
-                : "bg-sky-50 text-sky-700 hover:bg-sky-100"
-            }`}
-          >
-            <span>⚡ Trạm sạc</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterType("SERVICE_WORKSHOP")}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition shrink-0 flex items-center gap-1 ${
-              filterType === "SERVICE_WORKSHOP"
-                ? "bg-emerald-700 text-white"
-                : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-            }`}
-          >
-            <span>🔧 Xưởng DV</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilterType("EXPRESSWAY_RESCUE")}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition shrink-0 flex items-center gap-1 ${
-              filterType === "EXPRESSWAY_RESCUE"
-                ? "bg-red-600 text-white"
-                : "bg-red-50 text-red-700 hover:bg-red-100"
-            }`}
-          >
-            <span>🚨 Cứu hộ 24/7</span>
-          </button>
-        </div>
-
-        {/* Nội dung danh sách */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
-          {/* TRƯỜNG HỢP A: ĐIỂM GẦN NHẤT QUÁ XA (> 50 KM) THEO YÊU CẦU */}
-          {isNearestTooFar ? (
-            <div className="p-3.5 rounded-2xl border border-amber-200 bg-amber-50/90 text-[12px] space-y-2.5 animate-fadeIn">
-              <div className="flex items-start gap-2.5">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <h4 className="font-bold text-[13px] text-amber-950">
-                    Chưa có điểm hỗ trợ trong khu vực của bạn
-                  </h4>
-                  <p className="text-amber-900 leading-relaxed text-[11.5px]">
-                    Điểm gần nhất thuộc phân loại này cách vị trí của bạn{" "}
-                    <strong>{nearestPoint ? nearestPoint.distText : "> 50 km"}</strong>.
-                    Vui lòng liên hệ Tổng đài Toàn quốc để được hỗ trợ điều phối:
-                  </p>
-                </div>
-              </div>
-
-              <a
-                href="tel:1900232389"
-                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-[12px] shadow-2xs transition"
-              >
-                <PhoneCall className="w-3.5 h-3.5" />
-                <span>Gọi Tổng đài Cứu hộ: 1900-232389 (24/7)</span>
-              </a>
-            </div>
-          ) : nearestPoint ? (
-            /* TRƯỜNG HỢP B: HIỂN THỊ ĐÚNG 1 ĐIỂM GẦN NHẤT (FEATURED CARD) */
-            <div className="space-y-2">
-              <div
-                onClick={() => {
-                  onSelectPoint(nearestPoint.id);
-                  setActivePopoverId(nearestPoint.id);
-                }}
-                className="p-3.5 rounded-2xl border-2 border-[#1E40AF] bg-blue-50/50 shadow-xs cursor-pointer transition relative"
-              >
-                {/* Huy hiệu điểm gần nhất */}
-                <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    {nearestPoint.type === "EXPRESSWAY_RESCUE" ? (
-                      <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-red-100 text-red-700 uppercase">
-                        🚨 Cứu hộ 24/7
-                      </span>
-                    ) : nearestPoint.type === "CHARGING_STATION" ? (
-                      <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-blue-100 text-[#1E40AF] uppercase">
-                        ⚡ Trạm sạc Siêu Nhanh
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-emerald-100 text-emerald-800 uppercase">
-                        🔧 Xưởng dịch vụ 3S
-                      </span>
-                    )}
-                    <span className="text-[10px] font-bold text-[#1E40AF] bg-white px-2 py-0.5 rounded-full border border-blue-200">
-                      Gần bạn nhất
-                    </span>
-                  </div>
-
-                  <span className="font-mono text-[12px] font-bold text-[#1E40AF] shrink-0">
-                    {nearestPoint.distText}
-                  </span>
-                </div>
-
-                <h4 className="font-bold text-[13px] text-slate-900 leading-snug">
-                  {nearestPoint.name}
-                </h4>
-                <p className="text-[11.5px] text-slate-600 mt-1 leading-relaxed">
-                  {nearestPoint.address}
-                </p>
-
-                {/* Nút hành động */}
-                <div className="mt-2.5 pt-2 border-t border-blue-100 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={getDirectionsUrl(
-                        { lat: nearestPoint.coords.lat, lng: nearestPoint.coords.lng, address: nearestPoint.address },
-                        userCoord
-                      )}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#1E40AF] hover:underline"
-                    >
-                      <Navigation className="w-3.5 h-3.5" />
-                      <span>Chỉ đường Maps</span>
-                    </a>
-                    {onSelectDestination && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelectDestination(nearestPoint);
-                        }}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-[#1E40AF] text-[11px] font-semibold border border-blue-200 transition"
-                      >
-                        <CheckCircle2 className="w-3 h-3" />
-                        <span>Chọn điểm này</span>
-                      </button>
-                    )}
-                  </div>
-
-                  <a
-                    href={`tel:${nearestPoint.hotline.replace(/-/g, "")}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[11px] font-bold transition shadow-2xs"
-                  >
-                    <PhoneCall className="w-3 h-3" />
-                    <span>{nearestPoint.hotline}</span>
-                  </a>
-                </div>
-              </div>
-
-              {/* Nút "Xem thêm các điểm khác" dạng accordion */}
-              {remainingPoints.length > 0 && (
-                <div className="pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowMorePoints(!showMorePoints)}
-                    className="w-full py-2 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[11.5px] font-semibold text-slate-700 flex items-center justify-between transition shadow-2xs"
-                  >
-                    <span>
-                      {showMorePoints
-                        ? "Thu gọn danh sách"
-                        : `Xem thêm ${remainingPoints.length} điểm hỗ trợ khác trong hệ thống`}
-                    </span>
-                    {showMorePoints ? (
-                      <ChevronUp className="w-4 h-4 text-slate-400" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-slate-400" />
-                    )}
-                  </button>
-
-                  {/* Danh sách mở rộng */}
-                  {showMorePoints && (
-                    <div className="space-y-2 pt-2 animate-fadeIn">
-                      {remainingPoints.map((point) => (
-                        <div
-                          key={point.id}
-                          onClick={() => {
-                            onSelectPoint(point.id);
-                            setActivePopoverId(point.id);
-                          }}
-                          className="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[12px] cursor-pointer transition shadow-2xs"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <h5 className="font-bold text-[12.5px] text-slate-900 leading-snug">
-                              {point.name}
-                            </h5>
-                            <span className="font-mono text-[11px] font-bold text-slate-500 shrink-0">
-                              {point.distText}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed line-clamp-1">
-                            {point.address}
-                          </p>
-                          <div className="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <a
-                                href={getDirectionsUrl(
-                                  { lat: point.coords.lat, lng: point.coords.lng, address: point.address },
-                                  userCoord
-                                )}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1E40AF] hover:underline"
-                              >
-                                <Navigation className="w-3 h-3" />
-                                <span>Chỉ đường</span>
-                              </a>
-                              {onSelectDestination && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onSelectDestination(point);
-                                  }}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-[#1E40AF] text-[10.5px] font-semibold border border-blue-200"
-                                >
-                                  <CheckCircle2 className="w-2.5 h-2.5" />
-                                  <span>Chọn điểm này</span>
-                                </button>
-                              )}
-                            </div>
-                            <a
-                              href={`tel:${point.hotline.replace(/-/g, "")}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-[10px] text-slate-500 font-mono hover:text-[#1E40AF]"
-                            >
-                              {point.hotline}
-                            </a>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="p-4 text-center text-slate-500 text-[12px]">
-              Chưa có dữ liệu điểm hỗ trợ được xác thực cho khu vực này. Anh/chị vui lòng tra cứu trên ứng dụng VinFast hoặc liên hệ hotline.
-            </div>
-          )}
-        </div>
-
-        {/* ─────────────────────────────────────────────────────────────
-            4. DISCLAIMER PHẠM VI HỖ TRỢ
-        ───────────────────────────────────────────────────────────── */}
-        <div className="p-2.5 bg-slate-100/80 border-t border-slate-200 text-[10.5px] text-slate-500 leading-relaxed shrink-0">
-          <p className="flex items-start gap-1">
-            <Info className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
-            <span>
-              Điểm hỗ trợ gợi ý theo dữ liệu hệ thống, không phải điều phối hay theo dõi xe cứu hộ trực tiếp.
-            </span>
-          </p>
-        </div>
-      </div>
+      <div className="w-1/2 relative bg-slate-100" role="region" aria-label="Bản đồ tương tác">{center ? <div ref={mapElement} className="absolute inset-0" /> : <p className="p-4 text-sm">Nhập hoặc chọn khu vực để mở bản đồ.</p>}{mapError && <p role="alert" className="absolute bottom-2 left-2 bg-white p-2 text-xs">Không tải được bản đồ. Danh sách vẫn sử dụng được.</p>}</div>
     </div>
-  );
-
-  // Desktop Fullscreen Modal
-  if (isFullscreen) {
-    return (
-      <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
-        <div className="w-full max-w-5xl h-[88vh]">
-          {renderContent()}
-        </div>
-      </div>
-    );
-  }
-
-  // Mobile Bottom-Sheet Modal
-  if (isMobileModal) {
-    return (
-      <div className="fixed inset-0 z-50 lg:hidden bg-slate-900/50 backdrop-blur-2xs flex flex-col justify-end animate-fadeIn">
-        <div className="w-full h-[85vh] bg-white rounded-t-3xl overflow-hidden shadow-2xl animate-slideUp flex flex-col">
-          <div
-            className="w-full py-2.5 flex justify-center bg-slate-100 border-b border-slate-200 cursor-pointer"
-            onClick={onClose}
-          >
-            <div className="w-12 h-1 rounded-full bg-slate-300" />
-          </div>
-          <div className="flex-1 min-h-0">{renderContent()}</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Desktop Side Panel (55/45)
-  return (
-    <aside className="h-[calc(100vh-165px)] min-h-[580px] max-h-[780px] w-full">
-      {renderContent()}
-    </aside>
-  );
+  </section>;
 }

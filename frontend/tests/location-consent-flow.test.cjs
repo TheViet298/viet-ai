@@ -269,3 +269,35 @@ test('7. Luồng CHỌN ĐIỂM ĐẾN & ĐIỀU HƯỚNG: Sinh prompt chat và 
   assert.ok(navUrl.includes('origin=21.03,105.8'));
   assert.ok(navUrl.includes('destination=21.0315,105.8145'));
 });
+
+const { startLocationWatch, shouldSyncLocation } = loadTsModule('../src/features/chat/utils/locationTracking.ts');
+test('watchPosition stops once and ignores late callbacks', () => {
+  let success, failure;
+  const cleared = [];
+  const received = [];
+  const geo = {
+    watchPosition(onSuccess, onError, options) {
+      success = onSuccess; failure = onError;
+      assert.equal(options.timeout, 8000);
+      return 17;
+    },
+    clearWatch(id) { cleared.push(id); },
+  };
+  const stop = startLocationWatch(geo, (position) => received.push(position), () => received.push('error'));
+  success({ coords: { latitude: 21 } });
+  stop(); stop();
+  success({ coords: { latitude: 22 } }); failure({ code: 1 });
+  assert.deepEqual(cleared, [17]);
+  assert.deepEqual(received, [{ coords: { latitude: 21 } }]);
+});
+test('nearby sync threshold uses movement or elapsed time', () => {
+  const previous = { lat: 21, lng: 105, time: 1000 };
+  assert.equal(shouldSyncLocation(null, previous, 1000), true);
+  assert.equal(shouldSyncLocation(previous, { lat: 21.0001, lng: 105 }, 2000), false);
+  assert.equal(shouldSyncLocation(previous, { lat: 21.002, lng: 105 }, 2000), true);
+  assert.equal(shouldSyncLocation(previous, { lat: 21, lng: 105 }, 31000), true);
+});
+test('all demo categories are present', () => {
+  assert.deepEqual(new Set(SEED_SERVICE_POINTS.map((point) => point.type)), new Set(['CHARGING_STATION', 'SHOWROOM', 'SERVICE_WORKSHOP', 'OTHER']));
+  assert.ok(SEED_SERVICE_POINTS.every((point) => point.demo));
+});
