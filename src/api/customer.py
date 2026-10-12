@@ -1982,6 +1982,15 @@ def submit_case_location(
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {payload.case_id}")
     check_case_ownership(case, current_user)
 
+    # Keep only the current location for this case, and never retain coordinates
+    # after the customer switches to manual entry or withdraws sharing.
+    location_label = sanitize_pii(payload.location_label.strip())[0]
+    latitude = payload.latitude if payload.status == "CONSENTED" else None
+    longitude = payload.longitude if payload.status == "CONSENTED" else None
+    share_with_staff = payload.share_with_staff if payload.status != "NOT_SHARED" else False
+    if payload.status == "NOT_SHARED":
+        location_label = ""
+
     loc = db.query(CaseLocation).filter(CaseLocation.case_id == payload.case_id).first()
     if not loc:
         loc = CaseLocation(
@@ -1989,22 +1998,22 @@ def submit_case_location(
             case_id=payload.case_id,
             status=payload.status,
             source=payload.source,
-            location_label=payload.location_label,
-            latitude=payload.latitude,
-            longitude=payload.longitude,
+            location_label=location_label,
+            latitude=latitude,
+            longitude=longitude,
             precision=payload.precision,
-            share_with_staff=payload.share_with_staff,
+            share_with_staff=share_with_staff,
             created_at=utcnow(),
         )
         db.add(loc)
     else:
         loc.status = payload.status
         loc.source = payload.source
-        loc.location_label = payload.location_label
-        loc.latitude = payload.latitude
-        loc.longitude = payload.longitude
+        loc.location_label = location_label
+        loc.latitude = latitude
+        loc.longitude = longitude
         loc.precision = payload.precision
-        loc.share_with_staff = payload.share_with_staff
+        loc.share_with_staff = share_with_staff
 
     db.commit()
     db.refresh(loc)

@@ -2,13 +2,11 @@
 
 import { useState, useMemo, useEffect } from "react";
 import {
-  MapPin,
   Navigation,
   PhoneCall,
   X,
   Maximize2,
   Minimize2,
-  ExternalLink,
   ShieldAlert,
   BatteryCharging,
   Wrench,
@@ -73,9 +71,25 @@ export function ServiceMapPanel({
     if (locationState.coords) {
       return locationState.coords;
     }
+    // Tự động phân giải vị trí tham chiếu theo khu vực nhập tay nếu có
+    if (locationState.status === "MANUAL" && locationState.label) {
+      const lower = locationState.label.toLowerCase();
+      if (lower.includes("hồ chí minh") || lower.includes("hcm") || lower.includes("sài gòn")) {
+        return { lat: 10.795, lng: 106.7218 };
+      }
+      if (lower.includes("long thành") || lower.includes("dầu giây") || lower.includes("đồng nai")) {
+        return { lat: 10.7712, lng: 106.945 };
+      }
+      if (lower.includes("đà nẵng")) {
+        return { lat: 16.0544, lng: 108.2022 };
+      }
+      if (lower.includes("hà nội") || lower.includes("hn")) {
+        return { lat: 21.0315, lng: 105.8145 };
+      }
+    }
     // Vị trí tham chiếu mặc định nếu khách chưa chia sẻ GPS
     return { lat: 20.9889, lng: 105.9449 };
-  }, [locationState.coords]);
+  }, [locationState.coords, locationState.status, locationState.label]);
 
   const hasRealGps = locationState.status === "CONSENTED" && Boolean(locationState.coords);
 
@@ -126,8 +140,8 @@ export function ServiceMapPanel({
     // Các điểm nằm trong bán kính gần để đưa vào khung nhìn bản đồ
     const nearbyPoints = enrichedPoints.filter((p) => p.distKm <= MAX_SUPPORT_RADIUS_KM);
 
-    let lats = [userCoord.lat];
-    let lngs = [userCoord.lng];
+    const lats = [userCoord.lat];
+    const lngs = [userCoord.lng];
 
     if (!isNearestTooFar && nearbyPoints.length > 0) {
       nearbyPoints.forEach((p) => {
@@ -136,10 +150,10 @@ export function ServiceMapPanel({
       });
     }
 
-    let minLat = Math.min(...lats);
-    let maxLat = Math.max(...lats);
-    let minLng = Math.min(...lngs);
-    let maxLng = Math.max(...lngs);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
 
     // Bổ sung padding tỷ lệ để các ghim không bị tràn sát viền mép bản đồ
     const latSpan = Math.max(maxLat - minLat, 0.035);

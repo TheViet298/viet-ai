@@ -129,42 +129,61 @@ export function LocationConsentCard({
       )}
 
       {isManualInputMode || hasGeoError ? (
-        <form onSubmit={handleManualSubmit} className="flex items-center gap-2">
-          <input
-            type="text"
-            value={manualText}
-            onChange={(e) => setManualText(e.target.value)}
-            placeholder="Nhập km cao tốc, trạm sạc hoặc khu vực..."
-            className="flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11.5px] text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1E40AF]"
-            autoFocus
-          />
-          <button
-            type="submit"
-            disabled={!manualText.trim()}
-            className="px-3 py-1 rounded-lg bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[11px] font-semibold disabled:opacity-50 transition active:scale-95 shrink-0"
-          >
-            Xác nhận
-          </button>
-          {!hasGeoError && (
+        <div className="space-y-1.5">
+          <form onSubmit={handleManualSubmit} className="flex items-center gap-2">
+            <input
+              type="text"
+              value={manualText}
+              onChange={(e) => setManualText(e.target.value)}
+              placeholder="Nhập km cao tốc, trạm sạc hoặc khu vực..."
+              className="flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11.5px] text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1E40AF]"
+              autoFocus
+            />
             <button
-              type="button"
-              onClick={() => setIsManualInputMode(false)}
-              className="text-slate-500 hover:text-slate-700 text-[11px] px-1 shrink-0"
+              type="submit"
+              disabled={!manualText.trim()}
+              className="px-3 py-1 rounded-lg bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[11px] font-semibold disabled:opacity-50 transition active:scale-95 shrink-0"
             >
-              Hủy
+              Xác nhận
             </button>
-          )}
-          {hasGeoError && (
-            <button
-              type="button"
-              onClick={onSkip}
-              className="text-slate-400 hover:text-slate-600 text-[11px] px-1 shrink-0"
-              title="Bỏ qua"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </form>
+            {!hasGeoError && (
+              <button
+                type="button"
+                onClick={() => setIsManualInputMode(false)}
+                className="text-slate-500 hover:text-slate-700 text-[11px] px-1 shrink-0"
+              >
+                Hủy
+              </button>
+            )}
+            {hasGeoError && (
+              <button
+                type="button"
+                onClick={onSkip}
+                className="text-slate-400 hover:text-slate-600 text-[11px] px-1 shrink-0"
+                title="Bỏ qua"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </form>
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            <span className="text-[10.5px] text-slate-400">Gợi ý nhanh:</span>
+            {["Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng", "Cao tốc Long Thành"].map((area) => (
+              <button
+                key={area}
+                type="button"
+                onClick={() => {
+                  setManualText(area);
+                  onManualLocation(area);
+                  setIsManualInputMode(false);
+                }}
+                className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-[#1E40AF] text-[10.5px] transition"
+              >
+                {area}
+              </button>
+            ))}
+          </div>
+        </div>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 text-slate-800 text-[12px]">
