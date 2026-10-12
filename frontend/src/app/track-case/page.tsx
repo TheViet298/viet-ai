@@ -18,25 +18,18 @@ import {
   MessageSquare,
   MapPin,
   ExternalLink,
-  ChevronRight,
   ChevronDown,
   ChevronUp,
   BookOpen,
   Navigation,
   ThumbsUp,
-  Filter,
   ShieldCheck,
   Loader2,
-  Wrench,
-  BatteryCharging,
-  Info,
   ShieldAlert,
   ArrowRight,
-  Lock,
 } from "lucide-react";
 import {
   getCaseDetail,
-  getCaseStatus,
   getCustomerCases,
   reopenCustomerCase,
   submitCustomerFeedback,
@@ -88,7 +81,7 @@ export interface TrackedCase {
   locationConsent?: "GRANTED" | "DENIED" | "MANUAL" | "PENDING";
   manualLocation?: string;
   missingFields?: string[];
-  capturedFields?: Record<string, any>;
+  capturedFields?: Record<string, unknown>;
   customerUpdate?: {
     resolvedAt?: string;
     staffName: string;
@@ -230,10 +223,8 @@ const CURATED_TOPICS: CuratedTopic[] = [
   },
 ];
 
-const SAMPLE_CASES: Record<string, TrackedCase> = {};
-
 export default function TrackCasePage() {
-  const { user, role } = useAuth();
+  const { role } = useAuth();
 
   // Tabs: "Yêu cầu của tôi" vs "Tình huống thường gặp"
   const [activeTab, setActiveTab] = useState<"my_cases" | "curated_topics">("my_cases");
@@ -270,10 +261,6 @@ export default function TrackCasePage() {
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
   const [isFeedbackDismissed, setIsFeedbackDismissed] = useState<boolean>(false);
 
-  // Location Consent state
-  const [locationConsentChoice, setLocationConsentChoice] = useState<"GRANTED" | "MANUAL" | "SKIPPED" | null>(null);
-  const [manualLocationInput, setManualLocationInput] = useState<string>("");
-
   // Curated Topics Tab: Search & Filter & Accordion
   const [topicSearch, setTopicSearch] = useState<string>("");
   const [topicCategory, setTopicCategory] = useState<string>("ALL");
@@ -309,7 +296,7 @@ export default function TrackCasePage() {
         const loc = d.location;
 
         // 1. Vehicle model - Never default to VF8
-        const rawModel = c.vehicle_model || captured.vehicle_model || "";
+        const rawModel = String(c.vehicle_model || captured.vehicle_model || "");
         const cleanModel = rawModel
           ? rawModel.toUpperCase().startsWith("VF")
             ? rawModel.toUpperCase().replace(/\s+/g, "")
@@ -323,13 +310,14 @@ export default function TrackCasePage() {
             ? `${String(rawSoc).replace(/%$/, "")}%`
             : "Đang xác minh";
 
-        const warningLight =
+        const warningLight = String(
           captured.warning_symbol ||
           captured.warning_light ||
           captured.warning ||
           captured.visual_signals ||
-          "";
-        const rawErrorCode = captured.error_code || null;
+          ""
+        );
+        const rawErrorCode = captured.error_code ? String(captured.error_code) : undefined;
 
         const isTurtle =
           /rùa|turtle/i.test(String(warningLight)) ||
@@ -372,7 +360,7 @@ export default function TrackCasePage() {
           : "Gợi ý: Trạm sạc / Xưởng dịch vụ VinFast gần nhất";
 
         // 6. Safety Status & Incident Version
-        const safetyStatus = c.safety_status || captured.safety_status || "unconfirmed";
+        const safetyStatus = String(c.safety_status || captured.safety_status || "unconfirmed");
         const incidentVersion = c.incident_version ?? 1;
 
         // 7. Last Staff Update
@@ -431,12 +419,12 @@ export default function TrackCasePage() {
               : undefined,
         });
       } else {
-        const errMsg = typeof res?.error === "string" ? res.error : (res?.error as any)?.message || "Không tìm thấy dữ liệu hồ sơ";
+        const errMsg = res?.error || "Không tìm thấy dữ liệu hồ sơ";
         throw new Error(errMsg);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setCaseLoadError(
-        err?.message || "Không tải được chi tiết hồ sơ. Vui lòng thử lại."
+        err instanceof Error ? err.message : "Không tải được chi tiết hồ sơ. Vui lòng thử lại."
       );
     } finally {
       setSearchLoading(false);
@@ -480,8 +468,8 @@ export default function TrackCasePage() {
         safetyStatus: "customer_reported_safe",
       });
       setActionNotice("Đã ghi nhận vị trí an toàn của anh/chị. Đội ngũ kỹ thuật đang tiếp tục hỗ trợ.");
-    } catch (err: any) {
-      setActionNotice("Không thể xác nhận an toàn: " + (err?.message || "Lỗi kết nối"));
+    } catch (err: unknown) {
+      setActionNotice("Không thể xác nhận an toàn: " + (err instanceof Error ? err.message : "Lỗi kết nối"));
     } finally {
       setIsConfirmingSafety(false);
     }
@@ -501,19 +489,15 @@ export default function TrackCasePage() {
     setIsSubmittingConfirm(true);
     setActionNotice(null);
     try {
-      await confirmCustomerCase(currentCase.id, {
+      const res = await confirmCustomerCase(currentCase.id, {
         confirmation: "RESOLVED_CONFIRMED",
       });
+      if (!res.success) throw new Error(res.error || "Máy chủ chưa ghi nhận xác nhận.");
       setConfirmStatus("RESOLVED_CONFIRMED");
       setCurrentCase({ ...currentCase, status: "Closed" });
       setActionNotice("Cảm ơn anh/chị đã xác nhận! Hồ sơ đã được hoàn tất. Vui lòng dành 30 giây đánh giá chất lượng phục vụ.");
-    } catch (err: any) {
-      // Fallback nếu có lỗi mạng
-      setConfirmStatus("RESOLVED_CONFIRMED");
-      if (currentCase) {
-        setCurrentCase({ ...currentCase, status: "Closed" });
-      }
-      setActionNotice("Đã ghi nhận xác nhận của anh/chị! Vui lòng dành 30 giây đánh giá chất lượng phục vụ.");
+    } catch (err: unknown) {
+      setActionNotice("Chưa xác nhận hoàn tất hồ sơ: " + (err instanceof Error ? err.message : "Lỗi kết nối. Vui lòng thử lại."));
     } finally {
       setIsSubmittingConfirm(false);
     }
@@ -534,8 +518,8 @@ export default function TrackCasePage() {
           : "Khách phản ánh sự cố chưa được khắc phục triệt để.",
       });
       setActionNotice("Hồ sơ đã được chuyển lại cho Cố vấn Dịch vụ để kiểm tra bổ sung!");
-    } catch (err: any) {
-      setActionNotice("Lưu ý: " + (err?.message || "Không thể mở lại hồ sơ lúc này."));
+    } catch (err: unknown) {
+      setActionNotice("Lưu ý: " + (err instanceof Error ? err.message : "Không thể mở lại hồ sơ lúc này."));
     } finally {
       setIsSubmittingConfirm(false);
     }
@@ -554,8 +538,8 @@ export default function TrackCasePage() {
         setFeedbackSubmitted(true);
         setActionNotice("Cảm ơn anh/chị đã gửi đánh giá chất lượng dịch vụ!");
       }
-    } catch (err: any) {
-      setActionNotice("Lưu ý: " + (err?.message || "Lỗi khi gửi đánh giá."));
+    } catch (err: unknown) {
+      setActionNotice("Lưu ý: " + (err instanceof Error ? err.message : "Lỗi khi gửi đánh giá."));
     } finally {
       setIsSubmittingFeedback(false);
     }
@@ -597,7 +581,7 @@ export default function TrackCasePage() {
     }
   };
 
-  const getStatusLabel = (status: TrackedCase["status"]) => {
+  const getStatusLabel = (status: string) => {
     switch (status) {
       case "Staff Reviewing":
         return "Đang xác minh";
@@ -741,7 +725,7 @@ export default function TrackCasePage() {
                                 ? uc.vehicle_model.toUpperCase()
                                 : `VF ${uc.vehicle_model}`)
                               : "VF";
-                            const statusVn = getStatusLabel(uc.status as any);
+                            const statusVn = getStatusLabel(uc.status);
                             return (
                               <option key={uc.id} value={uc.id}>
                                 {model} · {statusVn} ({shortId})
@@ -750,7 +734,7 @@ export default function TrackCasePage() {
                           })}
                           {selectedCaseId && !userCases.some((uc) => uc.id === selectedCaseId) && (
                             <option value={selectedCaseId}>
-                              {currentCase?.vehicleModel || "VF"} · {getStatusLabel((currentCase?.status as any) || "Staff Reviewing")} ({selectedCaseId.length > 18 ? selectedCaseId.slice(0, 15) + "..." : selectedCaseId})
+                              {currentCase?.vehicleModel || "VF"} · {getStatusLabel(currentCase?.status || "Staff Reviewing")} ({selectedCaseId.length > 18 ? selectedCaseId.slice(0, 15) + "..." : selectedCaseId})
                             </option>
                           )}
                         </>
@@ -758,7 +742,7 @@ export default function TrackCasePage() {
                         <>
                           {selectedCaseId ? (
                             <option value={selectedCaseId}>
-                              {currentCase?.vehicleModel || "VF"} · {getStatusLabel((currentCase?.status as any) || "Staff Reviewing")} ({selectedCaseId.length > 18 ? selectedCaseId.slice(0, 15) + "..." : selectedCaseId})
+                              {currentCase?.vehicleModel || "VF"} · {getStatusLabel(currentCase?.status || "Staff Reviewing")} ({selectedCaseId.length > 18 ? selectedCaseId.slice(0, 15) + "..." : selectedCaseId})
                             </option>
                           ) : (
                             <option value="">Chưa có hồ sơ xe</option>
