@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ScanLine, PhoneCall, ShieldCheck, FileCheck, BatteryCharging, Wrench, AlertTriangle } from "lucide-react";
+import { PhoneCall } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { ProductMark } from "./ProductMark";
 

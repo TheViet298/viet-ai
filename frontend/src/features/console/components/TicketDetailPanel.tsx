@@ -7,22 +7,15 @@ import {
   Edit3,
   Check,
   X,
-  Clock,
   Send,
   CheckCircle2,
   AlertCircle,
   AlertTriangle,
-  XCircle,
-  Car,
-  MapPin,
   Bot,
   User,
   Loader2,
   GitBranch,
-  ShieldAlert,
   ChevronRight,
-  Flame,
-  FileText,
   MessageSquare,
 } from "lucide-react";
 import {
@@ -31,7 +24,6 @@ import {
   StaffActionType,
   TicketDetail,
   VIETNAMESE_STATUS_MAP,
-  VIETNAMESE_PRIORITY_MAP,
 } from "../types";
 import { ROUTING_DEPARTMENTS } from "./StaffConsoleShell";
 import { getTicketDetail, submitStaffAction } from "../api/consoleApi";
@@ -523,16 +515,17 @@ export function TicketDetailPanel({
   const captured = ticketDetail.case_brief.captured_fields || {};
 
   // 1. Dòng xe
-  const resolvedModel = captured.vehicle_model || ticket.vehicle_model || "VF8";
+  const resolvedModel = String(captured.vehicle_model || ticket.vehicle_model || "VF8");
 
   // 2. Vị trí
-  const resolvedLocation =
+  const resolvedLocation = String(
     ticketDetail.location?.location_label ||
     captured.station_location ||
     captured.location_label ||
     (ticketDetail.location?.latitude
       ? `${ticketDetail.location.latitude.toFixed(4)}° N, ${ticketDetail.location.longitude?.toFixed(4)}° E`
-      : "Đang xác minh tọa độ");
+      : "Đang xác minh tọa độ")
+  );
 
   // 3. Pin (SoC): Đọc đa dạng key soc, current_soc, battery_percentage
   const rawSoc = captured.current_soc ?? captured.soc ?? captured.battery_percentage;
@@ -618,7 +611,7 @@ export function TicketDetailPanel({
   if (captured.charger_id) {
     parameterRows.push({
       label: "Trụ sạc / Cổng kết nối",
-      value: captured.charger_id,
+      value: String(captured.charger_id),
       isWarning: false,
       isAlert: false,
     });

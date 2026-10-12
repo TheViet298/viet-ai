@@ -102,11 +102,6 @@ function mapApiUser(user: ApiUser, profile: Partial<AuthUser> = {}): AuthUser {
   };
 }
 
-function clearLegacyTokens() {
-  localStorage.removeItem("vf_customer_token");
-  localStorage.removeItem("vf_staff_token");
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isReady, setIsReady] = useState(false);

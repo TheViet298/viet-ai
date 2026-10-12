@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, ChevronRight, PhoneCall, ShieldAlert } from "lucide-react";
+import { CheckCircle2, PhoneCall, ShieldAlert } from "lucide-react";
 
 interface EmergencyAlertBannerProps {
   visible: boolean;

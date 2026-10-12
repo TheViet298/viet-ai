@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { ImagePlus, Send, X, Sparkles } from "lucide-react";
 
 interface ChatInputBarProps {
@@ -36,8 +37,11 @@ export function ChatInputBar({
       {/* Image Preview attachment badge */}
       {imagePreview && (
         <div className="mb-2.5 flex items-center gap-2.5 rounded-xl border border-blue-200 bg-blue-50/50 p-2 animate-fadeIn">
-          <img
+          <Image
             src={imagePreview}
+            width={56}
+            height={40}
+            unoptimized
             alt={imageKind === "auto" ? "Ảnh xe cần phân tích" : imageKind === "exterior" ? "Ảnh ngoại thất đã chọn" : "Ảnh cảnh báo đã chọn"}
             className="h-10 w-14 rounded-lg object-cover border border-blue-200"
           />

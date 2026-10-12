@@ -5,6 +5,13 @@ import { TicketItem, TicketPriority, TicketStatus } from "../types";
 export type { TicketItem, TicketPriority, TicketStatus };
 import { getTicketQueue } from "../api/consoleApi";
 
+const PRIORITY_WEIGHT: Record<TicketPriority, number> = {
+  CRITICAL: 4,
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+};
+
 export const INITIAL_TICKETS: TicketItem[] = [
   {
     id: "CASE-20260924-001",
@@ -155,13 +162,6 @@ export function useTickets() {
     };
   }, [statusFilter, priorityFilter]);
 
-  const priorityWeight: Record<TicketPriority, number> = {
-    CRITICAL: 4,
-    HIGH: 3,
-    MEDIUM: 2,
-    LOW: 1,
-  };
-
   const filteredTickets = useMemo(() => {
     return tickets
       .filter((t) => {
@@ -189,7 +189,7 @@ export function useTickets() {
       })
       .sort((a, b) => {
         if (sortBy === "PRIORITY_DESC") {
-          return (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
+          return (PRIORITY_WEIGHT[b.priority] || 0) - (PRIORITY_WEIGHT[a.priority] || 0);
         }
         if (sortBy === "CONFIDENCE_DESC") {
           return b.confidence_score - a.confidence_score;

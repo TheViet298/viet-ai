@@ -19,7 +19,7 @@ export type TicketIntent =
 
 export interface CaseBrief {
   summary: string;
-  captured_fields: Record<string, any>;
+  captured_fields: Record<string, unknown>;
   suggested_action: string;
   confidence_score: number;
   is_edited_by_staff?: boolean;

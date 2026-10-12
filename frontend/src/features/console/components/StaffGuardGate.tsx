@@ -1,13 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { ShieldAlert, ArrowLeft, KeyRound, Lock } from "lucide-react";
 import { useAuth } from "@/features/shared";
 
 export function StaffGuardGate() {
-  const router = useRouter();
   const { role } = useAuth();
 
   const returnHref = role === "CUSTOMER" ? "/track-case" : "/";

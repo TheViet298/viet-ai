@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit3, ShieldCheck, Sparkles, Check, X, FileText, CheckCircle2 } from "lucide-react";
+import { Edit3, ShieldCheck, Sparkles, Check, X, CheckCircle2 } from "lucide-react";
 import { CaseBrief } from "../types";
 
 interface CaseBriefCardProps {

@@ -113,6 +113,7 @@ export function useChat(context?: ChatUserContext | string) {
   const safetyRef = useRef({ caseId: currentCaseId, version: 0, acknowledged: false, epoch: 0 });
   const failedRequest = useRef<{ key: string; id: string; caseId: string | null } | null>(null);
   const conversationGeneration = useRef(0);
+  const initialCaseId = useRef(ctx.caseId);
 
   const applySafety = (input: { case_id?: string | null; incident_version?: number | null; safety_status?: string; emergency_context?: { case_id: string; incident_version: number; safety_status: string } | null }) => {
     const data = input.emergency_context || input;
@@ -128,9 +129,10 @@ export function useChat(context?: ChatUserContext | string) {
   };
 
   useEffect(() => {
+    const caseId = initialCaseId.current;
     const savedCase = storedCaseId();
-    if (!ctx.caseId) setCurrentCaseId(savedCase);
-    if (!ctx.caseId || ctx.caseId === savedCase) {
+    if (!caseId) setCurrentCaseId(savedCase);
+    if (!caseId || caseId === savedCase) {
       try {
         const key = storageKey("session");
         const savedSession = key ? localStorage.getItem(key) : null;
@@ -153,7 +155,7 @@ export function useChat(context?: ChatUserContext | string) {
                   priority: m.priority,
                 }));
                 setMessages(mapped);
-                if (hist.data.case_id && !ctx.caseId) {
+                if (hist.data.case_id && !caseId) {
                   setCurrentCaseId(hist.data.case_id);
                 }
               }
@@ -197,7 +199,7 @@ export function useChat(context?: ChatUserContext | string) {
   useEffect(() => {
     setMessages((prev) => {
       if (prev.length === 1 && prev[0].id === "welcome-1") {
-        return [createWelcomeMessage(ctx)];
+        return [createWelcomeMessage({ userName: ctx.userName, caseId: ctx.caseId })];
       }
       return prev;
     });
@@ -349,10 +351,10 @@ export function useChat(context?: ChatUserContext | string) {
         // 3. AI trả lời xuất hiện sau khi suy nghĩ xong
         setMessages((prev) => [...prev, agentMsg]);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (generation !== conversationGeneration.current) return;
       let errorContent = "Chưa nhận được phản hồi từ hệ thống. Anh/chị vui lòng gửi lại câu hỏi sau ít phút. Lượt gửi này chưa xác nhận tạo hồ sơ hoặc thông báo cứu hộ.";
-      if (err?.message) {
+      if (err && typeof err === "object" && "message" in err && typeof err.message === "string") {
         try {
           const match = err.message.match(/Chat API error \(\d+\): (.*)/);
           if (match && match[1]) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   Lock,
   ArrowRight,
-  Sparkles,
   Mail,
   AlertCircle,
   ArrowLeft,
