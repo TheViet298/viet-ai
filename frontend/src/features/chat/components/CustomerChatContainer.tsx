@@ -1,16 +1,9 @@
 "use client";
 
 import {
-  Car,
-  FileImage,
   RotateCcw,
-  ScanLine,
   ShieldCheck,
-  PhoneCall,
   ArrowRight,
-  ExternalLink,
-  MapPin,
-  Map,
   Compass,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -22,7 +15,7 @@ import { ChatFeed } from "./ChatFeed";
 import { ChatInputBar } from "./ChatInputBar";
 import { LocationConsentCard } from "./LocationConsentCard";
 import { ServiceMapPanel } from "./ServiceMapPanel";
-import { getAiSystemStatus, submitCustomerLocation, uploadAttachment } from "../api/chatApi";
+import { submitCustomerLocation, uploadAttachment } from "../api/chatApi";
 import { getSeedServicePoints } from "../constants/servicePoints";
 import { getUploadError } from "../uploadState";
 import { useAuth, ProductMark } from "@/features/shared";
@@ -57,8 +50,9 @@ export function CustomerChatContainer() {
   const [resolvedImageKind, setResolvedImageKind] = useState<"dashboard" | "charger" | "exterior" | null>(null);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const uploadRequestId = useRef(0);
+  const locationRequestId = useRef(0);
+  const locationTimeoutId = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasSentInitialPrompt = useRef(false);
-  const [aiStatus, setAiStatus] = useState<string>("Trợ lý VFServ • Hỗ trợ dịch vụ xe điện VinFast");
 
   // ===========================================================================
   // SERVICE MAP PREVIEW & LOCATION CONSENT (ADR-005, screen-spec.md Section 5.4, CUS-03)
@@ -76,6 +70,15 @@ export function CustomerChatContainer() {
   const [suggestedCategory, setSuggestedCategory] = useState<
     "ALL" | "EXPRESSWAY_RESCUE" | "CHARGING_STATION" | "SERVICE_WORKSHOP"
   >("ALL");
+
+  const invalidateLocationRequest = () => {
+    locationRequestId.current += 1;
+    if (locationTimeoutId.current !== null) {
+      clearTimeout(locationTimeoutId.current);
+      locationTimeoutId.current = null;
+    }
+    setIsLocating(false);
+  };
 
   const handleSelectDestination = (point: ServicePointSeed) => {
     setSelectedPointId(point.id);
@@ -96,6 +99,7 @@ export function CustomerChatContainer() {
   }, [criticalBanner, requestLocation]);
 
   const handleResetAll = () => {
+    invalidateLocationRequest();
     setResolvedImageKind(null);
     uploadRequestId.current += 1;
     setIsUploadingImage(false);
@@ -114,17 +118,6 @@ export function CustomerChatContainer() {
       label: "",
     });
   };
-
-  // Load AI System Status from /api/v1/status
-  useEffect(() => {
-    getAiSystemStatus()
-      .then((res) => {
-        if (res?.status === "ready") {
-          setAiStatus("Trợ lý VFServ • Sẵn sàng hỗ trợ");
-        }
-      })
-      .catch(() => { });
-  }, []);
 
   // Pre-load draft or auto-send prompt from Landing Hero if available
   useEffect(() => {
@@ -160,6 +153,8 @@ export function CustomerChatContainer() {
   // LOCATION HANDLERS (Kế hoạch 11/10: Desktop Browser định vị qua Wi-Fi/IP, timeout 8s, không lấy GPS nền, 3 lựa chọn)
   // ===========================================================================
   const handleConsentGps = () => {
+    invalidateLocationRequest();
+    const requestId = locationRequestId.current;
     setIsLocating(true);
     if (typeof window === "undefined" || !navigator.geolocation) {
       setIsLocating(false);
@@ -173,10 +168,10 @@ export function CustomerChatContainer() {
       return;
     }
 
-    let timeoutId: NodeJS.Timeout;
-
     const successHandler = (pos: GeolocationPosition) => {
-      clearTimeout(timeoutId);
+      if (requestId !== locationRequestId.current) return;
+      if (locationTimeoutId.current !== null) clearTimeout(locationTimeoutId.current);
+      locationTimeoutId.current = null;
       setIsLocating(false);
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
@@ -212,7 +207,9 @@ export function CustomerChatContainer() {
     };
 
     const errorHandler = (err?: GeolocationPositionError) => {
-      clearTimeout(timeoutId);
+      if (requestId !== locationRequestId.current) return;
+      if (locationTimeoutId.current !== null) clearTimeout(locationTimeoutId.current);
+      locationTimeoutId.current = null;
       setIsLocating(false);
       let errorCode: UserLocationState["errorCode"] = "POSITION_UNAVAILABLE";
       let errorLabel = "Tín hiệu GPS không khả dụng (Vui lòng nhập tay)";
@@ -238,7 +235,10 @@ export function CustomerChatContainer() {
     };
 
     // Timeout 8 giây theo đúng tài liệu (tránh treo khi ở trong hầm hoặc cao tốc)
-    timeoutId = setTimeout(() => {
+    locationTimeoutId.current = setTimeout(() => {
+      if (requestId !== locationRequestId.current) return;
+      locationRequestId.current += 1;
+      locationTimeoutId.current = null;
       setIsLocating(false);
       setLocationState({
         status: "MANUAL",
@@ -257,6 +257,7 @@ export function CustomerChatContainer() {
   };
 
   const handleManualLocation = (areaText: string) => {
+    invalidateLocationRequest();
     setLocationState({
       status: "MANUAL",
       source: "USER_TEXT",
@@ -279,6 +280,7 @@ export function CustomerChatContainer() {
   };
 
   const handleSkipLocation = () => {
+    invalidateLocationRequest();
     setLocationState({
       status: "NOT_SHARED",
       source: "USER_TEXT",
@@ -291,7 +293,7 @@ export function CustomerChatContainer() {
         case_id: currentCaseId,
         status: "NOT_SHARED",
         source: "USER_TEXT",
-        location_label: "",
+        location_label: "Không chia sẻ",
         latitude: null,
         longitude: null,
         share_with_staff: false,
@@ -300,6 +302,7 @@ export function CustomerChatContainer() {
   };
 
   const handleResetLocation = () => {
+    invalidateLocationRequest();
     setLocationState({
       status: "PENDING",
       source: "USER_TEXT",

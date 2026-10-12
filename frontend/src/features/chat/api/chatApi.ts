@@ -3,6 +3,9 @@ import {
   ArticleItem,
   AttachmentOut,
   ChatResponseData,
+  CaseLocationOut,
+  CaseLocationPayload,
+  Citation,
   ClientContext,
   CustomerCaseDetailData,
   CustomerCaseItem,
@@ -14,6 +17,35 @@ export async function getCustomerAuthHeaders(): Promise<Record<string, string>> 
   if (typeof window === "undefined") return {};
   const token = localStorage.getItem("vf_access_token") || localStorage.getItem("vf_customer_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+const locationUpdateQueue = new Map<string, Promise<unknown>>();
+
+export function submitCustomerLocation(payload: CaseLocationPayload): Promise<ApiResponse<CaseLocationOut>> {
+  const previous = locationUpdateQueue.get(payload.case_id) ?? Promise.resolve();
+  const request = previous.catch(() => undefined).then(async () => {
+    const authHeaders = await getCustomerAuthHeaders();
+    if (!authHeaders.Authorization) throw new Error("Vui lòng đăng nhập để chia sẻ vị trí với hồ sơ.");
+
+    // A later "Bỏ qua" request must clear coordinates after an earlier GPS request.
+    const body = payload.status === "NOT_SHARED"
+      ? { ...payload, location_label: payload.location_label.trim() || "Không chia sẻ", latitude: null, longitude: null, share_with_staff: false }
+      : payload;
+    const res = await fetch(`${BASE_URL}/api/v1/customer/location`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      throw new Error(`Không thể cập nhật vị trí hồ sơ (${res.status}).`);
+    }
+    return res.json() as Promise<ApiResponse<CaseLocationOut>>;
+  });
+  locationUpdateQueue.set(payload.case_id, request);
+  void request.finally(() => {
+    if (locationUpdateQueue.get(payload.case_id) === request) locationUpdateQueue.delete(payload.case_id);
+  }).catch(() => undefined);
+  return request;
 }
 
 /**
@@ -93,7 +125,7 @@ export async function getSessionHistory(sessionId: string): Promise<ApiResponse<
     content: string;
     timestamp: string;
     response_type?: "CLARIFICATION" | "FAQ_ANSWER" | "CASE_CREATED";
-    citations?: any[];
+    citations?: Citation[];
     suggested_replies?: string[];
     safe_guidance?: string;
     case_id?: string | null;

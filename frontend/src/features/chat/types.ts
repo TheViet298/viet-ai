@@ -77,7 +77,7 @@ export interface AttachmentOut {
   mime_type: string;
   analysis_status: string;
   ocr_text?: string | null;
-  detected_signals?: Record<string, any> | null;
+  detected_signals?: { image_kind?: string; analysis_error?: string; [key: string]: unknown } | null;
   vision_confidence?: number | null;
   created_at: string;
 }
@@ -126,6 +126,24 @@ export interface UserLocationState {
   errorMessage?: string;
 }
 
+export interface CaseLocationPayload {
+  case_id: string;
+  status: "CONSENTED" | "MANUAL" | "NOT_SHARED";
+  source: "BROWSER_GPS" | "USER_TEXT" | "MAP_PICKER";
+  location_label: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  precision?: "APPROXIMATE" | "EXACT";
+  share_with_staff: boolean;
+}
+
+export interface CaseLocationOut extends CaseLocationPayload {
+  precision: "APPROXIMATE" | "EXACT";
+  latitude: number | null;
+  longitude: number | null;
+  created_at: string;
+}
+
 export interface CustomerCaseDetailData {
   case: CustomerCaseItem & {
     safety_status?: string;
@@ -134,7 +152,7 @@ export interface CustomerCaseDetailData {
   };
   case_brief?: {
     summary?: string;
-    captured_fields?: Record<string, any>;
+    captured_fields?: Record<string, unknown>;
     suggested_action?: string;
     confidence_score?: number;
     is_edited_by_staff?: boolean;
