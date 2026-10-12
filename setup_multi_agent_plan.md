@@ -1,6 +1,3 @@
-Được. Sau vòng thử trong VS Code, bạn nên tự động hóa theo chuỗi **Antigravity lập kế hoạch → Codex viết mã → chạy kiểm thử → Antigravity rà soát**. Mỗi bước lưu kết quả và chỉ chạy bước kế tiếp khi bước trước thành công. Hai CLI hỗ trợ kiểu chạy này: Antigravity dùng `agy -p` và JSON output; Codex dùng `codex exec` và JSONL output. [Antigravity headless](https://antigravity.google/docs/cli/headless/), [Codex non-interactive](https://learn.chatgpt.com/docs/non-interactive-mode)
-
-Dưới đây là bản thiết lập cho Linux. Nó **không tự commit, push hoặc deploy**.
 
 ## Bước 1: kiểm tra công cụ và đăng nhập
 
@@ -174,7 +171,6 @@ Cho phép chạy:
 chmod +x scripts/run-gps-agents.sh
 ```
 
-**Lưu ý:** Đây là mẫu để bạn tạo trong repo của mình; tôi chưa chạy nó với mã của bạn. Các đường dẫn `scripts/` và lệnh kiểm thử có thể cần chỉnh theo cấu trúc dự án.
 
 ## Bước 4: chạy một lượt
 
@@ -203,4 +199,23 @@ Kế hoạch được lưu trong `docs/plans/`; JSON, thông báo lỗi và log 
 
 Sau khi một vài lượt chạy ổn định, bạn mới nên thêm **một vòng sửa tự động có giới hạn**: nếu review `fail`, chuyển `findings` cho Codex, chạy `verify-gps.sh` lần nữa, rồi Antigravity review lại. Giới hạn ở một vòng sửa và dừng khi vẫn không đạt để tránh hai agent lặp vô hạn.
 
-**Trạng thái:**  chỉ cung cấp hướng dẫn và script mẫu; chưa sửa tệp, chưa chạy kiểm thử, chưa commit hoặc push trong repo
+### Thiết lập thực tế trong repo
+
+Script thực thi hiện tại là `scripts/run-gps-agents.sh`, gọi điều phối Python
+`scripts/gps_agent_workflow.py`. Scope lấy từ `docs/gps_plans/location-feature.md`.
+Các khối mã ở Bước 3 phía trên là mẫu ban đầu; dùng script hiện tại khi chạy.
+
+```bash
+python3 scripts/setup_gps_agent_permissions.py --apply
+./scripts/run-gps-agents.sh --check
+./scripts/run-gps-agents.sh --smoke --agent-timeout 180
+# Chỉ triển khai trên checkout sạch:
+./scripts/run-gps-agents.sh --max-repairs 1
+```
+
+Luồng hỗ trợ findings → Codex sửa → kiểm thử → review lại tối đa một lần,
+structured output, phát hiện soft-denial/timeout và giới hạn tiến trình.
+Chi tiết quyền, dependency, log và checklist trình duyệt tại
+[docs/gps_plans/agent-workflow.md](docs/gps_plans/agent-workflow.md).
+Kết quả từng lượt nằm trong `result.json` ở thư mục tạm; không suy ra pass từ
+`SUCCESS` thiếu verdict hoặc kiểm thử chưa hoàn tất.
