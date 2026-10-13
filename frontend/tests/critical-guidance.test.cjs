@@ -13,7 +13,7 @@ test('critical chat response still displays its safety guidance', () => {
   const module = { exports: {} };
   const jsx = (type, props) => ({ type, props });
   vm.runInNewContext(code, { module, exports: module.exports, Date,
-    require: (name) => name === 'react' ? { useMemo: (fn) => fn() }
+    require: (name) => name === 'react' ? { useMemo: (fn) => fn(), useState: () => [false, () => {}], useEffect: () => {} }
       : name === 'react/jsx-runtime' ? { jsx, jsxs: jsx }
       : { default: name },
   });
@@ -37,7 +37,7 @@ test('rescue hotline renders a callable phone link while unsafe URLs remain bloc
   const module = { exports: {} };
   const jsx = (type, props) => ({ type, props });
   vm.runInNewContext(code, { module, exports: module.exports, Date,
-    require: (name) => name === 'react' ? { useMemo: (fn) => fn() }
+    require: (name) => name === 'react' ? { useMemo: (fn) => fn(), useState: () => [false, () => {}], useEffect: () => {} }
       : name === 'react/jsx-runtime' ? { jsx, jsxs: jsx }
       : { default: name, defaultUrlTransform },
   });

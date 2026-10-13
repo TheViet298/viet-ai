@@ -65,7 +65,7 @@ const AuthContext = createContext<AuthContextType>({
 
 const STORAGE_KEY = "vf_serviceflow_auth";
 const TOKEN_KEY = "vf_access_token";
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
 
 function savedProfile(): Partial<AuthUser> {
   try {

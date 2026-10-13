@@ -55,7 +55,7 @@ export function getSalutation(fullName?: string): { title: string; shortName: st
   return { title: "", shortName, pronoun: "Quý khách" };
 }
 
-export function createWelcomeMessage(context?: ChatUserContext | string): ChatMessage {
+export function createWelcomeMessage(context?: ChatUserContext | string, timestamp = ""): ChatMessage {
   const ctx: ChatUserContext =
     typeof context === "string" ? { userName: context } : context || {};
   const { userName, caseId } = ctx;
@@ -82,7 +82,7 @@ export function createWelcomeMessage(context?: ChatUserContext | string): ChatMe
     id: "welcome-1",
     sender: "AGENT",
     content,
-    timestamp: new Date().toISOString(),
+    timestamp,
     suggested_replies: [
       "Tư vấn xe",
       "Trạm sạc & ứng dụng",
@@ -199,7 +199,7 @@ export function useChat(context?: ChatUserContext | string) {
   useEffect(() => {
     setMessages((prev) => {
       if (prev.length === 1 && prev[0].id === "welcome-1") {
-        return [createWelcomeMessage({ userName: ctx.userName, caseId: ctx.caseId })];
+        return [createWelcomeMessage({ userName: ctx.userName, caseId: ctx.caseId }, prev[0].timestamp || new Date().toISOString())];
       }
       return prev;
     });
@@ -207,7 +207,7 @@ export function useChat(context?: ChatUserContext | string) {
 
   const resetChat = () => {
     ++conversationGeneration.current;
-    setMessages([createWelcomeMessage(ctx)]);
+    setMessages([createWelcomeMessage(ctx, new Date().toISOString())]);
     setInput("");
     setLoading(false);
     setCurrentCaseId(null);

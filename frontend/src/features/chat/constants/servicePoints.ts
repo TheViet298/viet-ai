@@ -1,7 +1,7 @@
 import { ServicePointSeed } from "../types";
 
 /**
- * Danh mục điểm hỗ trợ hạt giống VinFast chuẩn hóa theo ADR-005 và fixtures/service_points.demo.json
+ * Fallback mirrors fixtures/nearby_service_points.demo.json (separate from agent fixture).
  * Mỗi điểm có đầy đủ tọa độ, hotline chính thức 1900-232389 và cờ demo định hướng.
  */
 export const SEED_SERVICE_POINTS: ServicePointSeed[] = [
@@ -11,6 +11,9 @@ export const SEED_SERVICE_POINTS: ServicePointSeed[] = [
     type: "CHARGING_STATION",
     address: "29 Liễu Giai, Ngọc Khánh, Ba Đình, Hà Nội",
     demo: true,
+    source: "ServiceFlow demo catalog (not an official directory)",
+    updatedAt: "2026-10-13",
+    verificationStatus: "UNVERIFIED",
     hotline: "1900-232389",
     coords: { lat: 21.0315, lng: 105.8145 },
   },
@@ -20,6 +23,9 @@ export const SEED_SERVICE_POINTS: ServicePointSeed[] = [
     type: "CHARGING_STATION",
     address: "720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP.HCM",
     demo: true,
+    source: "ServiceFlow demo catalog (not an official directory)",
+    updatedAt: "2026-10-13",
+    verificationStatus: "UNVERIFIED",
     hotline: "1900-232389",
     coords: { lat: 10.795, lng: 106.7218 },
   },
@@ -29,6 +35,9 @@ export const SEED_SERVICE_POINTS: ServicePointSeed[] = [
     type: "OTHER",
     address: "Km 28 Cao tốc TP.HCM - Long Thành - Dầu Giây",
     demo: true,
+    source: "ServiceFlow demo catalog (not an official directory)",
+    updatedAt: "2026-10-13",
+    verificationStatus: "UNVERIFIED",
     hotline: "1900-232389",
     coords: { lat: 10.7712, lng: 106.945 },
   },
@@ -38,6 +47,9 @@ export const SEED_SERVICE_POINTS: ServicePointSeed[] = [
     type: "SERVICE_WORKSHOP",
     address: "159 Xa Lộ Hà Nội, Thảo Điền, TP. Thủ Đức, TP.HCM",
     demo: true,
+    source: "ServiceFlow demo catalog (not an official directory)",
+    updatedAt: "2026-10-13",
+    verificationStatus: "UNVERIFIED",
     hotline: "1900-232389",
     coords: { lat: 10.803, lng: 106.735 },
   },
@@ -47,6 +59,9 @@ export const SEED_SERVICE_POINTS: ServicePointSeed[] = [
     type: "SHOWROOM",
     address: "Khu đô thị Vinhomes Smart City, Tây Mỗ, Nam Từ Liêm, Hà Nội",
     demo: true,
+    source: "ServiceFlow demo catalog (not an official directory)",
+    updatedAt: "2026-10-13",
+    verificationStatus: "UNVERIFIED",
     hotline: "1900-232389",
     coords: { lat: 20.9982, lng: 105.742 },
   },

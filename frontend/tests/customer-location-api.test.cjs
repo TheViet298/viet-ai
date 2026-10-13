@@ -62,7 +62,7 @@ test('skipping location clears coordinates after an in-flight GPS update', async
   finishGps({ ok: true, json: async () => ({ success: true, data: {}, error: null }) });
   await Promise.all([gpsRequest, skipRequest]);
   assert.equal(calls.length, 2);
-  assert.equal(calls[1].url, 'http://localhost:8000/api/v1/customer/location');
+  assert.equal(calls[1].url, '/api/v1/customer/location');
   assert.equal(calls[1].options.headers.Authorization, 'Bearer customer-token');
   assert.deepEqual(JSON.parse(calls[1].options.body), {
     ...gpsPayload,

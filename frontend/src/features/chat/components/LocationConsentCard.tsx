@@ -8,6 +8,7 @@ import {
   AlertCircle,
   X,
 } from "lucide-react";
+import { searchManualAreas, resolveManualArea } from "../constants/manualAreas";
 import { UserLocationState } from "../types";
 
 interface LocationConsentCardProps {
@@ -35,6 +36,8 @@ export function LocationConsentCard({
 }: LocationConsentCardProps) {
   const [isManualInputMode, setIsManualInputMode] = useState(false);
   const [manualText, setManualText] = useState("");
+
+  const matchingAreas = searchManualAreas(manualText);
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,10 +139,12 @@ export function LocationConsentCard({
           <form onSubmit={handleManualSubmit} className="flex items-center gap-2">
             <input
               type="text"
+              aria-label="Khu vực hoặc địa chỉ nhập tay"
+              autoComplete="off"
               value={manualText}
               onChange={(e) => setManualText(e.target.value)}
               placeholder="Nhập km cao tốc, trạm sạc hoặc khu vực..."
-              className="flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11.5px] text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1E40AF]"
+              className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11.5px] text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1E40AF]"
               autoFocus
             />
             <button
@@ -169,11 +174,12 @@ export function LocationConsentCard({
               </button>
             )}
           </form>
+          {manualText.trim() && !resolveManualArea(manualText) && <p className="text-[11px] text-slate-600">Vẫn có thể xác nhận địa chỉ này bằng chữ. Chọn khu vực gợi ý để có tâm tham chiếu, không phải GPS.</p>}
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
             <span className="text-[10.5px] text-slate-400">Gợi ý nhanh:</span>
-            {["Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng", "Cao tốc Long Thành"].map((area) => (
+            {matchingAreas.map(({ id, label: area }) => (
               <button
-                key={area}
+                key={id}
                 type="button"
                 onClick={() => {
                   setManualText(area);

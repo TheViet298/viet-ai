@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, FileText, Check } from "lucide-react";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
@@ -21,6 +21,13 @@ export function ChatMessageItem({
   showCaseBadge = false,
   onSelectReply,
 }: ChatMessageItemProps) {
+  // Localized times are client-only: server and browser may use different zones.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const timestamp = message.timestamp ? new Date(message.timestamp) : null;
+  const displayTime = mounted && timestamp && Number.isFinite(timestamp.getTime())
+    ? timestamp.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
+    : "";
   const isCustomer = message.sender === "CUSTOMER";
 
   // Chuẩn hóa ký tự bullet point, tách dòng nếu bị dồn và lọc emoji đầu mục
@@ -69,7 +76,7 @@ export function ChatMessageItem({
       <div className="flex items-center gap-1.5 px-1 text-[11px] text-slate-400 font-medium">
         <span>{isCustomer ? "Bạn" : "Trợ lý VinFast"}</span>
         <span>·</span>
-        <span>{new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</span>
+        <time dateTime={message.timestamp || undefined}>{displayTime}</time>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────

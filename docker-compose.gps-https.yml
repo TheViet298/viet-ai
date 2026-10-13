@@ -1,0 +1,9 @@
+# Linux-only local test proxy. Start the isolated E2E servers first.
+services:
+  gps-https:
+    image: nginx:stable-alpine
+    network_mode: host
+    volumes:
+      - ./infra/gps-https/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${GPS_TLS_DIR:?Set GPS_TLS_DIR to a directory containing cert.pem and key.pem}:/etc/gps-tls:ro
+      - ${GPS_PROXY_LOG_DIR:?Set GPS_PROXY_LOG_DIR to an empty temporary log directory}:/var/log/nginx

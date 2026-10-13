@@ -11,7 +11,7 @@ import {
   CustomerCaseItem,
 } from "../types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
 
 export async function getCustomerAuthHeaders(): Promise<Record<string, string>> {
   if (typeof window === "undefined") return {};
@@ -378,7 +378,9 @@ export async function getNearbyServicePoints(coord: { lat: number; lng: number }
   const res = await fetch(`${BASE_URL}/api/v1/customer/service-points/nearby?${query}`, { signal });
   if (!res.ok) throw new Error(`Không thể tải điểm demo (${res.status}).`);
   const body = await res.json();
-  return (body.data.points as Array<{ id: string; name: string; category: string; address: string; latitude: number; longitude: number; hotline: string; demo: boolean }>).map((point) => ({
-    id: point.id, name: point.name, type: point.category as import("../types").ServicePointSeed["type"], address: point.address, hotline: point.hotline, coords: { lat: point.latitude, lng: point.longitude }, demo: true,
+  return (body.data.points as Array<{ id: string; name: string; category: string; address: string; latitude: number; longitude: number; hotline: string; demo?: boolean; source?: string; updated_at?: string; verification_status?: "UNVERIFIED" | "VERIFIED" }>).map((point) => ({
+    id: point.id, name: point.name, type: point.category as import("../types").ServicePointSeed["type"], address: point.address, hotline: point.hotline, coords: { lat: point.latitude, lng: point.longitude },
+    demo: point.demo !== false, source: point.source, updatedAt: point.updated_at ?? null,
+    verificationStatus: point.verification_status === "VERIFIED" && point.demo === false ? "VERIFIED" as const : "UNVERIFIED" as const,
   }));
 }

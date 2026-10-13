@@ -1,7 +1,7 @@
 {
   "description": "Log Codex prompts locally in .ai-log/session.jsonl",
   "hooks": {
-    "UserPromptSubmit": [
+    "SubmitUserPrompt": [
       {
         "hooks": [
           {

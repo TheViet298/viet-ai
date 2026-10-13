@@ -19,6 +19,7 @@ from src.agents.guardrails import (
     sanitize_pii,
 )
 from src.agents.nodes.triage_node import classify_request_kind, extract_fields
+from src.services.service_point_catalog import nearby_service_points
 from src.config import get_settings
 from src.db import get_db
 from src.models.db_models import (
@@ -66,7 +67,6 @@ from src.models.schemas import (
     SafetyAcknowledgementData,
     SafetyAcknowledgementPayload,
     ServiceHandoff,
-    ServicePointItem,
     ServicePointsData,
     SessionHistoryMessageItem,
     SessionHistoryResponseData,
@@ -2036,70 +2036,6 @@ def submit_case_location(
     )
 
 
-DEMO_SERVICE_POINTS = [
-    ServicePointItem(
-        id="SP-HN-001",
-        name="Trạm sạc VinFast Vincom Metropolis",
-        category="CHARGING_STATION",
-        address="29 Liễu Giai, Ngọc Khánh, Ba Đình, Hà Nội",
-        distance_km=1.2,
-        latitude=21.0315,
-        longitude=105.8145,
-        hotline="1900-232389",
-        operating_hours="24/7",
-        charger_types=["DC 250kW (Siêu nhanh)", "DC 60kW", "AC 11kW"],
-    ),
-    ServicePointItem(
-        id="SP-HCM-001",
-        name="Trạm sạc & Dịch vụ VinFast Landmark 81",
-        category="CHARGING_STATION",
-        address="720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP.HCM",
-        distance_km=2.5,
-        latitude=10.7950,
-        longitude=106.7218,
-        hotline="1900-232389",
-        operating_hours="24/7",
-        charger_types=["DC 150kW", "DC 60kW", "AC 7.4kW"],
-    ),
-    ServicePointItem(
-        id="SP-DN-001",
-        name="Trạm Cứu hộ Cao tốc Long Thành - Dầu Giây",
-        category="OTHER",
-        address="Km 28 Cao tốc TP.HCM - Long Thành - Dầu Giây",
-        distance_km=5.0,
-        latitude=10.7712,
-        longitude=106.9450,
-        hotline="1900-232389 (Phím 1 Cứu hộ khẩn cấp)",
-        operating_hours="24/7",
-        charger_types=None,
-    ),
-    ServicePointItem(
-        id="SP-HCM-002",
-        name="Xưởng Dịch vụ VinFast Thảo Điền",
-        category="SERVICE_WORKSHOP",
-        address="159 Xa Lộ Hà Nội, Thảo Điền, TP. Thủ Đức, TP.HCM",
-        distance_km=3.8,
-        latitude=10.8030,
-        longitude=106.7350,
-        hotline="1900-232389",
-        operating_hours="08:00 - 18:00 (Thứ 2 - Thứ 7)",
-        charger_types=["DC 60kW", "AC 11kW"],
-    ),
-    ServicePointItem(
-        id="SP-HN-002",
-        name="VinFast Showroom & Service Smart City",
-        category="SHOWROOM",
-        address="Khu đô thị Vinhomes Smart City, Tây Mỗ, Nam Từ Liêm, Hà Nội",
-        distance_km=8.4,
-        latitude=20.9982,
-        longitude=105.7420,
-        hotline="1900-232389",
-        operating_hours="08:30 - 20:00 Hàng ngày",
-        charger_types=["DC 150kW", "DC 60kW"],
-    ),
-]
-
-
 @router.get("/service-points/nearby")
 async def get_nearby_service_points(
     lat: float = Query(..., ge=-90, le=90),
@@ -2112,15 +2048,11 @@ async def get_nearby_service_points(
     if not math.isfinite(lat) or not math.isfinite(lng) or not math.isfinite(radius_km):
         raise HTTPException(status_code=422, detail="Tọa độ hoặc bán kính không hợp lệ")
 
-    def distance(point: ServicePointItem) -> float:
-        dlat = math.radians(point.latitude - lat)
-        dlng = math.radians(point.longitude - lng)
-        a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat)) * math.cos(math.radians(point.latitude)) * math.sin(dlng / 2) ** 2
-        return 6371.0 * 2 * math.atan2(math.sqrt(a), math.sqrt(max(0, 1 - a)))
-
-    matches = [(distance(point), point) for point in DEMO_SERVICE_POINTS if category == "ALL" or point.category == category]
-    points = [{**point.model_dump(), "distance_km": round(km, 3), "demo": True} for km, point in sorted(matches, key=lambda item: item[0]) if km <= radius_km][:limit]
-    return ApiResponse(success=True, data={"points": points, "demo": True}, error=None)
+    try:
+        data = nearby_service_points(lat, lng, category, radius_km, limit)
+    except (OSError, ValueError):
+        raise HTTPException(status_code=503, detail="Danh mục điểm dịch vụ tạm thời không khả dụng") from None
+    return ApiResponse(success=True, data=data, error=None)
 
 
 @router.get("/cases/{case_id}/service-points", response_model=ApiResponse[ServicePointsData])

@@ -113,6 +113,9 @@ export interface ServicePointSeed {
   address: string;
   distance?: string;
   demo?: boolean;
+  source?: string;
+  updatedAt?: string | null;
+  verificationStatus?: "UNVERIFIED" | "VERIFIED";
   hotline: string;
   coords: { lat: number; lng: number };
 }

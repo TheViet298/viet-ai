@@ -4,19 +4,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MapLibreMap, Marker } from "maplibre-gl";
 import type { ServicePointSeed, UserLocationState } from "../types";
 import { calculateHaversineDistanceKm, formatDistanceKm, getDirectionsUrl, getOsmDirectionsUrl } from "../utils/distance";
+import { resolveManualArea } from "../constants/manualAreas";
+import { createRasterMapStyle } from "../utils/mapTileProvider";
 import { getNearbyServicePoints } from "../api/chatApi";
+
+function pointLabel(point: ServicePointSeed) {
+  return point.demo ? "[Demo] " : point.verificationStatus === "VERIFIED" ? "" : "[Chưa xác minh] ";
+}
 
 type Category = "ALL" | ServicePointSeed["type"];
 const categories: [Category, string][] = [["ALL", "Tất cả"], ["CHARGING_STATION", "Trụ sạc"], ["SHOWROOM", "Showroom"], ["SERVICE_WORKSHOP", "Xưởng kỹ thuật"], ["OTHER", "Loại khác / Cứu hộ"]];
-const areas = [
-  { names: ["hà nội"], coord: { lat: 21.0285, lng: 105.8542 } },
-  { names: ["hồ chí minh", "hcm", "sài gòn"], coord: { lat: 10.8231, lng: 106.6297 } },
-  { names: ["đà nẵng"], coord: { lat: 16.0544, lng: 108.2022 } },
-  { names: ["long thành", "dầu giây", "đồng nai"], coord: { lat: 10.7712, lng: 106.945 } },
-];
-function reference(label: string) {
-  return areas.find((area) => area.names.some((name) => label.toLocaleLowerCase("vi").includes(name)))?.coord;
-}
 function accuracyPolygon(lat: number, lng: number, meters: number): GeoJSON.Feature<GeoJSON.Polygon> {
   const coordinates: [number, number][] = [];
   for (let i = 0; i <= 64; i++) {
@@ -48,7 +45,7 @@ export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints,
   const nearbyAbort = useRef<AbortController | null>(null);
   const lastQuery = useRef<{ coord: { lat: number; lng: number }; time: number; category: Category; mode: UserLocationState["status"] } | null>(null);
   const origin = locationState.status === "CONSENTED" ? locationState.coords : undefined;
-  const center = useMemo(() => origin ?? (locationState.status === "MANUAL" ? reference(locationState.label) : undefined), [origin, locationState.status, locationState.label]);
+  const center = useMemo(() => origin ?? (locationState.status === "MANUAL" ? resolveManualArea(locationState.label)?.coord : undefined), [origin, locationState.status, locationState.label]);
   const hasCenter = Boolean(center);
   const latestCenter = useRef(center);
   latestCenter.current = center;
@@ -89,7 +86,7 @@ export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints,
         // Next.js 14 cannot bundle MapLibre v6's ESM worker reliably. Serve
         // the copied worker from /public and configure it before map creation.
         maplibre.setWorkerUrl("/maplibre-gl-worker.mjs");
-        const instance = new maplibre.Map({ container: mapElement.current, center: [initialCenter.lng, initialCenter.lat], zoom: 11, style: { version: 8, sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap contributors" } }, layers: [{ id: "osm", type: "raster", source: "osm" }] } });
+        const instance = new maplibre.Map({ container: mapElement.current, center: [initialCenter.lng, initialCenter.lat], zoom: 11, style: createRasterMapStyle(process.env.NEXT_PUBLIC_MAP_TILE_URL, process.env.NEXT_PUBLIC_MAP_TILE_ATTRIBUTION) });
         map.current = instance;
         instance.addControl(new maplibre.NavigationControl(), "top-right");
         instance.on("error", () => { if (!cancelled) setMapError(true); });
@@ -111,7 +108,7 @@ export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints,
       user.title = origin ? "Vị trí hiện tại" : "Tâm khu vực tham chiếu";
       markers.current.push(new maplibre.Marker({ element: user }).setLngLat([center.lng, center.lat]).addTo(instance));
       filtered.forEach((point) => {
-        const button = document.createElement("button"); button.type = "button"; button.className = "w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-md"; button.title = `[Demo] ${point.name}`;
+        const button = document.createElement("button"); button.type = "button"; button.className = "w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-md"; button.title = `${pointLabel(point)}${point.name}`;
         button.onclick = () => onSelectPoint(point.id);
         markers.current.push(new maplibre.Marker({ element: button }).setLngLat([point.coords.lng, point.coords.lat]).addTo(instance));
       });
@@ -127,17 +124,17 @@ export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints,
   }, [center, filtered, locationState.accuracy, origin, onSelectPoint, mapReady]);
 
   if (!isOpen) return null;
-  return <section className="h-full min-h-[500px] rounded-xl border bg-white overflow-hidden flex flex-col" aria-label="Bản đồ điểm dịch vụ demo">
-    <header className="flex items-center justify-between p-3 border-b"><strong>Điểm dịch vụ [Demo]</strong><button type="button" onClick={onClose} aria-label="Đóng bản đồ">Đóng</button></header>
+  return <section className="h-full min-h-[500px] rounded-xl border bg-white overflow-hidden flex flex-col" aria-label="Bản đồ điểm dịch vụ">
+    <header className="flex items-center justify-between p-3 border-b"><strong>Điểm dịch vụ</strong><button type="button" onClick={onClose} aria-label="Đóng bản đồ">Đóng</button></header>
     <div className="flex flex-1 min-h-[450px]">
       <div className="w-1/2 overflow-auto p-3 space-y-3">
-        <p className="text-xs text-slate-600">Dữ liệu giả lập, chưa xác minh địa điểm hoặc tình trạng hoạt động.</p>
-        {locationState.status === "MANUAL" && <p className="text-xs text-amber-800">{center ? "Tâm khu vực tham chiếu/ước lượng, không phải GPS. Khoảng cách chỉ để tham khảo." : "Chưa nhận diện khu vực. Chọn nhanh Hà Nội, TP.HCM, Đà Nẵng hoặc Long Thành để xem khoảng cách tham khảo."}</p>}
+        <p className="text-xs text-slate-600">Điểm demo được gắn nhãn. Danh mục không xác nhận tình trạng hoạt động trực tiếp.</p>
+        {locationState.status === "MANUAL" && <p className="text-xs text-amber-800">{center ? "Tâm khu vực tham chiếu/ước lượng, không phải GPS. Khoảng cách chỉ để tham khảo." : "Chưa nhận diện chính xác khu vực. Dùng Đổi lại vị trí để chọn một khu vực gợi ý; chưa có khoảng cách tham khảo."}</p>}
         {locationState.accuracy && locationState.accuracy > 500 && <p className="text-xs text-amber-800">Vị trí ước lượng ±{Math.round(locationState.accuracy)}m</p>}
         <div className="flex flex-wrap gap-1">{categories.map(([value, label]) => <button key={value} type="button" aria-pressed={category === value} className={`px-2 py-1 rounded border text-xs ${category === value ? "bg-blue-700 text-white" : "bg-white"}`} onClick={() => { if (value === category) return; nearbyAbort.current?.abort(); requestId.current++; setNearby(null); setCategory(value); onSelectPoint(""); }}>{label}</button>)}</div>
         {filtered.length === 0 && <div><p>Không có điểm demo phù hợp{center ? " trong bán kính 50 km" : " trong bộ lọc này"}.</p><a href="tel:1900232389" className="text-blue-700 underline">Gọi hỗ trợ 1900-232389</a></div>}
-        {filtered.map((point) => <button type="button" key={point.id} onClick={() => onSelectPoint(point.id)} className={`block w-full text-left p-2 rounded border ${selected?.id === point.id ? "border-blue-700" : "border-slate-200"}`}><strong>[Demo] {point.name}</strong><span className="block text-xs">{point.address}</span>{point.km !== null && <span className="text-xs">{formatDistanceKm(point.km)} đường chim bay</span>}</button>)}
-        {selected && <div className="border-t pt-2 text-sm"><strong>[Demo] {selected.name}</strong><p>{selected.address}</p>{selected.hotline && <a className="block text-blue-700" href={`tel:${selected.hotline.split(" ")[0].replace(/[^\d+]/g, "")}`}>Hotline: {selected.hotline}</a>}<div className="flex flex-wrap gap-3 mt-2"><a target="_blank" rel="noopener noreferrer" href={getDirectionsUrl({ ...selected.coords, address: selected.address }, origin)}>Google Maps{origin ? " chỉ đường" : " tìm địa chỉ"}</a>{origin && <a target="_blank" rel="noopener noreferrer" href={getOsmDirectionsUrl(selected.coords, origin)}>OpenStreetMap chỉ đường</a>}{onSelectDestination && <button type="button" onClick={() => onSelectDestination(selected)}>Chọn làm điểm đến</button>}</div></div>}
+        {filtered.map((point) => <button type="button" key={point.id} onClick={() => onSelectPoint(point.id)} className={`block w-full text-left p-2 rounded border ${selected?.id === point.id ? "border-blue-700" : "border-slate-200"}`}><strong>{pointLabel(point)}{point.name}</strong><span className="block text-xs">{point.address}</span>{point.km !== null && <span className="text-xs">{formatDistanceKm(point.km)} đường chim bay</span>}</button>)}
+        {selected && <div className="border-t pt-2 text-sm"><strong>{pointLabel(selected)}{selected.name}</strong><p>{selected.address}</p><p className="text-xs text-slate-600">Nguồn: {selected.source ?? "Chưa có nguồn"} · Cập nhật: {selected.updatedAt ?? "Chưa rõ"} · {selected.verificationStatus === "VERIFIED" && !selected.demo ? "Danh mục đã xác minh" : "Chưa xác minh"}</p>{selected.hotline && <a className="block text-blue-700" href={`tel:${selected.hotline.split(" ")[0].replace(/[^\d+]/g, "")}`}>Hotline: {selected.hotline}</a>}<div className="flex flex-wrap gap-3 mt-2"><a target="_blank" rel="noopener noreferrer" href={getDirectionsUrl({ ...selected.coords, address: selected.address }, origin)}>Google Maps{origin ? " chỉ đường" : " tìm địa chỉ"}</a>{origin && <a target="_blank" rel="noopener noreferrer" href={getOsmDirectionsUrl(selected.coords, origin)}>OpenStreetMap chỉ đường</a>}{onSelectDestination && <button type="button" onClick={() => onSelectDestination(selected)}>Chọn làm điểm đến</button>}</div></div>}
       </div>
       <div className="w-1/2 relative bg-slate-100" role="region" aria-label="Bản đồ tương tác">{center ? <div ref={mapElement} style={{ position: "absolute", inset: 0 }} /> : <p className="p-4 text-sm">Nhập hoặc chọn khu vực để mở bản đồ.</p>}{mapError && <p role="alert" className="absolute bottom-2 left-2 bg-white p-2 text-xs">Không tải được bản đồ. Danh sách vẫn sử dụng được.</p>}</div>
     </div>

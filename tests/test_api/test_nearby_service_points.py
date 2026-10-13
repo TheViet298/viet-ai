@@ -10,6 +10,8 @@ async def test_nearby_demo_distance_categories_and_privacy(client):
     assert points[0]["id"] == "SP-HN-001"
     assert points[0]["distance_km"] == 0
     assert all(point["demo"] is True for point in points)
+    assert all(point["verification_status"] == "UNVERIFIED" for point in points)
+    assert all(point["source"] and point["updated_at"] for point in points)
     assert {point["category"] for point in points} >= {"CHARGING_STATION", "SHOWROOM"}
     showroom = await client.get(url, params={"lat": 21.0315, "lng": 105.8145, "category": "SHOWROOM", "radius_km": 50})
     assert [point["id"] for point in showroom.json()["data"]["points"]] == ["SP-HN-002"]
