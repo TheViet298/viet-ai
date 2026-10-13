@@ -77,7 +77,7 @@ export function LocationConsentCard({
           >
             {isMapOpen ? "Ẩn bản đồ" : "Xem bản đồ ›"}
           </button>
-          {locationState.status === "CONSENTED" && <><button type="button" onClick={() => { onStopSharing(); setIsManualInputMode(true); onResetLocation(); }} className="text-blue-700 font-semibold">Nhập khu vực</button><button type="button" onClick={onStopSharing} className="text-red-700 font-semibold">Dừng chia sẻ</button></>}
+          {locationState.status === "CONSENTED" && <><button type="button" onClick={() => { onResetLocation(); setIsManualInputMode(true); }} className="text-blue-700 font-semibold">Nhập khu vực</button><button type="button" onClick={onStopSharing} className="text-red-700 font-semibold">Dừng chia sẻ</button></>}
           <button
             type="button"
             onClick={onResetLocation}
@@ -205,14 +205,13 @@ export function LocationConsentCard({
             </button>
             <button
               type="button"
-              onClick={() => setIsManualInputMode(true)}
+              onClick={() => { onResetLocation(); setIsManualInputMode(true); }}
               className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-medium transition active:scale-95 shadow-2xs"
             >
               Nhập khu vực
             </button>
             <button
               type="button"
-              disabled={isLocating}
               onClick={onSkip}
               className="text-slate-400 hover:text-slate-600 text-[11px] px-1 transition"
               title="Bỏ qua"

@@ -6,9 +6,9 @@ import {
   ArrowRight,
   Compass,
 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { ServicePointSeed, UserLocationState } from "../types";
+import { ServicePointSeed, UserLocationState, CaseLocationPayload } from "../types";
 import { useChat } from "../hooks/useChat";
 import { EmergencyAlertBanner } from "./EmergencyAlertBanner";
 import { ChatFeed } from "./ChatFeed";
@@ -52,10 +52,10 @@ export function CustomerChatContainer() {
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const uploadRequestId = useRef(0);
   const locationRequestId = useRef(0);
-  const activeCaseId = useRef(currentCaseId);
-  activeCaseId.current = currentCaseId;
+  const syncRequestId = useRef(0);
+  const failedLocationPayload = useRef<CaseLocationPayload | null>(null);
   const stopWatchRef = useRef<(() => void) | null>(null);
-  const lastLocationSync = useRef<{ lat: number; lng: number; time: number } | null>(null);
+  const lastLocationSync = useRef<{ lat: number; lng: number; time: number; caseId: string } | null>(null);
   const hasSentInitialPrompt = useRef(false);
 
   // ===========================================================================
@@ -67,6 +67,7 @@ export function CustomerChatContainer() {
     source: "USER_TEXT",
     label: "",
   });
+  const [locationSyncError, setLocationSyncError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
@@ -89,6 +90,39 @@ export function CustomerChatContainer() {
     stopWatchRef.current = null;
   }, []);
 
+  const syncLocation = useCallback((payload: CaseLocationPayload) => {
+    const id = ++syncRequestId.current;
+    failedLocationPayload.current = null;
+    setLocationSyncError(null);
+    void submitCustomerLocation(payload).then(() => {
+      if (id === syncRequestId.current) setLocationSyncError(null);
+    }).catch(() => {
+      if (id !== syncRequestId.current) return;
+      lastLocationSync.current = null;
+      failedLocationPayload.current = payload;
+      setLocationSyncError("Chưa đồng bộ được vị trí với hồ sơ. Vui lòng thử lại.");
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!currentCaseId || locationState.status === "PENDING") return;
+    const coords = locationState.status === "CONSENTED" ? locationState.coords : undefined;
+    const now = Date.now();
+    const previous = lastLocationSync.current;
+    if (coords && previous?.caseId === currentCaseId && !shouldSyncLocation(previous, coords, now)) return;
+    if (coords) lastLocationSync.current = { ...coords, time: now, caseId: currentCaseId };
+    const manual = locationState.status === "MANUAL" && Boolean(locationState.label.trim());
+    syncLocation({
+      case_id: currentCaseId,
+      status: coords ? "CONSENTED" : manual ? "MANUAL" : "NOT_SHARED",
+      source: coords ? "BROWSER_GPS" : "USER_TEXT",
+      location_label: coords ? "Vị trí hiện tại" : manual ? locationState.label : "Không chia sẻ",
+      latitude: coords?.lat ?? null, longitude: coords?.lng ?? null,
+      precision: coords && (locationState.accuracy ?? 0) <= 500 ? "EXACT" : "APPROXIMATE",
+      share_with_staff: Boolean(coords || manual),
+    });
+  }, [currentCaseId, locationState, syncLocation]);
+
   const handleSelectDestination = (point: ServicePointSeed) => {
     setSelectedPointId(point.id);
     const destPrompt = `Tôi muốn đến ${point.name} (${point.address}) để kiểm tra. Cho tôi hỏi trạm hiện có hoạt động và sẵn sàng tiếp nhận không?`;
@@ -109,7 +143,7 @@ export function CustomerChatContainer() {
 
   const handleResetAll = () => {
     invalidateLocationRequest();
-    if (currentCaseId) void submitCustomerLocation({ case_id: currentCaseId, status: "NOT_SHARED", source: "USER_TEXT", location_label: "Không chia sẻ", latitude: null, longitude: null, share_with_staff: false }).catch(() => {});
+    if (currentCaseId) syncLocation({ case_id: currentCaseId, status: "NOT_SHARED", source: "USER_TEXT", location_label: "Không chia sẻ", latitude: null, longitude: null, share_with_staff: false });
     setResolvedImageKind(null);
     uploadRequestId.current += 1;
     setIsUploadingImage(false);
@@ -123,7 +157,6 @@ export function CustomerChatContainer() {
     setSuggestedCategory("ALL");
     setSelectedPointId(null);
     setLocationState({ status: "PENDING", source: "USER_TEXT", label: "" });
-    if (currentCaseId) void submitCustomerLocation({ case_id: currentCaseId, status: "NOT_SHARED", source: "USER_TEXT", location_label: "Không chia sẻ", latitude: null, longitude: null, share_with_staff: false }).catch(() => {});
   };
 
   // Pre-load draft or auto-send prompt from Landing Hero if available
@@ -175,12 +208,6 @@ export function CustomerChatContainer() {
       setIsLocating(false);
       setLocationState({ status: "CONSENTED", source: "BROWSER_GPS", label: "Vị trí hiện tại", coords: { lat, lng }, accuracy, isTracking: true, errorCode: accuracy > 500 ? "ACCURACY_LOW" : undefined });
       setIsMapOpen(true);
-      const now = Date.now(), previous = lastLocationSync.current;
-      const caseId = activeCaseId.current;
-      if (caseId && (shouldSyncLocation(previous, { lat, lng }, now))) {
-        lastLocationSync.current = { lat, lng, time: now };
-        void submitCustomerLocation({ case_id: caseId, status: "CONSENTED", source: "BROWSER_GPS", location_label: "Vị trí hiện tại", latitude: lat, longitude: lng, precision: accuracy > 500 ? "APPROXIMATE" : "EXACT", share_with_staff: true }).catch(() => {});
-      }
     };
     const errorHandler = (err: GeolocationPositionError) => {
       if (requestId !== locationRequestId.current) return;
@@ -199,47 +226,19 @@ export function CustomerChatContainer() {
       label: areaText,
     });
     setIsMapOpen(true);
-
-    if (currentCaseId) {
-      void submitCustomerLocation({
-        case_id: currentCaseId,
-        status: "MANUAL",
-        source: "USER_TEXT",
-        location_label: areaText,
-        latitude: null,
-        longitude: null,
-        precision: "APPROXIMATE",
-        share_with_staff: true,
-      }).catch(() => {});
-    }
   };
 
   const handleSkipLocation = () => {
     invalidateLocationRequest();
-    setLocationState({
-      status: "NOT_SHARED",
-      source: "USER_TEXT",
-      label: "Không chia sẻ",
-    });
+    setLocationState({ status: "NOT_SHARED", source: "USER_TEXT", label: "Không chia sẻ" });
     setIsMapOpen(false);
-
-    if (currentCaseId) {
-      void submitCustomerLocation({
-        case_id: currentCaseId,
-        status: "NOT_SHARED",
-        source: "USER_TEXT",
-        location_label: "Không chia sẻ",
-        latitude: null,
-        longitude: null,
-        share_with_staff: false,
-      }).catch(() => {});
-    }
   };
 
   const handleResetLocation = () => {
     invalidateLocationRequest();
+    setIsMapOpen(false);
     setLocationState({ status: "PENDING", source: "USER_TEXT", label: "" });
-    if (currentCaseId) void submitCustomerLocation({ case_id: currentCaseId, status: "NOT_SHARED", source: "USER_TEXT", location_label: "Không chia sẻ", latitude: null, longitude: null, share_with_staff: false }).catch(() => {});
+    if (currentCaseId) syncLocation({ case_id: currentCaseId, status: "NOT_SHARED", source: "USER_TEXT", location_label: "Không chia sẻ", latitude: null, longitude: null, share_with_staff: false });
   };
 
   const selectImage = async (file: File) => {
@@ -461,6 +460,7 @@ export function CustomerChatContainer() {
           />
 
           {/* Card Xin Quyền Vị Trí: ĐƯA RA KHỎI LUỒNG CHAT, LÀM THANH MỎNG DÍNH TRÊN Ô NHẬP */}
+          {locationSyncError && <div role="alert" className="px-3 py-2 text-xs text-amber-900 bg-amber-50">{locationSyncError} <button type="button" className="underline" onClick={() => { if (failedLocationPayload.current) syncLocation(failedLocationPayload.current); }}>Thử lại đồng bộ</button></div>}
           {showLocationCard && (
             <LocationConsentCard
               locationState={locationState}
@@ -524,7 +524,7 @@ export function CustomerChatContainer() {
               locationState={locationState}
               servicePoints={servicePoints}
               selectedPointId={selectedPointId}
-              onSelectPoint={(id) => setSelectedPointId(id)}
+              onSelectPoint={setSelectedPointId}
               onSelectDestination={handleSelectDestination}
               suggestedCategory={suggestedCategory}
             />

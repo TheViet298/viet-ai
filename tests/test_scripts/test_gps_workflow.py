@@ -57,7 +57,7 @@ class ValidationTests(unittest.TestCase):
             result = subprocess.run(['bash', str(verifier)], env=env, text=True, capture_output=True, timeout=10)
             self.assertEqual(result.returncode, 1)
             self.assertIn('exit 124', result.stderr)
-            self.assertEqual(len(log.read_text().splitlines()), 6)
+            self.assertEqual(len(log.read_text().splitlines()), 7)
             self.assertIn('PASS: Frontend build', result.stdout)
 
     def test_soft_denial_success_is_rejected(self):

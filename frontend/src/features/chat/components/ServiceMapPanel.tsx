@@ -46,11 +46,14 @@ export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints,
   const markers = useRef<Marker[]>([]);
   const requestId = useRef(0);
   const nearbyAbort = useRef<AbortController | null>(null);
-  const lastQuery = useRef<{ coord: { lat: number; lng: number }; time: number; category: Category } | null>(null);
+  const lastQuery = useRef<{ coord: { lat: number; lng: number }; time: number; category: Category; mode: UserLocationState["status"] } | null>(null);
   const origin = locationState.status === "CONSENTED" ? locationState.coords : undefined;
-  const center = origin ?? (locationState.status === "MANUAL" ? reference(locationState.label) : undefined);
+  const center = useMemo(() => origin ?? (locationState.status === "MANUAL" ? reference(locationState.label) : undefined), [origin, locationState.status, locationState.label]);
+  const hasCenter = Boolean(center);
+  const latestCenter = useRef(center);
+  latestCenter.current = center;
   const points = nearby ?? servicePoints;
-  const filtered = useMemo(() => points.filter((point) => category === "ALL" || point.type === category).map((point) => ({ ...point, km: center ? calculateHaversineDistanceKm(center, point.coords) : null })).filter((point) => point.km === null || point.km <= 50).sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity)), [points, category, center?.lat, center?.lng]);
+  const filtered = useMemo(() => points.filter((point) => category === "ALL" || point.type === category).map((point) => ({ ...point, km: center ? calculateHaversineDistanceKm(center, point.coords) : null })).filter((point) => point.km === null || point.km <= 50).sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity)), [points, category, center]);
   const selected = filtered.find((point) => point.id === selectedPointId) ?? filtered[0];
 
   useEffect(() => { setCategory(suggestedCategory); }, [suggestedCategory]);
@@ -58,8 +61,8 @@ export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints,
     if (!isOpen || !center) { requestId.current++; nearbyAbort.current?.abort(); lastQuery.current = null; setNearby(null); return; }
     const now = Date.now();
     const previous = lastQuery.current;
-    if (previous && previous.category === category && calculateHaversineDistanceKm(previous.coord, center) < 0.15 && now - previous.time < 30000) return;
-    lastQuery.current = { coord: center, time: now, category };
+    if (previous && previous.category === category && previous.mode === locationState.status && calculateHaversineDistanceKm(previous.coord, center) < 0.15 && now - previous.time < 30000) return;
+    lastQuery.current = { coord: center, time: now, category, mode: locationState.status };
     const id = ++requestId.current;
     nearbyAbort.current?.abort();
     const controller = new AbortController();
@@ -70,27 +73,31 @@ export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints,
     }).catch(() => { if (id === requestId.current) setNearby(null); });
     // Keep an in-flight query across small GPS updates that do not pass the throttle.
     // It is cancelled only by a replacement query, close, or unmount.
-  }, [isOpen, center?.lat, center?.lng, category]);
+  }, [isOpen, center, category, locationState.status]);
   useEffect(() => () => { nearbyAbort.current?.abort(); requestId.current++; }, []);
 
   useEffect(() => {
-    if (!isOpen || !mapElement.current || !center) return;
+    if (!isOpen || !mapElement.current || !hasCenter) return;
+    setMapError(false);
     let cancelled = false;
+    const resizeObserver = new ResizeObserver(() => map.current?.resize());
+    resizeObserver.observe(mapElement.current);
     import("maplibre-gl").then((maplibre) => {
-      if (cancelled || !mapElement.current) return;
+      const initialCenter = latestCenter.current;
+      if (cancelled || !mapElement.current || !initialCenter) return;
       try {
         // Next.js 14 cannot bundle MapLibre v6's ESM worker reliably. Serve
         // the copied worker from /public and configure it before map creation.
         maplibre.setWorkerUrl("/maplibre-gl-worker.mjs");
-        const instance = new maplibre.Map({ container: mapElement.current, center: [center.lng, center.lat], zoom: 11, style: { version: 8, sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap contributors" } }, layers: [{ id: "osm", type: "raster", source: "osm" }] } });
+        const instance = new maplibre.Map({ container: mapElement.current, center: [initialCenter.lng, initialCenter.lat], zoom: 11, style: { version: 8, sources: { osm: { type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"], tileSize: 256, attribution: "© OpenStreetMap contributors" } }, layers: [{ id: "osm", type: "raster", source: "osm" }] } });
         map.current = instance;
         instance.addControl(new maplibre.NavigationControl(), "top-right");
-        instance.on("error", () => setMapError(true));
+        instance.on("error", () => { if (!cancelled) setMapError(true); });
         instance.on("style.load", () => { if (!cancelled) { setMapError(false); setMapReady(true); } });
       } catch { setMapError(true); }
-    }).catch(() => setMapError(true));
-    return () => { cancelled = true; markers.current.forEach((marker) => marker.remove()); markers.current = []; map.current?.remove(); map.current = null; setMapReady(false); };
-  }, [isOpen, Boolean(center)]);
+    }).catch(() => { if (!cancelled) setMapError(true); });
+    return () => { cancelled = true; resizeObserver.disconnect(); markers.current.forEach((marker) => marker.remove()); markers.current = []; map.current?.remove(); map.current = null; setMapReady(false); };
+  }, [isOpen, hasCenter]);
 
   useEffect(() => {
     const instance = map.current;
@@ -108,19 +115,21 @@ export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints,
         button.onclick = () => onSelectPoint(point.id);
         markers.current.push(new maplibre.Marker({ element: button }).setLngLat([point.coords.lng, point.coords.lat]).addTo(instance));
       });
-      instance.jumpTo({ center: [center.lng, center.lat] });
+      const bounds = new maplibre.LngLatBounds([center.lng, center.lat], [center.lng, center.lat]);
+      filtered.forEach((point) => bounds.extend([point.coords.lng, point.coords.lat]));
+      instance.fitBounds(bounds, { padding: 32, maxZoom: 13, duration: 0 });
       const source = instance.getSource("accuracy") as import("maplibre-gl").GeoJSONSource | undefined;
       const data = origin && locationState.accuracy ? accuracyPolygon(center.lat, center.lng, locationState.accuracy) : { type: "FeatureCollection", features: [] } as GeoJSON.FeatureCollection;
       if (source) source.setData(data);
       else if (instance.isStyleLoaded()) { instance.addSource("accuracy", { type: "geojson", data }); instance.addLayer({ id: "accuracy-fill", type: "fill", source: "accuracy", paint: { "fill-color": "#2563eb", "fill-opacity": 0.16 } }); }
     });
     return () => { disposed = true; };
-  }, [center?.lat, center?.lng, filtered, locationState.accuracy, origin, onSelectPoint, mapReady]);
+  }, [center, filtered, locationState.accuracy, origin, onSelectPoint, mapReady]);
 
   if (!isOpen) return null;
   return <section className="h-full min-h-[500px] rounded-xl border bg-white overflow-hidden flex flex-col" aria-label="Bản đồ điểm dịch vụ demo">
     <header className="flex items-center justify-between p-3 border-b"><strong>Điểm dịch vụ [Demo]</strong><button type="button" onClick={onClose} aria-label="Đóng bản đồ">Đóng</button></header>
-    <div className="flex flex-1 min-h-0">
+    <div className="flex flex-1 min-h-[450px]">
       <div className="w-1/2 overflow-auto p-3 space-y-3">
         <p className="text-xs text-slate-600">Dữ liệu giả lập, chưa xác minh địa điểm hoặc tình trạng hoạt động.</p>
         {locationState.status === "MANUAL" && <p className="text-xs text-amber-800">{center ? "Tâm khu vực tham chiếu/ước lượng, không phải GPS. Khoảng cách chỉ để tham khảo." : "Chưa nhận diện khu vực. Chọn nhanh Hà Nội, TP.HCM, Đà Nẵng hoặc Long Thành để xem khoảng cách tham khảo."}</p>}
@@ -128,9 +137,9 @@ export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints,
         <div className="flex flex-wrap gap-1">{categories.map(([value, label]) => <button key={value} type="button" aria-pressed={category === value} className={`px-2 py-1 rounded border text-xs ${category === value ? "bg-blue-700 text-white" : "bg-white"}`} onClick={() => { if (value === category) return; nearbyAbort.current?.abort(); requestId.current++; setNearby(null); setCategory(value); onSelectPoint(""); }}>{label}</button>)}</div>
         {filtered.length === 0 && <div><p>Không có điểm demo phù hợp{center ? " trong bán kính 50 km" : " trong bộ lọc này"}.</p><a href="tel:1900232389" className="text-blue-700 underline">Gọi hỗ trợ 1900-232389</a></div>}
         {filtered.map((point) => <button type="button" key={point.id} onClick={() => onSelectPoint(point.id)} className={`block w-full text-left p-2 rounded border ${selected?.id === point.id ? "border-blue-700" : "border-slate-200"}`}><strong>[Demo] {point.name}</strong><span className="block text-xs">{point.address}</span>{point.km !== null && <span className="text-xs">{formatDistanceKm(point.km)} đường chim bay</span>}</button>)}
-        {selected && <div className="border-t pt-2 text-sm"><strong>[Demo] {selected.name}</strong><p>{selected.address}</p><div className="flex flex-wrap gap-3 mt-2"><a target="_blank" rel="noopener noreferrer" href={getDirectionsUrl({ ...selected.coords, address: selected.address }, origin)}>Google Maps{origin ? " chỉ đường" : " tìm địa chỉ"}</a>{origin && <a target="_blank" rel="noopener noreferrer" href={getOsmDirectionsUrl(selected.coords, origin)}>OpenStreetMap chỉ đường</a>}{onSelectDestination && <button type="button" onClick={() => onSelectDestination(selected)}>Chọn làm điểm đến</button>}</div></div>}
+        {selected && <div className="border-t pt-2 text-sm"><strong>[Demo] {selected.name}</strong><p>{selected.address}</p>{selected.hotline && <a className="block text-blue-700" href={`tel:${selected.hotline.split(" ")[0].replace(/[^\d+]/g, "")}`}>Hotline: {selected.hotline}</a>}<div className="flex flex-wrap gap-3 mt-2"><a target="_blank" rel="noopener noreferrer" href={getDirectionsUrl({ ...selected.coords, address: selected.address }, origin)}>Google Maps{origin ? " chỉ đường" : " tìm địa chỉ"}</a>{origin && <a target="_blank" rel="noopener noreferrer" href={getOsmDirectionsUrl(selected.coords, origin)}>OpenStreetMap chỉ đường</a>}{onSelectDestination && <button type="button" onClick={() => onSelectDestination(selected)}>Chọn làm điểm đến</button>}</div></div>}
       </div>
-      <div className="w-1/2 relative bg-slate-100" role="region" aria-label="Bản đồ tương tác">{center ? <div ref={mapElement} className="absolute inset-0" /> : <p className="p-4 text-sm">Nhập hoặc chọn khu vực để mở bản đồ.</p>}{mapError && <p role="alert" className="absolute bottom-2 left-2 bg-white p-2 text-xs">Không tải được bản đồ. Danh sách vẫn sử dụng được.</p>}</div>
+      <div className="w-1/2 relative bg-slate-100" role="region" aria-label="Bản đồ tương tác">{center ? <div ref={mapElement} style={{ position: "absolute", inset: 0 }} /> : <p className="p-4 text-sm">Nhập hoặc chọn khu vực để mở bản đồ.</p>}{mapError && <p role="alert" className="absolute bottom-2 left-2 bg-white p-2 text-xs">Không tải được bản đồ. Danh sách vẫn sử dụng được.</p>}</div>
     </div>
   </section>;
 }
