@@ -301,7 +301,15 @@ class RAGService:
                 diagnostics.append({"chunk_id": chunk_id, "reason": "model_mismatch"})
                 continue
             variant = re.search(r"\b(plus|eco)\b", query, re.I)
-            if variant and source["source_type"] == "official_catalog" and variant.group().lower() not in (doc or "").lower():
+            if (meta.get('catalog_scope') == 'model_colors'
+                    and re.search(r'nội thất|noi that', query, re.I)
+                    and not re.search(r'nội thất|noi that', doc or '', re.I)):
+                diagnostics.append({'chunk_id': chunk_id, 'reason': 'missing_answer_subject'})
+                continue
+            model_colors = (meta.get('catalog_scope') == 'model_colors'
+                            and re.search(r'\bm(?:à|a)u\b', query, re.I)
+                            and not re.search(r'\b(?:plus|eco)\b', doc or '', re.I))
+            if variant and source["source_type"] == "official_catalog" and not model_colors and variant.group().lower() not in (doc or "").lower():
                 diagnostics.append({"chunk_id": chunk_id, "reason": "variant_mismatch"})
                 continue
             sections = select_supported_evidence(query, [{"relevant_snippet": doc or ""}])
@@ -329,7 +337,7 @@ class RAGService:
                 years = set(re.findall(r"\b20\d{2}\b", excerpt))
                 requested_years = set(re.findall(r"\b20\d{2}\b", query))
                 is_catalog_overview = any(term in query.casefold() for term in ("các dòng xe", "dòng xe", "các mẫu xe", "mẫu xe", "dải sản phẩm", "danh mục xe", "lăn bánh"))
-                if not is_catalog_overview and ((passage_variants and not variant) or (variant and passage_variants != {variant.group().lower()}) or (requested_years and not requested_years <= years)):
+                if not is_catalog_overview and ((passage_variants and not variant) or (variant and not model_colors and passage_variants != {variant.group().lower()}) or (requested_years and not requested_years <= years)):
                     diagnostics.append({"chunk_id": chunk_id, "reason": "unresolved_applicability"})
                     continue
             if utf8_size(excerpt) > budget:
@@ -348,6 +356,8 @@ class RAGService:
             }
             if parent_id:
                 citation["parent_chunk_id"] = parent_id
+            if model_colors:
+                citation['catalog_scope'] = 'model_colors'
             if not valid_citation(citation, vehicle_model):
                 reason = "unsafe_content" if resolve_policy_conflict(snippet) else "distance_or_metadata"
                 diagnostics.append({"chunk_id": chunk_id, "source_id": meta["source_id"], "distance": distance, "reason": reason})

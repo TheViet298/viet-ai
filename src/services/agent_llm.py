@@ -33,7 +33,8 @@ def reset_circuits() -> None:
 
 def classify_provider_error(error: Exception) -> str:
     # Only the category leaves this function; never persist exception payloads.
-    if isinstance(error, TimeoutError):
+    from src.services.request_diagnostics import failure_details
+    if failure_details(error)['failure_kind'] == 'timeout':
         return "timeout"
     text = str(error).casefold()
     if any(term in text for term in ["429", "quota", "resource_exhausted", "rate limit"]):
@@ -43,7 +44,8 @@ def classify_provider_error(error: Exception) -> str:
     return "provider_error"
 
 
-def record_outcome(state: AgentState, prompt: str, decision: str, usage: dict | None = None, parsed=None) -> None:
+def record_outcome(state: AgentState, prompt: str, decision: str, usage: dict | None = None, parsed=None,
+                   diagnostics: dict | None = None) -> None:
     usage = usage or {}
     state["last_llm_outcome"] = decision
     with observation('llm.outcome', metadata={'outcome': decision, 'prompt_name': prompt}):
@@ -52,7 +54,9 @@ def record_outcome(state: AgentState, prompt: str, decision: str, usage: dict | 
         record_trace_step(
             state.get("session_id", "unspecified"), state.get("turn", 0), "llm", prompt, decision,
             tokens_in=usage.get("input_tokens"), tokens_out=usage.get("output_tokens"),
-            metadata={"model": getattr(get_settings(), "model_name", "gemini"), "output": sanitized_snapshot(parsed.model_dump()) if isinstance(parsed, BaseModel) else None},
+            metadata={"model": getattr(get_settings(), "model_name", "gemini"),
+                      "diagnostics": diagnostics or {},
+                      "output": sanitized_snapshot(parsed.model_dump()) if isinstance(parsed, BaseModel) else None},
         )
     except Exception:
         pass
@@ -79,6 +83,7 @@ async def structured_call(state: AgentState, prompt: str, schema: type[T], *, ca
     budget["attempts"] += 1
     from src.services.llm import get_llm
 
+    stage, limit, timeout_source = 'llm.prepare', None, None
     try:
         layers = build_7_layer_context(state, load_prompt(prompt))
         try:
@@ -89,11 +94,17 @@ async def structured_call(state: AgentState, prompt: str, schema: type[T], *, ca
         if layers.retrieval_context and not any(layers.retrieval_context in str(m.content) for m in messages):
             record_outcome(state, prompt, "context_budget_exceeded")
             return None
-        result = await asyncio.wait_for(
-            get_llm().with_structured_output(schema, include_raw=True).ainvoke(
-                messages, **({'config': {'callbacks': callbacks}} if callbacks is not None else {})
-            ), timeout=min(remaining, settings.agent_llm_timeout_s)
-        )
+        limit = min(remaining, settings.agent_llm_timeout_s)
+        stage = 'llm.call'
+        timeout_source = 'turn_deadline' if remaining <= settings.agent_llm_timeout_s else 'model_call_limit'
+        with observation('llm.call', metadata={'layer': 'model', 'timeout_s': limit,
+                'timeout_source': timeout_source,
+                'remaining_turn_s': remaining}):
+            result = await asyncio.wait_for(
+                get_llm().with_structured_output(schema, include_raw=True).ainvoke(
+                    messages, **({'config': {'callbacks': callbacks}} if callbacks is not None else {})
+                ), timeout=limit
+            )
         raw = result.get("raw")
         usage = getattr(raw, "usage_metadata", None) or {}
         parsed = result.get("parsed")
@@ -104,12 +115,15 @@ async def structured_call(state: AgentState, prompt: str, schema: type[T], *, ca
     except asyncio.CancelledError:
         if circuit and _circuits.get(key) is circuit:
             open_circuit()
-        record_outcome(state, prompt, "cancelled")
+        record_outcome(state, prompt, "cancelled", diagnostics={'failure_stage': stage, 'timeout_s': limit,
+                                                               'timeout_source': timeout_source})
         raise
     except Exception as error:
+        from src.services.request_diagnostics import failure_details
         decision = classify_provider_error(error)
         if decision in {"rate_limited", "auth_error"} or circuit:
             open_circuit()
-        record_outcome(state, prompt, decision)
+        record_outcome(state, prompt, decision, diagnostics={**failure_details(error), 'failure_stage': stage,
+                                                            'timeout_s': limit, 'timeout_source': timeout_source})
         # Do not log exception payloads that may contain user data or API credentials.
         return None

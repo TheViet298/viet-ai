@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-14",
+  "status": "BLOCKED",
+  "stage": "cloud_preflight",
+  "reason": "dns_resolution_failed",
+  "host": "cloud.langfuse.com",
+  "dns_errno": 11001,
+  "planned_cases": 10,
+  "completed_model_cases": 0,
+  "provider_calls_started": false,
+  "offline_checks_passed": 12,
+  "dataset": "eval/datasets/live_model_cases_v1.jsonl",
+  "runner": "scripts/run_live_model_eval.py",
+  "guide": "docs/guide/langfuse-live-model-eval.md"
+}

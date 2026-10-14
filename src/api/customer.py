@@ -1491,7 +1491,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             diag_stage = diag.get("stage")
             if diag_cat == "context_budget_exceeded" or diag_stage == "prompt":
                 agent_reply = "Tài liệu cần thiết vượt quá giới hạn xử lý hiện tại. Tôi sẽ chuyển chuyên viên kiểm tra đầy đủ điều kiện."
-            elif diag_stage == "generation" or diag_cat in ("generation_unavailable", "provider_error", "circuit_open", "rate_limited"):
+            elif (diag_stage == "generation" and diag_cat not in {"unsupported_answer", "unsupported_numeric_claim"}) or diag_cat in ("generation_unavailable", "provider_error", "circuit_open", "rate_limited"):
                 agent_reply = "Tôi chưa hoàn tất được việc tạo câu trả lời từ tài liệu đã tìm thấy. Anh/chị vui lòng thử lại; tôi không thể xác nhận nội dung lúc này."
             elif not agent_reply or "Tôi chưa có nguồn" in agent_reply:
                 agent_reply = "Tôi chưa có nguồn đã xác thực cho câu hỏi này. Anh/chị có thể yêu cầu chuyển chuyên viên hỗ trợ."
@@ -2870,6 +2870,8 @@ def get_session_chat_history(
                 response_type=meta.get("response_type"),
                 citations=citations,
                 suggested_replies=meta.get("suggested_replies") or [],
+                vehicle_cards=meta.get("vehicle_cards") or [],
+                vehicle_comparison=bool(meta.get("vehicle_comparison")),
                 safe_guidance=meta.get("safe_guidance"),
                 case_id=msg.case_id,
                 priority=meta.get("priority"),

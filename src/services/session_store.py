@@ -93,7 +93,8 @@ class SessionStore:
             db.close()
 
     def claim(self, session_id: str, owner: str, role: str, emergency: bool = False) -> tuple[dict, int]:
-        with self.connect() as db:
+        from src.services.observability import observation
+        with observation('database.session_claim', metadata={'layer': 'database', 'lock_timeout_s': 10}), self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             db.execute(
                 "INSERT OR IGNORE INTO agent_sessions(id,owner,role,updated_at) VALUES(?,?,?,?)",

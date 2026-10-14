@@ -16,6 +16,7 @@ from src.services.memory_buffer import compact_memory
 from src.services.observability import bind_trace_attributes, get_tracer_callbacks, observation
 from src.services.session_store import decode_state, encode_state, get_store, prepare_application_turn
 from src.services.tracer import sanitized_snapshot
+from src.services.request_diagnostics import observed_lock
 
 _LOCKS: WeakValueDictionary[str, asyncio.Lock] = WeakValueDictionary()
 
@@ -46,7 +47,7 @@ async def process_chat_message(
     session_id = session_id or uuid4().hex
     owner = owner or f"guest:{session_id}"
     lock = _LOCKS.setdefault(session_id, asyncio.Lock())
-    async with lock:
+    async with observed_lock(lock, 'agent.session_lock'):
         if application_db is not None:
             from src.models.db_models import ChatSession
             if persist_business_case:

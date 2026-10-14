@@ -147,6 +147,8 @@ export function useChat(context?: ChatUserContext | string) {
                   timestamp: m.timestamp,
                   response_type: m.response_type,
                   citations: m.citations,
+                  vehicle_cards: m.vehicle_cards,
+                  vehicle_comparison: m.vehicle_comparison,
                   suggested_replies: m.suggested_replies,
                   safe_guidance: m.safe_guidance,
                   case_id: m.case_id,
@@ -157,7 +159,12 @@ export function useChat(context?: ChatUserContext | string) {
                   setCurrentCaseId(hist.data.case_id);
                 }
               }
-            } catch { /* Continue with default welcome message when storage/api unavailable. */ }
+            } catch (error) {
+              if (/Failed to fetch session history \((401|403)\)/.test(String(error))) {
+                setSessionId(`sess_vf_${Math.random().toString(36).substring(2, 9)}`);
+                setCurrentCaseId(null);
+              }
+            }
           })();
         }
       } catch { /* Continue with a fresh session when storage is unavailable. */ }
@@ -322,6 +329,8 @@ export function useChat(context?: ChatUserContext | string) {
           timestamp: new Date().toISOString(),
           response_type: data.response_type,
           citations: data.citations,
+          vehicle_cards: data.vehicle_cards,
+          vehicle_comparison: data.vehicle_comparison,
           suggested_replies: data.suggested_replies,
           safe_guidance: data.safe_guidance,
           case_id: data.case_id,

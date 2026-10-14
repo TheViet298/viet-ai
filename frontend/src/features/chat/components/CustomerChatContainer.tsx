@@ -27,6 +27,12 @@ import { getUploadError } from "../uploadState";
 import { useAuth, ProductMark } from "@/features/shared";
 
 export function CustomerChatContainer() {
+  const { user, isReady } = useAuth();
+  if (!isReady) return null;
+  return <CustomerChatSession key={user?.id || "guest"} />;
+}
+
+function CustomerChatSession() {
   const { user, role } = useAuth();
   const {
     messages,

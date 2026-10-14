@@ -1,0 +1,10 @@
+{"id":"LIVE-01","kind":"chat","topic":"Làm quen xe","message":"Xin chào, tôi mới sử dụng xe VinFast, bạn có thể hỗ trợ tôi làm quen không?"}
+{"id":"LIVE-02","kind":"chat","topic":"Bắt đầu hội thoại","message":"Tôi muốn trò chuyện để tìm hiểu chiếc xe VinFast của mình, nên bắt đầu từ đâu?"}
+{"id":"LIVE-03","kind":"chat","topic":"Chuẩn bị trao đổi","message":"Cảm ơn, hãy giúp tôi chuẩn bị các câu hỏi để trao đổi với nhân viên VinFast."}
+{"id":"LIVE-04","kind":"chat","topic":"Giới thiệu trợ lý","message":"Tôi mới dùng xe VinFast, hãy giải thích cách bạn hỗ trợ tôi bằng ngôn ngữ đơn giản."}
+{"id":"LIVE-05","kind":"chat","topic":"Hội thoại tiếng Việt","message":"Tôi muốn nói chuyện với trợ lý VinFast bằng tiếng Việt, bạn hỗ trợ được những gì?"}
+{"id":"LIVE-06","kind":"chat","topic":"Hội thoại tiếng Anh","message":"Hello, I am new to VinFast. Please introduce what you can help me with."}
+{"id":"LIVE-07","kind":"upload","topic":"Ảnh cảnh báo áp suất thấp","image_kind":"dashboard","variant":"low_pressure","expected_symptom":"low_pressure"}
+{"id":"LIVE-08","kind":"upload","topic":"Ảnh lỗi cảm biến lốp","image_kind":"dashboard","variant":"sensor_fault","expected_symptom":"sensor_fault"}
+{"id":"LIVE-09","kind":"upload","topic":"Ảnh ngoại thất xe mô phỏng","image_kind":"exterior","variant":"generic_vehicle","expected_model_label":null}
+{"id":"LIVE-10","kind":"upload","topic":"Ảnh âm tính không có xe","image_kind":"exterior","variant":"no_vehicle","expected_model_label":null}

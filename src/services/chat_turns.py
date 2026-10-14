@@ -1,6 +1,7 @@
 """Own, serialize and atomically persist application chat turns."""
 import asyncio
 import hashlib
+import re
 import json
 import logging
 import time
@@ -21,6 +22,7 @@ from src.services.conversation_context import ConversationContext, apply_turn, u
 from src.services.conversation_progress import derive_progress
 from src.services.observability import observation
 from src.services.session_store import encode_state, get_store
+from src.services.request_diagnostics import observed_lock
 
 _LOCKS: WeakValueDictionary = WeakValueDictionary()
 logger = logging.getLogger("chat_turns")
@@ -45,7 +47,7 @@ async def run_chat_turn(payload, user, db, handler):
         payload = payload.model_copy(update={'guest_session_id': payload.session_id})
     owner = f'user:{user.id}' if user else f'guest:{payload.guest_session_id}'
     lock = _LOCKS.setdefault((str(db.get_bind().url), payload.session_id), asyncio.Lock())
-    async with lock:
+    async with observed_lock(lock, 'application.session_lock'):
         db.expire_all()
         resolve_authorized_active_case(db, user, payload.session_id, payload.case_id, payload.guest_session_id)
         session = db.get(ChatSession, payload.session_id)
@@ -103,6 +105,28 @@ async def run_chat_turn(payload, user, db, handler):
             db.info['conversation_turn'] = {'context': conversation.model_dump(), 'understanding': turn.model_dump(), 'budget': budget}
             response = await handler(payload, user, db)
             data = response.data
+            from src.services.vehicle_catalog import select_vehicle_cards, vehicle_overview_reply, vehicle_comparison_reply, is_generic_vehicle_comparison
+            data.vehicle_cards = select_vehicle_cards(payload.message, active_goal=conversation.active_goal, context_topic=conversation.topic)
+            data.vehicle_comparison = len(data.vehicle_cards) == 2 and 'so sánh' in payload.message.casefold()
+            if data.vehicle_cards:
+                if re.fullmatch(r'\s*(?:(?:(?:tư vấn|giới thiệu|thông tin)(?: về)?(?: xe| mẫu xe)?\s+)?(?:vinfast\s+)?vf\s*[356789](?:\s+(?:(?:phiên bản|bản)\s+)?(?:eco|plus))?|so sánh\s+vf\s*[356789]\s+(?:và|với)\s+vf\s*[356789]|so sánh\s+vf\s*8\s+(?:eco|plus)\s+(?:và|với)\s+(?:vf\s*8\s+)?(?:eco|plus))[.!?]?\s*', payload.message, re.I):
+                    data.message = vehicle_overview_reply(data.vehicle_cards)
+                    data.response_type = 'FAQ_ANSWER'
+                if all(card.model == 'VF8' for card in data.vehicle_cards):
+                    data.suggested_replies = ['Dự toán lăn bánh ' + card.name for card in data.vehicle_cards]
+                if data.vehicle_comparison:
+                    if is_generic_vehicle_comparison(payload.message):
+                        data.message = vehicle_comparison_reply(data.vehicle_cards)
+                        data.response_type = 'FAQ_ANSWER'
+                    data.suggested_replies = []
+                agent_message = db.query(Message).filter_by(session_id=payload.session_id, sender_type='AGENT').order_by(Message.created_at.desc()).first()
+                if agent_message:
+                    agent_message.content = data.message
+                    agent_message.msg_metadata = {**(agent_message.msg_metadata or {}),
+                        'response_type': data.response_type,
+                        'vehicle_comparison': data.vehicle_comparison,
+                        'suggested_replies': data.suggested_replies or [],
+                        'vehicle_cards': [card.model_dump() for card in data.vehicle_cards]}
             if data.case_id and not user:
                 # Every branch shares this persistence boundary: guests may
                 # receive guidance, but cannot commit an ownerless case.

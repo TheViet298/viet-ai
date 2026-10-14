@@ -120,6 +120,7 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
         ('range', r'quang duong|di duoc|\bkm\b.*(?:dung|hay)|mot lan sac'),
         ('charging', r'sac.*(?:bao lau|thoi gian)|sac nhanh'),
         ('capacity', r'dung luong pin|\bkwh\b'),
+        ('appearance', r'\bmau\s+(?:gi|nao|sac|ngoai that|noi that)\b|\bco mau\b|bang mau|tuy chon mau'),
         ('concept', r'\b(?:soh|soc|bms|abs|adas)\b'),
     ] if re.search(pattern, lower)), None)
     move: Move = 'new_question'
@@ -142,6 +143,9 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
             move = 'request_action'
         elif re.search(r'\b(?:sao|vi sao|tai sao)\b|giai thich|cach tinh|vi du|cu the hon', lower):
             move = 'elaborate'
+        elif explicit_goal and explicit_goal != context.active_goal:
+            # A named model/trim in a new question is not a quote slot answer.
+            move = 'new_question'
         elif updates and goal:
             move = 'supply_info'
     if (move == 'new_question' and context.active_goal and not explicit_goal and not updates
@@ -172,6 +176,7 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
                   'maintenance': 'Đặt lịch bảo dưỡng', 'warranty': 'Bảo hành',
                   'range': 'Quãng đường một lần sạc', 'charging': 'Thời gian sạc',
                   'capacity': 'Dung lượng pin',
+                  'appearance': 'Màu sắc xe',
                   'concept': context.topic or topic}.get(goal, '')
         facts = {k: v.value for k, v in context.facts.items() if v.status == 'confirmed'}
         facts.update(updates)

@@ -57,11 +57,13 @@ for (const [name, text, transport] of [
 }
 
 test('successful API response retains server answer and evidence', async () => {
-  const data = { message: 'Server answer', case_id: 'REAL-123', citations: [{ source_id: 'verified' }] };
+  const data = { message: 'Server answer', case_id: 'REAL-123', citations: [{ source_id: 'verified' }], vehicle_cards: [{ model: 'VF5' }], vehicle_comparison: true };
   const { hook, states } = harness(async () => ({ success: true, data }));
   await hook.sendMessage('Xe bị lỗi');
   assert.equal(states[0].at(-1).content, data.message);
   assert.equal(states[0].at(-1).citations, data.citations);
+  assert.equal(states[0].at(-1).vehicle_cards, data.vehicle_cards);
+  assert.equal(states[0].at(-1).vehicle_comparison, true);
   assert.equal(states[4], 'REAL-123');
 });
 
