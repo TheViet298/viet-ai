@@ -82,7 +82,7 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
     _clear_login_failures(client_key)
 
     # ── Claim Guest Cases & Sessions khi đăng nhập (Audit vết rõ ràng, kiểm soát chặt IDOR) ──
-    raw_claim = (payload.guest_session_id or payload.session_id or request.headers.get("x-session-id") or "").strip()
+    raw_claim = (payload.guest_session_id or payload.session_id or request.headers.get("x-guest-id") or request.headers.get("x-session-id") or "").strip()
     claimed_count = _claim_guest_session_data(db, user, raw_claim)
     db.commit()
 
@@ -208,7 +208,7 @@ def register(payload: RegisterRequest, request: Request, db: Session = Depends(g
     db.flush()
 
     # Gộp session guest (nếu có) vào tài khoản mới tạo trong cùng transaction
-    raw_claim = (payload.guest_session_id or payload.session_id or request.headers.get("x-session-id") or "").strip()
+    raw_claim = (payload.guest_session_id or payload.session_id or request.headers.get("x-guest-id") or request.headers.get("x-session-id") or "").strip()
     claimed_count = _claim_guest_session_data(db, new_user, raw_claim)
 
     try:

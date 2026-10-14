@@ -115,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const getActiveGuestSessionId = (): string | null => {
     if (typeof window === "undefined") return null;
     try {
-      return localStorage.getItem("vf_chat_session:guest");
+      return localStorage.getItem("vf_guest_id") || localStorage.getItem("vf_chat_session:guest");
     } catch {
       return null;
     }
@@ -124,6 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearGuestSessionOnClient = () => {
     if (typeof window === "undefined") return;
     try {
+      localStorage.removeItem("vf_guest_id");
       localStorage.removeItem("vf_chat_session:guest");
       localStorage.removeItem("vf_chat_case:guest");
     } catch {}
@@ -255,6 +256,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem("vf_customer_token");
       localStorage.removeItem("vf_chat_session:guest");
       localStorage.removeItem("vf_chat_case:guest");
+      localStorage.removeItem("vf_guest_id");
       const freshGuestId =
         typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
           ? `sess_vf_${crypto.randomUUID()}`

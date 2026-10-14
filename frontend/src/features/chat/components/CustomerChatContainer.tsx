@@ -79,6 +79,7 @@ export function CustomerChatContainer() {
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
   const [resolvedImageKind, setResolvedImageKind] = useState<"dashboard" | "charger" | "exterior" | null>(null);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const [isModalBlockingChat, setIsModalBlockingChat] = useState<boolean>(false);
   const uploadRequestId = useRef(0);
   const hasSentInitialPrompt = useRef(false);
   const [aiStatus, setAiStatus] = useState<string>("Trợ lý VFServ • Hỗ trợ dịch vụ xe điện VinFast");
@@ -142,31 +143,40 @@ export function CustomerChatContainer() {
       .catch(() => { });
   }, []);
 
-  // Pre-load draft or auto-send prompt from Landing Hero if available
+  // Pre-load draft or auto-send prompt from Landing Hero or URL if available
   useEffect(() => {
     if (hasSentInitialPrompt.current) return;
 
     try {
-      const savedPrompt = sessionStorage.getItem("vf_initial_prompt");
-      sessionStorage.removeItem("vf_initial_model");
+      // 1. Đọc prompt từ URL hoặc sessionStorage
+      const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+      const urlPrompt = urlParams?.get("prompt");
+      const savedPrompt = urlPrompt || sessionStorage.getItem("vf_initial_prompt");
       const savedImg = sessionStorage.getItem("vf_initial_image");
       const savedImgName = sessionStorage.getItem("vf_initial_image_name");
+
+      // 2. Xóa ngay lập tức khỏi sessionStorage và URL TRƯỚC KHI gửi (tránh F5 gửi lại)
+      sessionStorage.removeItem("vf_initial_prompt");
+      sessionStorage.removeItem("vf_initial_model");
+      if (savedImg) {
+        sessionStorage.removeItem("vf_initial_image");
+        sessionStorage.removeItem("vf_initial_image_name");
+      }
+      if (urlParams && (urlParams.has("prompt") || urlParams.has("model"))) {
+        window.history.replaceState({}, "", "/chat");
+      }
 
       if (savedImg) {
         setImagePreview(savedImg);
         setImageName(savedImgName || "anh_canh_bao.jpg");
-        sessionStorage.removeItem("vf_initial_image");
-        sessionStorage.removeItem("vf_initial_image_name");
       }
 
-      if (savedPrompt) {
-        sessionStorage.removeItem("vf_initial_prompt");
+      if (savedPrompt && savedPrompt.trim()) {
+        hasSentInitialPrompt.current = true;
         if (!savedImg) {
-          // Gửi trực tiếp tin nhắn bằng sendMessage thay vì setInput rồi bắt bấm gửi lần 2
-          hasSentInitialPrompt.current = true;
           sendMessage(savedPrompt.trim());
         } else {
-          setInput(savedPrompt);
+          setInput(savedPrompt.trim());
         }
       }
     } catch { }
@@ -346,9 +356,11 @@ export function CustomerChatContainer() {
         isOpen={isMobileDrawerOpen}
         onToggleCollapse={() => setIsMobileDrawerOpen(false)}
         isGuest={role === "GUEST"}
+        userId={user?.id || (role === "GUEST" ? "guest" : undefined)}
         isMobileDrawer={true}
         onCloseMobileDrawer={() => setIsMobileDrawerOpen(false)}
         refreshTrigger={messages.length}
+        onModalOpenChange={setIsModalBlockingChat}
       />
 
       {/* Main Layout: Desktop 55/45 khi mở map, Mặc định chat chiếm toàn bộ container */}
@@ -369,7 +381,9 @@ export function CustomerChatContainer() {
             isOpen={isSidebarOpen}
             onToggleCollapse={() => handleToggleSidebar(false)}
             isGuest={role === "GUEST"}
+            userId={user?.id || (role === "GUEST" ? "guest" : undefined)}
             refreshTrigger={messages.length}
+            onModalOpenChange={setIsModalBlockingChat}
           />
 
           {/* Cột Chat chính bên phải */}
@@ -553,8 +567,8 @@ export function CustomerChatContainer() {
             input={input}
             onChangeInput={setInput}
             onSend={submit}
-            disabled={loading || isUploadingImage || (!!imagePreview && !uploadedAttachmentId)}
-            uploadDisabled={loading || isUploadingImage || role !== "CUSTOMER"}
+            disabled={loading || isUploadingImage || isModalBlockingChat || (!!imagePreview && !uploadedAttachmentId)}
+            uploadDisabled={loading || isUploadingImage || isModalBlockingChat || role !== "CUSTOMER"}
             uploadHint={role !== "CUSTOMER" ? "Đăng nhập tài khoản khách hàng để tải ảnh" : undefined}
             imageReady={!!uploadedAttachmentId}
             imagePreview={imagePreview}

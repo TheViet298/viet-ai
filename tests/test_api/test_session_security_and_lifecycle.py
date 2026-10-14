@@ -76,13 +76,29 @@ async def test_guest_isolation_and_claim(client, sec_db):
     session_b = ChatSession(id=guest_b_id, owner=f"guest:{guest_b_id}", memory_states={})
     case_a = Case(id="CASE-A", session_id=guest_a_id, user_id=None, status="PENDING", intent="CONSULTATION")
     case_b = Case(id="CASE-B", session_id=guest_b_id, user_id=None, status="PENDING", intent="CONSULTATION")
-    msg_a = Message(id="MSG-A", session_id=guest_a_id, sender_type="CUSTOMER", content="Chào A")
-    msg_b = Message(id="MSG-B", session_id=guest_b_id, sender_type="CUSTOMER", content="Chào B")
+    msg_a = Message(id="MSG-A", session_id=guest_a_id, sender_type="CUSTOMER", content="Tôi muốn tư vấn xe VF3")
+    msg_b = Message(id="MSG-B", session_id=guest_b_id, sender_type="CUSTOMER", content="Tôi muốn tư vấn xe VF5")
 
     sec_db.add_all([session_a, session_b, case_a, case_b, msg_a, msg_b])
     sec_db.commit()
 
-    # Guest A đăng ký tài khoản mới kèm guest_session_id của mình
+    # 1. Kiểm tra API danh sách và lịch sử TRƯỚC KHI claim: Guest B chỉ thấy của B, tuyệt đối không thấy/đọc được của A
+    list_b_res = await client.get(f"/api/v1/customer/sessions?guest_session_id={guest_b_id}")
+    assert list_b_res.status_code == 200
+    b_session_ids = [s["session_id"] for s in list_b_res.json()["data"]["sessions"]]
+    assert guest_b_id in b_session_ids
+    assert guest_a_id not in b_session_ids
+
+    # Guest B cố tình gọi history của A -> Trả 404 chống dò tìm dữ liệu người khác
+    history_hack_res = await client.get(f"/api/v1/customer/sessions/{guest_a_id}/history?guest_session_id={guest_b_id}")
+    assert history_hack_res.status_code == 404
+
+    # Guest B gọi history của chính mình -> Thành công 200
+    history_b_res = await client.get(f"/api/v1/customer/sessions/{guest_b_id}/history?guest_session_id={guest_b_id}")
+    assert history_b_res.status_code == 200
+    assert history_b_res.json()["data"]["session_id"] == guest_b_id
+
+    # 2. Guest A đăng ký tài khoản mới kèm guest_session_id của mình
     res = await client.post(
         "/api/v1/auth/register",
         json={
@@ -229,3 +245,63 @@ async def test_session_deletion_removes_messages_cleanly(client, sec_db):
     assert sec_db.get(ChatSession, session_id) is None
     assert sec_db.query(Message).filter_by(session_id=session_id).first() is None
     assert sec_db.query(ChatRequestRecord).filter_by(session_id=session_id).first() is None
+
+
+@pytest.mark.asyncio
+async def test_list_chat_sessions_empty_and_single_session(client, sec_db):
+    """
+    Test yêu cầu mục 5:
+    1. GET danh sách session của user chưa có session -> trả 200 với mảng rỗng [] (không 404).
+    2. Sau khi tạo 1 session có tin nhắn -> trả 200 và session xuất hiện trong danh sách.
+    3. Kiểm tra đồng thời cả 2 route: /api/v1/customer/sessions và alias /api/v1/sessions.
+    4. Kiểm tra trường hợp guest chưa có session và có 1 session.
+    """
+    token_y = create_token(user_id="user-y-id", role="CUSTOMER")
+    headers_y = {"Authorization": f"Bearer {token_y}"}
+
+    # 1. User Y chưa có session nào -> endpoint trả về 200 []
+    res_empty_primary = await client.get("/api/v1/customer/sessions", headers=headers_y)
+    assert res_empty_primary.status_code == 200
+    assert res_empty_primary.json()["success"] is True
+    assert res_empty_primary.json()["data"]["sessions"] == []
+    assert res_empty_primary.json()["data"]["total"] == 0
+
+    # 2. Tạo 1 session cho User Y kèm 1 tin nhắn khách hàng
+    session_y_id = f"sess_vf_{uuid.uuid4()}"
+    session_y = ChatSession(id=session_y_id, owner="user:user-y-id", memory_states={})
+    msg_y = Message(id="M-USER-Y-1", session_id=session_y_id, sender_type="CUSTOMER", content="Tư vấn sạc pin VF8")
+    sec_db.add_all([session_y, msg_y])
+    sec_db.commit()
+
+    # 3. GET lại danh sách -> session_y_id phải xuất hiện
+    res_one_primary = await client.get("/api/v1/customer/sessions", headers=headers_y)
+    assert res_one_primary.status_code == 200
+    data_one = res_one_primary.json()["data"]
+    assert data_one["total"] == 1
+    assert len(data_one["sessions"]) == 1
+    assert data_one["sessions"][0]["session_id"] == session_y_id
+    assert data_one["sessions"][0]["title"] == "Tư vấn sạc pin VF8"
+
+    # 4. Test Guest: chưa có session -> 200 []
+    guest_uuid = "gst_empty_test_9999"
+    res_guest_empty = await client.get(
+        "/api/v1/customer/sessions",
+        headers={"X-Guest-Id": guest_uuid},
+    )
+    assert res_guest_empty.status_code == 200
+    assert res_guest_empty.json()["data"]["sessions"] == []
+
+    # 5. Tạo 1 session cho Guest -> xuất hiện
+    guest_session_id = f"sess_vf_{uuid.uuid4()}"
+    s_guest = ChatSession(id=guest_session_id, owner=f"guest:{guest_uuid}", memory_states={})
+    m_guest = Message(id="M-GST-1", session_id=guest_session_id, sender_type="CUSTOMER", content="Tìm hiểu xe VF3")
+    sec_db.add_all([s_guest, m_guest])
+    sec_db.commit()
+
+    res_guest_one = await client.get(
+        "/api/v1/customer/sessions",
+        headers={"X-Guest-Id": guest_uuid},
+    )
+    assert res_guest_one.status_code == 200
+    assert len(res_guest_one.json()["data"]["sessions"]) == 1
+    assert res_guest_one.json()["data"]["sessions"][0]["session_id"] == guest_session_id

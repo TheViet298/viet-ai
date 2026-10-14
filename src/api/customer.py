@@ -1292,7 +1292,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
 
         if is_capabilities:
             greeting_reply = (
-                "Chào Quý khách! Em có thể hỗ trợ tìm hiểu xe VinFast, tra cứu bảo hành và bảo dưỡng, "
+                "Chào Quý khách! Em là Trợ lý CSKH VinFast (VFServ). Em có thể hỗ trợ tìm hiểu xe VinFast, tra cứu bảo hành và bảo dưỡng, "
                 "hướng dẫn về sạc và ứng dụng, tiếp nhận sự cố kỹ thuật hoặc khiếu nại, "
                 "và theo dõi hồ sơ hỗ trợ. Quý khách cần em hỗ trợ nội dung nào ạ?"
             )
@@ -1307,13 +1307,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 for mn in ["an", "bình", "cường", "dũng", "hùng", "long", "minh", "nam", "phúc", "quân", "tuấn", "việt"]
             )
             title = "chị" if is_female else "anh" if is_male else None
-
-            if title:
-                greeting_reply = f"Chào {title} {short_name}! Em giúp gì được cho {title} hôm nay ạ?"
-            else:
-                greeting_reply = f"Chào {short_name}! Em giúp gì được cho Quý khách hôm nay ạ?"
+            salutation = f"{title} {short_name}" if title else short_name
+            greeting_reply = f"Chào {salutation}! Em là Trợ lý CSKH VinFast (VFServ). Rất vui được hỗ trợ Quý khách hôm nay. Quý khách có thể chọn nhanh các chủ đề bên dưới hoặc nhập câu hỏi trực tiếp ạ!"
         else:
-            greeting_reply = "Chào Quý khách! Em là Trợ lý VFServ. Em có thể hỗ trợ gì cho Quý khách hôm nay ạ?"
+            greeting_reply = "Dạ chào Quý khách! Em là Trợ lý CSKH VinFast (VFServ). Rất vui được hỗ trợ Quý khách hôm nay. Quý khách có thể chọn nhanh các chủ đề bên dưới hoặc nhập câu hỏi trực tiếp ạ!"
 
         suggested_replies = [
             "Tư vấn xe",
@@ -1362,21 +1359,32 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         kw in lower_text for kw in ["xe tôi", "xe của tôi", "đang hiện", "vừa hiện", "bị hiện", "đang bị", "bây giờ"]
     )
     if is_active_turtle and not is_turtle_critical and classification.temporal_context not in {"resolved_past", "hypothetical", "knowledge"}:
-        turtle_reply = (
-            "Em đã ghi nhận xe của anh/chị đang hiện cảnh báo rùa vàng. "
-            "Anh/chị đã ở vị trí an toàn chưa, và xe hiện còn di chuyển được không ạ?"
-            + (" Anh/chị cho em biết dòng xe đang gặp sự cố nhé." if not vehicle_context.get("incident_model")
-               else f" Em ghi nhận dòng xe {vehicle_context['incident_model']}.")
+        effective_model = (
+            vehicle_context.get("incident_model")
+            or vehicle_model
+            or (current_user.vehicle_model if current_user else None)
+            or (payload.client_context.vehicle_model if payload.client_context else None)
         )
+        if effective_model:
+            vehicle_context["incident_model"] = effective_model
+            turtle_reply = (
+                f"Xe {effective_model} của anh/chị đang hiện cảnh báo rùa vàng, anh/chị đã ở nơi an toàn chưa?"
+            )
+        else:
+            turtle_reply = (
+                "Em đã ghi nhận xe của anh/chị đang hiện cảnh báo rùa vàng. "
+                "Anh/chị đã ở vị trí an toàn chưa, và xe hiện còn di chuyển được không ạ? "
+                "Anh/chị cho em biết dòng xe đang gặp sự cố nhé."
+            )
         if any(term in text.casefold() for term in ("là gì", "ý nghĩa", "giải thích")):
             turtle_reply = (
                 "Biểu tượng rùa vàng báo xe đang giới hạn công suất trong chế độ bảo vệ an toàn; "
                 "chỉ biểu tượng này chưa đủ xác định nguyên nhân.\n\n" + turtle_reply
             )
         suggested_replies = [
+            "Đã ở nơi an toàn",
             "Xe vẫn đi chậm được",
             "Xe không di chuyển được",
-            "Hiện kèm mã lỗi khác",
             "Cách khắc phục tạm thời",
         ]
         agent_msg = Message(
@@ -1447,15 +1455,30 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
 
         # Gọi Chatbot Agent Core AI (Tra cứu RAG ChromaDB / Fallback KB)
         models_in_question = vehicle_context["models"]
-        knowledge_model = models_in_question[0] if len(models_in_question) == 1 else (
-            None if len(models_in_question) > 1 else vehicle_model
+        has_owner_incident = any(
+            k in lower_text for k in ("xe tôi", "xe của tôi", "xe mình", "bị ", "lỗi", "sạc", "bảo dưỡng", "rùa vàng")
+        )
+        is_general_inquiry = any(
+            k in lower_text for k in ("các dòng xe", "dòng xe", "các mẫu xe", "mẫu xe", "dải sản phẩm", "toàn bộ xe", "mua xe gì", "tư vấn xe", "tư vấn mua", "xe nào hợp", "tổng quan")
+        ) and not has_owner_incident
+
+        if len(models_in_question) == 1:
+            knowledge_model = models_in_question[0]
+        elif len(models_in_question) > 1 or is_general_inquiry:
+            knowledge_model = None
+        else:
+            knowledge_model = vehicle_model
+        effective_user_vehicle = (
+            (current_user.vehicle_model if current_user else None)
+            or (payload.client_context.vehicle_model if payload.client_context else None)
         )
         if knowledge_parts:
             db.info['conversation_route'] = 'sales'
             ai_res = await answer_sales_question(resolved_text, knowledge_model, payload.session_id,
                                                 conversation_context=conversation.model_dump(),
                                                 turn_understanding=turn_understanding.model_dump(),
-                                                llm_budget=understood.get('budget'))
+                                                llm_budget=understood.get('budget'),
+                                                user_vehicle=effective_user_vehicle)
         else:
             db.info['conversation_route'] = 'knowledge'
             ai_res = await process_chat_message(
@@ -2824,6 +2847,7 @@ def get_session_chat_history(
     session_id: str,
     guest_session_id: str | None = Query(None),
     x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    x_guest_id: str | None = Header(None, alias="X-Guest-Id"),
     current_user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
@@ -2839,9 +2863,9 @@ def get_session_chat_history(
         if session.owner != f"user:{current_user.id}" and current_user.role != "STAFF":
             raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
     else:
-        provided_guest = guest_session_id or x_session_id
-        expected_owner = f"guest:{provided_guest}" if provided_guest else None
-        if not provided_guest or session.owner != expected_owner:
+        provided_guest = x_guest_id or guest_session_id or x_session_id
+        is_owner = bool(provided_guest and session.owner == f"guest:{provided_guest}")
+        if not is_owner:
             raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
 
     messages = (
@@ -2935,7 +2959,11 @@ def extract_session_title(messages: list[Message], default: str = "Cuộc trò c
             if not first_line:
                 continue
             stripped = GREETING_PREFIX_REGEX.sub("", first_line).strip()
-            if not stripped or stripped.lower() in ("trợ lý", "bot", "vinfast", "vfserv", "ad", "admin", "bạn", "em", "anh", "chị", "quý khách"):
+            # Bỏ qua nếu quá ngắn (< 3 ký tự) hoặc chỉ là từ chào/thử nghiệm ("t", "test", "alo", "hi"...)
+            if len(stripped) < 3 or stripped.lower() in (
+                "trợ lý", "bot", "vinfast", "vfserv", "ad", "admin",
+                "bạn", "em", "anh", "chị", "quý khách", "test", "alo", "cho hỏi"
+            ):
                 continue
             capitalized = stripped[0].upper() + stripped[1:] if len(stripped) > 1 else stripped.upper()
             return truncate_title(capitalized, 40)
@@ -2948,6 +2976,7 @@ def extract_session_title(messages: list[Message], default: str = "Cuộc trò c
 def list_chat_sessions(
     guest_session_id: str | None = Query(None),
     x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    x_guest_id: str | None = Header(None, alias="X-Guest-Id"),
     current_user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
@@ -2956,11 +2985,12 @@ def list_chat_sessions(
         owner = f"user:{current_user.id}"
         sessions = db.query(ChatSession).filter(ChatSession.owner == owner).all()
     else:
-        guest_id = guest_session_id or x_session_id
+        guest_id = x_guest_id or guest_session_id or x_session_id
         if not guest_id:
             return ApiResponse(success=True, data=ChatSessionListResponseData(sessions=[], total=0))
         sessions = db.query(ChatSession).filter(
-            ChatSession.owner == f"guest:{guest_id}"
+            (ChatSession.owner == f"guest:{guest_id}") |
+            (ChatSession.id == guest_id)
         ).all()
 
     session_ids = [s.id for s in sessions]
@@ -2979,6 +3009,27 @@ def list_chat_sessions(
         if m.session_id in messages_by_session:
             messages_by_session[m.session_id].append(m)
 
+    def has_customer_message(msgs: list[Message]) -> bool:
+        return any(
+            m.sender_type == "CUSTOMER" and m.content and m.content.strip()
+            for m in msgs
+        )
+
+    # Dọn dẹp các session rỗng hoặc chỉ có tin nhắn tự động bot (không có tin nhắn của người dùng)
+    empty_sessions = [
+        s for s in sessions
+        if not (s.memory_states or {}).get("title_edited")
+        and not has_customer_message(messages_by_session.get(s.id, []))
+    ]
+    if empty_sessions:
+        for es in empty_sessions:
+            db.delete(es)
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+        sessions = [s for s in sessions if s not in empty_sessions]
+
     items = []
     has_dirty_titles = False
     for s in sessions:
@@ -2987,9 +3038,20 @@ def list_chat_sessions(
         custom_title = mem.get("title")
         title_edited = mem.get("title_edited", False)
 
+        # Bỏ qua các session không có tin nhắn nào của người dùng (chỉ có lời chào tự động bot)
+        if not title_edited and not has_customer_message(s_msgs):
+            continue
+
+        # Nếu title chưa từng được sửa tay mà bị cụt (<= 2 ký tự như "T" hoặc "Test"), coi là chưa hợp lệ
+        is_invalid_persisted = (
+            not title_edited
+            and custom_title
+            and (len(custom_title.strip()) < 3 or custom_title.strip().lower() in ("test", "t"))
+        )
+
         if title_edited and custom_title:
             title = custom_title
-        elif custom_title and custom_title != "Cuộc trò chuyện mới":
+        elif custom_title and custom_title != "Cuộc trò chuyện mới" and not is_invalid_persisted:
             title = custom_title
         else:
             title = extract_session_title(s_msgs)
@@ -2997,6 +3059,13 @@ def list_chat_sessions(
             if title and title != "Cuộc trò chuyện mới":
                 mem_copy = dict(mem)
                 mem_copy["title"] = title
+                s.memory_states = mem_copy
+                flag_modified(s, "memory_states")
+                has_dirty_titles = True
+            elif is_invalid_persisted:
+                # Dọn dẹp title bị hỏng trong memory_states
+                mem_copy = dict(mem)
+                mem_copy.pop("title", None)
                 s.memory_states = mem_copy
                 flag_modified(s, "memory_states")
                 has_dirty_titles = True
@@ -3034,6 +3103,7 @@ def update_chat_session_title(
     payload: UpdateSessionTitleRequest,
     guest_session_id: str | None = Query(None),
     x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    x_guest_id: str | None = Header(None, alias="X-Guest-Id"),
     current_user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
@@ -3046,9 +3116,12 @@ def update_chat_session_title(
         if session.owner != f"user:{current_user.id}" and current_user.role != "STAFF":
             raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
     else:
-        provided_guest = guest_session_id or x_session_id
-        expected_owner = f"guest:{provided_guest}" if provided_guest else None
-        if not provided_guest or session.owner != expected_owner:
+        provided_guest = x_guest_id or guest_session_id or x_session_id
+        is_owner = (
+            (provided_guest and session.owner == f"guest:{provided_guest}")
+            or (session.owner == f"guest:{session_id}")
+        )
+        if not is_owner:
             raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
 
     new_title = payload.title.strip()
@@ -3070,6 +3143,7 @@ def delete_chat_session(
     session_id: str,
     guest_session_id: str | None = Query(None),
     x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    x_guest_id: str | None = Header(None, alias="X-Guest-Id"),
     current_user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
@@ -3082,9 +3156,12 @@ def delete_chat_session(
         if session.owner != f"user:{current_user.id}" and current_user.role != "STAFF":
             raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
     else:
-        provided_guest = guest_session_id or x_session_id
-        expected_owner = f"guest:{provided_guest}" if provided_guest else None
-        if not provided_guest or session.owner != expected_owner:
+        provided_guest = x_guest_id or guest_session_id or x_session_id
+        is_owner = (
+            (provided_guest and session.owner == f"guest:{provided_guest}")
+            or (session.owner == f"guest:{session_id}")
+        )
+        if not is_owner:
             raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
 
     db.query(Message).filter(Message.session_id == session_id).delete(synchronize_session=False)
@@ -3099,6 +3176,7 @@ def delete_chat_session(
 def delete_all_chat_sessions(
     guest_session_id: str | None = Query(None),
     x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    x_guest_id: str | None = Header(None, alias="X-Guest-Id"),
     current_user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
@@ -3107,11 +3185,14 @@ def delete_all_chat_sessions(
         owner = f"user:{current_user.id}"
         sessions = db.query(ChatSession).filter(ChatSession.owner == owner).all()
     else:
-        provided_guest = guest_session_id or x_session_id
+        provided_guest = x_guest_id or guest_session_id or x_session_id
         if not provided_guest:
             raise HTTPException(status_code=400, detail="Thiếu thông tin phiên guest.")
         owner = f"guest:{provided_guest}"
-        sessions = db.query(ChatSession).filter(ChatSession.owner == owner).all()
+        sessions = db.query(ChatSession).filter(
+            (ChatSession.owner == owner) |
+            (ChatSession.id == provided_guest)
+        ).all()
 
     deleted_count = len(sessions)
     session_ids = [s.id for s in sessions]

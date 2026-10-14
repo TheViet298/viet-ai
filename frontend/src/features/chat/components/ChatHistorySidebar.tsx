@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   Plus,
@@ -12,6 +13,8 @@ import {
   Check,
   X,
   LogIn,
+  AlertCircle,
+  RotateCcw,
 } from "lucide-react";
 import { ChatSessionItem } from "../types";
 import {
@@ -28,9 +31,11 @@ interface ChatHistorySidebarProps {
   isOpen: boolean;
   onToggleCollapse: () => void;
   isGuest: boolean;
+  userId?: string;
   isMobileDrawer?: boolean;
   onCloseMobileDrawer?: () => void;
   refreshTrigger?: number;
+  onModalOpenChange?: (isOpen: boolean) => void;
 }
 
 interface GroupedSessions {
@@ -47,10 +52,13 @@ export function ChatHistorySidebar({
   isOpen,
   onToggleCollapse,
   isGuest,
+  userId,
   isMobileDrawer = false,
   onCloseMobileDrawer,
   refreshTrigger,
+  onModalOpenChange,
 }: ChatHistorySidebarProps) {
+  const [mounted, setMounted] = useState(false);
   const [sessions, setSessions] = useState<ChatSessionItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -59,7 +67,123 @@ export function ChatHistorySidebar({
   const [activeMenuSessionId, setActiveMenuSessionId] = useState<string | null>(null);
   const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
   const [isClearingAll, setIsClearingAll] = useState(false);
+  const [clearAllError, setClearAllError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const isNotFoundRef = useRef(false);
+  const inFlightRef = useRef(false);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Đảm bảo mount an toàn ở client cho createPortal
+  useEffect(() => {
+    setMounted(true);
+    return () => {
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    };
+  }, []);
+
+  // Thông báo trạng thái modal ra bên ngoài để khóa ô nhập/nút Gửi
+  useEffect(() => {
+    onModalOpenChange?.(showClearAllConfirm);
+  }, [showClearAllConfirm, onModalOpenChange]);
+
+  // Đóng modal bằng Escape (nhưng không đóng khi đang thực hiện xóa)
+  useEffect(() => {
+    if (!showClearAllConfirm) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !isClearingAll) {
+        setShowClearAllConfirm(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showClearAllConfirm, isClearingAll]);
+
+  // Tải danh sách session
+  const loadSessions = async (force: boolean = false) => {
+    // Không tải nếu là mobile drawer đang đóng (tránh gọi dư thừa trong nền)
+    if (isMobileDrawer && !isOpen && !force) {
+      return;
+    }
+    // Nếu API đã trả 404 và không phải do người dùng bấm thử lại thủ công (force), dừng auto retry
+    if (isNotFoundRef.current && !force) {
+      return;
+    }
+    // Tránh gọi trùng lặp song song
+    if (inFlightRef.current && !force) {
+      return;
+    }
+
+    try {
+      inFlightRef.current = true;
+      setLoading(true);
+      const res = await fetchChatSessions();
+      if (res.success && res.data?.sessions) {
+        setSessions(res.data.sessions);
+        setLoadError(null);
+        isNotFoundRef.current = false;
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+          retryTimeoutRef.current = null;
+        }
+      }
+    } catch (err: any) {
+      const is404 = err?.status === 404 || String(err?.message || "").includes("404");
+      if (is404) {
+        isNotFoundRef.current = true;
+        setLoadError("Dịch vụ lịch sử trò chuyện chưa sẵn sàng (404 Not Found).");
+        // Tự động thử lại 1 lần sau 4s phòng trường hợp backend đang khởi động/reload
+        if (!retryTimeoutRef.current) {
+          retryTimeoutRef.current = setTimeout(() => {
+            retryTimeoutRef.current = null;
+            isNotFoundRef.current = false;
+            loadSessions(true);
+          }, 4000);
+        }
+      } else {
+        setLoadError(err?.message || "Không thể tải danh sách cuộc trò chuyện.");
+      }
+    } finally {
+      inFlightRef.current = false;
+      setLoading(false);
+    }
+  };
+
+  // Tự động phục hồi khi người dùng focus lại tab trình duyệt
+  useEffect(() => {
+    const handleFocus = () => {
+      if (isNotFoundRef.current || loadError) {
+        isNotFoundRef.current = false;
+        setLoadError(null);
+        loadSessions(true);
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [loadError]);
+
+  // Khi đổi tài khoản hoặc đăng xuất: reset toàn bộ state sidebar và refetch
+  const lastUserRef = useRef(userId);
+  useEffect(() => {
+    if (lastUserRef.current !== userId) {
+      lastUserRef.current = userId;
+      setSessions([]);
+      setSearchQuery("");
+      setActionError(null);
+      setClearAllError(null);
+      setEditingSessionId(null);
+      setActiveMenuSessionId(null);
+      setShowClearAllConfirm(false);
+      isNotFoundRef.current = false;
+      setLoadError(null);
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+      loadSessions(true);
+    }
+  }, [userId]);
 
   // Đóng drawer trên mobile khi nhấn Escape
   useEffect(() => {
@@ -84,25 +208,12 @@ export function ChatHistorySidebar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Tải danh sách session
-  const loadSessions = async () => {
-    try {
-      setLoading(true);
-      const guestId = isGuest ? currentSessionId : undefined;
-      const res = await fetchChatSessions(guestId);
-      if (res.success && res.data?.sessions) {
-        setSessions(res.data.sessions);
-      }
-    } catch {
-      // Bỏ qua lỗi mạng
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    if (isMobileDrawer && !isOpen) {
+      return;
+    }
     loadSessions();
-  }, [currentSessionId, isGuest, refreshTrigger]);
+  }, [currentSessionId, isGuest, refreshTrigger, isOpen, isMobileDrawer]);
 
   // Phân nhóm session theo thời gian
   const groupedSessions = useMemo(() => {
@@ -153,14 +264,14 @@ export function ChatHistorySidebar({
       return;
     }
     const finalTitle = trimmed.slice(0, 50);
+    setActionError(null);
     try {
-      const guestId = isGuest ? currentSessionId : undefined;
-      await updateChatSessionTitle(sessionId, finalTitle, guestId);
+      await updateChatSessionTitle(sessionId, finalTitle);
       setSessions((prev) =>
         prev.map((s) => (s.session_id === sessionId ? { ...s, title: finalTitle } : s))
       );
-    } catch {
-      // Giữ nguyên tiêu đề cũ nếu lỗi
+    } catch (err: any) {
+      setActionError(err?.message || "Không thể đổi tên cuộc trò chuyện.");
     } finally {
       setEditingSessionId(null);
     }
@@ -169,9 +280,9 @@ export function ChatHistorySidebar({
   // Xóa một session (tự động chuyển sang session kế tiếp nếu đang mở session bị xóa)
   const handleDelete = async (sessionId: string) => {
     setActiveMenuSessionId(null);
+    setActionError(null);
     try {
-      const guestId = isGuest ? currentSessionId : undefined;
-      await deleteChatSession(sessionId, guestId);
+      await deleteChatSession(sessionId);
       const remaining = sessions.filter((s) => s.session_id !== sessionId);
       setSessions(remaining);
       if (sessionId === currentSessionId) {
@@ -181,23 +292,24 @@ export function ChatHistorySidebar({
           onNewChat();
         }
       }
-    } catch {
-      // Giữ nguyên nếu lỗi
+    } catch (err: any) {
+      setActionError(err?.message || "Không thể xóa cuộc trò chuyện.");
     }
   };
 
-  // Xóa toàn bộ lịch sử trò chuyện
+  // Xóa toàn bộ lịch sử trò chuyện (giữ modal mở nếu có lỗi để người dùng thấy thông báo)
   const handleClearAll = async () => {
     setIsClearingAll(true);
+    setClearAllError(null);
     try {
-      const guestId = isGuest ? currentSessionId : undefined;
-      await deleteAllChatSessions(guestId);
+      await deleteAllChatSessions();
       setSessions([]);
+      setShowClearAllConfirm(false);
       onNewChat();
-    } catch {
+    } catch (err: any) {
+      setClearAllError(err?.message || "Không thể xóa tất cả cuộc trò chuyện. Vui lòng thử lại.");
     } finally {
       setIsClearingAll(false);
-      setShowClearAllConfirm(false);
     }
   };
 
@@ -269,7 +381,7 @@ export function ChatHistorySidebar({
                 }}
               >
                 <div className="flex-1 min-w-0 pr-2">
-                  <p className="truncate leading-tight select-none">
+                  <p className="truncate leading-tight select-none" title={session.title}>
                     {session.title}
                   </p>
                 </div>
@@ -378,9 +490,43 @@ export function ChatHistorySidebar({
 
       {/* 3. Danh sách session có phân nhóm */}
       <div className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-slate-200">
+        {actionError && (
+          <div className="mb-2 p-2 rounded-lg bg-rose-50 border border-rose-200/80 text-rose-700 text-[11px] leading-snug flex items-center justify-between gap-1.5 animate-fadeIn">
+            <span className="truncate">{actionError}</span>
+            <button
+              type="button"
+              onClick={() => setActionError(null)}
+              className="text-rose-500 hover:text-rose-800 p-0.5 rounded shrink-0 transition"
+              title="Đóng thông báo lỗi"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+
         {loading && sessions.length === 0 ? (
           <div className="py-8 text-center text-[12px] text-slate-400">
             Đang tải lịch sử...
+          </div>
+        ) : loadError && sessions.length === 0 ? (
+          <div className="py-10 text-center px-4">
+            <div className="w-8 h-8 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-2.5">
+              <AlertCircle className="w-4 h-4" />
+            </div>
+            <p className="text-[12px] text-slate-700 font-medium mb-1">Không thể tải lịch sử</p>
+            <p className="text-[11px] text-slate-400 mb-3 line-clamp-2">{loadError}</p>
+            <button
+              type="button"
+              onClick={() => {
+                isNotFoundRef.current = false;
+                setLoadError(null);
+                loadSessions(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 transition shadow-xs cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Thử lại</span>
+            </button>
           </div>
         ) : !hasAnySession ? (
           <div className="py-12 text-center text-[12px] text-slate-400 px-4">
@@ -397,7 +543,10 @@ export function ChatHistorySidebar({
             <div className="pt-2 pb-1 px-1 border-t border-slate-200/60 mt-2 text-center">
               <button
                 type="button"
-                onClick={() => setShowClearAllConfirm(true)}
+                onClick={() => {
+                  setClearAllError(null);
+                  setShowClearAllConfirm(true);
+                }}
                 className="inline-flex items-center justify-center gap-1.5 py-1 px-2 rounded-md text-[11px] text-slate-400 hover:text-rose-600 hover:bg-rose-50/70 transition"
                 title="Xóa tất cả các cuộc trò chuyện"
               >
@@ -427,28 +576,40 @@ export function ChatHistorySidebar({
         </div>
       )}
 
-      {/* Modal Xác nhận Xóa tất cả */}
-      {showClearAllConfirm && (
+      {/* Modal Xác nhận Xóa tất cả render qua createPortal ra document.body */}
+      {showClearAllConfirm && mounted && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/40 backdrop-blur-2xs p-4 animate-fadeIn"
-          onClick={() => setShowClearAllConfirm(false)}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fadeIn"
+          onClick={() => {
+            if (!isClearingAll) setShowClearAllConfirm(false);
+          }}
         >
           <div
-            className="bg-white rounded-2xl p-5 max-w-xs w-full shadow-xl border border-slate-200 animate-scaleIn"
+            className="bg-white rounded-2xl p-5 max-w-xs w-full shadow-2xl border border-slate-200/90 animate-scaleIn relative"
             onClick={(e) => e.stopPropagation()}
           >
             <h4 className="font-bold text-[14px] text-slate-900 mb-1.5">
               Xóa tất cả cuộc trò chuyện?
             </h4>
-            <p className="text-[12px] text-slate-500 mb-4 leading-relaxed">
+            <p className="text-[12px] text-slate-500 mb-3.5 leading-relaxed">
               Toàn bộ lịch sử trò chuyện của bạn sẽ bị xóa vĩnh viễn và không thể khôi phục.
             </p>
+
+            {clearAllError && (
+              <div className="mb-3.5 p-2.5 rounded-lg bg-rose-50 border border-rose-200/80 text-rose-700 text-[11px] leading-snug flex items-start gap-1.5 animate-fadeIn">
+                <span className="font-semibold shrink-0">Lỗi:</span>
+                <span className="break-words">{clearAllError}</span>
+              </div>
+            )}
+
             <div className="flex items-center justify-end gap-2">
               <button
                 type="button"
-                onClick={() => setShowClearAllConfirm(false)}
+                onClick={() => {
+                  if (!isClearingAll) setShowClearAllConfirm(false);
+                }}
                 disabled={isClearingAll}
-                className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-slate-600 hover:bg-slate-100 transition"
+                className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-slate-600 hover:bg-slate-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Hủy
               </button>
@@ -456,13 +617,14 @@ export function ChatHistorySidebar({
                 type="button"
                 onClick={handleClearAll}
                 disabled={isClearingAll}
-                className="px-3.5 py-1.5 rounded-lg text-[12px] font-medium bg-rose-600 hover:bg-rose-700 text-white transition shadow-2xs disabled:opacity-50"
+                className="px-3.5 py-1.5 rounded-lg text-[12px] font-medium bg-rose-600 hover:bg-rose-700 text-white transition shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isClearingAll ? "Đang xóa..." : "Xác nhận xóa"}
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -92,17 +92,22 @@ export function createWelcomeMessage(context?: ChatUserContext | string): ChatMe
   };
 }
 
+let sessionCounter = 0;
+
 export function generateSecureSessionId(): string {
+  sessionCounter = (sessionCounter + 1) % 10000;
+  const seq = sessionCounter.toString(36);
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return `sess_vf_${crypto.randomUUID()}`;
+    const raw = crypto.randomUUID().replace(/-/g, "").slice(0, 24);
+    return `sess_vf_${raw}_${seq}`;
   }
   const randArr = new Uint32Array(4);
   if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
     crypto.getRandomValues(randArr);
-    const hex = Array.from(randArr).map((n) => n.toString(16).padStart(8, "0")).join("");
-    return `sess_vf_${hex}`;
+    const hex = Array.from(randArr).map((n) => n.toString(16).padStart(8, "0")).join("").slice(0, 24);
+    return `sess_vf_${hex}_${seq}`;
   }
-  return `sess_vf_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+  return `sess_vf_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}_${seq}`;
 }
 
 export const INITIAL_WELCOME_MESSAGE: ChatMessage = createWelcomeMessage();
@@ -143,7 +148,14 @@ export function useChat(context?: ChatUserContext | string) {
   useEffect(() => {
     const savedCase = storedCaseId();
     if (!ctx.caseId) setCurrentCaseId(savedCase);
-    if (!ctx.caseId || ctx.caseId === savedCase) {
+
+    // Kiểm tra xem có initial prompt đang chờ từ URL hoặc sessionStorage không
+    const hasPendingPrompt = typeof window !== "undefined" && (
+      Boolean(typeof sessionStorage !== "undefined" && sessionStorage.getItem("vf_initial_prompt")) ||
+      Boolean(typeof window.location !== "undefined" && new URLSearchParams(window.location.search).get("prompt"))
+    );
+
+    if (!hasPendingPrompt && (!ctx.caseId || ctx.caseId === savedCase)) {
       try {
         const key = storageKey("session");
         const savedSession = key ? localStorage.getItem(key) : null;
@@ -242,9 +254,10 @@ export function useChat(context?: ChatUserContext | string) {
 
   const loadSession = async (targetSessionId: string) => {
     if (targetSessionId === sessionId) return;
-    ++conversationGeneration.current;
+    const currentGen = ++conversationGeneration.current;
     setLoading(true);
     setSessionId(targetSessionId);
+    setMessages([createWelcomeMessage(ctx)]); // Reset ngay lập tức để tránh chồng chéo tin nhắn cũ
     try {
       const key = storageKey("session");
       if (key) localStorage.setItem(key, targetSessionId);
@@ -252,6 +265,7 @@ export function useChat(context?: ChatUserContext | string) {
 
     try {
       const hist = await getSessionHistory(targetSessionId);
+      if (currentGen !== conversationGeneration.current) return;
       if (hist?.success && hist?.data?.messages && hist.data.messages.length > 0) {
         const mapped: ChatMessage[] = hist.data.messages.map((m) => ({
           id: m.id,
@@ -272,9 +286,13 @@ export function useChat(context?: ChatUserContext | string) {
         setCurrentCaseId(null);
       }
     } catch {
-      setMessages([createWelcomeMessage(ctx)]);
+      if (currentGen === conversationGeneration.current) {
+        setMessages([createWelcomeMessage(ctx)]);
+      }
     } finally {
-      setLoading(false);
+      if (currentGen === conversationGeneration.current) {
+        setLoading(false);
+      }
     }
   };
 
