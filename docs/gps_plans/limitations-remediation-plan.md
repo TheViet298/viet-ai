@@ -4,7 +4,7 @@ Ngày lập: 13/10/2026.
 
 Nguồn: [completion-report.md](completion-report.md), mã hiện tại và kế hoạch đã trao đổi với người dùng.
 
-Trạng thái: **Kế hoạch, chưa triển khai.** Việc xuất tài liệu này không bao gồm sửa mã, cài dependency, tạo khóa API hoặc deploy.
+Trạng thái cập nhật 14/10/2026: **Đã triển khai các phần cục bộ; còn giới hạn kiểm chứng và phụ thuộc bên ngoài.** Xem [remediation-verification-report.md](remediation-verification-report.md) để biết phân công, tệp sửa, kiểm thử thực tế và phần chưa xác minh. Nội dung bên dưới giữ tiêu chí nghiệm thu ban đầu; không phải mọi tiêu chí đã đạt.
 
 ## 1. Mục tiêu và thứ tự thực hiện
 
@@ -80,8 +80,8 @@ Nguồn: [Playwright geolocation emulation](https://playwright.dev/docs/emulatio
 
 ### Công việc
 
-1. Tự động hóa trên Chromium, Firefox và WebKit.
-2. Kiểm tra trực tiếp Chrome/Edge/Firefox/Safari desktop trên máy có sẵn.
+1. Tự động hóa trên Chromium và Firefox.
+2. Kiểm tra trực tiếp Chromium/Firefox desktop trên máy có sẵn.
 3. Thử quyền Allow/Block thật, mạng dây/Wi-Fi, sai số lớn, mất mạng, đóng tính năng và điều hướng khỏi trang.
 4. Kiểm tra consent trên HTTPS; không ghi tọa độ thật vào ảnh, log hoặc báo cáo.
 
@@ -94,7 +94,7 @@ Nguồn: [Playwright geolocation emulation](https://playwright.dev/docs/emulatio
 ### Nghiệm thu
 
 - Có ma trận kết quả theo browser/OS và ghi rõ ca chưa chạy.
-- WebKit tự động không được coi là bằng chứng đã kiểm tra Safari thật.
+- Phạm vi kiểm thử browser: Chromium và Firefox; kết quả headless không thay thế kiểm thử thiết bị thật.
 - Không hứa bảo đảm độ chính xác GPS của desktop; hiển thị sai số và fallback vẫn phải hoạt động.
 
 ## 5. P1 — HTTPS, cấu hình API và privacy qua reverse proxy

@@ -23,7 +23,7 @@ function harness() {
     const file = path.resolve(__dirname, relative);
     const code = ts.transpileModule(fs.readFileSync(file,'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX } }).outputText;
     const exports = {};
-    vm.runInNewContext(code, { exports, Date, Math, Number, navigator: { geolocation: geo }, sessionStorage: { getItem() { return null; }, removeItem() {} }, require(id) {
+    vm.runInNewContext(code, { exports, Date, Math, Number, window: { matchMedia: () => ({ matches: false }) }, navigator: { geolocation: geo }, sessionStorage: { getItem() { return null; }, removeItem() {} }, require(id) {
       if (id === 'react') return react;
       if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (id === '../hooks/useChat') return { useChat: () => ({ ...chat, currentCaseId: caseId }) };

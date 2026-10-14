@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { writeFile } from 'node:fs/promises';
 
 const password = 'SyntheticE2e!Only2026';
 async function login(page: Page) {
@@ -27,6 +28,9 @@ for (const timing of ['before', 'after'] as const) {
     await context.grantPermissions(['geolocation']);
     await context.setGeolocation({ latitude: 10.7769, longitude: 106.7009, accuracy: 20 });
     const workerResponses: number[] = [];
+    const tileNetwork: Array<{ outcome: string; status?: number; error?: string }> = [];
+    page.on('response', response => { if (response.url().includes('tile.openstreetmap.org')) tileNetwork.push({ outcome: 'response', status: response.status() }); });
+    page.on('requestfailed', request => { if (request.url().includes('tile.openstreetmap.org')) tileNetwork.push({ outcome: 'failed', error: request.failure()?.errorText }); });
     page.on('response', response => { if (response.url().endsWith('/maplibre-gl-worker.mjs')) workerResponses.push(response.status()); });
     const token = await login(page);
     const headers = { Authorization: `Bearer ${token}` };
@@ -41,18 +45,32 @@ for (const timing of ['before', 'after'] as const) {
     await expect.poll(() => workerResponses).toContain(200);
     await map.getByRole('button', { name: /Demo/ }).first().click();
     await expect(map.getByRole('link', { name: 'Google Maps chỉ đường' })).toHaveAttribute('href', /origin=10.7769/);
-    await page.screenshot({ path: testInfo.outputPath('gps-map-desktop.png'), fullPage: true });
+    await map.evaluate(element => { element.scrollIntoView({ block: 'start' }); element.parentElement?.scrollTo(0, 0); window.scrollBy(0, -240); });
+    await map.screenshot({ path: testInfo.outputPath('gps-map-desktop.png') });
+    const tileSummary = await page.evaluate(() => performance.getEntriesByType('resource').filter(entry => entry.name.includes('tile.openstreetmap.org')).map(entry => ({ url: entry.name, duration: entry.duration })));
+    const networkPath = testInfo.outputPath('basemap-network.json');
+    await writeFile(networkPath, JSON.stringify({ note: 'Resource timing proves attempted tile loads only; canvas/worker assertions do not prove basemap pixels.', outcomes: tileNetwork, attempts: tileSummary }, null, 2));
+    await testInfo.attach('basemap-network.json', { path: networkPath, contentType: 'application/json' });
     if (timing === 'before') caseId = await createCase(page);
     const location = async () => (await (await page.request.get(`/api/v1/customer/cases/${caseId}`, { headers })).json()).data.location;
     await expect.poll(async () => (await location())?.status).toBe('CONSENTED');
     expect((await location()).latitude).toBe(10.7769);
     // A different real customer cannot update or read this case.
     const other = await page.request.post('/api/v1/auth/register', { data: { username: `other_${Date.now()}`, password } });
+    expect(other.ok()).toBeTruthy();
     const otherToken = (await other.json()).data.token;
+    const deniedRead = await page.request.get(`/api/v1/customer/cases/${caseId!}`, { headers: { Authorization: `Bearer ${otherToken}` } });
+    expect(deniedRead.status()).toBe(403);
     const denied = await page.request.post('/api/v1/customer/location', { headers: { Authorization: `Bearer ${otherToken}` }, data: { case_id: caseId!, status: 'NOT_SHARED', source: 'USER_TEXT', location_label: 'Không chia sẻ', share_with_staff: false } });
     expect(denied.status()).toBe(403);
     await page.getByRole('button', { name: 'Nhập khu vực', exact: true }).click();
-    await page.getByPlaceholder('Nhập km cao tốc, trạm sạc hoặc khu vực...').fill('Quận 1');
+    await page.setViewportSize({ width: 375, height: 812 });
+    const manualInput = page.getByPlaceholder('Nhập km cao tốc, trạm sạc hoặc khu vực...');
+    await manualInput.fill('Quận 1');
+    await manualInput.scrollIntoViewIfNeeded();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: testInfo.outputPath('manual-form-mobile.png'), fullPage: true });
     await page.getByRole('button', { name: 'Xác nhận', exact: true }).click();
     await expect.poll(async () => (await location())?.status).toBe('MANUAL');
     expect((await location()).latitude).toBeNull();

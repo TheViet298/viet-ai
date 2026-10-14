@@ -17,7 +17,7 @@ CATALOG_PATH = Path(__file__).resolve().parents[2] / "fixtures/nearby_service_po
 
 
 class CatalogMetadata(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     source: str = Field(min_length=1)
     updated_at: date
     verification_status: Literal["UNVERIFIED", "VERIFIED"]
@@ -31,7 +31,10 @@ class CatalogMetadata(BaseModel):
 
 
 class CatalogPoint(ServicePointItem):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    id: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+    address: str = Field(min_length=1)
     category: Literal["CHARGING_STATION", "SHOWROOM", "SERVICE_WORKSHOP", "OTHER"]
     latitude: float = Field(ge=-90, le=90, allow_inf_nan=False)
     longitude: float = Field(ge=-180, le=180, allow_inf_nan=False)

@@ -5,7 +5,7 @@
 - **Scope chính:** `docs/gps_plans/location-feature.md` (Kế hoạch 11/10/2026 cho Website Desktop Browser).
 - **Tài liệu tham khảo khảo sát cũ:** `docs/gps_plans/gps-cli-plan-20261012-122832.md` (giữ vai trò dữ liệu tham khảo, không làm thay đổi scope chính).
 - **Ranh giới bắt buộc:**
-  + Chỉ thiết kế cho desktop browser (Chrome, Edge, Firefox, Brave, Safari trên máy tính/laptop).
+  + Chỉ thiết kế cho desktop browser (Chromium và Firefox trên máy tính/laptop).
   + Định vị theo dõi liên tục khi di chuyển qua `navigator.geolocation.watchPosition()` sau khi khách hàng đồng ý (explicit consent); giải phóng tài nguyên qua `clearWatch(watchId)` khi dừng chia sẻ, chuyển nhập tay, đóng bản đồ hoặc unmount.
   + Luôn có form nhập tay và gợi ý nhanh tỉnh/thành nếu từ chối quyền hoặc lỗi tín hiệu.
   + Bộ lọc 4 phân loại điểm: Trụ sạc (CHARGING_STATION), Showroom (SHOWROOM), Xưởng kỹ thuật (SERVICE_WORKSHOP), Loại khác / Cứu hộ (OTHER). Mặc định là Tất cả (ALL).

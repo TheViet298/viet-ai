@@ -5,7 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const ts = require('typescript');
 
-function loadApi(fetch, token) {
+function loadApi(fetch, token, env = {}) {
   const source = fs.readFileSync(path.join(__dirname, '../src/features/chat/api/chatApi.ts'), 'utf8');
   const compiled = ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
@@ -14,7 +14,8 @@ function loadApi(fetch, token) {
   vm.runInNewContext(compiled, {
     exports,
     fetch,
-    process: { env: {} },
+    process: { env },
+    URLSearchParams,
     window: {},
     localStorage: { getItem: () => token },
   });
@@ -31,6 +32,31 @@ const gpsPayload = {
   precision: 'EXACT',
   share_with_staff: true,
 };
+
+test('nearby API uses same origin and preserves catalog provenance conservatively', async () => {
+  let calledUrl;
+  const point = { id: 'synthetic', name: 'Synthetic point', category: 'SHOWROOM', address: 'Synthetic area', latitude: 12, longitude: 98, hotline: '', source: 'Test catalog', updated_at: '2026-10-13', demo: false, verification_status: 'VERIFIED' };
+  const api = loadApi(async url => {
+    calledUrl = url;
+    return { ok: true, json: async () => ({ data: { points: [point, { ...point, id: 'demo', demo: true }, { ...point, id: 'legacy', demo: undefined, verification_status: undefined }] } }) };
+  }, null);
+  const points = await api.getNearbyServicePoints({ lat: 12, lng: 98 }, 'ALL');
+  assert.ok(calledUrl.startsWith('/api/v1/customer/service-points/nearby?'));
+  assert.equal(points[0].source, 'Test catalog');
+  assert.equal(points[0].updatedAt, '2026-10-13');
+  assert.equal(points[0].demo, false);
+  assert.equal(points[0].verificationStatus, 'VERIFIED');
+  assert.equal(points[1].verificationStatus, 'UNVERIFIED');
+  assert.equal(points[2].demo, true);
+  assert.equal(points[2].verificationStatus, 'UNVERIFIED');
+});
+
+test('explicit API origin override removes a trailing slash', async () => {
+  let calledUrl;
+  const api = loadApi(async url => { calledUrl = url; return { ok: true, json: async () => ({ data: { points: [] } }) }; }, null, { NEXT_PUBLIC_API_URL: 'https://api.example.test/' });
+  await api.getNearbyServicePoints({ lat: 12, lng: 98 }, 'ALL');
+  assert.ok(calledUrl.startsWith('https://api.example.test/api/v1/'));
+});
 
 test('location API requires customer authentication before sending coordinates', async () => {
   let calls = 0;

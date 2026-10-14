@@ -124,19 +124,19 @@ export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints,
   }, [center, filtered, locationState.accuracy, origin, onSelectPoint, mapReady]);
 
   if (!isOpen) return null;
-  return <section className="h-full min-h-[500px] rounded-xl border bg-white overflow-hidden flex flex-col" aria-label="Bản đồ điểm dịch vụ">
+  return <section className="min-w-0 rounded-xl border bg-white overflow-hidden flex flex-col xl:h-[calc(100vh-140px)] xl:min-h-[580px] xl:max-h-[820px]" aria-label="Bản đồ điểm dịch vụ">
     <header className="flex items-center justify-between p-3 border-b"><strong>Điểm dịch vụ</strong><button type="button" onClick={onClose} aria-label="Đóng bản đồ">Đóng</button></header>
-    <div className="flex flex-1 min-h-[450px]">
-      <div className="w-1/2 overflow-auto p-3 space-y-3">
+    <div className="flex min-h-0 flex-1 flex-col-reverse sm:min-h-[450px] sm:flex-row">
+      <div className="min-w-0 max-h-[380px] overflow-y-auto p-3 space-y-3 sm:max-h-[580px] sm:w-1/3 sm:shrink-0 xl:max-h-none">
         <p className="text-xs text-slate-600">Điểm demo được gắn nhãn. Danh mục không xác nhận tình trạng hoạt động trực tiếp.</p>
         {locationState.status === "MANUAL" && <p className="text-xs text-amber-800">{center ? "Tâm khu vực tham chiếu/ước lượng, không phải GPS. Khoảng cách chỉ để tham khảo." : "Chưa nhận diện chính xác khu vực. Dùng Đổi lại vị trí để chọn một khu vực gợi ý; chưa có khoảng cách tham khảo."}</p>}
         {locationState.accuracy && locationState.accuracy > 500 && <p className="text-xs text-amber-800">Vị trí ước lượng ±{Math.round(locationState.accuracy)}m</p>}
         <div className="flex flex-wrap gap-1">{categories.map(([value, label]) => <button key={value} type="button" aria-pressed={category === value} className={`px-2 py-1 rounded border text-xs ${category === value ? "bg-blue-700 text-white" : "bg-white"}`} onClick={() => { if (value === category) return; nearbyAbort.current?.abort(); requestId.current++; setNearby(null); setCategory(value); onSelectPoint(""); }}>{label}</button>)}</div>
-        {filtered.length === 0 && <div><p>Không có điểm demo phù hợp{center ? " trong bán kính 50 km" : " trong bộ lọc này"}.</p><a href="tel:1900232389" className="text-blue-700 underline">Gọi hỗ trợ 1900-232389</a></div>}
+        {filtered.length === 0 && <div><p>Không có điểm dịch vụ phù hợp{center ? " trong bán kính 50 km" : " trong bộ lọc này"}.</p><a href="tel:1900232389" className="text-blue-700 underline">Gọi hỗ trợ 1900-232389</a></div>}
         {filtered.map((point) => <button type="button" key={point.id} onClick={() => onSelectPoint(point.id)} className={`block w-full text-left p-2 rounded border ${selected?.id === point.id ? "border-blue-700" : "border-slate-200"}`}><strong>{pointLabel(point)}{point.name}</strong><span className="block text-xs">{point.address}</span>{point.km !== null && <span className="text-xs">{formatDistanceKm(point.km)} đường chim bay</span>}</button>)}
         {selected && <div className="border-t pt-2 text-sm"><strong>{pointLabel(selected)}{selected.name}</strong><p>{selected.address}</p><p className="text-xs text-slate-600">Nguồn: {selected.source ?? "Chưa có nguồn"} · Cập nhật: {selected.updatedAt ?? "Chưa rõ"} · {selected.verificationStatus === "VERIFIED" && !selected.demo ? "Danh mục đã xác minh" : "Chưa xác minh"}</p>{selected.hotline && <a className="block text-blue-700" href={`tel:${selected.hotline.split(" ")[0].replace(/[^\d+]/g, "")}`}>Hotline: {selected.hotline}</a>}<div className="flex flex-wrap gap-3 mt-2"><a target="_blank" rel="noopener noreferrer" href={getDirectionsUrl({ ...selected.coords, address: selected.address }, origin)}>Google Maps{origin ? " chỉ đường" : " tìm địa chỉ"}</a>{origin && <a target="_blank" rel="noopener noreferrer" href={getOsmDirectionsUrl(selected.coords, origin)}>OpenStreetMap chỉ đường</a>}{onSelectDestination && <button type="button" onClick={() => onSelectDestination(selected)}>Chọn làm điểm đến</button>}</div></div>}
       </div>
-      <div className="w-1/2 relative bg-slate-100" role="region" aria-label="Bản đồ tương tác">{center ? <div ref={mapElement} style={{ position: "absolute", inset: 0 }} /> : <p className="p-4 text-sm">Nhập hoặc chọn khu vực để mở bản đồ.</p>}{mapError && <p role="alert" className="absolute bottom-2 left-2 bg-white p-2 text-xs">Không tải được bản đồ. Danh sách vẫn sử dụng được.</p>}</div>
+      <div className="relative min-h-[280px] min-w-0 bg-slate-100 sm:w-2/3 sm:flex-1" role="region" aria-label="Bản đồ tương tác">{center ? <div ref={mapElement} style={{ position: "absolute", inset: 0 }} /> : <p className="p-4 text-sm">Nhập hoặc chọn khu vực để mở bản đồ.</p>}{mapError && <p role="alert" className="absolute bottom-2 left-2 right-2 bg-white p-2 text-xs">Không tải được bản đồ. Danh sách vẫn sử dụng được.</p>}</div>
     </div>
   </section>;
 }

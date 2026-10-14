@@ -1,4 +1,12 @@
-# Báo cáo hoàn tất GPS desktop — 13/10/2026
+# Báo cáo GPS desktop — cập nhật 14/10/2026
+
+Đợt khắc phục giới hạn đã bổ sung hydration ổn định, Playwright production E2E với backend/DB tạm, alias/tìm kiếm khu vực thủ công, adapter danh mục có metadata và cấu hình API/proxy HTTPS thử nghiệm. Chi tiết phân công độc lập, danh sách tệp, bằng chứng mới và các phần chưa xác minh ở [remediation-verification-report.md](remediation-verification-report.md).
+
+Commit `e6b9d9d` đã tồn tại khi tiếp tục phiên này và chứa triển khai GPS trước đó. Phần sửa tiếp và báo cáo trong phiên tiếp tục chưa stage/commit/push. Các tệp hook/logging đang sửa bởi công việc khác được giữ nguyên. Không triển khai production hoặc tạo API key.
+
+## Snapshot lịch sử — 13/10/2026
+
+Các kết quả và trạng thái “chưa sửa/chưa commit” dưới đây là snapshot cũ; dùng báo cáo cập nhật liên kết ở trên cho tình trạng hiện tại.
 
 ## Phạm vi và cách phối hợp
 
@@ -68,7 +76,7 @@ Các harness và log browser nằm trong `/tmp/gps-browser*.py`, `/tmp/gps-brows
 - Dữ liệu điểm dịch vụ vẫn là **demo**, không xác minh hoạt động/trụ trống, không điều phối hoặc booking thực.
 - Manual dùng tâm của một số khu vực được hỗ trợ, không phải geocoder cho mọi địa chỉ. Khoảng cách là đường chim bay; dẫn đường mở dịch vụ ngoài.
 - Trang chat production có lúc ghi nhận lỗi hydration React #425/#423 lúc tải trang, trước khi bật GPS; đây là phần render chat ngoài các tệp GPS đã sửa. Các kiểm tra runtime GPS tách riêng sau hydration. Chưa sửa lỗi hydration tổng thể trong lượt này.
-- Browser runtime được kiểm tra trên Chrome desktop với geolocation giả lập. Chưa xác minh GPS phần cứng, hộp thoại quyền thật trên mọi OS, hoặc chạy trực tiếp Edge/Firefox/Safari.
+- Browser runtime được kiểm tra trên Chrome desktop với geolocation giả lập. Chưa xác minh GPS phần cứng, hộp thoại quyền thật trên mọi OS, hoặc chạy trực tiếp các trình duyệt desktop trong phạm vi kiểm thử.
 - API/auth được kiểm thử qua ASGI và fixture; browser chủ yếu kiểm tra phía client, dùng fallback hoặc response giả lập để tạo race. Chưa chạy một phiên E2E đăng nhập trên môi trường backend triển khai thực.
 - Cần HTTPS và nhà cung cấp tile/dữ liệu phù hợp trước production. Reverse proxy bên ngoài phải tự cấu hình tránh ghi query tọa độ; middleware hiện tại chỉ bảo vệ access log phía ứng dụng.
 - Không tạo khóa API, không cài thêm dependency, không deploy production. **Chưa stage, commit hoặc push.** Next.js và Chrome do task khởi chạy đã được dừng sau kiểm thử.

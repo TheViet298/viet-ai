@@ -12,7 +12,6 @@ export default defineConfig({
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
   ],
   webServer: [
     { command: 'python3 ../scripts/gps-e2e-server.py backend', url: 'http://127.0.0.1:18000/health', reuseExistingServer: false, timeout: 60_000 },

@@ -23,7 +23,6 @@ export function ChatFeed({
   children,
 }: ChatFeedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
   const isNearBottomRef = useRef(true);
 
@@ -41,8 +40,11 @@ export function ChatFeed({
 
   // Cuộn xuống đáy một cách an toàn
   const scrollToBottom = useCallback((smooth = true) => {
-    if (!bottomRef.current) return;
-    bottomRef.current.scrollIntoView({
+    const container = containerRef.current;
+    if (!container) return;
+    // Keep chat autoscroll inside the feed so it cannot hide the adjacent map.
+    container.scrollTo({
+      top: container.scrollHeight,
       behavior: smooth ? "smooth" : "auto",
     });
     setShowScrollBottomBtn(false);
@@ -123,7 +125,7 @@ export function ChatFeed({
           </div>
         )}
 
-        <div ref={bottomRef} className="h-3 shrink-0" />
+        <div className="h-3 shrink-0" />
       </div>
 
       {/* Nút nổi "↓ Tin mới" khi người dùng cuộn ngược lên trên */}

@@ -70,11 +70,21 @@ export function CustomerChatContainer() {
   const [locationSyncError, setLocationSyncError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
+  const mapPanelRef = useRef<HTMLDivElement>(null);
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
   const [showLocationCard, setShowLocationCard] = useState<boolean>(false);
   const [suggestedCategory, setSuggestedCategory] = useState<
     "ALL" | "OTHER" | "CHARGING_STATION" | "SERVICE_WORKSHOP" | "SHOWROOM"
   >("ALL");
+
+  useEffect(() => {
+    if (!isMapOpen || !window.matchMedia("(max-width: 1279px)").matches) return;
+    // Reveal the stacked map once when opened, without moving focus or following GPS updates.
+    const frame = window.requestAnimationFrame(() => {
+      mapPanelRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isMapOpen]);
 
   const invalidateLocationRequest = () => {
     locationRequestId.current += 1;
@@ -320,20 +330,20 @@ export function CustomerChatContainer() {
 
       <div
         className={`mx-auto px-4 py-3 sm:py-4 transition-all duration-300 ${
-          isMapOpen ? "max-w-7xl" : "max-w-4xl"
+          isMapOpen ? "w-full" : "max-w-4xl"
         }`}
       >
 
-      {/* Main Layout: Desktop 55/45 khi mở map, Mặc định chat chiếm toàn bộ max-w-4xl */}
+      {/* Desktop: chat 40%, panel 60%; canvas uses 2/3 of the panel (~40% page width). */}
       <div
         className={`grid gap-4 items-start transition-all duration-300 ${
-          isMapOpen ? "lg:grid-cols-[1.12fr_0.88fr]" : "grid-cols-1"
+          isMapOpen ? "grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]" : "grid-cols-1"
         }`}
       >
         {/* =============================================================
             KHUNG CHAT CHÍNH (RỘNG RÃI, CHIẾM 70% CHIỀU CAO, KHÔNG BỊ BÓP)
         ============================================================= */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden flex flex-col h-[calc(100vh-140px)] min-h-[580px] max-h-[820px]">
+        <div className="min-w-0 bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden flex flex-col h-[calc(100vh-140px)] min-h-[580px] max-h-[820px]">
           {/* Header thu gọn thấp (~40px) */}
           <div className="px-3.5 py-2 bg-slate-50/90 text-slate-900 flex items-center justify-between border-b border-slate-200/80">
             <div className="flex items-center space-x-2 min-w-0">
@@ -513,11 +523,11 @@ export function CustomerChatContainer() {
         </div>
 
         {/* =============================================================
-            CỘT PHẢI (DESKTOP): CHỈ TRƯỢT RA KHI KHÁCH KÍCH HOẠT ACTION (XEM MAP)
+            BẢN ĐỒ: CỘT PHẢI Ở DESKTOP, XẾP DƯỚI CHAT Ở MÀN HẸP
             Mặc định không có 5 card tĩnh làm rối mắt!
         ============================================================= */}
         {isMapOpen && (
-          <div className="hidden lg:block animate-fadeIn">
+          <div ref={mapPanelRef} className="min-w-0 scroll-mt-20 animate-fadeIn">
             <ServiceMapPanel
               isOpen={isMapOpen}
               onClose={handleSkipLocation}

@@ -4,9 +4,10 @@ from src.services.location_privacy import LocationQueryPrivacyMiddleware
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('status', [200, 422, 503])
-async def test_nearby_query_available_to_handler_but_removed_before_access_log(status):
-    scope = {'type': 'http', 'path': '/api/v1/customer/service-points/nearby',
+@pytest.mark.parametrize('status', [200, 307, 422, 503])
+@pytest.mark.parametrize('suffix', ['', '/'])
+async def test_nearby_query_available_to_handler_but_removed_before_access_log(status, suffix):
+    scope = {'type': 'http', 'path': '/api/v1/customer/service-points/nearby' + suffix,
              'query_string': b'lat=21.0315&lng=105.8145'}
     seen = []
 

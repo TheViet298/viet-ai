@@ -7,7 +7,7 @@ class LocationQueryPrivacyMiddleware:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
-        if scope['type'] != 'http' or scope.get('path') != '/api/v1/customer/service-points/nearby':
+        if scope['type'] != 'http' or scope.get('path', '').rstrip('/') != '/api/v1/customer/service-points/nearby':
             await self.app(scope, receive, send)
             return
 

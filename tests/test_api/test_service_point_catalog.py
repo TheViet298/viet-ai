@@ -56,6 +56,16 @@ def test_adapter_preserves_unverified_non_demo_metadata():
     assert nearby_service_points(0, 0, "ALL", 1, 10, TestAdapter())["points"] == []
 
 
+@pytest.mark.parametrize("field", ["source", "id", "name", "address"])
+def test_blank_provenance_or_identity_cannot_be_marked_verified(field):
+    data = json.loads(CATALOG_PATH.read_text())
+    data["metadata"].update(demo=False, verification_status="VERIFIED")
+    target = data["metadata"] if field == "source" else data["points"][0]
+    target[field] = "   "
+    with pytest.raises(ValidationError):
+        Catalog.model_validate(data)
+
+
 @pytest.mark.asyncio
 async def test_catalog_failure_returns_unavailable_not_verified_points(client, monkeypatch):
     def broken_catalog(self):

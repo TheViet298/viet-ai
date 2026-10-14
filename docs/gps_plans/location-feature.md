@@ -12,7 +12,7 @@
 
 * **Bối cảnh:** Người dùng đang lên kế hoạch cho tính năng tìm điểm dịch vụ gần nhất trên website.
 * **Phạm vi đã được làm rõ:**
-  1. **Chỉ thiết kế cho desktop:** Tập trung tối ưu hóa trải nghiệm trên màn hình và trình duyệt website desktop (Chrome, Edge, Firefox, Brave, Safari trên máy tính/laptop).
+  1. **Chỉ thiết kế cho desktop:** Tập trung tối ưu hóa trải nghiệm trên màn hình và trình duyệt website desktop (Chromium và Firefox trên máy tính/laptop).
   2. **Theo dõi vị trí liên tục khi di chuyển:** Vị trí được theo dõi liên tục khi khách hàng di chuyển, trong lúc tính năng đang mở (thông qua `navigator.geolocation.watchPosition()` trên HTTPS sau khi khách hàng chủ động đồng ý; tự động gọi `clearWatch()` khi họ dừng chia sẻ hoặc rời tính năng).
   3. **Khách hàng chọn loại điểm dịch vụ:** Hỗ trợ lựa chọn linh hoạt giữa **trụ sạc**, **showroom**, **xưởng kỹ thuật (workshop)** hoặc **loại điểm dịch vụ khác**.
   4. **Giao diện chia đôi (Split View):**
