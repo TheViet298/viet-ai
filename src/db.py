@@ -11,13 +11,14 @@ os.makedirs("data", exist_ok=True)
 settings = get_settings()
 db_url = settings.database_url
 
-# Tự động fallback về SQLite nếu DATABASE_URL trỏ PostgreSQL nhưng môi trường chưa cài psycopg
 if db_url.startswith("postgresql"):
     try:
         import psycopg  # noqa: F401
     except ImportError:
         try:
             import psycopg2  # noqa: F401
+            if db_url.startswith("postgresql://"):
+                db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
         except ImportError:
             db_url = "sqlite:///./data/app.db"
 
