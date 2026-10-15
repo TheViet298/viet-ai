@@ -26,9 +26,29 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [demoLoadingRole, setDemoLoadingRole] = useState<"STAFF" | "CUSTOMER" | null>(null);
 
   const goToRoleHome = (role: UserRole) => {
     router.push(role === "STAFF" ? "/console" : "/chat");
+  };
+
+  const handleQuickDemoLogin = async (username: string, role: "CUSTOMER" | "STAFF") => {
+    setDemoLoadingRole(role);
+    setActiveTab(role);
+    setErrorMessage("");
+    try {
+      const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD || "DemoSecret@2026!Sec";
+      const authenticated = await login(username, demoPassword);
+      goToRoleHome(authenticated.role);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Không thể đăng nhập bằng tài khoản Demo. Vui lòng kiểm tra lại backend/database."
+      );
+    } finally {
+      setDemoLoadingRole(null);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -119,46 +139,84 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Banner demo cho giám khảo (chỉ hiển thị khi biến môi trường cho phép) */}
-          {process.env.NEXT_PUBLIC_SHOW_DEMO_HINT === "true" && (
-            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-[12px] text-amber-900">
-              <div className="flex items-center gap-1.5 font-bold text-amber-800 mb-1.5">
+          {/* 1-Click Demo Quick Access cho Giám khảo / Thẩm định viên */}
+          <div className="mt-4 rounded-xl border border-amber-200/90 bg-gradient-to-b from-amber-50/90 to-amber-50/30 p-3.5 shadow-2xs">
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center gap-1.5 text-[12px] font-bold text-amber-900">
                 <Sparkles className="h-4 w-4 text-amber-600 shrink-0" />
-                <span>Tài khoản demo cho giám khảo</span>
+                <span>Trải nghiệm nhanh Demo Giám khảo</span>
               </div>
-              <div className="space-y-1 text-[11px] text-amber-800">
-                <div className="flex items-center justify-between">
-                  <span>Khách hàng demo:</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab("CUSTOMER");
-                      setIdentifier("demo.customer@vinfast.vn");
-                    }}
-                    className="font-mono font-semibold text-[#1E40AF] hover:underline cursor-pointer"
-                  >
-                    demo.customer@vinfast.vn
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Staff demo:</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab("STAFF");
-                      setIdentifier("demo.staff@vinfast.vn");
-                    }}
-                    className="font-mono font-semibold text-[#6D5BD0] hover:underline cursor-pointer"
-                  >
-                    demo.staff@vinfast.vn
-                  </button>
-                </div>
-              </div>
-              <p className="mt-2 text-[10.5px] italic text-amber-700/80 border-t border-amber-200/60 pt-1.5">
-                * Mật khẩu demo được cung cấp trong tài liệu nộp bài.
-              </p>
+              <span className="text-[10px] font-semibold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                1-Click
+              </span>
             </div>
-          )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {/* Nút vào vai Staff Demo */}
+              <button
+                type="button"
+                disabled={submitting || demoLoadingRole !== null}
+                onClick={() => handleQuickDemoLogin("demo.staff@vinfast.vn", "STAFF")}
+                className="flex items-center justify-between gap-2 rounded-lg border border-purple-200/80 bg-white hover:bg-purple-50/70 p-2 text-left shadow-2xs transition-all hover:border-purple-300 hover:shadow-xs group cursor-pointer disabled:opacity-60"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-purple-100 text-purple-700 group-hover:bg-[#6D5BD0] group-hover:text-white transition-colors">
+                    <ShieldCheck className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[11.5px] font-bold text-slate-800 group-hover:text-purple-900 truncate">
+                      Vào vai Staff Demo
+                    </div>
+                    <div className="text-[10px] text-slate-500 truncate">
+                      Console điều phối 9 ca
+                    </div>
+                  </div>
+                </div>
+                {demoLoadingRole === "STAFF" ? (
+                  <span className="text-[10px] text-purple-600 font-bold animate-pulse">…</span>
+                ) : (
+                  <ArrowRight className="h-3.5 w-3.5 text-purple-400 group-hover:text-[#6D5BD0] group-hover:translate-x-0.5 transition-all shrink-0" />
+                )}
+              </button>
+
+              {/* Nút vào vai Khách hàng Demo */}
+              <button
+                type="button"
+                disabled={submitting || demoLoadingRole !== null}
+                onClick={() => handleQuickDemoLogin("demo.customer@vinfast.vn", "CUSTOMER")}
+                className="flex items-center justify-between gap-2 rounded-lg border border-blue-200/80 bg-white hover:bg-blue-50/70 p-2 text-left shadow-2xs transition-all hover:border-blue-300 hover:shadow-xs group cursor-pointer disabled:opacity-60"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-100 text-blue-700 group-hover:bg-[#1E40AF] group-hover:text-white transition-colors">
+                    <User className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[11.5px] font-bold text-slate-800 group-hover:text-blue-900 truncate">
+                      Vào vai Khách Demo
+                    </div>
+                    <div className="text-[10px] text-slate-500 truncate">
+                      Chat & Tra cứu hồ sơ
+                    </div>
+                  </div>
+                </div>
+                {demoLoadingRole === "CUSTOMER" ? (
+                  <span className="text-[10px] text-blue-600 font-bold animate-pulse">…</span>
+                ) : (
+                  <ArrowRight className="h-3.5 w-3.5 text-blue-400 group-hover:text-[#1E40AF] group-hover:translate-x-0.5 transition-all shrink-0" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="relative my-4 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200"></div>
+            </div>
+            <span className="relative bg-white px-2.5 text-[10.5px] font-semibold text-slate-400 uppercase tracking-wider">
+              Hoặc đăng nhập thủ công
+            </span>
+          </div>
 
           {/* Error notice */}
           {errorMessage && (
