@@ -1,9 +1,9 @@
 """Own, serialize and atomically persist application chat turns."""
 import asyncio
 import hashlib
-import re
 import json
 import logging
+import re
 import time
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
@@ -18,11 +18,12 @@ from src.models.db_models import Case, CaseBrief, ChatRequestRecord, ChatSession
 from src.models.schemas import ApiResponse, ChatResponseData, EmergencyContext
 from src.services.application_memory import accept_application_memory
 from src.services.chat_cases import resolve_authorized_active_case
-from src.services.conversation_context import ConversationContext, apply_turn, understand_turn
+from src.services.chat_normalization import normalize_message
+from src.services.conversation_context import ConversationContext, TurnUnderstanding, apply_turn, understand_turn
 from src.services.conversation_progress import derive_progress
 from src.services.observability import observation
-from src.services.session_store import encode_state, get_store
 from src.services.request_diagnostics import observed_lock
+from src.services.session_store import encode_state, get_store
 
 _LOCKS: WeakValueDictionary = WeakValueDictionary()
 logger = logging.getLogger("chat_turns")
@@ -100,14 +101,28 @@ async def run_chat_turn(payload, user, db, handler):
             budget = {'deadline': time.monotonic() + get_settings().agent_turn_timeout_s, 'attempts': 0}
             recent = [{'role': m.get('type'), 'content': str(m.get('data', {}).get('content', ''))[:400]}
                       for m in snapshot.get('messages', [])[-4:]]
-            turn = await understand_turn(sanitize_pii(payload.message)[0], conversation, recent, budget)
-            conversation = apply_turn(conversation, turn, before_turn + 1)
-            db.info['conversation_turn'] = {'context': conversation.model_dump(), 'understanding': turn.model_dump(), 'budget': budget}
+            spelling = await normalize_message(sanitize_pii(payload.message)[0], recent_turns=recent, budget=budget)
+            if spelling.needs_confirmation:
+                turn = TurnUnderstanding(original_text=spelling.original_text, resolved_query=spelling.text,
+                                         needs_confirmation=True, goal=conversation.active_goal,
+                                         topic=conversation.topic, subject=conversation.subject)
+            else:
+                turn = await understand_turn(spelling.text, conversation, recent, budget)
+                turn.original_text = spelling.original_text
+                conversation = apply_turn(conversation, turn, before_turn + 1)
+            db.info['conversation_turn'] = {'context': conversation.model_dump(), 'understanding': turn.model_dump(),
+                                           'budget': budget, 'normalization': spelling.model_dump()}
             response = await handler(payload, user, db)
             data = response.data
-            from src.services.vehicle_catalog import select_vehicle_cards, vehicle_overview_reply, vehicle_comparison_reply, is_generic_vehicle_comparison
-            data.vehicle_cards = select_vehicle_cards(payload.message, active_goal=conversation.active_goal, context_topic=conversation.topic)
-            data.vehicle_comparison = len(data.vehicle_cards) == 2 and 'so sánh' in payload.message.casefold()
+            from src.services.vehicle_catalog import (
+                is_generic_vehicle_comparison,
+                select_vehicle_cards,
+                vehicle_comparison_reply,
+                vehicle_overview_reply,
+            )
+            card_text = '' if spelling.needs_confirmation else spelling.text
+            data.vehicle_cards = select_vehicle_cards(card_text, active_goal=conversation.active_goal, context_topic=conversation.topic)
+            data.vehicle_comparison = len(data.vehicle_cards) == 2 and 'so sánh' in card_text.casefold()
             if data.vehicle_cards:
                 if re.fullmatch(r'\s*(?:(?:(?:tư vấn|giới thiệu|thông tin)(?: về)?(?: xe| mẫu xe)?\s+)?(?:vinfast\s+)?vf\s*[356789](?:\s+(?:(?:phiên bản|bản)\s+)?(?:eco|plus))?|so sánh\s+vf\s*[356789]\s+(?:và|với)\s+vf\s*[356789]|so sánh\s+vf\s*8\s+(?:eco|plus)\s+(?:và|với)\s+(?:vf\s*8\s+)?(?:eco|plus))[.!?]?\s*', payload.message, re.I):
                     data.message = vehicle_overview_reply(data.vehicle_cards)
@@ -155,7 +170,8 @@ async def run_chat_turn(payload, user, db, handler):
                     context['incident_case_id'] = data.case_id
                     meta['vehicle_context'] = context
                     latest.msg_metadata = meta
-                accept_application_memory(session, payload.session_id, latest.content, data, context, before_turn)
+                accept_application_memory(session, payload.session_id, latest.content, data, context, before_turn,
+                                          observation_text='' if spelling.needs_confirmation else spelling.text)
             stored = (session.memory_states or {}).get(payload.session_id, {})
             case = db.get(Case, data.case_id) if data.case_id else None
             brief = db.query(CaseBrief).filter_by(case_id=case.id).first() if case else None

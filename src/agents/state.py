@@ -118,6 +118,8 @@ class AgentState(TypedDict, total=False):
     # -------------------------------------------------------------
     messages: Annotated[list[BaseMessage], add_messages]
     latest_user_message: str
+    original_user_message: str
+    normalization_needs_confirmation: bool
     clarification_turn: int  # 0, 1, hoặc 2
     max_clarification_turns: int  # Giới hạn cứng = 2
     suggested_replies: list[str]  # Quick replies cho Frontend

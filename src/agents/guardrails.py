@@ -6,6 +6,7 @@ from typing import Any
 
 from src.agents.state import PriorityLevel
 from src.services.chat_classification import current_clause, temporal_context
+from src.services.chat_normalization import normalize_chat_text
 
 # =====================================================================
 # Constants & Hotline
@@ -98,6 +99,7 @@ def evaluate_hard_safety(text: str) -> tuple[bool, str | None, PriorityLevel]:
     Returns:
         (is_critical, trigger_rule_name, priority)
     """
+    text = normalize_chat_text(text)
     temporal = temporal_context(text)
     if temporal in {'resolved_past', 'hypothetical', 'knowledge'}:
         return False, 'TURTLE_DEFINITION' if re.search(TURTLE_PATTERN, text.lower()) else None, 'LOW'
@@ -119,6 +121,9 @@ def evaluate_hard_safety(text: str) -> tuple[bool, str | None, PriorityLevel]:
             # Do not turn accented "chạy" (driving) into "cháy" (fire).
             # For unaccented input, only suppress the explicit driving phrase.
             rule_text = re.sub(r"\b(?:đang|vẫn|dang|van)\s+(?:chạy|chay)\b|\bchạy\b", "di chuyển", text_lower)
+            # Bare ASCII "chay" needs confirmation (driving vs. fire).
+            # Explicit "bi chay" has already become "bị cháy" above.
+            rule_text = re.sub(r'\bchay\b', 'chưa rõ hiện tượng', rule_text)
             normalized_text = rule_text
         if re.search(pattern, rule_text) or re.search(pattern, normalized_text):
             if is_pure_inquiry and not has_emergency_presence and rule_name == "SMOKE_OR_FIRE":
@@ -145,6 +150,7 @@ def evaluate_hard_safety(text: str) -> tuple[bool, str | None, PriorityLevel]:
 
 def without_negated_hazards(text: str) -> str:
     """Mask denied hazards while keeping affirmative hazards in other clauses."""
+    text = normalize_chat_text(text)
     hazard_terms = (
         r"(?:khói|khoi(?!\s+dong)|mùi khét|mui khet|bốc khói|boc khoi|cháy xe|chay xe|cháy|chay|"
         r"chập điện|chap dien|xì khói|xi khoi|bốc lửa|boc lua|mất phanh|mat phanh|"

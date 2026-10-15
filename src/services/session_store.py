@@ -222,7 +222,7 @@ class SessionStore:
                 )
                 db.execute("UPDATE messages SET case_id=? WHERE session_id=? AND case_id IS NULL", (cid, session_id))
             for sender, content in (
-                ("CUSTOMER", data.get("latest_user_message", "")),
+                ("CUSTOMER", data.get("original_user_message") or data.get("latest_user_message", "")),
                 ("AGENT", data.get("response", "")),
             ):
                 db.execute(

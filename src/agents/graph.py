@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 def route_after_safety(state: AgentState) -> str:
     if state.get("is_critical") or state.get("policy_blocked"):
         return "case_brief"
-    if state.get("login_required"):
+    if state.get("login_required") or state.get('normalization_needs_confirmation'):
         return END
     text = state.get('latest_user_message','')
     fresh = state.get('cardd_new_input') or state.get('cardd_confirmation_changed')

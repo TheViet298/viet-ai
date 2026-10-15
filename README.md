@@ -187,6 +187,20 @@ AUTH_SECRET_KEY=                 # bắt buộc khi APP_ENV=production, tối th
 
 > **Lưu ý:** Backend chỉ dùng Gemini trực tiếp khi tên model chứa `gemini` **và** API key bắt đầu bằng `AIza`. Key được lấy theo thứ tự `OPENAI_API_KEY` rồi `GOOGLE_API_KEY`, nên nếu `OPENAI_API_KEY` còn giá trị mẫu (`sk-...`) thì request vẫn đi qua OpenAI client.
 
+Chuẩn hóa tin nhắn không dấu/viết tắt dùng cấu hình riêng, không đổi model trả lời chính:
+
+```env
+NORMALIZATION_MODEL=gemini-2.5-flash-lite
+NORMALIZATION_TIMEOUT_S=3
+GOOGLE_API_KEY=your_google_gemini_api_key_here
+```
+
+Bước chuẩn hóa ưu tiên khóa Google trực tiếp (kể cả khi model chính dùng OpenAI); hoặc dùng `OPENAI_API_KEY` và `OPENAI_BASE_URL` của gateway có hỗ trợ model Gemini này. Khi thiếu cấu hình, hết thời gian hoặc model lỗi, hệ thống giữ chuẩn hóa bằng luật và hỏi lại từ mơ hồ. Không gửi tên model Gemini đến endpoint OpenAI trực tiếp.
+
+Câu rõ nghĩa và sự cố khẩn cấp đã xác định không gọi model chuẩn hóa. Câu cần ngữ cảnh có tối đa một lần gọi, giới hạn 256 output token, tắt thinking khi dùng Google trực tiếp, không retry và dùng chung deadline của lượt chat. Một lượt vẫn có thể gọi model trả lời chính theo giới hạn cũ. Lịch sử giữ tin nhắn gốc sau khi ẩn PII; các mở rộng từ làm thay đổi mã lỗi, số liệu hoặc suy diễn sự cố bị từ chối. Ví dụ: `phanh ko an` nhận cảnh báo mất phanh; `ko co khoi` không báo cháy; `bh pin VF8` được diễn giải theo ngữ cảnh hoặc hỏi lại. `xe chay` được hỏi rõ là chạy hay cháy.
+
+Kiểm thử riêng: `python -m pytest tests/test_services/test_chat_normalization.py tests/test_api/test_chat_normalization.py -q`.
+
 #### 1b. Tạo tài khoản Staff
 Khách hàng tự đăng ký tại `/register`. Tài khoản Staff không đăng ký công khai, tạo bằng một trong hai cách:
 ```bash

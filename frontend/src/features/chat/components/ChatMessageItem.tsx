@@ -81,13 +81,13 @@ export function ChatMessageItem({
 
       {hasVehicleCards && (
         <>
-          {isComparison ? <VehicleComparison cards={message.vehicle_cards!} /> : <div className="grid w-full max-w-[880px] grid-cols-1 gap-3 sm:grid-cols-2">
+          {isComparison ? <VehicleComparison cards={message.vehicle_cards!} /> : <div className="grid w-full max-w-[596px] grid-cols-1 gap-2 sm:grid-cols-2">
             {message.vehicle_cards!.map(card => <VehicleInfoCard key={`${card.model}-${card.variant || card.name}`} card={card} />)}
           </div>}
           {!isComparison && isLastMessage && message.suggested_replies?.length ? (
-            <div className="flex max-w-full flex-col gap-2 py-2">
+            <div className="grid w-full max-w-[596px] grid-cols-1 gap-2 py-2 sm:grid-cols-2">
               {message.suggested_replies.map(reply => <button key={reply} type="button" onClick={() => onSelectReply(reply)}
-                className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 py-2 text-left text-sm text-slate-800 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">{reply}</button>)}
+                className="min-h-11 w-full max-w-[294px] rounded-xl border border-slate-200 bg-white px-4 py-2 text-left text-sm text-slate-800 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">{reply}</button>)}
             </div>
           ) : null}
         </>

@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from src.agents.guardrails import strip_accents
 from src.services.chat_classification import classify_chat_context
+from src.services.chat_normalization import normalize_chat_text
 
 Move = Literal['new_question', 'elaborate', 'supply_info', 'correct', 'verify_claim',
                'ask_status', 'ask_next_step', 'request_action', 'cancel_intent', 'new_incident']
@@ -46,11 +47,12 @@ class ContextualMove(BaseModel):
 
 
 def normalized(text: str) -> str:
-    return strip_accents(text.casefold()).replace('đ', 'd')
+    return strip_accents(normalize_chat_text(text).casefold()).replace('đ', 'd')
 
 
 def user_updates(text: str) -> dict[str, str | None]:
     """Only explicit customer observations; never extract assistant claims."""
+    text = normalize_chat_text(text)
     lower = normalized(text)
     updates = {}
     model = re.search(r'\bvf\s*(e34|[356789])\b', lower)
@@ -107,6 +109,8 @@ def user_updates(text: str) -> dict[str, str | None]:
 
 
 async def understand_turn(text: str, context: ConversationContext, recent_turns: list[dict], budget: dict) -> TurnUnderstanding:
+    original_text = text
+    text = normalize_chat_text(text)
     lower = normalized(text)
     classification = classify_chat_context(text)
     updates = user_updates(text)
@@ -187,7 +191,7 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
     if denied_code and context.facts.get('error_code') and context.facts['error_code'].value == denied_code[1].upper():
         retracted.append('error_code')
     return TurnUnderstanding(move=move, goal=goal, topic=topic, subject=subject, updates=updates, retracted_fields=retracted,
-                             original_text=text, resolved_query=query,
+                             original_text=original_text, resolved_query=query,
                              needs_confirmation=ambiguous_reference or bool(goal and not explicit_goal and move == 'new_question'))
 
 

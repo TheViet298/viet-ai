@@ -12,11 +12,12 @@ from src.agents.cardd_evidence import make_cardd_signal
 from src.agents.graph import agent
 from src.agents.guardrails import evaluate_hard_safety, sanitize_pii
 from src.services.agent_llm import structured_call
+from src.services.chat_normalization import NormalizedMessage, normalize_message
 from src.services.memory_buffer import compact_memory
 from src.services.observability import bind_trace_attributes, get_tracer_callbacks, observation
+from src.services.request_diagnostics import observed_lock
 from src.services.session_store import decode_state, encode_state, get_store, prepare_application_turn
 from src.services.tracer import sanitized_snapshot
-from src.services.request_diagnostics import observed_lock
 
 _LOCKS: WeakValueDictionary[str, asyncio.Lock] = WeakValueDictionary()
 
@@ -88,7 +89,21 @@ async def process_chat_message(
         for field in ('conversation_context', 'turn_understanding', 'llm_budget', 'reply_constraints'):
             if field in context:
                 state[field] = context[field]
-        state.update(query=sanitize_pii(original_message)[0], latest_user_message=sanitize_pii(original_message)[0])
+        original_message = sanitize_pii(original_message.strip())[0]
+        spelling = (application_db.info.get('conversation_turn') or {}).get('normalization') if application_db is not None else None
+        if spelling and spelling.get('original_text') == original_message:
+            normalized = NormalizedMessage.model_validate(spelling)
+        else:
+            import time
+
+            from src.config import get_settings
+            budget = context.get('llm_budget') or {
+                'deadline': time.monotonic() + get_settings().agent_turn_timeout_s, 'attempts': 0}
+            recent = [{'role': m.type, 'content': str(m.content)} for m in state.get('messages', [])[-2:]]
+            normalized = await normalize_message(original_message, recent_turns=recent, budget=budget)
+            state['llm_budget'] = budget
+        state.update(query=normalized.text, latest_user_message=normalized.text,
+                     original_user_message=original_message, normalization_needs_confirmation=normalized.needs_confirmation)
         # Server-side AI evidence only; never read this from arbitrary client_context.
         state['pending_cardd_signal'] = make_cardd_signal(damage_evidence,state.get('turn',0)+1) if damage_evidence is not None else None
         with bind_trace_attributes(session_id=session_id, user_id=owner):

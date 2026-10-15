@@ -4,8 +4,11 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Literal
 
+from src.services.chat_normalization import normalize_chat_text
+
 
 def normalized(text: str) -> str:
+    text = normalize_chat_text(text)
     return ''.join(c for c in unicodedata.normalize('NFD', text.casefold()) if unicodedata.category(c) != 'Mn').replace('đ', 'd')
 
 
@@ -18,10 +21,11 @@ DENIED_REPORT = re.compile(
 
 
 def without_denied_reports(text: str) -> str:
-    return DENIED_REPORT.sub('', text)
+    return DENIED_REPORT.sub('', normalize_chat_text(text))
 
 
 def denied_reports(text: str) -> list[str]:
+    text = normalize_chat_text(text)
     if temporal_context(text) in {'hypothetical', 'knowledge', 'resolved_past'}:
         return []
     return [m.group(0) for m in DENIED_REPORT.finditer(text)]
@@ -29,6 +33,7 @@ def denied_reports(text: str) -> list[str]:
 
 def current_clause(text: str) -> str:
     """Keep actual reports without letting another clause suppress a hazard."""
+    text = normalize_chat_text(text)
     parts = re.split(r'[,.;!?]+|\b(?:nhưng|nhung|tuy nhiên|tuy nhien)\b', text, flags=re.I)
     actual = []
     inherited = None

@@ -93,7 +93,7 @@ def vehicle_overview_reply(cards: list[VehicleCard]) -> str:
             price = card.price_label.replace('Từ ', 'từ ', 1)
             lines.append(f'- **{card.name} ({price})**: công suất {specs["Công suất tối đa"]}, '
                          f'{drive}; quãng đường công bố {specs["Quãng đường"]}, sạc nhanh {specs["Thời gian sạc"]}.')
-        lines.append('Quãng đường thực tế phụ thuộc điều kiện sử dụng. Giá bán từ chưa phải dự toán lăn bánh.')
+        lines.append('Quãng đường thực tế phụ thuộc điều kiện sử dụng. Giá bán trên là giá niêm yết chưa phải là giá lăn bánh.')
         return '\n\n'.join(lines)
     return ('Anh/chị xem thông tin công bố của ' + ', '.join(card.name for card in cards)
             + ' trong các thẻ dưới đây. Thông số áp dụng cho phiên bản ghi trên thẻ; giá lăn bánh và ưu đãi cần showroom xác nhận.')

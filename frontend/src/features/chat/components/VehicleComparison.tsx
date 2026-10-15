@@ -27,17 +27,17 @@ export function VehicleComparison({ cards }: { cards: VehicleCard[] }) {
     { label: "Thời gian sạc nhanh (10%–70%)", values: cards.map(card => card.fast_charge_time || "Chưa có dữ liệu") },
     { label: "Giá bán từ", values: cards.map(card => card.price_label.replace(/^Từ\s+/, "")) },
   ];
-  return <div className="w-full max-w-[640px] space-y-2">
+  return <div className="w-full max-w-[448px] space-y-2">
     <section aria-label="So sánh xe" className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
       <div className="relative">
         <table className="w-full table-fixed text-center text-sm text-slate-800">
           <caption className="sr-only">So sánh {cards.map(card => card.name).join(" và ")}</caption>
           <thead className="bg-gradient-to-br from-slate-200 to-slate-50">
-            <tr>{cards.map(card => <th key={card.name} scope="col" className="w-1/2 py-4"><ComparisonHeader card={card} /></th>)}</tr>
+            <tr>{cards.map(card => <th key={card.name} scope="col" className="w-1/2 py-3"><ComparisonHeader card={card} /></th>)}</tr>
           </thead>
           {rows.map((row, index) => <tbody key={row.label}>
-            <tr><th colSpan={2} scope="rowgroup" className="px-3 pt-4 font-normal text-slate-500">{row.label}</th></tr>
-            <tr>{row.values.map((value, column) => <td key={column} className={`break-words px-2 pb-4 pt-2 font-medium ${index === rows.length - 1 ? "text-blue-600" : "border-b border-slate-200"}`}>{value}</td>)}</tr>
+            <tr><th colSpan={2} scope="rowgroup" className="px-2 pt-3 font-normal text-slate-500">{row.label}</th></tr>
+            <tr>{row.values.map((value, column) => <td key={column} className={`break-words px-2 pb-3 pt-1 font-medium ${index === rows.length - 1 ? "text-blue-600" : "border-b border-slate-200"}`}>{value}</td>)}</tr>
           </tbody>)}
         </table>
         <span aria-hidden="true" className="pointer-events-none absolute left-1/2 top-14 -translate-x-1/2 text-2xl font-semibold text-slate-300">VS</span>
