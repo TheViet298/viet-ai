@@ -75,6 +75,65 @@ flowchart TD
 
 ---
 
+### 1.1 Chi tiết Luồng Hồ Sơ Thiếu Dữ Kiện & Vòng lặp Bổ sung (Needs Information Loop)
+
+Khi khách hàng báo sự cố kỹ thuật thông thường (không đe dọa an toàn) nhưng thiếu dữ kiện bắt buộc (dòng xe, mã lỗi, vị trí trạm/trụ sạc), hệ thống áp dụng cơ chế giới hạn 2 lượt hỏi và vòng lặp bổ sung 2 chiều giữa Khách hàng và Nhân viên:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Customer as Khách hàng (Customer)
+    participant Chat as Trợ lý Chat AI (/chat)
+    participant Core as Backend & DB (Case/Brief)
+    participant Track as Yêu cầu của tôi (/track-case)
+    actor Staff as Nhân viên Kỹ thuật (/console)
+
+    Note over Customer,Chat: Giai đoạn 1: AI làm rõ tối đa 2 lượt
+    Customer->>Chat: Báo sự cố kỹ thuật (chưa đủ dữ kiện)
+    Chat-->>Customer: Lượt 1: Hỏi làm rõ (kèm chips gợi ý)
+    Customer->>Chat: Trả lời nhưng vẫn thiếu dữ kiện
+    Chat-->>Customer: Lượt 2: Hỏi làm rõ lần cuối
+    Customer->>Chat: Phản hồi nhưng vẫn chưa đủ thông tin
+
+    Note over Chat,Core: Giai đoạn 2: Tạo Case 'Needs Information'
+    Chat->>Core: Tự động lập Case (Status: Needs Information, Priority: MEDIUM)
+    Chat-->>Customer: Thông báo mã Case-ID, chuyển hàng đợi nhân viên hỗ trợ
+    Core-->>Staff: Ticket xuất hiện tại Console với cờ "Thiếu dữ kiện"
+
+    Note over Customer,Staff: Giai đoạn 3: Vòng lặp tương tác bổ sung (Song song)
+    par Lựa chọn A: Khách tự bổ sung qua Chat
+        Customer->>Chat: Tải ảnh táp-lô/màn hình sạc hoặc gõ thêm mã lỗi, trạm sạc
+        Chat->>Core: Vision AI & NLP trích xuất dữ kiện -> Cập nhật CaseBrief
+        Core->>Core: Dữ kiện đầy đủ -> Tự động chuyển Case sang "Staff Reviewing"
+        Core-->>Staff: Xóa cờ "Thiếu dữ kiện", cập nhật bảng phân tích AI
+    and Lựa chọn B: Khách theo dõi qua Trang Hồ sơ & Staff chỉ đạo
+        Customer->>Track: Mở xem tiến trình Case tại /track-case
+        Track-->>Customer: Hiển thị bước "Xác minh - Làm rõ" + Hộp nhắc "CẦN THÔNG TIN"
+        alt Staff gửi yêu cầu bổ sung (REQUEST_INFO)
+            Staff->>Core: Action: REQUEST_INFO (kèm lời nhắn hướng dẫn cụ thể)
+            Core-->>Track: Hiển thị ghi chú của Staff tại mục "Ghi chú từ Cố vấn Kỹ thuật"
+        else Staff gọi điện thoại trao đổi trực tiếp
+            Staff->>Customer: Gọi điện thoại Hotline theo SĐT trên hồ sơ
+            Staff->>Core: Action: EDIT_BRIEF (tự tay điền thông tin thu thập được)
+        end
+    end
+
+    Note over Staff,Core: Giai đoạn 4: Duyệt và điều phối xử lý
+    Staff->>Core: Action: APPROVE (Duyệt phương án kỹ thuật)
+    Core->>Core: Chuyển trạng thái sang "In Progress"
+    Core-->>Track: Tiến trình cập nhật sang bước 3: "Xử lý"
+```
+
+#### Quy tắc nghiệp vụ chi tiết:
+1. **Dừng hỏi tự động sau 2 lượt (`max_clarification_turns = 2`):** Tránh trải nghiệm "hỏi cung" khó chịu cho khách hàng khi khách không nhớ hoặc không biết thông tin kỹ thuật chuyên sâu.
+2. **Phân loại mức độ ưu tiên:** Case `Needs Information` luôn có mức ưu tiên `Priority = MEDIUM` (không kích hoạt cảnh báo nguy hiểm khẩn cấp, không hiển thị banner tấp xe vào lề nguy hiểm).
+3. **Cơ chế tự động nâng cấp trạng thái (Auto-Promotion):** Nếu khách hàng quay lại gửi ảnh táp-lô hoặc nhắn tin bổ sung đủ dữ kiện vào phiên chat, hệ thống tự động bóc tách và chuyển trạng thái từ `Needs Information` sang `Staff Reviewing` mà không bắt khách phải tạo lại ca mới.
+4. **Kênh trao đổi hai chiều:**
+   - Khách xem chỉ đạo và ghi chú của nhân viên tại trang `/track-case` (thông qua `CaseUpdate` từ `REQUEST_INFO`).
+   - Nhân viên tại `/console/{id}` có thể dùng `REQUEST_INFO` để gửi lời nhắn, hoặc dùng `EDIT_BRIEF` để trực tiếp điền dữ kiện sau khi gọi hotline cho khách.
+
+---
+
 ## 2. Staff Console User Flow
 
 ```mermaid
@@ -139,7 +198,7 @@ Knowledge Hub / Customer Preview
 
 ---
 
-## 3. Exception Flows & Guardrails
+## 5. Exception Flows & Guardrails
 
 | Tình huống ngoại lệ | Xử lý của Hệ thống | Trạng thái Ticket |
 | :--- | :--- | :--- |

@@ -90,6 +90,11 @@ export function TicketCard({ ticket }: TicketCardProps) {
             <span className="flex items-center gap-1.5 font-medium text-[#0F172A]">
               <Car className="w-3.5 h-3.5 text-[#1E40AF] shrink-0" />
               <span>{ticket.vehicle_model}</span>
+              {ticket.vehicle_source === "inferred" && (
+                <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-300 px-1.5 py-0.5 rounded font-medium">
+                  Cần xác minh
+                </span>
+              )}
               {ticket.vehicle_code_mock && (
                 <span className="text-[#64748B] font-mono text-[11px]">
                   ({ticket.vehicle_code_mock})

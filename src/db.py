@@ -93,6 +93,8 @@ def ensure_schema() -> None:
                     if is_sqlite
                     else "ALTER TABLE cases ADD COLUMN is_demo BOOLEAN NOT NULL DEFAULT FALSE"
                 )
+            if "vehicle_source" not in cases_cols:
+                conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN vehicle_source VARCHAR(30)")
 
         # 3. chat_sessions
         if "chat_sessions" in tables:

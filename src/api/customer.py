@@ -264,6 +264,7 @@ def determine_incident_clarification_prompt(
     error_code: str | None = None,
     charger_id: str | None = None,
     station_name: str | None = None,
+    is_profile_vehicle: bool = False,
 ) -> tuple[str, list[str]]:
     lower = query.lower()
     from src.agents.guardrails import strip_accents
@@ -273,11 +274,14 @@ def determine_incident_clarification_prompt(
     door_jam_accented = r"\b(kẹt cửa|cửa xe|cánh cửa|khóa cửa|kính cửa|cửa kính|không mở được cửa|mở cửa|cốp xe|khóa xe)\b"
     door_jam_unaccented = r"\b(ket cua|cua xe|canh cua|khoa cua|kinh cua|cua kinh|khong mo duoc cua|mo cua|cop xe|khoa xe)\b"
     if re.search(door_jam_accented, lower) or re.search(door_jam_unaccented, lower_unaccented):
+        intro = f"Dạ em ghi nhận sự cố liên quan đến xe {car_label} của anh/chị đúng không ạ? " if is_profile_vehicle else f"Dạ em ghi nhận xe {car_label} đang gặp vấn đề về cửa/khóa xe. "
         msg = (
-            f"Dạ em ghi nhận xe {car_label} đang gặp vấn đề về cửa/khóa xe. "
+            intro +
             "Hiện tại người trên xe có bị mắc kẹt không ạ? Cửa nào đang bị kẹt và anh/chị có thể thoát ra ngoài xe an toàn không?"
         )
         suggested = ["Tôi đang ở ngoài xe", "Mọi người đều an toàn", "Cửa bên lái bị kẹt", "Cần hỗ trợ khẩn cấp"]
+        if is_profile_vehicle:
+            suggested = ["Đúng", "Xe khác"] + [s for s in suggested if s not in ["Đúng", "Xe khác"]]
         return msg, suggested
 
     # 2. Subtype: Cảnh báo táp-lô / Rùa vàng / Vận hành yếu / Vô lăng rung
@@ -285,11 +289,14 @@ def determine_incident_clarification_prompt(
         re.search(r"\b(rùa vàng|con rùa|chạy yếu|vô lăng rung|rung|mất lái|đèn vàng)\b", lower)
         or re.search(r"\b(rua vang|con rua|chay yeu|vo lang rung|rung|mat lai|den vang)\b", lower_unaccented)
     ):
+        intro = f"Dạ em ghi nhận xe {car_label} của anh/chị đang có cảnh báo vận hành (rùa vàng hoặc chạy yếu/rung) đúng không ạ? " if is_profile_vehicle else f"Dạ em ghi nhận xe {car_label} đang có cảnh báo vận hành (rùa vàng hoặc chạy yếu/rung). "
         msg = (
-            f"Dạ em ghi nhận xe {car_label} đang có cảnh báo vận hành (rùa vàng hoặc chạy yếu/rung). "
+            intro +
             "Anh/chị đã đỗ xe ở vị trí an toàn chưa ạ? Xe hiện còn di chuyển được không và mức pin còn khoảng bao nhiêu %?"
         )
         suggested = ["Đã dừng ở nơi an toàn", "Pin còn dưới 20%", "Xe vẫn di chuyển chậm được", "Cần gọi cứu hộ"]
+        if is_profile_vehicle:
+            suggested = ["Đúng", "Xe khác"] + [s for s in suggested if s not in ["Đúng", "Xe khác"]]
         return msg, suggested
 
     # 3. Subtype: Lỗi sạc cụ thể (Đã có error_code sạc / trạm sạc / hoặc có từ khoá sạc)
@@ -304,35 +311,47 @@ def determine_incident_clarification_prompt(
     )
     if is_charging_related:
         if error_code and not charger_id and not station_name:
+            intro = f"Dạ em đã ghi nhận xe {car_label} của anh/chị đúng không ạ? Xe đang báo lỗi {error_code.upper()}. " if is_profile_vehicle else f"Dạ em đã ghi nhận xe {car_label} đang báo lỗi {error_code.upper()}. "
             msg = (
-                f"Dạ em đã ghi nhận xe {car_label} đang báo lỗi {error_code.upper()}. "
+                intro +
                 "Anh/chị vui lòng cho em biết tên trạm sạc hoặc số trụ đang cắm để kỹ thuật viên kiểm tra kết nối từ xa nhé ạ?"
             )
             suggested = ["Trạm Vincom Landmark 81, trụ 3", "Trạm Vincom Metropolis, trụ P02", "Trạm sạc cao tốc"]
+            if is_profile_vehicle:
+                suggested = ["Đúng", "Xe khác"] + [s for s in suggested if s not in ["Đúng", "Xe khác"]]
             return msg, suggested
         elif (charger_id or station_name) and not error_code:
             loc = station_name or charger_id
+            intro = f"Dạ em ghi nhận xe {car_label} của anh/chị đang ở {loc} đúng không ạ? " if is_profile_vehicle else f"Dạ em ghi nhận xe {car_label} đang ở {loc}. "
             msg = (
-                f"Dạ em ghi nhận xe {car_label} đang ở {loc}. "
+                intro +
                 "Màn hình xe hoặc đèn trụ có báo mã lỗi cụ thể nào (ví dụ: CC01, 0x41) không ạ? "
                 "Anh/chị cũng có thể chụp ảnh màn hình táp-lô để em nhận diện sơ bộ nhé."
             )
             suggested = ["Lỗi communication error 0x41", "Mã lỗi CC01", "Đèn trụ nháy đỏ, không hiện mã"]
+            if is_profile_vehicle:
+                suggested = ["Đúng", "Xe khác"] + [s for s in suggested if s not in ["Đúng", "Xe khác"]]
             return msg, suggested
         else:
+            intro = f"Dạ em ghi nhận xe {car_label} của anh/chị đang gặp vấn đề kỹ thuật liên quan đến sạc pin đúng không ạ? " if is_profile_vehicle else f"Dạ em ghi nhận xe {car_label} đang gặp vấn đề kỹ thuật liên quan đến sạc pin. "
             msg = (
-                f"Dạ em ghi nhận xe {car_label} đang gặp vấn đề kỹ thuật liên quan đến sạc pin. "
+                intro +
                 "Anh/chị có thể cho em biết trạm sạc, số trụ hoặc mã lỗi hiển thị trên táp-lô (ví dụ: CC01, 0x41) không ạ?"
             )
             suggested = ["Xem bản đồ trạm sạc ›", "Mã lỗi CC01, trụ P02", "Đèn trụ nháy đỏ"]
+            if is_profile_vehicle:
+                suggested = ["Đúng", "Xe khác"] + [s for s in suggested if s not in ["Đúng", "Xe khác"]]
             return msg, suggested
 
     # 4. Fallback sự cố kỹ thuật chung (KHÔNG giả định là sạc)
+    intro = f"Dạ em ghi nhận sự cố liên quan đến xe {car_label} của anh/chị đúng không ạ? " if is_profile_vehicle else f"Dạ em ghi nhận xe {car_label} đang gặp sự cố kỹ thuật. "
     msg = (
-        f"Dạ em ghi nhận xe {car_label} đang gặp sự cố kỹ thuật. "
+        intro +
         "Anh/chị vui lòng cho em biết xe hiện đang báo mã lỗi gì trên táp-lô hoặc mô tả thêm tình trạng vận hành để kỹ thuật viên hỗ trợ nhé ạ."
     )
     suggested = ["Xe báo lỗi trên màn hình", "Xe không di chuyển được", "Cần gọi cứu hộ"]
+    if is_profile_vehicle:
+        suggested = ["Đúng", "Xe khác"] + [s for s in suggested if s not in ["Đúng", "Xe khác"]]
     return msg, suggested
 
 
@@ -411,6 +430,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             dashboard_image_context = metadata.get("dashboard_image_context", {})
             exterior_image_context = metadata.get("exterior_image_context", {})
             break
+    prior_agent_messages = db.query(Message).filter(
+        Message.session_id == payload.session_id,
+        Message.sender_type == SenderType.AGENT.value,
+    ).order_by(Message.created_at.desc(), Message.id.desc()).all()
     vehicle_context = resolve_vehicle_context(text, previous_context)
     understood = db.info.get('conversation_turn') or {}
     conversation = ConversationContext.model_validate(understood.get('context') or {})
@@ -427,14 +450,91 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         active_case = resolve_authorized_active_case(db, current_user, payload.session_id, bound_case_id, payload.guest_session_id) if bound_case_id else None
         active_case_id = active_case.id if active_case else None
         payload = payload.model_copy(update={'case_id': active_case_id})
-    vehicle_model = vehicle_context.get("incident_model") if vehicle_context["is_incident"] else (
-        vehicle_context["models"][0] if len(vehicle_context["models"]) == 1 else None
+    explicit_model_match = re.search(r"\b(vf\s*e34|vf\s*[356789]|e34)\b", text, re.I)
+    explicit_model = (
+        "e34" if explicit_model_match and "e34" in explicit_model_match.group(0).lower()
+        else (re.sub(r"\s+", "", explicit_model_match.group(0)).upper() if explicit_model_match else None)
     )
-    # Compatibility for clients explicitly supplying a model, or authenticated customer model, never a server default.
-    if not vehicle_model and ctx and ctx.vehicle_model and len(vehicle_context["models"]) < 2:
-        vehicle_model = ctx.vehicle_model
-    elif not vehicle_model and current_user and current_user.vehicle_model:
-        vehicle_model = current_user.vehicle_model
+
+    clean_confirm = text.strip().lower()
+    is_confirm_yes = clean_confirm in {"đúng", "dung", "đúng rồi", "chính xác", "dung roi", "chinh xac"}
+    is_confirm_other = clean_confirm in {"xe khác", "xe khac", "dòng khác", "dong khac", "đổi xe", "doi xe"}
+    is_short_model_answer = bool(explicit_model and len(text.strip().split()) <= 3 and previous_context.get("is_incident"))
+
+    is_incident_flow = bool(
+        vehicle_context.get("is_incident")
+        or classification.request_kind in {"incident", "complaint"}
+        or classification.is_critical
+        or vehicle_context.get("customer_vehicle_incident")
+        or (previous_context.get("is_incident") and (is_confirm_yes or is_confirm_other or is_short_model_answer))
+    )
+    if is_incident_flow:
+        vehicle_context["is_incident"] = True
+
+    profile_model = (
+        current_user.vehicle_model if current_user and current_user.vehicle_model
+        else (ctx.vehicle_model if ctx and ctx.vehicle_model else None)
+    )
+
+    # Kiểm tra xem phiên này đã từng hỏi xác nhận xe hồ sơ chưa
+    profile_already_prompted = bool(
+        previous_context.get("profile_vehicle_prompted")
+        or any(
+            (msg.msg_metadata or {}).get("profile_vehicle_prompted")
+            for msg in prior_agent_messages
+        )
+    )
+
+    vehicle_source: str | None = None
+    is_profile_vehicle = False
+
+    if is_incident_flow:
+        # Luồng sự cố:
+        # 1. Xe khách nêu tên rõ trong câu sự cố (user_stated)
+        if explicit_model:
+            vehicle_model = explicit_model
+            vehicle_source = "user_stated"
+        # 1.1 Khách xác nhận "Đúng" -> chuyển thành user_stated
+        elif is_confirm_yes and (previous_context.get("vehicle_model") or profile_model):
+            vehicle_model = previous_context.get("vehicle_model") or profile_model
+            vehicle_source = "user_stated"
+        # 1.2 Khách bấm "Xe khác" -> xóa dòng xe để hỏi lại
+        elif is_confirm_other:
+            vehicle_model = None
+            vehicle_source = "user_stated"
+        elif vehicle_context.get("incident_model"):
+            vehicle_model = vehicle_context.get("incident_model")
+            vehicle_source = previous_context.get("vehicle_source") or "profile"
+        # 2. owned_model từ hồ sơ (profile)
+        elif profile_model:
+            vehicle_model = profile_model
+            vehicle_source = previous_context.get("vehicle_source") or "profile"
+            # Chỉ hỏi xác nhận nhẹ MỘT LẦN duy nhất khi mới bắt đầu luồng sự cố bằng xe hồ sơ
+            if not profile_already_prompted:
+                is_profile_vehicle = True
+        # 3. Hỏi lại dòng xe nếu hồ sơ trống hoặc guest
+        else:
+            vehicle_model = None
+            vehicle_source = "inferred"
+    else:
+        # Luồng tư vấn giữ nguyên: xe nêu tên thắng, câu tổng quan không ép model hồ sơ
+        target_model = explicit_model or vehicle_context.get("target_model") or (
+            vehicle_context["models"][0] if len(vehicle_context.get("models", [])) == 1 else None
+        )
+        if not target_model and ctx and ctx.vehicle_model:
+            target_model = ctx.vehicle_model
+        vehicle_model = target_model
+        vehicle_source = "user_stated" if target_model else None
+
+    vehicle_context["vehicle_source"] = vehicle_source
+    vehicle_context["vehicle_model"] = vehicle_model
+    vehicle_context["incident_model"] = vehicle_model if is_incident_flow else None
+    if profile_model:
+        vehicle_context["owned_model"] = profile_model
+    vehicle_context["is_profile_vehicle"] = is_profile_vehicle
+    if is_profile_vehicle or profile_already_prompted:
+        vehicle_context["profile_vehicle_prompted"] = True
+
     vehicle_code = (ctx.vehicle_code_mock if ctx else None) or "VF-SF-00231"
     resolved_text = vehicle_context["resolved_query"]
     if conversation.active_goal and turn_understanding.move not in {'new_incident', 'new_question'}:
@@ -445,6 +545,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         new_model = vehicle_context.get("incident_model") or vehicle_model
         if new_model and active_case.vehicle_model != new_model:
             active_case.vehicle_model = new_model
+            active_case.updated_at = datetime.now(UTC)
+        if vehicle_source and active_case.vehicle_source != vehicle_source:
+            active_case.vehicle_source = vehicle_source
             active_case.updated_at = datetime.now(UTC)
         brief = db.query(CaseBrief).filter_by(case_id=active_case.id).first()
         if brief:
@@ -587,6 +690,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             if not case:
                 case = Case(id=generate_case_id(db), user_id=user_id, session_id=payload.session_id,
                             mock_customer_id=mock_cust_id, vehicle_model=vehicle_model,
+                            vehicle_source=vehicle_source,
                             intent=Intent.SERVICE_INCIDENT.value, priority=priority,
                             status=TicketStatus.STAFF_REVIEWING.value,
                             is_demo=user_is_demo)
@@ -708,6 +812,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=vehicle_model,
+                vehicle_source=vehicle_source,
                 intent=Intent.SERVICE_INCIDENT.value,
                 priority=Priority.CRITICAL.value,
                 status=TicketStatus.STAFF_REVIEWING.value,
@@ -859,7 +964,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 case = Case(
                     id=generate_case_id(db), user_id=user_id, session_id=payload.session_id,
                     mock_customer_id=mock_cust_id, vehicle_code_mock=vehicle_code,
-                    vehicle_model=brief_data.get("vehicle_model"), intent=ai_res.get("intent") or "Service/Incident",
+                    vehicle_model=brief_data.get("vehicle_model") or vehicle_model,
+                    vehicle_source=vehicle_source,
+                    intent=ai_res.get("intent") or "Service/Incident",
                     priority=ai_res.get("priority", "MEDIUM"),
                     status=ai_res.get("ticket_status") or TicketStatus.STAFF_REVIEWING.value,
                     is_demo=user_is_demo,
@@ -1008,6 +1115,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                     id=generate_case_id(db), user_id=user_id,
                     session_id=payload.session_id, mock_customer_id=mock_cust_id,
                     vehicle_code_mock=vehicle_code, vehicle_model=dashboard_model,
+                    vehicle_source=vehicle_source or "inferred",
                     intent=Intent.SERVICE_INCIDENT.value, priority=priority,
                     status=TicketStatus.STAFF_REVIEWING.value,
                     is_demo=user_is_demo,
@@ -1075,6 +1183,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         case = active_case
         if not case:
             case = Case(id=generate_case_id(db), user_id=user_id, session_id=payload.session_id,
+                        vehicle_model=vehicle_model, vehicle_source=vehicle_source,
                         intent=Intent.SERVICE_INCIDENT.value, priority="LOW", status="Staff Reviewing",
                         is_demo=user_is_demo)
             db.add(case)
@@ -1149,6 +1258,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=vehicle_model,
+                vehicle_source=vehicle_source,
                 intent=Intent.COMPLAINT_FEEDBACK.value,
                 priority=case_prio,
                 status=TicketStatus.STAFF_REVIEWING.value,
@@ -1260,6 +1370,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     if classification.temporal_context in {"resolved_past", "hypothetical", "knowledge"} and not payload.attachment_ids:
         is_technical_incident = False
     elif classification.request_kind == "incident":
+        is_technical_incident = True
+    elif (previous_context.get("is_incident") or is_incident_flow) and (
+        is_confirm_yes or is_confirm_other or (explicit_model and len(text.strip().split()) <= 3)
+    ):
         is_technical_incident = True
 
     if not classification.is_critical and not payload.attachment_ids:
@@ -1709,6 +1823,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=car_model,
+                vehicle_source=vehicle_source,
                 intent=target_intent,
                 priority=Priority.HIGH.value,
                 status=TicketStatus.STAFF_REVIEWING.value,
@@ -1887,9 +2002,16 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         if not car_model:
             clarification_msg = "Anh/chị đang gặp sự cố với dòng xe nào ạ?"
             suggested_replies = ["VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"]
+        elif is_confirm_yes:
+            clarification_msg = (
+                f"Dạ em đã ghi nhận xác nhận về xe {car_label}. "
+                "Anh/chị vui lòng mô tả thêm triệu chứng hoặc mã lỗi hiển thị để em hỗ trợ nhé ạ."
+            )
+            suggested_replies = ["Xe báo lỗi trên màn hình", "Sạc không vào điện", "Xe có cảnh báo rùa vàng", "Cần gọi cứu hộ"]
         else:
             clarification_msg, suggested_replies = determine_incident_clarification_prompt(
-                text, car_label, error_code=error_code, charger_id=charger_id, station_name=station_name
+                text, car_label, error_code=error_code, charger_id=charger_id, station_name=station_name,
+                is_profile_vehicle=is_profile_vehicle,
             )
 
         agent_msg = Message(
@@ -1903,6 +2025,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 "response_type": "CLARIFICATION",
                 "user_id": user_id,
                 "suggested_replies": suggested_replies,
+                "profile_vehicle_prompted": is_profile_vehicle or profile_already_prompted,
             },
         )
         db.add(agent_msg)
@@ -1937,6 +2060,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
             vehicle_code_mock=vehicle_code,
             vehicle_model=car_model,
+            vehicle_source=vehicle_source,
             intent=Intent.SERVICE_INCIDENT.value,
             priority=Priority.MEDIUM.value,
             status=TicketStatus.NEEDS_INFORMATION.value,
@@ -2460,6 +2584,7 @@ def list_customer_cases(
                 **safety_fields(c),
                 id=c.id,
                 vehicle_model=c.vehicle_model,
+                vehicle_source=c.vehicle_source,
                 vehicle_code_mock=c.vehicle_code_mock,
                 intent=c.intent,
                 priority=c.priority,
@@ -2585,6 +2710,7 @@ def get_customer_case_detail(
         id=case.id,
         **safety_fields(case),
         vehicle_model=case.vehicle_model,
+        vehicle_source=case.vehicle_source,
         vehicle_code_mock=case.vehicle_code_mock,
         intent=case.intent,
         priority=case.priority,

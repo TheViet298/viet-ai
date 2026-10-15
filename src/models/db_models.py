@@ -188,6 +188,7 @@ class Case(Base):
     mock_customer_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)  # Demo seed only
     vehicle_code_mock: Mapped[str | None] = mapped_column(String(50), nullable=True)  # format VF-SF-xxxxx
     vehicle_model: Mapped[str | None] = mapped_column(String(50), nullable=True)  # VF3 | VF5 | VF6...
+    vehicle_source: Mapped[str | None] = mapped_column(String(30), nullable=True, default=None)  # profile | user_stated | inferred
     intent: Mapped[str] = mapped_column(String(50), nullable=False)
     priority: Mapped[str] = mapped_column(String(20), nullable=False, default=Priority.MEDIUM.value)
     status: Mapped[str] = mapped_column(String(30), nullable=False, default=TicketStatus.NEW.value)

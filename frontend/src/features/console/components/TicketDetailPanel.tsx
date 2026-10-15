@@ -686,6 +686,11 @@ export function TicketDetailPanel({
               </button>
               <span>·</span>
               <span className="font-medium text-slate-700">{ticket.vehicle_model}</span>
+              {ticket.vehicle_source === "inferred" && (
+                <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-300 px-1.5 py-0.5 rounded font-medium">
+                  Cần xác minh
+                </span>
+              )}
               <span>·</span>
               <span>
                 Khách:{" "}

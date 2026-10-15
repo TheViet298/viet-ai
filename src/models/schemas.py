@@ -307,6 +307,7 @@ class CustomerCaseItem(BaseModel):
     incident_version: int = 1
     id: str
     vehicle_model: str | None = None
+    vehicle_source: str | None = None
     vehicle_code_mock: str | None = None
     intent: str
     priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
@@ -461,6 +462,7 @@ class TicketItem(BaseModel):
     customer_name: str | None = None
     customer_phone: str | None = None
     vehicle_model: str
+    vehicle_source: str | None = None
     vehicle_code_mock: str | None = None
     intent: str
     priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
@@ -509,6 +511,7 @@ class TicketDetailCase(BaseModel):
     customer_phone: str | None = None
     vehicle_code_mock: str | None = None
     vehicle_model: str
+    vehicle_source: str | None = None
     intent: str
     priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
     status: str

@@ -29,11 +29,28 @@ def resolve_vehicle_context(text: str, previous: dict | None = None) -> dict:
         r'(?:xe\s+(?:vf\s*(?:[356789]|e34)|e34)?\s*khác|sự cố (?:khác|mới)|vụ (?:khác|mới))', lower))
     scope = int(previous.get('incident_scope', 1)) + int(new_scope)
     owned = previous.get("owned_model")
+    target_model = None
+
+    has_my_car_phrase = bool(re.search(
+        r"\b(?:xe\s+(?:của\s+)?(?:tôi|mình|em|nhà\s+tôi)|(?:tôi|mình|em)\s+(?:đang\s+)?(?:sử dụng|sở hữu|có xe)|"
+        r"(?:tôi|mình|em)\s+đang\s+(?:đi|lái)\s+(?:xe\s+)?(?:vf|e34)?)\b",
+        lower
+    ))
+    INCIDENT_SYMPTOM_PATTERN = (
+        r"\b(?:sự cố|su co|lỗi|loi|hỏng|hong|không vào điện|khong vao dien|không sạc|khong sac|sạc không vào|sac khong vao|"
+        r"hết pin|het pin|chết máy|chet may|yếu|yeu|kẹt|ket|kêu|keu|bảo dưỡng|bao duong|bảo hành|bao hanh|báo lỗi|bao loi|"
+        r"mã lỗi|ma loi|trụ|tru|trạm|tram|rùa|rua|rung|lắc|lac|đèn|den|mất lái|mat lai|tai nạn|tai nan|ngập|ngap|cháy|chay|khói|khoi)\b"
+    )
+    from src.services.chat_classification import without_denied_reports
+    clean_lower = without_denied_reports(lower)
+    has_incident_symptom = bool(re.search(INCIDENT_SYMPTOM_PATTERN, clean_lower))
+    customer_vehicle_incident = has_my_car_phrase and has_incident_symptom
+
     ownership_clause = ""
     for clause in re.split(r"[,.;!?]+", lower):
         if re.search(
-            r"(?:xe\s+.*của (?:tôi|mình)|(?:tôi|mình)\s+(?:đang\s+)?(?:sử dụng|sở hữu|có xe)|"
-            r"(?:tôi|mình)\s+đang\s+(?:đi|lái)\s+(?:xe\s+)?(?:vf|e34))",
+            r"(?:xe\s+.*của (?:tôi|mình|em|nhà\s+tôi)|(?:tôi|mình|em)\s+(?:đang\s+)?(?:sử dụng|sở hữu|có xe)|"
+            r"(?:tôi|mình|em)\s+đang\s+(?:đi|lái)\s+(?:xe\s+)?(?:vf|e34)?)",
             clause,
         ):
             ownership_clause = clause
@@ -84,6 +101,7 @@ def resolve_vehicle_context(text: str, previous: dict | None = None) -> dict:
     )
     incident = (
         failure
+        or customer_vehicle_incident
         or model_answer
         or slot_answer
         or safety_update
@@ -92,12 +110,31 @@ def resolve_vehicle_context(text: str, previous: dict | None = None) -> dict:
         or correction
     )
 
+    prev_is_incident = bool(previous.get("is_incident", False))
+    intent_switched = (prev_is_incident != bool(incident))
+
     if incident:
         incident_fields.update(extracted)
-        incident_model = models[0] if len(models) == 1 else (incident_model or owned)
+        # Xe khách nêu tên rõ trong câu sự cố
+        if len(models) == 1:
+            incident_model = models[0]
+            owned = models[0]
+        else:
+            # KHÔNG kế thừa models tư vấn, NHƯNG nếu previous đã có owned_model (khách tự nhận xe) thì giữ owned
+            owned = previous.get("owned_model")
+            incident_model = (previous.get("incident_model") if prev_is_incident else None) or owned
         models = [incident_model] if incident_model else []
+        target_model = None
+    elif customer_vehicle_incident or intent_switched:
+        # Chuyển intent tư vấn <-> sự cố: giữ models câu hiện tại, xóa models kế thừa từ previous
+        models = list(models)
+        target_model = models[0] if len(models) == 1 else None
     elif not models:
+        # Chỉ kế thừa previous["models"] khi cùng ngữ cảnh tư vấn
         models = list(previous.get("models", []))
+        target_model = previous.get("target_model") or (models[0] if len(models) == 1 else None)
+    else:
+        target_model = models[0] if len(models) == 1 else None
 
     resolved = text
     if symbol_reference:
@@ -120,19 +157,21 @@ def resolve_vehicle_context(text: str, previous: dict | None = None) -> dict:
         resolved = f"{previous.get('incident_query', '')} {text}".strip()
     return {
         "models": models,
+        "target_model": target_model,
+        "owned_model": owned,
         "incident_scope": scope,
         "scope_changed": new_scope,
         "incident_case_id": None if new_scope else previous.get('incident_case_id'),
         "topic": topic[:800],
         "incident_query": resolved[:1200] if incident else previous.get("incident_query", ""),
         "incident_fields": incident_fields if (incident or incident_fields) else previous.get("incident_fields", {}),
-        "owned_model": owned,
-        "incident_model": incident_model or previous.get("incident_model"),
-        "is_incident": False if is_vehicle_comparison(text) else (incident or previous.get("is_incident", False)),
+        "incident_model": incident_model,
+        "is_incident": False if is_vehicle_comparison(text) else (incident or (previous.get("is_incident", False) and not intent_switched)),
         "resolved_query": resolved[:1200],
         "source": "customer_message" if MODEL.search(text) else "session_reference",
         "model_source": text[:500] if MODEL.search(text) else previous.get("model_source"),
         "denied_reports": denied_extracted,
+        "customer_vehicle_incident": customer_vehicle_incident,
     }
 
 
