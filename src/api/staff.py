@@ -37,7 +37,7 @@ from src.models.schemas import (
     TicketItem,
     TicketQueueData,
 )
-from src.services.auth import require_staff
+from src.services.auth import is_demo_user, require_staff, scoped_cases
 from src.services.case_lifecycle import AUTO_CLOSE_HOURS, process_auto_close_expired_cases
 from src.services.chat_turns import safety_fields
 
@@ -68,22 +68,21 @@ def get_staff_dashboard(
     Counter demo thống kê vận hành Service Agent Console:
     Critical, Staff Reviewing, Needs Information, Resolved hôm nay, Tổng số case.
     """
+    base = scoped_cases(db, current_user)
     critical_count = (
-        db.query(func.count(Case.id))
-        .filter(Case.priority == Priority.CRITICAL.value, Case.status != TicketStatus.CLOSED.value)
-        .scalar()
-        or 0
+        base.filter(Case.priority == Priority.CRITICAL.value, Case.status != TicketStatus.CLOSED.value)
+        .count()
     )
     staff_reviewing_count = (
-        db.query(func.count(Case.id)).filter(Case.status == TicketStatus.STAFF_REVIEWING.value).scalar() or 0
+        base.filter(Case.status == TicketStatus.STAFF_REVIEWING.value).count()
     )
     needs_info_count = (
-        db.query(func.count(Case.id)).filter(Case.status == TicketStatus.NEEDS_INFORMATION.value).scalar() or 0
+        base.filter(Case.status == TicketStatus.NEEDS_INFORMATION.value).count()
     )
     resolved_today_count = (
-        db.query(func.count(Case.id)).filter(Case.status == TicketStatus.RESOLVED.value).scalar() or 0
+        base.filter(Case.status == TicketStatus.RESOLVED.value).count()
     )
-    total_cases_count = db.query(func.count(Case.id)).scalar() or 0
+    total_cases_count = base.count()
 
     return ApiResponse(
         success=True,
@@ -166,7 +165,7 @@ def get_ticket_queue(
     Lấy danh sách Ticket trong hàng đợi Service Agent Console theo api-contract.md Mục 3.1.
     RBAC: Chỉ nhân viên (Staff) mới có quyền truy cập.
     """
-    query = db.query(Case).options(
+    query = scoped_cases(db, current_user).options(
         joinedload(Case.brief),
         joinedload(Case.messages),
         joinedload(Case.user),
@@ -181,7 +180,8 @@ def get_ticket_queue(
         query = query.filter(Case.priority == priority.upper())
 
     # ── Auto-close Rule: Các ca Resolved quá 72h khách không phản hồi tự động đóng ──
-    process_auto_close_expired_cases(db, AUTO_CLOSE_HOURS)
+    staff_is_demo = is_demo_user(db, current_user)
+    process_auto_close_expired_cases(db, AUTO_CLOSE_HOURS, is_demo=staff_is_demo)
 
     cases = query.order_by(Case.created_at.desc()).all()
 
@@ -268,7 +268,7 @@ def get_ticket_detail(
     RBAC: Chỉ nhân viên (Staff) mới có quyền truy cập.
     """
     case = (
-        db.query(Case)
+        scoped_cases(db, current_user)
         .options(
             joinedload(Case.brief),
             joinedload(Case.location),
@@ -425,7 +425,7 @@ def handle_staff_action(
     - REOPEN: Mở lại hồ sơ ('Reopened')
     Tự động ghi nhận vết thay đổi vào bảng staff_audit_logs và đồng bộ case_updates.
     """
-    case = db.query(Case).options(joinedload(Case.brief)).filter(Case.id == case_id).first()
+    case = scoped_cases(db, current_user).options(joinedload(Case.brief)).filter(Case.id == case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
 

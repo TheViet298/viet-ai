@@ -76,7 +76,14 @@ from src.models.schemas import (
     SessionHistoryResponseData,
     UpdateSessionTitleRequest,
 )
-from src.services.auth import check_case_ownership, get_optional_user, require_customer
+from src.services.auth import (
+    check_case_ownership,
+    get_optional_user,
+    is_demo_user,
+    require_customer,
+    scoped_cases,
+    scoped_sessions,
+)
 from src.services.chat_cases import (
     clean_case_references,
     generate_case_id,
@@ -389,6 +396,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             raise HTTPException(403, "Quý khách đã sử dụng hết 5 lượt chat thử nghiệm. Quý khách vui lòng đăng nhập để tiếp tục trải nghiệm ạ.")
     mock_cust_id = (current_user.mock_customer_id if current_user and current_user.mock_customer_id else
                     (ctx.mock_customer_id if ctx and ctx.mock_customer_id else f"GUEST_{(payload.guest_session_id or '')[:8]}"))
+    user_is_demo = is_demo_user(db, current_user)
     previous_context = {}
     dashboard_image_context = {}
     exterior_image_context = {}
@@ -481,7 +489,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             raise HTTPException(status_code=404, detail="Không tìm thấy ảnh đính kèm.")
         for att in atts:
             owner_id = (att.detected_signals or {}).get("owner_user_id")
-            legacy_case = db.get(Case, att.case_id) if owner_id is None and att.case_id else None
+            legacy_case = scoped_cases(db, current_user).filter(Case.id == att.case_id).first() if owner_id is None and att.case_id else None
             if owner_id != user_id and not (legacy_case and legacy_case.user_id == user_id):
                 raise HTTPException(status_code=403, detail="Ảnh đính kèm không thuộc khách hàng này.")
             if att.detected_signals:
@@ -580,7 +588,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 case = Case(id=generate_case_id(db), user_id=user_id, session_id=payload.session_id,
                             mock_customer_id=mock_cust_id, vehicle_model=vehicle_model,
                             intent=Intent.SERVICE_INCIDENT.value, priority=priority,
-                            status=TicketStatus.STAFF_REVIEWING.value)
+                            status=TicketStatus.STAFF_REVIEWING.value,
+                            is_demo=user_is_demo)
                 db.add(case)
                 db.flush()
             else:
@@ -688,7 +697,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     if is_direct_danger or is_turtle_critical:
         # BỎ QUA HỎI LÀM RÕ -> TẠO CASE CRITICAL NGAY LẬP TỨC
         new_case_id = active_case_id or payload.case_id or generate_case_id(db)
-        case = db.get(Case, new_case_id)
+        case = scoped_cases(db, current_user).filter(Case.id == new_case_id).first()
         if not case:
             case = Case(
                 id=new_case_id,
@@ -702,6 +711,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 intent=Intent.SERVICE_INCIDENT.value,
                 priority=Priority.CRITICAL.value,
                 status=TicketStatus.STAFF_REVIEWING.value,
+                is_demo=user_is_demo,
             )
             db.add(case)
             db.flush()
@@ -852,6 +862,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                     vehicle_model=brief_data.get("vehicle_model"), intent=ai_res.get("intent") or "Service/Incident",
                     priority=ai_res.get("priority", "MEDIUM"),
                     status=ai_res.get("ticket_status") or TicketStatus.STAFF_REVIEWING.value,
+                    is_demo=user_is_demo,
                 )
                 db.add(case)
                 db.flush()
@@ -985,7 +996,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         )
         case = None
         if create_case:
-            case = db.get(Case, payload.case_id) if payload.case_id else None
+            case = scoped_cases(db, current_user).filter(Case.id == payload.case_id).first() if payload.case_id else None
             if case:
                 check_case_ownership(case, current_user)
                 ranks = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
@@ -999,6 +1010,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                     vehicle_code_mock=vehicle_code, vehicle_model=dashboard_model,
                     intent=Intent.SERVICE_INCIDENT.value, priority=priority,
                     status=TicketStatus.STAFF_REVIEWING.value,
+                    is_demo=user_is_demo,
                 )
                 db.add(case)
                 db.flush()
@@ -1063,7 +1075,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         case = active_case
         if not case:
             case = Case(id=generate_case_id(db), user_id=user_id, session_id=payload.session_id,
-                        intent=Intent.SERVICE_INCIDENT.value, priority="LOW", status="Staff Reviewing")
+                        intent=Intent.SERVICE_INCIDENT.value, priority="LOW", status="Staff Reviewing",
+                        is_demo=user_is_demo)
             db.add(case)
             db.flush()
         if not db.query(CaseBrief).filter_by(case_id=case.id).first():
@@ -1120,7 +1133,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     is_complaint = any(kw in lower_text for kw in complaint_keywords)
     if is_complaint:
         new_case_id = active_case_id or generate_case_id(db)
-        case = db.get(Case, new_case_id)
+        case = scoped_cases(db, current_user).filter(Case.id == new_case_id).first()
         is_financial = any(kw in lower_text for kw in ["trừ tiền", "hoàn tiền"])
         case_prio = Priority.HIGH.value if is_financial else Priority.MEDIUM.value
         if "khen ngợi" in lower_text:
@@ -1139,6 +1152,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 intent=Intent.COMPLAINT_FEEDBACK.value,
                 priority=case_prio,
                 status=TicketStatus.STAFF_REVIEWING.value,
+                is_demo=user_is_demo,
             )
             db.add(case)
             db.flush()
@@ -1683,7 +1697,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     # TRƯỜNG HỢP A: ĐÃ ĐỦ DỮ KIỆN KỸ THUẬT -> TẠO CASE (Staff Reviewing)
     if has_sufficient_detail and car_model:
         new_case_id = active_case_id or generate_case_id(db)
-        case = db.get(Case, new_case_id)
+        case = scoped_cases(db, current_user).filter(Case.id == new_case_id).first()
         target_intent = Intent.CHARGING_BATTERY.value if is_charging_incident else Intent.SERVICE_INCIDENT.value
         if not case:
             case = Case(
@@ -1698,6 +1712,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 intent=target_intent,
                 priority=Priority.HIGH.value,
                 status=TicketStatus.STAFF_REVIEWING.value,
+                is_demo=user_is_demo,
             )
             db.add(case)
             db.flush()
@@ -1911,7 +1926,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
 
     # TRƯỜNG HỢP C: ĐÃ HỎI 2 LƯỢT VẪN THIẾU DỮ KIỆN -> TẠO CASE 'Needs Information'
     new_case_id = active_case_id or generate_case_id(db)
-    case = db.get(Case, new_case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == new_case_id).first()
     if not case:
         case = Case(
             id=new_case_id,
@@ -1925,6 +1940,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             intent=Intent.SERVICE_INCIDENT.value,
             priority=Priority.MEDIUM.value,
             status=TicketStatus.NEEDS_INFORMATION.value,
+            is_demo=user_is_demo,
         )
         db.add(case)
         db.flush()
@@ -2006,7 +2022,7 @@ def submit_case_location(
     Khách hàng chia sẻ vị trí sự cố (Consent hoặc tự nhập) theo api-contract.md 1.1 & ADR-005.
     Tuyệt đối không tự động trích xuất GPS từ ảnh/EXIF.
     """
-    case = db.get(Case, payload.case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == payload.case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {payload.case_id}")
     check_case_ownership(case, current_user)
@@ -2129,7 +2145,7 @@ def get_case_service_points(
     Lấy danh sách điểm hỗ trợ / trạm sạc / xưởng dịch vụ gợi ý theo sự cố (ADR-005).
     P0 dùng 3-5 điểm seed demo phù hợp intent.
     """
-    case = db.get(Case, case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
     check_case_ownership(case, current_user)
@@ -2166,7 +2182,7 @@ def confirm_customer_case_resolution(
     - RESOLVED_CONFIRMED: Khách hàng hài lòng -> Chuyển trạng thái sang 'Closed'
     - STILL_UNRESOLVED: Khách phản ánh chưa xong -> Chuyển trạng thái sang 'Reopened' (quay lại Staff Queue)
     """
-    case = db.get(Case, case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
     check_case_ownership(case, current_user)
@@ -2285,7 +2301,7 @@ def handle_customer_action(
     - REOPEN: Yêu cầu mở lại vì chưa giải quyết xong -> Chuyển trạng thái 'Reopened'
     Hỗ trợ xác thực qua Token đăng nhập hoặc Header X-Session-Id.
     """
-    case = db.get(Case, case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
     if current_user and current_user.role != UserRole.CUSTOMER.value:
@@ -2417,7 +2433,7 @@ def list_customer_cases(
     Lấy danh sách các Case thuộc về chính Customer đang đăng nhập theo api-contract.md Mục 2.3.
     Hỗ trợ tìm kiếm theo query và lọc theo status.
     """
-    db_query = db.query(Case).options(joinedload(Case.brief))
+    db_query = scoped_cases(db, current_user).options(joinedload(Case.brief))
 
     # Lọc theo quyền sở hữu của Customer
     if current_user.role != "STAFF":
@@ -2473,7 +2489,7 @@ def get_customer_case_detail(
     ảnh đính kèm và lịch sử hội thoại đã kiểm tra ownership.
     """
     case = (
-        db.query(Case)
+        scoped_cases(db, current_user)
         .options(
             joinedload(Case.brief),
             joinedload(Case.location),
@@ -2603,7 +2619,15 @@ def get_customer_case_status(
     Tra cứu trạng thái hồ sơ của khách hàng theo api-contract.md Mục 2.2 & gate-g2-proposal.md.
     Hỗ trợ kiểm tra quyền qua Token đăng nhập hoặc Header X-Session-Id.
     """
-    case = db.get(Case, case_id)
+    if current_user:
+        case = scoped_cases(db, current_user).filter(Case.id == case_id).first()
+    elif x_session_id:
+        sess = db.query(ChatSession).filter(ChatSession.id == x_session_id).first()
+        sess_demo = bool(sess.is_demo) if sess else False
+        case = db.query(Case).filter(Case.id == case_id, Case.is_demo == sess_demo).first()
+    else:
+        case = scoped_cases(db, None).filter(Case.id == case_id).first()
+
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
 
@@ -2663,7 +2687,7 @@ def reopen_customer_case(
     """
     Mở lại Case đã Resolved hoặc Closed theo api-contract.md Mục 2.3.
     """
-    case = db.get(Case, case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
 
@@ -2725,7 +2749,7 @@ def _handle_submit_feedback(
     if not target_case_id:
         raise HTTPException(status_code=400, detail="Mã hồ sơ (case_id) không được để trống.")
 
-    case = db.get(Case, target_case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == target_case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {target_case_id}")
 
@@ -2817,7 +2841,7 @@ def submit_customer_feedback_alias(
 @router.post("/cases/{case_id}/safety-acknowledgement", response_model=ApiResponse[SafetyAcknowledgementData])
 def acknowledge_safety(case_id: str, payload: SafetyAcknowledgementPayload,
                        current_user: User = Depends(require_customer), db: Session = Depends(get_db)):
-    case = db.get(Case, case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == case_id).first()
     if not case:
         raise HTTPException(404, "Không tìm thấy hồ sơ.")
     check_case_ownership(case, current_user)
@@ -2855,7 +2879,7 @@ def get_session_chat_history(
     Lấy toàn bộ lịch sử hội thoại của một phiên chat theo session_id.
     Bảo đảm phân quyền truy cập: nếu không tìm thấy hoặc không thuộc về user/guest, trả về 404 để chống dò session.
     """
-    session = db.get(ChatSession, session_id)
+    session = scoped_sessions(db, current_user).filter(ChatSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
 
@@ -2983,12 +3007,12 @@ def list_chat_sessions(
     """Lấy danh sách các phiên trò chuyện của người dùng hiện tại hoặc guest."""
     if current_user:
         owner = f"user:{current_user.id}"
-        sessions = db.query(ChatSession).filter(ChatSession.owner == owner).all()
+        sessions = scoped_sessions(db, current_user).filter(ChatSession.owner == owner).all()
     else:
         guest_id = x_guest_id or guest_session_id or x_session_id
         if not guest_id:
             return ApiResponse(success=True, data=ChatSessionListResponseData(sessions=[], total=0))
-        sessions = db.query(ChatSession).filter(
+        sessions = scoped_sessions(db, None).filter(
             (ChatSession.owner == f"guest:{guest_id}") |
             (ChatSession.id == guest_id)
         ).all()
@@ -3108,7 +3132,7 @@ def update_chat_session_title(
     db: Session = Depends(get_db),
 ):
     """Đổi tên phiên trò chuyện. Kiểm tra quyền sở hữu chặt chẽ, trả 404 nếu không khớp."""
-    session = db.get(ChatSession, session_id)
+    session = scoped_sessions(db, current_user).filter(ChatSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
 
@@ -3148,7 +3172,7 @@ def delete_chat_session(
     db: Session = Depends(get_db),
 ):
     """Xóa một phiên trò chuyện và các tin nhắn liên quan. Trả 404 nếu không tìm thấy hoặc không thuộc sở hữu."""
-    session = db.get(ChatSession, session_id)
+    session = scoped_sessions(db, current_user).filter(ChatSession.id == session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
 
@@ -3183,13 +3207,13 @@ def delete_all_chat_sessions(
     """Xóa toàn bộ lịch sử trò chuyện của người dùng hiện tại (chỉ xóa đúng owner hiện tại)."""
     if current_user:
         owner = f"user:{current_user.id}"
-        sessions = db.query(ChatSession).filter(ChatSession.owner == owner).all()
+        sessions = scoped_sessions(db, current_user).filter(ChatSession.owner == owner).all()
     else:
         provided_guest = x_guest_id or guest_session_id or x_session_id
         if not provided_guest:
             raise HTTPException(status_code=400, detail="Thiếu thông tin phiên guest.")
         owner = f"guest:{provided_guest}"
-        sessions = db.query(ChatSession).filter(
+        sessions = scoped_sessions(db, None).filter(
             (ChatSession.owner == owner) |
             (ChatSession.id == provided_guest)
         ).all()

@@ -18,7 +18,7 @@ langgraph>=0.2.0
 # Database (SQLite dùng sqlite3 có sẵn trong Python)
 sqlalchemy>=2.0.0
 alembic>=1.14.0
-# psycopg2-binary>=2.9.0   # chỉ cần khi đổi sang PostgreSQL
+psycopg2-binary>=2.9.0   # PostgreSQL driver cho Railway / Production
 
 # Vector Store (uncomment as needed)
 chromadb>=1.0.0,<2

@@ -67,7 +67,8 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
     Đăng nhập tài khoản demo Customer hoặc Staff theo api-contract.md Mục 1.1.
     """
     client_key = _check_login_rate_limit(request)
-    user = db.query(User).filter(User.username == payload.username.strip()).first()
+    username_clean = payload.username.strip()
+    user = db.query(User).filter(User.username == username_clean).first()
     if not user or not verify_password(payload.password, user.password_hash):
         _record_login_failure(client_key)
         raise HTTPException(
@@ -100,6 +101,7 @@ def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)
                 phone=user.phone,
                 vehicle_model=user.vehicle_model,
                 mock_customer_id=user.mock_customer_id,
+                is_demo=user.is_demo,
             ),
         ),
         error=None,
@@ -112,7 +114,7 @@ def _claim_guest_session_data(db: Session, user: User, raw_claim: str | None) ->
     Thực thi nguyên tử trong cùng transaction với login / register.
     Bảo mật tuyệt đối: CHỈ gộp session đang có owner == guest:{raw_claim}, ngăn chặn hoàn toàn việc chiếm đoạt session của user khác.
     """
-    if not raw_claim or user.role != UserRole.CUSTOMER.value:
+    if not raw_claim or user.role != UserRole.CUSTOMER.value or user.is_demo:
         return 0
     raw_claim = raw_claim.strip()
     # Kiểm tra entropy: tối thiểu 8 ký tự alphanumeric/hyphen/underscore
@@ -121,11 +123,11 @@ def _claim_guest_session_data(db: Session, user: User, raw_claim: str | None) ->
 
     cutoff_claim = utcnow() - timedelta(hours=72)
 
-    # 1. Gộp ChatSession: CHỈ tìm các phiên có owner chính xác là guest:{raw_claim}
+    # 1. Gộp ChatSession: CHỈ tìm các phiên có owner chính xác là guest:{raw_claim} và is_demo == False
     guest_owner_claim = f"guest:{raw_claim}"
     guest_sessions = (
         db.query(ChatSession)
-        .filter(ChatSession.owner == guest_owner_claim)
+        .filter(ChatSession.owner == guest_owner_claim, ChatSession.is_demo.is_(False))
         .all()
     )
     claimed_session_ids = [s.id for s in guest_sessions]
@@ -134,7 +136,7 @@ def _claim_guest_session_data(db: Session, user: User, raw_claim: str | None) ->
     for s in guest_sessions:
         s.owner = f"user:{user.id}"
 
-    # 2. Gộp Cases: CHỈ cập nhật Case có user_id IS NULL và session_id thuộc các session hợp lệ của đúng guest đó
+    # 2. Gộp Cases: CHỈ cập nhật Case có user_id IS NULL và session_id thuộc các session hợp lệ của đúng guest đó (is_demo == False)
     target_case_session_ids = set(claimed_session_ids)
     if raw_claim and not db.query(ChatSession).filter(ChatSession.id == raw_claim, ChatSession.owner.like("user:%")).first():
         target_case_session_ids.add(raw_claim)
@@ -145,6 +147,7 @@ def _claim_guest_session_data(db: Session, user: User, raw_claim: str | None) ->
             .filter(
                 Case.session_id.in_(target_case_session_ids),
                 Case.user_id.is_(None),
+                Case.is_demo.is_(False),
                 Case.created_at >= cutoff_claim,
             )
             .all()
@@ -203,6 +206,7 @@ def register(payload: RegisterRequest, request: Request, db: Session = Depends(g
         phone=payload.phone.strip() if payload.phone else None,
         vehicle_model=payload.vehicle_model.strip() if payload.vehicle_model else None,
         mock_customer_id=None,
+        is_demo=False,
     )
     db.add(new_user)
     db.flush()
@@ -232,6 +236,7 @@ def register(payload: RegisterRequest, request: Request, db: Session = Depends(g
                 phone=new_user.phone,
                 vehicle_model=new_user.vehicle_model,
                 mock_customer_id=new_user.mock_customer_id,
+                is_demo=new_user.is_demo,
             ),
         ),
         error=None,
@@ -253,6 +258,7 @@ def get_me(current_user: User = Depends(get_current_user)):
             phone=current_user.phone,
             vehicle_model=current_user.vehicle_model,
             mock_customer_id=current_user.mock_customer_id,
+            is_demo=current_user.is_demo,
         ),
         error=None,
     )
@@ -287,6 +293,7 @@ def update_me(
             phone=current_user.phone,
             vehicle_model=current_user.vehicle_model,
             mock_customer_id=current_user.mock_customer_id,
+            is_demo=current_user.is_demo,
         ),
         error=None,
     )

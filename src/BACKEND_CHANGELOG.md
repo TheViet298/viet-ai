@@ -530,11 +530,12 @@ Lưu trữ các mốc thông báo cập nhật tiến độ an toàn gửi cho k
 
 Khi chạy lệnh nạp dữ liệu mẫu, hệ thống sẽ tự động tạo các tài khoản demo:
 
-| Tên đăng nhập | Mật khẩu | Vai trò | Mục đích sử dụng |
+| Tên đăng nhập | Mật khẩu (Biến môi trường) | Vai trò | Mục đích sử dụng |
 | :--- | :--- | :--- | :--- |
-| `staff@vinfast.vn` | `STAFF_SEED_PASSWORD` (mặc định: `VinFast@ServiceFlow2026!Sec`) | **STAFF** | Truy cập Console điều phối, xem ticket queue, dashboard, routing directory, duyệt HITL actions |
-| `customer@vinfast.vn` | `customer123` | **CUSTOMER** | Đóng vai khách hàng Demo 01 (`CUST_MOCK_01`), sở hữu Case 001 (Metropolis), 002 (Cao tốc), 003 (Sạc chậm) |
-| `customer2@vinfast.vn` | `customer123` | **CUSTOMER** | Đóng vai khách hàng Demo 02 (`CUST_MOCK_02`), sở hữu Case 004 đã giải quyết |
+| `demo.staff@vinfast.vn` | Đọc từ `DEMO_SEED_PASSWORD` | **STAFF (Demo)** | Truy cập Console điều phối, xử lý 9 kịch bản Demo (`is_demo=True`) |
+| `demo.customer@vinfast.vn` | Đọc từ `DEMO_SEED_PASSWORD` | **CUSTOMER (Demo)** | Khách hàng Demo 01, sở hữu các ca demo VF 8 / VF e34 |
+| `demo.customer2@vinfast.vn` | Đọc từ `DEMO_SEED_PASSWORD` | **CUSTOMER (Demo)** | Khách hàng Demo 02, sở hữu các ca demo VF 9 |
+| Staff thật (theo quy chuẩn) | Đọc từ `STAFF_SEED_PASSWORD` | **STAFF (Real)** | Tạo qua `python -m src.create_staff`, quản trị ca sự cố thực (`is_demo=False`) |
 
 ---
 

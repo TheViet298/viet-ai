@@ -92,7 +92,6 @@ export default function LoginPage() {
               type="button"
               onClick={() => {
                 setActiveTab("CUSTOMER");
-                if (identifier === "staff@vinfast.vn") setIdentifier("");
                 setErrorMessage("");
               }}
               className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 transition ${activeTab === "CUSTOMER"
@@ -108,7 +107,6 @@ export default function LoginPage() {
               type="button"
               onClick={() => {
                 setActiveTab("STAFF");
-                setIdentifier("staff@vinfast.vn");
                 setErrorMessage("");
               }}
               className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 transition ${activeTab === "STAFF"
@@ -121,16 +119,57 @@ export default function LoginPage() {
             </button>
           </div>
 
+          {/* Banner demo cho giám khảo (chỉ hiển thị khi biến môi trường cho phép) */}
+          {process.env.NEXT_PUBLIC_SHOW_DEMO_HINT === "true" && (
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-[12px] text-amber-900">
+              <div className="flex items-center gap-1.5 font-bold text-amber-800 mb-1.5">
+                <Sparkles className="h-4 w-4 text-amber-600 shrink-0" />
+                <span>Tài khoản demo cho giám khảo</span>
+              </div>
+              <div className="space-y-1 text-[11px] text-amber-800">
+                <div className="flex items-center justify-between">
+                  <span>Khách hàng demo:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab("CUSTOMER");
+                      setIdentifier("demo.customer@vinfast.vn");
+                    }}
+                    className="font-mono font-semibold text-[#1E40AF] hover:underline cursor-pointer"
+                  >
+                    demo.customer@vinfast.vn
+                  </button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Staff demo:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab("STAFF");
+                      setIdentifier("demo.staff@vinfast.vn");
+                    }}
+                    className="font-mono font-semibold text-[#6D5BD0] hover:underline cursor-pointer"
+                  >
+                    demo.staff@vinfast.vn
+                  </button>
+                </div>
+              </div>
+              <p className="mt-2 text-[10.5px] italic text-amber-700/80 border-t border-amber-200/60 pt-1.5">
+                * Mật khẩu demo được cung cấp trong tài liệu nộp bài.
+              </p>
+            </div>
+          )}
+
           {/* Error notice */}
           {errorMessage && (
-            <div className="mt-4 mb-1 flex items-center gap-2 rounded-xl bg-[#FEF2F2] p-2.5 text-[12px] text-[#DC2626] border border-[#DC2626]/20">
+            <div className="mt-3 mb-1 flex items-center gap-2 rounded-xl bg-[#FEF2F2] p-2.5 text-[12px] text-[#DC2626] border border-[#DC2626]/20">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleLogin} className="mt-5 space-y-3.5">
+          <form onSubmit={handleLogin} className="mt-4 space-y-3.5">
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B] mb-1">
                 {activeTab === "STAFF" ? "Tài khoản Staff nội bộ" : "Số điện thoại / Tên đăng nhập"}

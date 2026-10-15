@@ -72,6 +72,7 @@ class UserOut(BaseModel):
     phone: str | None = None
     vehicle_model: str | None = None
     mock_customer_id: str | None = None
+    is_demo: bool = False
 
 
 class AuthResponseData(BaseModel):

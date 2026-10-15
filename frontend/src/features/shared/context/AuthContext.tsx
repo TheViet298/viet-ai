@@ -14,6 +14,7 @@ export interface AuthUser {
   vehicleModel?: string;
   mockCustomerId?: string;
   avatar?: string;
+  isDemo?: boolean;
 }
 
 interface ApiUser {
@@ -24,6 +25,7 @@ interface ApiUser {
   phone?: string | null;
   vehicle_model?: string | null;
   mock_customer_id?: string | null;
+  is_demo?: boolean | null;
 }
 
 interface AuthResponse {
@@ -99,6 +101,7 @@ function mapApiUser(user: ApiUser, profile: Partial<AuthUser> = {}): AuthUser {
     vehicleModel: vehicleModel || undefined,
     mockCustomerId: user.mock_customer_id || undefined,
     avatar: localProfile.avatar,
+    isDemo: Boolean(user.is_demo),
   };
 }
 

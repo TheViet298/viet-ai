@@ -41,63 +41,83 @@ Base = declarative_base()
 
 
 def ensure_schema() -> None:
-    """Tự động đảm bảo bảng và bổ sung cột còn thiếu cho SQLite khi schema cập nhật."""
+    """Tự động đảm bảo bảng và bổ sung cột còn thiếu cho cả SQLite và PostgreSQL khi schema cập nhật."""
+    from sqlalchemy import inspect
+
     Base.metadata.create_all(bind=engine)
-    if is_sqlite:
-        with engine.begin() as conn:
-            # Bổ sung các cột mới cho users nếu thiếu
-            users_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()}
-            if users_cols:
-                if "full_name" not in users_cols:
-                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN full_name VARCHAR(100)")
-                if "phone" not in users_cols:
-                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN phone VARCHAR(20)")
-                if "vehicle_model" not in users_cols:
-                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN vehicle_model VARCHAR(50)")
-                if "mock_customer_id" not in users_cols:
-                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN mock_customer_id VARCHAR(50)")
+    with engine.begin() as conn:
+        insp = inspect(conn)
+        tables = set(insp.get_table_names())
 
-            # Bổ sung các cột mới cho cases nếu thiếu
-            cases_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(cases)").fetchall()}
-            if cases_cols:
-                if "user_id" not in cases_cols:
-                    conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN user_id VARCHAR(36)")
-                if "mock_customer_name" not in cases_cols:
-                    conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN mock_customer_name VARCHAR(100)")
-                if "mock_customer_phone" not in cases_cols:
-                    conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN mock_customer_phone VARCHAR(20)")
-                if "safety_status" not in cases_cols:
-                    conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN safety_status VARCHAR(30) DEFAULT 'unconfirmed'")
-                if "safety_acknowledged_at" not in cases_cols:
-                    conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN safety_acknowledged_at DATETIME")
-                if "incident_version" not in cases_cols:
-                    conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN incident_version INTEGER DEFAULT 1")
+        # 1. users
+        if "users" in tables:
+            users_cols = {col["name"] for col in insp.get_columns("users")}
+            if "full_name" not in users_cols:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN full_name VARCHAR(100)")
+            if "phone" not in users_cols:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN phone VARCHAR(20)")
+            if "vehicle_model" not in users_cols:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN vehicle_model VARCHAR(50)")
+            if "mock_customer_id" not in users_cols:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN mock_customer_id VARCHAR(50)")
+            if "is_demo" not in users_cols:
+                conn.exec_driver_sql(
+                    "ALTER TABLE users ADD COLUMN is_demo BOOLEAN NOT NULL DEFAULT 0"
+                    if is_sqlite
+                    else "ALTER TABLE users ADD COLUMN is_demo BOOLEAN NOT NULL DEFAULT FALSE"
+                )
 
-            # Bổ sung các cột mới cho customer_feedback nếu thiếu
-            fb_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(customer_feedback)").fetchall()}
-            if fb_cols:
-                if "reason_tags" not in fb_cols:
-                    conn.exec_driver_sql("ALTER TABLE customer_feedback ADD COLUMN reason_tags JSON")
-                if "updated_at" not in fb_cols:
-                    conn.exec_driver_sql("ALTER TABLE customer_feedback ADD COLUMN updated_at DATETIME")
-                try:
-                    conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS uq_customer_feedback_case_id ON customer_feedback(case_id)")
-                except Exception:
-                    pass
+        # 2. cases
+        if "cases" in tables:
+            cases_cols = {col["name"] for col in insp.get_columns("cases")}
+            if "user_id" not in cases_cols:
+                conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN user_id VARCHAR(36)")
+            if "mock_customer_name" not in cases_cols:
+                conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN mock_customer_name VARCHAR(100)")
+            if "mock_customer_phone" not in cases_cols:
+                conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN mock_customer_phone VARCHAR(20)")
+            if "safety_status" not in cases_cols:
+                conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN safety_status VARCHAR(30) DEFAULT 'unconfirmed'")
+            if "safety_acknowledged_at" not in cases_cols:
+                conn.exec_driver_sql(
+                    "ALTER TABLE cases ADD COLUMN safety_acknowledged_at DATETIME"
+                    if is_sqlite
+                    else "ALTER TABLE cases ADD COLUMN safety_acknowledged_at TIMESTAMP WITH TIME ZONE"
+                )
+            if "incident_version" not in cases_cols:
+                conn.exec_driver_sql("ALTER TABLE cases ADD COLUMN incident_version INTEGER DEFAULT 1")
+            if "is_demo" not in cases_cols:
+                conn.exec_driver_sql(
+                    "ALTER TABLE cases ADD COLUMN is_demo BOOLEAN NOT NULL DEFAULT 0"
+                    if is_sqlite
+                    else "ALTER TABLE cases ADD COLUMN is_demo BOOLEAN NOT NULL DEFAULT FALSE"
+                )
 
-            # Khởi tạo thông tin hồ sơ mẫu nếu đang bị NULL
-            conn.exec_driver_sql(
-                "UPDATE users SET full_name = 'Nguyễn Văn Tuấn', phone = '0912345678', vehicle_model = 'VF8' "
-                "WHERE username = 'customer@vinfast.vn' AND (full_name IS NULL OR full_name = '')"
-            )
-            conn.exec_driver_sql(
-                "UPDATE users SET full_name = 'Trần Thị Mai', phone = '0987654321', vehicle_model = 'VF5' "
-                "WHERE username = 'customer2@vinfast.vn' AND (full_name IS NULL OR full_name = '')"
-            )
-            conn.exec_driver_sql(
-                "UPDATE users SET full_name = 'Cố vấn Dịch vụ VinFast', phone = '1900232389' "
-                "WHERE username = 'staff@vinfast.vn' AND (full_name IS NULL OR full_name = '')"
-            )
+        # 3. chat_sessions
+        if "chat_sessions" in tables:
+            chat_cols = {col["name"] for col in insp.get_columns("chat_sessions")}
+            if "is_demo" not in chat_cols:
+                conn.exec_driver_sql(
+                    "ALTER TABLE chat_sessions ADD COLUMN is_demo BOOLEAN NOT NULL DEFAULT 0"
+                    if is_sqlite
+                    else "ALTER TABLE chat_sessions ADD COLUMN is_demo BOOLEAN NOT NULL DEFAULT FALSE"
+                )
+
+        # 4. customer_feedback
+        if "customer_feedback" in tables:
+            fb_cols = {col["name"] for col in insp.get_columns("customer_feedback")}
+            if "reason_tags" not in fb_cols:
+                conn.exec_driver_sql("ALTER TABLE customer_feedback ADD COLUMN reason_tags JSON")
+            if "updated_at" not in fb_cols:
+                conn.exec_driver_sql(
+                    "ALTER TABLE customer_feedback ADD COLUMN updated_at DATETIME"
+                    if is_sqlite
+                    else "ALTER TABLE customer_feedback ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE"
+                )
+            try:
+                conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS uq_customer_feedback_case_id ON customer_feedback(case_id)")
+            except Exception:
+                pass
 
 
 

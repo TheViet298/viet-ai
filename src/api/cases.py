@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 
 from src.db import get_db
-from src.models.db_models import Case
+from src.models.db_models import Case, User
+from src.services.auth import require_staff, scoped_cases
 
 router = APIRouter(prefix="/cases", tags=["cases-legacy"])
 
@@ -13,10 +14,11 @@ def list_cases(
     priority: str | None = None,
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
+    current_user: User = Depends(require_staff),
     db: Session = Depends(get_db),
 ):
-    """API lấy danh sách case (Tương thích ngược)."""
-    q = db.query(Case).options(joinedload(Case.brief))
+    """API lấy danh sách case (Tương thích ngược - Yêu cầu xác thực Staff)."""
+    q = scoped_cases(db, current_user).options(joinedload(Case.brief))
     if status:
         q = q.filter(Case.status == status)
     if priority:
@@ -41,9 +43,13 @@ def list_cases(
 
 
 @router.get("/{case_id}")
-def get_case(case_id: str, db: Session = Depends(get_db)):
-    """API lấy chi tiết một case theo ID chuỗi (CASE-YYYYMMDD-XXX)."""
-    case = db.query(Case).options(joinedload(Case.brief), joinedload(Case.messages)).filter(Case.id == case_id).first()
+def get_case(
+    case_id: str,
+    current_user: User = Depends(require_staff),
+    db: Session = Depends(get_db),
+):
+    """API lấy chi tiết một case theo ID chuỗi (CASE-YYYYMMDD-XXX - Yêu cầu xác thực Staff)."""
+    case = scoped_cases(db, current_user).options(joinedload(Case.brief), joinedload(Case.messages)).filter(Case.id == case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail="Case không tồn tại")
 
