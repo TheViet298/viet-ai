@@ -1,0 +1,15 @@
+{
+  "anchor": "Synthetic benchmark at the existing TP.HCM reference centre, not a customer GPS fix",
+  "cold_load_seconds": 0.721,
+  "warm_search_milliseconds": 26.61,
+  "loaded_points": 18120,
+  "result_count": 5,
+  "distances_km": [
+    0.485,
+    0.55,
+    0.678,
+    0.767,
+    0.946
+  ],
+  "note": "One local measurement; not an SLA or comparison against historical UI."
+}

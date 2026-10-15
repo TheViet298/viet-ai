@@ -35,7 +35,7 @@ run_check "Frontend tests" node --test frontend/tests/*.test.cjs
 run_check "Frontend TypeScript" ./frontend/node_modules/.bin/tsc --noEmit --project frontend/tsconfig.json
 run_check "Backend location tests" env PYTHONDONTWRITEBYTECODE=1 LANGFUSE_TRACING_ENABLED=false LANGCHAIN_TRACING_V2=false AGENT_LLM_ENABLED=false "$python_bin" -m pytest -p no:cacheprovider tests/test_agents/test_location_and_memory.py tests/test_agents/test_location_extraction.py
 run_check "Backend location API regression" env PYTHONDONTWRITEBYTECODE=1 LANGFUSE_TRACING_ENABLED=false LANGCHAIN_TRACING_V2=false AGENT_LLM_ENABLED=false "$python_bin" -m pytest -p no:cacheprovider tests/test_api/test_aligned_spec.py -k customer_location_and_service_points
-run_check "Backend nearby API and privacy" env PYTHONDONTWRITEBYTECODE=1 LANGFUSE_TRACING_ENABLED=false LANGCHAIN_TRACING_V2=false AGENT_LLM_ENABLED=false "$python_bin" -m pytest -p no:cacheprovider tests/test_api/test_nearby_service_points.py tests/test_api/test_service_point_catalog.py tests/test_api/test_location_log_privacy.py
+run_check "Backend nearby API and privacy" env PYTHONDONTWRITEBYTECODE=1 LANGFUSE_TRACING_ENABLED=false LANGCHAIN_TRACING_V2=false AGENT_LLM_ENABLED=false "$python_bin" -m pytest -p no:cacheprovider tests/test_api/test_contextual_nearby.py tests/test_api/test_nearby_service_points.py tests/test_api/test_service_point_catalog.py tests/test_api/test_location_log_privacy.py
 run_check "Frontend build" npm --prefix frontend run build
 
 if [[ "${GPS_RUN_E2E:-0}" == "1" ]]; then

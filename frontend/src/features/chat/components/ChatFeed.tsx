@@ -12,6 +12,7 @@ interface ChatFeedProps {
   isMapOpen?: boolean;
   showLocationCard?: boolean;
   children?: React.ReactNode;
+  nearbyRequestId?: string;
 }
 
 export function ChatFeed({
@@ -21,6 +22,7 @@ export function ChatFeed({
   isMapOpen,
   showLocationCard,
   children,
+  nearbyRequestId,
 }: ChatFeedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
@@ -52,23 +54,24 @@ export function ChatFeed({
 
   // Tự động cuộn khi tin nhắn mới, mở bản đồ hoặc thanh vị trí xuất hiện
   useEffect(() => {
+    if (nearbyRequestId) return;
     const timer = setTimeout(() => {
       scrollToBottom(true);
     }, 120);
     return () => clearTimeout(timer);
-  }, [messages, loading, isMapOpen, showLocationCard, scrollToBottom]);
+  }, [messages, loading, isMapOpen, showLocationCard, nearbyRequestId, scrollToBottom]);
 
   // Lắng nghe thay đổi kích thước khung chat khi trượt mở bản đồ (tránh chip bị cắt cụt)
   useEffect(() => {
     if (!containerRef.current) return;
     const resizeObserver = new ResizeObserver(() => {
-      if (isNearBottomRef.current) {
+      if (!nearbyRequestId && isNearBottomRef.current) {
         scrollToBottom(false);
       }
     });
     resizeObserver.observe(containerRef.current);
     return () => resizeObserver.disconnect();
-  }, [scrollToBottom]);
+  }, [nearbyRequestId, scrollToBottom]);
 
   // Xác định tin nhắn AI duy nhất vừa tạo case để hiển thị thẻ "Đã tiếp nhận CASE-..." (tránh lặp 3 lần)
   const caseCreatedMessageId = useMemo(() => {
@@ -82,6 +85,7 @@ export function ChatFeed({
     <div className="relative flex-1 min-h-0 flex flex-col">
       <div
         ref={containerRef}
+        data-chat-feed
         onScroll={handleScroll}
         className="flex-1 p-3.5 sm:p-4 pb-8 sm:pb-10 overflow-y-auto space-y-3.5"
       >
@@ -125,11 +129,12 @@ export function ChatFeed({
           </div>
         )}
 
+        {children}
         <div className="h-3 shrink-0" />
       </div>
 
       {/* Nút nổi "↓ Tin mới" khi người dùng cuộn ngược lên trên */}
-      {showScrollBottomBtn && (
+      {showScrollBottomBtn && !nearbyRequestId && (
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 animate-fadeIn">
           <button
             type="button"
@@ -143,7 +148,6 @@ export function ChatFeed({
       )}
 
       {/* Slot thanh vị trí ngoài luồng chat (nếu có) */}
-      {children}
     </div>
   );
 }

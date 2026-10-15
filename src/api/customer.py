@@ -19,7 +19,8 @@ from src.agents.guardrails import (
     sanitize_pii,
 )
 from src.agents.nodes.triage_node import classify_request_kind, extract_fields
-from src.services.service_point_catalog import nearby_service_points
+from src.agents.tools.vinfast_tools import vinfast_nearby_search
+from src.services.nearby_intent import classify_location_request
 from src.config import get_settings
 from src.db import get_db
 from src.models.db_models import (
@@ -505,6 +506,11 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         vehicle_model = model_signals[0]["vehicle_model"]
         vehicle_label = vehicle_model
 
+    nearby_request = None
+    if not classification.is_critical and not payload.attachment_ids:
+        nearby_request = await classify_location_request(text, previous_context.get("nearby_request"), vehicle_model)
+    vehicle_context["nearby_request"] = nearby_request
+
     # 1. Lưu tin nhắn của Khách hàng vào bảng messages
     cust_msg = Message(
         id=str(uuid.uuid4()),
@@ -526,6 +532,17 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     db.add(cust_msg)
     db.info['chat_turn_customer_id'] = cust_msg.id
     db.flush()
+
+    if nearby_request:
+        from src.models.schemas import NearbyAction
+        action = NearbyAction(**nearby_request, request_id=str(uuid.uuid4()), turn_id=cust_msg.id)
+        reply = action.reason + (" Nhập khu vực hoặc dùng vị trí hiện tại để xem tối đa 5 kết quả." if action.requires_location
+                                 else " Em sẽ tìm quanh khu vực bạn đã nêu; khoảng cách tính từ tâm khu vực tham chiếu.")
+        db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
+                       sender_type="AGENT", content=reply, msg_metadata={"nearby_action": action.model_dump()}))
+        return ApiResponse(success=True, data=ChatResponseData(response_type="FAQ_ANSWER", message=reply,
+                           case_id=active_case_id, nearby_action=action, request_location=action.requires_location,
+                           remaining_guest_messages=remaining_guest_msgs), error=None)
 
     if not current_user and classification.request_kind in {'incident', 'complaint'}:
         reply = "Anh/chị vui lòng đăng nhập để tạo và theo dõi hồ sơ chuyên viên hỗ trợ. " + STANDARD_SAFE_GUIDANCE
@@ -1401,16 +1418,6 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             error=None,
         )
 
-    if not is_technical_incident and any(k in lower_text for k in ["gần tôi", "gần nhất", "tìm trạm", "tìm showroom", "xung quanh đây", "trạm sạc quanh", "xưởng gần", "xưởng dịch vụ", "danh sách xưởng", "tìm xưởng"]):
-        target = "showroom" if "showroom" in lower_text else "xưởng dịch vụ" if "xưởng" in lower_text else "trạm sạc"
-        reply = f"Quý khách vui lòng chia sẻ vị trí để tìm {target} gần mình. Nếu không dùng GPS, Quý khách có thể nhập khu vực hoặc địa chỉ."
-        db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
-                       sender_type="AGENT", content=reply, msg_metadata={"action": "find_service_point"}))
-        db.flush()
-        return ApiResponse(success=True, data=ChatResponseData(response_type="FAQ_ANSWER", message=reply,
-            case_id=active_case_id, request_location=True,
-            show_emergency_banner=bool(active_case and active_case.priority == "CRITICAL")), error=None)
-
     # --------------------------------------------------------------------------
     # NHÓM C: TRA CỨU TRI THỨC / RAG FAQ (KHI KHÔNG PHẢI SỰ CỐ KỸ THUẬT)
     # --------------------------------------------------------------------------
@@ -2042,15 +2049,17 @@ async def get_nearby_service_points(
     lng: float = Query(..., ge=-180, le=180),
     category: Literal["ALL", "CHARGING_STATION", "SHOWROOM", "SERVICE_WORKSHOP", "OTHER"] = "ALL",
     radius_km: float = Query(50, gt=0, le=1000),
-    limit: int = Query(10, ge=1, le=100),
+    limit: int = Query(5, ge=1, le=100),
+    vehicle_type: Literal["CAR", "TWO_WHEELER"] = "CAR",
 ):
-    """Demo directory only. No coordinate storage or request logging."""
+    """Snapshot directory. Top five only; no coordinate storage or request logging."""
     if not math.isfinite(lat) or not math.isfinite(lng) or not math.isfinite(radius_km):
         raise HTTPException(status_code=422, detail="Tọa độ hoặc bán kính không hợp lệ")
 
     try:
-        data = nearby_service_points(lat, lng, category, radius_km, limit)
-    except (OSError, ValueError):
+        data = await vinfast_nearby_search(lat, lng, category, vehicle_type, radius_km)
+        data["points"] = data["points"][:limit]
+    except (OSError, ValueError, KeyError, TypeError, EOFError):
         raise HTTPException(status_code=503, detail="Danh mục điểm dịch vụ tạm thời không khả dụng") from None
     return ApiResponse(success=True, data=data, error=None)
 

@@ -86,8 +86,8 @@ test('2. Luồng CHO PHÉP VỊ TRÍ (CONSENTED): GPS thành công, tìm điểm
     { lat: nearest.coords.lat, lng: nearest.coords.lng, address: nearest.address },
     userGps
   );
-  assert.ok(directionsUrl.includes('origin=21.0315,105.8145'), 'URL chỉ đường phải chứa origin chính xác');
-  assert.ok(directionsUrl.includes('destination=21.0315,105.8145'), 'URL chỉ đường phải chứa destination');
+  assert.ok(new URL(directionsUrl).searchParams.get('origin') === '21.0315,105.8145', 'URL chỉ đường phải chứa origin chính xác');
+  assert.ok(new URL(directionsUrl).searchParams.get('destination') === '21.0315,105.8145', 'URL chỉ đường phải chứa destination');
   assert.ok(directionsUrl.includes('travelmode=driving'), 'URL chỉ đường phải kích hoạt chế độ lái xe');
 
   // Kiểm tra URL chỉ đường OpenStreetMap
@@ -160,7 +160,7 @@ test('3. Luồng TỪ CHỐI VỊ TRÍ (PERMISSION_DENIED): Fallback nhập tay 
     lng: 105.8145,
     address: '29 Liễu Giai, Ngọc Khánh, Ba Đình, Hà Nội',
   });
-  assert.ok(fallbackUrl.includes('/search/?api=1&query='), 'Không có origin phải fallback sang search query theo địa chỉ');
+  assert.ok(fallbackUrl.includes('/dir/?api=1&destination='), 'Không có origin vẫn mở chỉ đường đến điểm đã chọn');
   assert.ok(!fallbackUrl.includes('origin='), 'Fallback search URL không được gắn tọa độ origin rác');
 });
 
@@ -266,8 +266,8 @@ test('7. Luồng CHỌN ĐIỂM ĐẾN & ĐIỀU HƯỚNG: Sinh prompt chat và 
     { lat: selectedPoint.coords.lat, lng: selectedPoint.coords.lng, address: selectedPoint.address },
     userOrigin
   );
-  assert.ok(navUrl.includes('origin=21.03,105.8'));
-  assert.ok(navUrl.includes('destination=21.0315,105.8145'));
+  assert.ok(new URL(navUrl).searchParams.get('origin') === '21.03,105.8');
+  assert.ok(new URL(navUrl).searchParams.get('destination') === '21.0315,105.8145');
 });
 
 const { startLocationWatch, shouldSyncLocation } = loadTsModule('../src/features/chat/utils/locationTracking.ts');

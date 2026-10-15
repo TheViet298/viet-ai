@@ -17,7 +17,7 @@ test('manual aliases support accents, casing, punctuation, and search selection'
   assert.equal(resolveManualArea('Sai Gon').id, 'ho-chi-minh');
   assert.equal(resolveManualArea('da nang').id, 'da-nang');
   assert.deepEqual(searchManualAreas('long').map(a => a.id), ['long-thanh']);
-  assert.equal(searchManualAreas('').length, 4);
+  assert.equal(searchManualAreas('').length, 5);
 });
 test('ambiguous, street-name and unknown text do not produce a reference coordinate', () => {
   for (const text of ['', 'DN', 'Đồng Nai', 'Hà Nội / TP.HCM', '159 Xa Lộ Hà Nội, TP.HCM', 'đường Đà Nẵng', 'Dầu Giây', 'Hà Nộiabc']) {

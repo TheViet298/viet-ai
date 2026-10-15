@@ -113,3 +113,7 @@ Các tính năng cơ bản đã hoạt động. Tuy nhiên, bản đồ trong we
 Đã tạo [PR #37](https://github.com/AI20K-Build-Phase-Cohort-4/P-142/pull/37), nguồn `feature/gps-desktop-pr`, đích `main`, commit `d019aff`, từ checkout cô lập `/tmp/p142-gps-pr-isolated` dựa trên main mới nhất `8e3a016`. PR gồm 52 tệp GPS liên quan, có [hướng dẫn sử dụng](https://github.com/AI20K-Build-Phase-Cohort-4/P-142/blob/feature/gps-desktop-pr/docs/gps_plans/user-guide.md); không mang hook/logging, dataset, demo riêng hoặc cache build. Commit/push đã hoàn tất trên branch PR; không commit các thay đổi đang sửa tại worktree gốc.
 
 Kiểm thử trên checkout PR: verifier đủ 7 nhóm PASS (55 frontend tests; 48 backend tests theo phạm vi; lint frontend có cảnh báo nền, TypeScript/build PASS); E2E Chromium/Firefox 14/14 PASS ở cổng 18010/13010, giữ nguyên web thủ công. Ruff toàn repository còn 186 finding ngoài các tệp Python được chọn, full pytest chưa chạy. Các giới hạn bản đồ/AI/dữ liệu và đề xuất UI fit khi zoom được ghi rõ trong PR; chưa triển khai đề xuất UI hoặc merge main.
+
+## Cập nhật workflow theo context — 15/10/2026
+
+Bản mới chỉ xin vị trí khi khách yêu cầu tìm địa điểm, dùng snapshot CSV và trả top 5 với nút chỉ đường Google Maps; map thu gọn mặc định. Chi tiết triển khai/kiểm chứng: [update_gps_Oct_15.md](update_gps_Oct_15.md). Cách dùng: [user-guide.md](user-guide.md).

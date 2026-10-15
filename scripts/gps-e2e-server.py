@@ -12,6 +12,8 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 env = os.environ.copy()
+backend_port = str(int(env.get("GPS_E2E_BACKEND_PORT", "18000")))
+frontend_port = str(int(env.get("GPS_E2E_FRONTEND_PORT", "13000")))
 child = None
 stopping = False
 
@@ -60,7 +62,7 @@ if sys.argv[1] == 'backend':
                    AUTH_SECRET_KEY='local-synthetic-e2e-only-not-a-real-secret',
                    SERVICE_POINTS_FILE=str(ROOT / 'fixtures/service_points.demo.json'))
         run([str(ROOT / '.venv/bin/python'), '-m', 'uvicorn', 'src.main:app',
-             '--host', '127.0.0.1', '--port', '18000',
+             '--host', '127.0.0.1', '--port', backend_port,
              '--access-log' if env.get('GPS_E2E_ACCESS_LOG') == '1' else '--no-access-log'], temporary)
 elif sys.argv[1] == 'frontend':
     # Separate build output plus an exclusive lock prevents two E2E builders colliding.
@@ -70,10 +72,10 @@ elif sys.argv[1] == 'frontend':
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise SystemExit('Another GPS E2E production server already owns this checkout.')
-        env.update(NEXT_DIST_DIR='.next-gps-e2e', API_PROXY_TARGET='http://127.0.0.1:18000',
+        env.update(NEXT_DIST_DIR='.next-gps-e2e', API_PROXY_TARGET=f'http://127.0.0.1:{backend_port}',
                    NEXT_PUBLIC_API_URL='', NEXT_TELEMETRY_DISABLED='1', NEXT_TSCONFIG_PATH='tsconfig.e2e.json')
         next_bin = str(ROOT / 'frontend/node_modules/next/dist/bin/next')
         run(['node', next_bin, 'build'], ROOT / 'frontend')
-        run(['node', next_bin, 'start', '-H', '127.0.0.1', '-p', '13000'], ROOT / 'frontend')
+        run(['node', next_bin, 'start', '-H', '127.0.0.1', '-p', frontend_port], ROOT / 'frontend')
 else:
     raise SystemExit('Usage: gps-e2e-server.py backend|frontend')

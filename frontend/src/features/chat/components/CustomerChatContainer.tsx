@@ -8,16 +8,15 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { ServicePointSeed, UserLocationState, CaseLocationPayload } from "../types";
+import { UserLocationState, CaseLocationPayload, NearbyAction } from "../types";
 import { useChat } from "../hooks/useChat";
 import { EmergencyAlertBanner } from "./EmergencyAlertBanner";
 import { ChatFeed } from "./ChatFeed";
 import { ChatInputBar } from "./ChatInputBar";
 import { LocationConsentCard } from "./LocationConsentCard";
-import { ServiceMapPanel } from "./ServiceMapPanel";
+import { NearbyResults } from "./NearbyResults";
 import { submitCustomerLocation, uploadAttachment } from "../api/chatApi";
-import { getSeedServicePoints } from "../constants/servicePoints";
-import { shouldSyncLocation, startLocationWatch } from "../utils/locationTracking";
+import { shouldSyncLocation } from "../utils/locationTracking";
 import { getUploadError } from "../uploadState";
 import { useAuth, ProductMark } from "@/features/shared";
 
@@ -36,7 +35,7 @@ export function CustomerChatContainer() {
     safetyPending,
     safetyError,
     canAcknowledgeSafety,
-    requestLocation,
+    nearbyAction,
     sendMessage,
     resetChat,
     updateMessageChips,
@@ -61,7 +60,6 @@ export function CustomerChatContainer() {
   // ===========================================================================
   // SERVICE MAP PREVIEW & LOCATION CONSENT (ADR-005, screen-spec.md Section 5.4, CUS-03)
   // ===========================================================================
-  const [servicePoints] = useState<ServicePointSeed[]>(() => getSeedServicePoints());
   const [locationState, setLocationState] = useState<UserLocationState>({
     status: "PENDING",
     source: "USER_TEXT",
@@ -70,21 +68,11 @@ export function CustomerChatContainer() {
   const [locationSyncError, setLocationSyncError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
-  const mapPanelRef = useRef<HTMLDivElement>(null);
-  const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
+  const consentAt = useRef(0);
+  const [shareWithCase, setShareWithCase] = useState(false);
+  const [manualAction, setManualAction] = useState<NearbyAction | null>(null);
+  const activeAction = nearbyAction ?? manualAction;
   const [showLocationCard, setShowLocationCard] = useState<boolean>(false);
-  const [suggestedCategory, setSuggestedCategory] = useState<
-    "ALL" | "OTHER" | "CHARGING_STATION" | "SERVICE_WORKSHOP" | "SHOWROOM"
-  >("ALL");
-
-  useEffect(() => {
-    if (!isMapOpen || !window.matchMedia("(max-width: 1279px)").matches) return;
-    // Reveal the stacked map once when opened, without moving focus or following GPS updates.
-    const frame = window.requestAnimationFrame(() => {
-      mapPanelRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [isMapOpen]);
 
   const invalidateLocationRequest = () => {
     locationRequestId.current += 1;
@@ -115,45 +103,66 @@ export function CustomerChatContainer() {
   }, []);
 
   useEffect(() => {
-    if (!currentCaseId || locationState.status === "PENDING") return;
-    const coords = locationState.status === "CONSENTED" ? locationState.coords : undefined;
+    if (!shareWithCase || !currentCaseId || locationState.status !== "CONSENTED") return;
+    const coords = locationState.coords;
+    if (!coords) return;
     const now = Date.now();
     const previous = lastLocationSync.current;
     if (coords && previous?.caseId === currentCaseId && !shouldSyncLocation(previous, coords, now)) return;
     if (coords) lastLocationSync.current = { ...coords, time: now, caseId: currentCaseId };
-    const manual = locationState.status === "MANUAL" && Boolean(locationState.label.trim());
     syncLocation({
       case_id: currentCaseId,
-      status: coords ? "CONSENTED" : manual ? "MANUAL" : "NOT_SHARED",
-      source: coords ? "BROWSER_GPS" : "USER_TEXT",
-      location_label: coords ? "Vị trí hiện tại" : manual ? locationState.label : "Không chia sẻ",
+      status: "CONSENTED",
+      source: "BROWSER_GPS",
+      location_label: "Vị trí hiện tại",
       latitude: coords?.lat ?? null, longitude: coords?.lng ?? null,
       precision: coords && (locationState.accuracy ?? 0) <= 500 ? "EXACT" : "APPROXIMATE",
-      share_with_staff: Boolean(coords || manual),
+      share_with_staff: true,
     });
-  }, [currentCaseId, locationState, syncLocation]);
+  }, [shareWithCase, currentCaseId, locationState, syncLocation]);
 
-  const handleSelectDestination = (point: ServicePointSeed) => {
-    setSelectedPointId(point.id);
-    const destPrompt = `Tôi muốn đến ${point.name} (${point.address}) để kiểm tra. Cho tôi hỏi trạm hiện có hoạt động và sẵn sàng tiếp nhận không?`;
-    setInput(destPrompt);
-  };
-
-  // Tự động kích hoạt Card xin vị trí khi phát hiện ca khẩn cấp hoặc backend gửi cờ request_location
   useEffect(() => {
-    if (criticalBanner || requestLocation) {
-      setShowLocationCard(true);
-      if (criticalBanner) {
-        setSuggestedCategory("OTHER");
-      } else {
-        setSuggestedCategory("CHARGING_STATION");
-      }
+    if (loading) {
+      locationRequestId.current += 1;
+      setIsLocating(false);
+      setManualAction(null);
+      setShowLocationCard(false);
     }
-  }, [criticalBanner, requestLocation]);
+  }, [loading]);
+
+  useEffect(() => {
+    if (!activeAction) return;
+    setIsMapOpen(false);
+    if (activeAction.category === "ALL") { setShowLocationCard(false); return; }
+    if (activeAction.area_text) {
+      consentAt.current = 0;
+      locationRequestId.current += 1;
+      setLocationState({ status: "MANUAL", source: "USER_TEXT", label: activeAction.area_text });
+      setShowLocationCard(false);
+      return;
+    }
+    // Reuse only a deliberate location choice within this mounted session for 15 minutes.
+    const reusable = Date.now() - consentAt.current < 15 * 60 * 1000;
+    if (!reusable) setLocationState({ status: "PENDING", source: "USER_TEXT", label: "" });
+    setShowLocationCard(!reusable && !criticalBanner);
+    // Each server action is a new turn; location updates must not reopen its popup.
+  }, [activeAction, criticalBanner]);
+
+  useEffect(() => {
+    locationRequestId.current += 1;
+    consentAt.current = 0;
+    setLocationState({ status: "PENDING", source: "USER_TEXT", label: "" });
+    setShareWithCase(false);
+    setManualAction(null);
+    setShowLocationCard(false);
+  }, [user?.id]);
 
   const handleResetAll = () => {
     invalidateLocationRequest();
-    if (currentCaseId) syncLocation({ case_id: currentCaseId, status: "NOT_SHARED", source: "USER_TEXT", location_label: "Không chia sẻ", latitude: null, longitude: null, share_with_staff: false });
+    if (shareWithCase && currentCaseId) syncLocation({ case_id: currentCaseId, status: "NOT_SHARED", source: "USER_TEXT", location_label: "Không chia sẻ", latitude: null, longitude: null, share_with_staff: false });
+    setShareWithCase(false);
+    consentAt.current = 0;
+    setManualAction(null);
     setResolvedImageKind(null);
     uploadRequestId.current += 1;
     setIsUploadingImage(false);
@@ -164,8 +173,6 @@ export function CustomerChatContainer() {
     setUploadedAttachmentId(null);
     setIsMapOpen(false);
     setShowLocationCard(false);
-    setSuggestedCategory("ALL");
-    setSelectedPointId(null);
     setLocationState({ status: "PENDING", source: "USER_TEXT", label: "" });
   };
 
@@ -216,15 +223,16 @@ export function CustomerChatContainer() {
       const lat = pos.coords.latitude, lng = pos.coords.longitude, accuracy = pos.coords.accuracy;
       if (!Number.isFinite(lat) || Math.abs(lat) > 90 || !Number.isFinite(lng) || Math.abs(lng) > 180 || !Number.isFinite(accuracy) || accuracy < 0) { errorHandler({ code: 2 } as GeolocationPositionError); return; }
       setIsLocating(false);
-      setLocationState({ status: "CONSENTED", source: "BROWSER_GPS", label: "Vị trí hiện tại", coords: { lat, lng }, accuracy, isTracking: true, errorCode: accuracy > 500 ? "ACCURACY_LOW" : undefined });
-      setIsMapOpen(true);
+      setLocationState({ status: "CONSENTED", source: "BROWSER_GPS", label: "Vị trí hiện tại", coords: { lat, lng }, accuracy, isTracking: false, errorCode: accuracy > 500 ? "ACCURACY_LOW" : undefined });
+      consentAt.current = Date.now();
+      setShowLocationCard(false);
     };
     const errorHandler = (err: GeolocationPositionError) => {
       if (requestId !== locationRequestId.current) return;
       invalidateLocationRequest();
       setLocationState({ status: "MANUAL", source: "USER_TEXT", label: "", errorCode: err.code === 1 ? "PERMISSION_DENIED" : err.code === 3 ? "TIMEOUT" : "POSITION_UNAVAILABLE" });
     };
-    try { stopWatchRef.current = startLocationWatch(navigator.geolocation, successHandler, errorHandler); }
+    try { navigator.geolocation.getCurrentPosition(successHandler, errorHandler, { enableHighAccuracy: false, maximumAge: 0, timeout: 8000 }); }
     catch { errorHandler({ code: 2 } as GeolocationPositionError); }
   };
 
@@ -235,20 +243,28 @@ export function CustomerChatContainer() {
       source: "USER_TEXT",
       label: areaText,
     });
-    setIsMapOpen(true);
+    consentAt.current = Date.now();
+    setShowLocationCard(false);
   };
 
   const handleSkipLocation = () => {
     invalidateLocationRequest();
+    consentAt.current = 0;
+    setShowLocationCard(false);
+    if (shareWithCase && currentCaseId) syncLocation({ case_id: currentCaseId, status: "NOT_SHARED", source: "USER_TEXT", location_label: "Không chia sẻ", latitude: null, longitude: null, share_with_staff: false });
+    setShareWithCase(false);
     setLocationState({ status: "NOT_SHARED", source: "USER_TEXT", label: "Không chia sẻ" });
     setIsMapOpen(false);
   };
 
   const handleResetLocation = () => {
     invalidateLocationRequest();
+    consentAt.current = 0;
+    setShowLocationCard(true);
+    setShareWithCase(false);
     setIsMapOpen(false);
     setLocationState({ status: "PENDING", source: "USER_TEXT", label: "" });
-    if (currentCaseId) syncLocation({ case_id: currentCaseId, status: "NOT_SHARED", source: "USER_TEXT", location_label: "Không chia sẻ", latitude: null, longitude: null, share_with_staff: false });
+    if (shareWithCase && currentCaseId) syncLocation({ case_id: currentCaseId, status: "NOT_SHARED", source: "USER_TEXT", location_label: "Không chia sẻ", latitude: null, longitude: null, share_with_staff: false });
   };
 
   const selectImage = async (file: File) => {
@@ -365,7 +381,7 @@ export function CustomerChatContainer() {
 
             {/* Header Right Actions: Gộp Làm mới & Chọn xe thành 1 hàng thấp */}
             <div className="flex items-center gap-1.5 shrink-0">
-              <button type="button" onClick={() => setShowLocationCard(true)} className="flex items-center gap-1 rounded-lg border border-blue-200 bg-white px-2 py-1 text-[11.5px] font-medium text-blue-800">
+              <button type="button" onClick={() => setManualAction({ type: "FIND_NEARBY", request_id: crypto.randomUUID(), turn_id: "manual", category: "CHARGING_STATION", vehicle_type: "CAR", requires_location: true, reason: "Tìm trạm sạc ô tô gần bạn.", limit: 5 })} className="flex min-h-10 items-center gap-1 rounded-xl border border-blue-200 bg-white px-2 py-2 text-xs font-medium text-blue-800">
                 <Compass className="h-3 w-3" /> Tìm điểm gần đây
               </button>
               <button
@@ -413,21 +429,11 @@ export function CustomerChatContainer() {
           {/* Messages Feed (Không còn hàng QuickPromptsBar trùng lặp, giữ khung chat thông thoáng) */}
           <ChatFeed
             messages={messages}
+            nearbyRequestId={activeAction?.request_id}
             loading={loading}
             isMapOpen={isMapOpen}
             showLocationCard={showLocationCard}
             onSelectReply={(reply) => {
-              const lower = reply.toLowerCase();
-              if (
-                lower.includes("bản đồ") ||
-                lower.includes("xem bản đồ") ||
-                lower.includes("điểm cứu hộ")
-              ) {
-                setShowLocationCard(true);
-                setIsMapOpen(true);
-                return;
-              }
-
               // Khi khách chọn "Báo sự cố kỹ thuật": mở các chip lỗi cụ thể ngay dưới bong bóng chào
               if (reply === "Báo sự cố kỹ thuật") {
                 const lastMsg = messages[messages.length - 1];
@@ -456,35 +462,35 @@ export function CustomerChatContainer() {
               }
 
               sendMessage(reply);
-              if (lower.includes("sạc") || lower.includes("trạm")) {
-                setSuggestedCategory("CHARGING_STATION");
-                setShowLocationCard(true);
-              } else if (lower.includes("xưởng") || lower.includes("bảo dưỡng")) {
-                setSuggestedCategory("SERVICE_WORKSHOP");
-                setShowLocationCard(true);
-              } else if (lower.includes("cứu hộ") || lower.includes("cao tốc")) {
-                setSuggestedCategory("OTHER");
-                setShowLocationCard(true);
-              }
             }}
-          />
+          >
+            <NearbyResults action={activeAction} locationState={locationState}
+              onChangeLocation={handleResetLocation} onStopSharing={handleSkipLocation}
+              onChooseCategory={(category) => sendMessage(`Tìm ${category === "SHOWROOM" ? "showroom" : category === "SERVICE_WORKSHOP" ? "xưởng dịch vụ" : "trạm sạc"} gần đây`)} />
+          </ChatFeed>
 
           {/* Card Xin Quyền Vị Trí: ĐƯA RA KHỎI LUỒNG CHAT, LÀM THANH MỎNG DÍNH TRÊN Ô NHẬP */}
           {locationSyncError && <div role="alert" className="px-3 py-2 text-xs text-amber-900 bg-amber-50">{locationSyncError} <button type="button" className="underline" onClick={() => { if (failedLocationPayload.current) syncLocation(failedLocationPayload.current); }}>Thử lại đồng bộ</button></div>}
           {showLocationCard && (
             <LocationConsentCard
+              reason={activeAction?.reason}
+              modal
               locationState={locationState}
               isLocating={isLocating}
               isMapOpen={isMapOpen}
               onConsentGps={handleConsentGps}
               onManualLocation={handleManualLocation}
               onSkip={handleSkipLocation}
-              onToggleMap={() => { if (isMapOpen) handleSkipLocation(); else setIsMapOpen(true); }}
+              onToggleMap={() => setIsMapOpen(!isMapOpen)}
               onResetLocation={handleResetLocation}
               onStopSharing={handleSkipLocation}
             />
           )}
 
+          {currentCaseId && locationState.status === "CONSENTED" && !shareWithCase && (
+            <button type="button" className="mx-3 my-2 rounded-xl border px-3 py-2 text-sm" onClick={() => setShareWithCase(true)}>Chia sẻ vị trí với hồ sơ</button>
+          )}
+          {shareWithCase && <p className="px-3 text-xs text-slate-600">Vị trí đang được chia sẻ với hồ sơ. Dừng chia sẻ để xóa tọa độ.</p>}
           {/* Input Bar */}
           {(isUploadingImage || resolvedImageKind || imageUploadError) && (
             <div className="px-3 py-2 border-t border-slate-200 text-xs text-slate-600">
@@ -526,20 +532,7 @@ export function CustomerChatContainer() {
             BẢN ĐỒ: CỘT PHẢI Ở DESKTOP, XẾP DƯỚI CHAT Ở MÀN HẸP
             Mặc định không có 5 card tĩnh làm rối mắt!
         ============================================================= */}
-        {isMapOpen && (
-          <div ref={mapPanelRef} className="min-w-0 scroll-mt-20 animate-fadeIn">
-            <ServiceMapPanel
-              isOpen={isMapOpen}
-              onClose={handleSkipLocation}
-              locationState={locationState}
-              servicePoints={servicePoints}
-              selectedPointId={selectedPointId}
-              onSelectPoint={setSelectedPointId}
-              onSelectDestination={handleSelectDestination}
-              suggestedCategory={suggestedCategory}
-            />
-          </div>
-        )}
+
       </div>
 
 

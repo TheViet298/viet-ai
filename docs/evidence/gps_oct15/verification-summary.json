@@ -1,0 +1,55 @@
+{
+  "date": "2026-10-15",
+  "verifier": {
+    "status": "PASS",
+    "groups": [
+      "Frontend lint",
+      "Frontend tests",
+      "Frontend TypeScript",
+      "Backend location tests",
+      "Backend location API regression",
+      "Backend nearby API and privacy",
+      "Frontend build"
+    ],
+    "frontend_tests": 58,
+    "backend_location_tests": 26,
+    "backend_location_api_regression": 1,
+    "backend_contextual_catalog_privacy_tests": 44
+  },
+  "backend_regressions": {
+    "passed": 129,
+    "note": "Includes overlapping verifier cases; do not sum counts."
+  },
+  "browser_e2e": {
+    "passed": 18,
+    "projects": [
+      "chromium",
+      "firefox"
+    ],
+    "production_build": true,
+    "backend_port": 18020,
+    "frontend_port": 13020,
+    "geolocation": "emulated",
+    "map_assertions": [
+      "collapsed by default",
+      "canvas in viewport on opening",
+      "six markers",
+      "height 280px with subpixel tolerance",
+      "no horizontal overflow at 375/768/1440",
+      "nearest CTA in viewport"
+    ]
+  },
+  "checks": {
+    "targeted_python_ruff": "PASS",
+    "scoped_git_diff_check": "PASS",
+    "intent_cases": 18,
+    "intent_correct": 18
+  },
+  "source_export_date": null,
+  "source_verification_status": "UNVERIFIED",
+  "online_llm_provider_tested": false,
+  "hardware_gps_tested": false,
+  "commit": false,
+  "push": false,
+  "git_status_note": "Verification snapshot recorded before commit/push; see feature/ai-khoi history for delivery."
+}

@@ -20,7 +20,20 @@ export interface Citation {
 
 export type ChatResponseType = "CLARIFICATION" | "FAQ_ANSWER" | "CASE_CREATED";
 
+export interface NearbyAction {
+  type: "FIND_NEARBY";
+  request_id: string;
+  turn_id: string;
+  category: "ALL" | ServicePointSeed["type"];
+  vehicle_type: "CAR" | "TWO_WHEELER";
+  area_text?: string | null;
+  requires_location: boolean;
+  reason: string;
+  limit: 5;
+}
+
 export interface ChatResponseData {
+  nearby_action?: NearbyAction | null;
   emergency_context?: { case_id: string; incident_version: number; safety_status: string } | null;
   safety_status?: "unconfirmed" | "customer_reported_safe";
   safety_acknowledged_at?: string | null;
@@ -117,6 +130,7 @@ export interface ServicePointSeed {
   updatedAt?: string | null;
   verificationStatus?: "UNVERIFIED" | "VERIFIED";
   hotline: string;
+  distanceKm?: number;
   coords: { lat: number; lng: number };
 }
 

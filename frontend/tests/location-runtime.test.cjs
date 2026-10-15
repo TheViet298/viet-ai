@@ -17,13 +17,13 @@ function harness() {
     useEffect(cb, deps) { const i = cursor++; const old = slots[i]; if (!old || !deps || deps.some((v,j) => !Object.is(v,old.deps[j]))) { slots[i] = { deps, cleanup: old?.cleanup }; effects.push(() => { slots[i].cleanup?.(); slots[i].cleanup = cb(); }); } },
   };
   const components = {};
-  const chat = { messages: [], input: '', setInput() {}, sendMessage() {}, resetChat() { caseId = null; }, loading: false, requestLocation: true };
-  const geo = { watchPosition(s,e) { starts++; success=s; error=e; return starts; }, clearWatch() { stops++; } };
+  const chat = { messages: [], input: '', setInput() {}, sendMessage() {}, resetChat() { caseId = null; }, loading: false, requestLocation: true, nearbyAction: null };
+  const geo = { getCurrentPosition(s,e) { starts++; success=s; error=e; return starts; }, clearWatch() { stops++; } };
   function load(relative) {
     const file = path.resolve(__dirname, relative);
     const code = ts.transpileModule(fs.readFileSync(file,'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX } }).outputText;
     const exports = {};
-    vm.runInNewContext(code, { exports, Date, Math, Number, window: { matchMedia: () => ({ matches: false }) }, navigator: { geolocation: geo }, sessionStorage: { getItem() { return null; }, removeItem() {} }, require(id) {
+    vm.runInNewContext(code, { exports, Date, Math, Number, crypto: { randomUUID: () => "test-action" }, window: { matchMedia: () => ({ matches: false }) }, navigator: { geolocation: geo }, sessionStorage: { getItem() { return null; }, removeItem() {} }, require(id) {
       if (id === 'react') return react;
       if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (id === '../hooks/useChat') return { useChat: () => ({ ...chat, currentCaseId: caseId }) };
@@ -39,8 +39,10 @@ function harness() {
   const { CustomerChatContainer } = load('../src/features/chat/components/CustomerChatContainer.tsx');
   function render() { cursor=0; dirty=false; tree=CustomerChatContainer(); while(effects.length) effects.shift()(); }
   function nodes(node) { if (!node || typeof node !== 'object') return []; if (Array.isArray(node)) return node.flatMap(n=>nodes(n)); return [node,...nodes(node.props?.children)]; }
-  function card() { return nodes(tree).find(n=>n.type==='LocationConsentCard').props; }
-  return { calls, card, nodes: () => nodes(tree), geo: () => ({starts,stops}),
+  function card() { return nodes(tree).find(n=>n.type==='LocationConsentCard')?.props; }
+  return { calls, card, action(value = { type: 'FIND_NEARBY', request_id: String(Date.now()), turn_id: 'turn', category: 'CHARGING_STATION', vehicle_type: 'CAR', requires_location: true, reason: 'Tìm trạm sạc', limit: 5 }) { chat.nearbyAction=value; dirty=true; },
+    loading(value) { chat.loading=value; dirty=true; },
+    results() { return nodes(tree).find(n=>n.type==='NearbyResults').props; }, nodes: () => nodes(tree), geo: () => ({starts,stops}),
     async flush() { for(let i=0;i<8;i++) { if(dirty) render(); await Promise.resolve(); } },
     case(value) { caseId=value; dirty=true; }, fail(value) { fail=value; },
     position(lat=21.0315,lng=105.8145,accuracy=850) { success({coords:{latitude:lat,longitude:lng,accuracy}}); },
@@ -49,42 +51,46 @@ function harness() {
   };
 }
 
-test('real container: explicit consent, late-created case sync, throttle and close cleanup', async () => {
-  const h=harness(); await h.flush(); assert.equal(h.geo().starts,0);
-  h.card().onConsentGps(); h.position(); await h.flush(); assert.equal(h.calls.length,0);
-  h.case('CASE-DEMO'); await h.flush(); assert.equal(h.calls.at(-1).status,'CONSENTED'); assert.equal(h.calls.at(-1).precision,'APPROXIMATE');
-  h.position(); await h.flush(); assert.equal(h.calls.length,1);
-  h.position(21.035); await h.flush(); assert.equal(h.calls.length,2);
-  h.card().onToggleMap(); await h.flush(); assert.equal(h.geo().stops,1); assert.equal(h.calls.at(-1).status,'NOT_SHARED');
-  h.position(); await h.flush(); assert.equal(h.card().locationState.status,'NOT_SHARED');
+test('login and legacy request_location do not open a prompt; contextual action requires explicit GPS consent', async () => {
+  const h=harness(); await h.flush(); assert.equal(h.card(),undefined); assert.equal(h.geo().starts,0);
+  h.action(); await h.flush(); assert.ok(h.card()); assert.equal(h.geo().starts,0);
+  h.card().onConsentGps(); assert.equal(h.geo().starts,1); h.position(); await h.flush();
+  assert.equal(h.card(),undefined); assert.equal(h.results().locationState.status,'CONSENTED');
+  h.case('CASE-NEW'); await h.flush(); assert.equal(h.calls.length,0, 'search consent must not automatically share with a case');
+  h.nodes().find(n=>n.type==='button' && n.props.children==='Chia sẻ vị trí với hồ sơ').props.onClick(); await h.flush();
+  assert.equal(h.calls.at(-1).status,'CONSENTED'); assert.equal(h.calls.at(-1).precision,'APPROXIMATE');
+  h.results().onStopSharing(); await h.flush(); assert.equal(h.calls.at(-1).status,'NOT_SHARED');
+  assert.equal(h.calls.at(-1).latitude,null);
 });
 
-test('real container: GPS errors clear saved coordinates and manual input never restores GPS', async () => {
-  const h=harness(); h.case('CASE-DEMO'); await h.flush(); h.card().onConsentGps(); h.position(); await h.flush();
-  h.error(3); await h.flush(); assert.equal(h.geo().stops,1); assert.equal(h.card().locationState.errorCode,'TIMEOUT');
-  assert.equal(h.calls.at(-1).latitude,null); assert.equal(h.calls.at(-1).share_with_staff,false);
-  h.card().onManualLocation('Đà Nẵng'); await h.flush(); assert.equal(h.calls.at(-1).status,'MANUAL'); assert.equal(h.calls.at(-1).longitude,null);
-  h.position(); await h.flush(); assert.equal(h.card().locationState.status,'MANUAL');
+test('skipping pending GPS invalidates a late callback', async () => {
+  const h=harness(); await h.flush(); h.action(); await h.flush();
+  const card=h.card(); card.onConsentGps(); card.onSkip(); await h.flush();
+  h.position(); await h.flush(); assert.equal(h.results().locationState.status,'NOT_SHARED'); assert.equal(h.calls.length,0);
 });
 
-test('real container: failed sync is visible and retry submits without movement', async () => {
-  const h=harness(); h.case('CASE-DEMO'); h.fail(true); await h.flush(); h.card().onConsentGps(); h.position(); await h.flush();
+test('denied and timed out GPS permit manual area without coordinates', async () => {
+  for (const code of [1,3]) {
+    const h=harness(); await h.flush(); h.action(); await h.flush(); h.card().onConsentGps(); h.error(code); await h.flush();
+    assert.ok(h.card().locationState.errorCode); h.card().onManualLocation('Đà Nẵng'); await h.flush();
+    assert.equal(h.results().locationState.status,'MANUAL'); assert.equal(h.results().locationState.coords,undefined);
+    h.position(); await h.flush(); assert.equal(h.results().locationState.status,'MANUAL');
+  }
+});
+
+test('a new chat turn cancels pending geolocation and unmount rejects callbacks', async () => {
+  const h=harness(); await h.flush(); h.action(); await h.flush(); h.card().onConsentGps();
+  h.loading(true); await h.flush(); h.position(); await h.flush(); assert.equal(h.results().locationState.status,'PENDING');
+  h.unmount(); h.position(); await h.flush(); assert.equal(h.calls.length,0);
+});
+
+test('failed explicit case sharing and clearing can be retried against the original case', async () => {
+  const h=harness(); await h.flush(); h.action(); await h.flush(); h.card().onConsentGps(); h.position(); h.case('CASE-OLD'); await h.flush();
+  h.fail(true); h.nodes().find(n=>n.type==='button' && n.props.children==='Chia sẻ vị trí với hồ sơ').props.onClick(); await h.flush();
   assert.ok(h.nodes().some(n=>n.props?.role==='alert'));
   h.fail(false); h.nodes().find(n=>n.type==='button' && n.props.children==='Thử lại đồng bộ').props.onClick(); await h.flush();
-  assert.equal(h.calls.length,2); assert.ok(!h.nodes().some(n=>n.props?.role==='alert'));
-  h.unmount(); assert.equal(h.geo().stops,1); h.position(); await h.flush(); assert.equal(h.calls.length,2);
-});
-
-test('real container: reset during pending GPS invalidates callback and stops watch', async () => {
-  const h=harness(); await h.flush(); h.card().onConsentGps(); h.card().onResetLocation(); await h.flush();
-  assert.equal(h.geo().stops,1); h.position(); await h.flush(); assert.equal(h.card().locationState.status,'PENDING');
-});
-
-test('real container: failed clearing after chat reset retries the original case', async () => {
-  const h=harness(); h.case('CASE-OLD'); await h.flush(); h.card().onConsentGps(); h.position(); await h.flush();
+  assert.equal(h.calls.at(-1).case_id,'CASE-OLD');
   h.fail(true); h.nodes().find(n=>n.type==='button' && n.props.title==='Làm mới cuộc trò chuyện').props.onClick(); await h.flush();
-  assert.equal(h.geo().stops,1); assert.equal(h.calls.at(-1).status,'NOT_SHARED');
   h.fail(false); h.nodes().find(n=>n.type==='button' && n.props.children==='Thử lại đồng bộ').props.onClick(); await h.flush();
-  assert.equal(h.calls.at(-1).case_id,'CASE-OLD'); assert.equal(h.calls.at(-1).latitude,null);
-  assert.ok(!h.nodes().some(n=>n.props?.role==='alert'));
+  assert.equal(h.calls.at(-1).case_id,'CASE-OLD'); assert.equal(h.calls.at(-1).status,'NOT_SHARED');
 });

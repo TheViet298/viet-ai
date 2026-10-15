@@ -22,3 +22,8 @@ async def test_nearby_rejects_invalid_query(client):
     url = "/api/v1/customer/service-points/nearby"
     for query in ({"lat": 91, "lng": 0}, {"lat": 0, "lng": 181}, {"lat": 0, "lng": 0, "category": "RESCUE_POST"}, {"lat": 0, "lng": 0, "radius_km": 0}, {"lat": 0, "lng": 0, "limit": 0}):
         assert (await client.get(url, params=query)).status_code == 422
+
+
+@pytest.fixture(autouse=True)
+def explicit_demo_catalog(monkeypatch):
+    monkeypatch.setenv("GPS_CATALOG_MODE", "demo")

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   MapPin,
   RotateCcw,
@@ -12,6 +12,8 @@ import { searchManualAreas, resolveManualArea } from "../constants/manualAreas";
 import { UserLocationState } from "../types";
 
 interface LocationConsentCardProps {
+  reason?: string;
+  modal?: boolean;
   locationState: UserLocationState;
   isLocating: boolean;
   isMapOpen: boolean;
@@ -24,6 +26,8 @@ interface LocationConsentCardProps {
 }
 
 export function LocationConsentCard({
+  reason = "Tìm điểm dịch vụ gần bạn.",
+  modal = false,
   locationState,
   isLocating,
   isMapOpen,
@@ -34,6 +38,13 @@ export function LocationConsentCard({
   onResetLocation,
   onStopSharing,
 }: LocationConsentCardProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!modal) return;
+    const previous = document.activeElement as HTMLElement | null;
+    dialogRef.current?.querySelector<HTMLElement>("button, input")?.focus();
+    return () => previous?.focus();
+  }, [modal]);
   const [isManualInputMode, setIsManualInputMode] = useState(false);
   const [manualText, setManualText] = useState("");
 
@@ -115,7 +126,21 @@ export function LocationConsentCard({
   const hasGeoError = Boolean(locationState.errorCode && locationState.errorCode !== "ACCURACY_LOW");
 
   return (
-    <div className="px-3.5 py-2 bg-blue-50/90 border-t border-blue-200/70 text-[12px] animate-fadeIn space-y-1.5">
+    <div className={modal ? "fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" : ""}>
+    <div ref={dialogRef} role={modal ? "dialog" : undefined} aria-modal={modal || undefined} aria-label="Chọn vị trí để tìm địa điểm"
+      onKeyDown={(event) => {
+        if (event.key === "Escape") onSkip();
+        if (event.key === "Tab" && modal) {
+          const nodes = dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled])');
+          if (!nodes?.length) return;
+          const first = nodes[0], last = nodes[nodes.length - 1];
+          if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        }
+      }}
+      className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 text-sm space-y-3">
+      <h2 className="font-semibold text-slate-900">{reason}</h2>
+      <p className="text-slate-600">Bạn muốn dùng vị trí hiện tại hay nhập khu vực? Chỉ dùng để tìm kiếm; chưa chia sẻ với hồ sơ.</p>
       {hasGeoError && (
         <div className="flex items-start gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-[11px]">
           <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
@@ -136,7 +161,7 @@ export function LocationConsentCard({
 
       {isManualInputMode || hasGeoError ? (
         <div className="space-y-1.5">
-          <form onSubmit={handleManualSubmit} className="flex items-center gap-2">
+          <form onSubmit={handleManualSubmit} className="flex flex-wrap items-center gap-2">
             <input
               type="text"
               aria-label="Khu vực hoặc địa chỉ nhập tay"
@@ -144,13 +169,13 @@ export function LocationConsentCard({
               value={manualText}
               onChange={(e) => setManualText(e.target.value)}
               placeholder="Nhập km cao tốc, trạm sạc hoặc khu vực..."
-              className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-[11.5px] text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1E40AF]"
+              className="min-h-10 min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-2.5 py-1 text-[11.5px] text-slate-900 focus:outline-none focus:ring-1 focus:ring-[#1E40AF]"
               autoFocus
             />
             <button
               type="submit"
               disabled={!manualText.trim()}
-              className="px-3 py-1 rounded-lg bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[11px] font-semibold disabled:opacity-50 transition active:scale-95 shrink-0"
+              className="min-h-10 px-3 py-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[11px] font-semibold disabled:opacity-50 transition active:scale-95 shrink-0"
             >
               Xác nhận
             </button>
@@ -168,7 +193,8 @@ export function LocationConsentCard({
                 type="button"
                 onClick={onSkip}
                 className="text-slate-400 hover:text-slate-600 text-[11px] px-1 shrink-0"
-                title="Bỏ qua"
+                aria-label="Bỏ qua"
+              title="Bỏ qua"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -205,21 +231,22 @@ export function LocationConsentCard({
               type="button"
               disabled={isLocating}
               onClick={onConsentGps}
-              className="px-2.5 py-1 rounded-lg bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[11px] font-semibold transition active:scale-95 disabled:opacity-50 shadow-2xs"
+              className="min-h-10 px-3 py-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[11px] font-semibold transition active:scale-95 disabled:opacity-50 shadow-2xs"
             >
               {isLocating ? "Đang định vị..." : "Dùng vị trí hiện tại"}
             </button>
             <button
               type="button"
               onClick={() => { onResetLocation(); setIsManualInputMode(true); }}
-              className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-medium transition active:scale-95 shadow-2xs"
+              className="min-h-10 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-medium transition active:scale-95 shadow-2xs"
             >
               Nhập khu vực
             </button>
             <button
               type="button"
               onClick={onSkip}
-              className="text-slate-400 hover:text-slate-600 text-[11px] px-1 transition"
+              className="min-h-10 rounded-xl px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+              aria-label="Bỏ qua"
               title="Bỏ qua"
             >
               Bỏ qua ✕
@@ -227,6 +254,7 @@ export function LocationConsentCard({
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

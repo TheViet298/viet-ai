@@ -3,6 +3,7 @@ export const MANUAL_AREAS = [
   { id: "ha-noi", label: "Hà Nội", aliases: ["ha noi", "hanoi", "hn", "tp ha noi"], coord: { lat: 21.0285, lng: 105.8542 } },
   { id: "ho-chi-minh", label: "TP. Hồ Chí Minh", aliases: ["ho chi minh", "tp ho chi minh", "tphcm", "tp hcm", "hcm", "sai gon", "saigon"], coord: { lat: 10.8231, lng: 106.6297 } },
   { id: "da-nang", label: "Đà Nẵng", aliases: ["da nang", "danang", "tp da nang"], coord: { lat: 16.0544, lng: 108.2022 } },
+  { id: "hue", label: "Huế", aliases: ["hue", "tp hue", "thanh pho hue"], coord: { lat: 16.477861, lng: 107.60200 } },
   { id: "long-thanh", label: "Cao tốc Long Thành", aliases: ["long thanh", "cao toc long thanh"], coord: { lat: 10.7712, lng: 106.945 } },
 ] as const;
 

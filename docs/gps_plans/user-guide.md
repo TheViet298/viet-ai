@@ -1,51 +1,43 @@
-# Hướng dẫn thử GPS trên desktop
+# Thử GPS theo câu hỏi trong chat
 
-Hướng dẫn này dành cho Customer đã đăng nhập. Điểm dịch vụ hiện là dữ liệu demo, chưa xác minh; không có booking hoặc điều phối thật.
+Dành cho Customer đăng nhập. Địa điểm lấy từ snapshot CSV chưa xác minh hoạt động hiện tại; không có booking/điều phối thật.
 
 ## Chạy bản thử
 
-Trước khi bắt đầu, dừng các server GPS cũ bằng `Ctrl+C` trong từng terminal để giải phóng cổng `18000` và `13000`. Mở hai terminal mới tại thư mục repository và chạy `clear` (hoặc `Ctrl+L`) để bắt đầu với màn hình terminal sạch.
-
-Terminal 1 — backend, dùng database tạm:
+Dừng server thử cũ bằng `Ctrl+C` để giải phóng cổng `18000/13000`. Mở hai terminal tại root repository, chạy `clear` hoặc `Ctrl+L`, rồi:
 
 ```bash
+# Terminal 1 — backend, database tạm
 python3 scripts/gps-e2e-server.py backend
-```
 
-Terminal 2 — frontend:
-
-```bash
+# Terminal 2 — frontend production
 python3 scripts/gps-e2e-server.py frontend
 ```
 
-Đợi cả hai server sẵn sàng. Mở `http://127.0.0.1:13000/register`, tạo tài khoản thử bằng thông tin giả, rồi vào `/chat`. Database tạm bị xóa khi dừng backend. Chat chạy chế độ không có LLM nên phản hồi có thể đơn giản.
+Mở `http://127.0.0.1:13000/register`, tạo tài khoản bằng thông tin giả và vào `/chat`. Database bị xóa khi dừng backend. Demo này tắt LLM online.
 
-## Thử tìm địa điểm
+## Tìm và chỉ đường
 
-1. Chọn **Tìm điểm gần đây**. Chỉ chọn **Dùng vị trí hiện tại** nếu muốn trình duyệt xin quyền GPS; chọn Allow để chia sẻ vị trí.
-2. Nếu từ chối quyền hoặc GPS lỗi, chọn **Nhập khu vực** để tìm/chọn khu vực thủ công. Địa chỉ chưa nhận diện vẫn có thể nhập nhưng không được gán tọa độ hay khoảng cách giả.
-3. Lọc loại điểm và chọn một địa điểm. Khoảng cách là đường chim bay.
-4. Dùng link Google Maps hoặc OpenStreetMap để xem chỉ đường bên ngoài. Bản đồ trong trang chưa vẽ tuyến đường.
-5. **Chọn làm điểm đến** chỉ điền nội dung vào chat; kiểm tra rồi tự gửi. Đây không phải thao tác đặt lịch.
-6. Thử **Dừng chia sẻ**, **Đổi lại vị trí** hoặc **Bỏ qua** để kiểm tra các lựa chọn riêng tư. Reload trang không tự xin lại quyền GPS.
+1. Chat **“Tìm trạm sạc gần đây”** hoặc **“Tìm showroom gần tôi”**. Login/FAQ không tự hỏi GPS.
+2. Popup giải thích lý do: chọn **Dùng vị trí hiện tại** rồi Allow, hoặc **Nhập khu vực**. Có thể **Bỏ qua**; nếu Block/timeout thì nhập tay.
+3. Có vị trí thì tự hiện tối đa **5 kết quả**, đúng loại xe. Chạm **Chỉ đường Google Maps** ngay ở địa điểm muốn đến; không cần gửi thêm câu chat.
+4. Có thể hỏi tiếp **“còn showroom thì sao”**. Vị trí đã chọn được dùng lại trong phiên tối đa 15 phút, không xin lại ở mỗi lượt.
+5. **“Showroom ở Huế”** dùng điểm tham chiếu khu vực, không hỏi GPS. Địa chỉ chưa nhận diện không được gán khoảng cách giả.
+6. **Xem bản đồ** mở map gọn; **Đổi vị trí/Dừng chia sẻ** thay hoặc xóa vị trí trong phiên. Reload không tự mở popup. GPS tra cứu không tự gửi vào case; **Chia sẻ vị trí với hồ sơ** là lựa chọn riêng khi có hồ sơ.
 
-## Chạy kiểm thử
+Nói rõ **xe máy** nếu tìm địa điểm cho xe máy; mặc định là ô tô. Xưởng chưa có mapping từ hai CSV; tủ đổi pin chưa đủ dữ liệu tương thích để gợi ý.
 
-Dừng hai server ở trên bằng `Ctrl+C` trước khi chạy E2E để Playwright tự khởi động backend/frontend trên các cổng `18000` và `13000`.
+Khoảng cách là **đường chim bay**, không phải quãng đường lái xe/ETA. Google Maps nhận tọa độ khi bạn nhấn chỉ đường. Không đảm bảo trạm đang mở hoặc có cổng trống.
+
+## Kiểm thử
+
+Dừng đúng server thử trước khi chạy E2E để runner tự khởi động server riêng:
 
 ```bash
-npm --prefix frontend ci
-cd frontend
-npx playwright install chromium firefox
-cd ..
-npm --prefix frontend run test:e2e
 ./scripts/verify-gps.sh
+GPS_E2E_BACKEND_PORT=18020 GPS_E2E_FRONTEND_PORT=13020 npm --prefix frontend run test:e2e
 ```
 
-E2E chạy Chromium và Firefox với GPS giả lập; đây không phải kiểm tra GPS phần cứng. Nếu cổng bận, dừng đúng server thử nghiệm trước rồi chạy lại.
+Cần dependencies và Playwright Chromium/Firefox đã cài. E2E dùng GPS giả lập, không chứng minh GPS phần cứng hoặc khả năng tải raster map trên mọi mạng.
 
-## Giới hạn
-
-Danh mục địa điểm là demo, chưa xác minh trạng thái hoạt động. Raster map có thể không tải được tùy kết nối; GPS thật và quyền Allow/Block trên mọi hệ điều hành chưa được kiểm tra. Link chỉ đường mở dịch vụ ngoài. Không dùng dữ liệu cá nhân thật trong demo, ảnh hoặc log.
-
-Chi tiết cấu hình HTTPS thử nghiệm: [https-test-environment.md](https-test-environment.md). Tổng quan thay đổi và bằng chứng kiểm thử: [gps-feature-report-latest-version.md](gps-feature-report-latest-version.md).
+Chi tiết: [báo cáo cập nhật](update_gps_Oct_15.md), [EDA](gps-data-eda-2026-10-15.md), [HTTPS thử nghiệm](https-test-environment.md).

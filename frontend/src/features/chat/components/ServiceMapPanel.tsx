@@ -24,6 +24,7 @@ function accuracyPolygon(lat: number, lng: number, meters: number): GeoJSON.Feat
 }
 
 interface Props {
+  providedPoints?: ServicePointSeed[];
   isOpen: boolean;
   onClose: () => void;
   locationState: UserLocationState;
@@ -33,7 +34,7 @@ interface Props {
   onSelectDestination?: (point: ServicePointSeed) => void;
   suggestedCategory?: Category;
 }
-export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints, selectedPointId, onSelectPoint, onSelectDestination, suggestedCategory = "ALL" }: Props) {
+export function ServiceMapPanel({ providedPoints, isOpen, onClose, locationState, servicePoints, selectedPointId, onSelectPoint, onSelectDestination, suggestedCategory = "ALL" }: Props) {
   const [category, setCategory] = useState<Category>("ALL");
   const [nearby, setNearby] = useState<ServicePointSeed[] | null>(null);
   const [mapError, setMapError] = useState(false);
@@ -49,12 +50,13 @@ export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints,
   const hasCenter = Boolean(center);
   const latestCenter = useRef(center);
   latestCenter.current = center;
-  const points = nearby ?? servicePoints;
+  const points = providedPoints ?? nearby ?? servicePoints;
   const filtered = useMemo(() => points.filter((point) => category === "ALL" || point.type === category).map((point) => ({ ...point, km: center ? calculateHaversineDistanceKm(center, point.coords) : null })).filter((point) => point.km === null || point.km <= 50).sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity)), [points, category, center]);
   const selected = filtered.find((point) => point.id === selectedPointId) ?? filtered[0];
 
   useEffect(() => { setCategory(suggestedCategory); }, [suggestedCategory]);
   useEffect(() => {
+    if (providedPoints) return;
     if (!isOpen || !center) { requestId.current++; nearbyAbort.current?.abort(); lastQuery.current = null; setNearby(null); return; }
     const now = Date.now();
     const previous = lastQuery.current;
@@ -70,7 +72,7 @@ export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints,
     }).catch(() => { if (id === requestId.current) setNearby(null); });
     // Keep an in-flight query across small GPS updates that do not pass the throttle.
     // It is cancelled only by a replacement query, close, or unmount.
-  }, [isOpen, center, category, locationState.status]);
+  }, [providedPoints, isOpen, center, category, locationState.status]);
   useEffect(() => () => { nearbyAbort.current?.abort(); requestId.current++; }, []);
 
   useEffect(() => {
@@ -107,8 +109,8 @@ export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints,
       const user = document.createElement("div"); user.className = "w-5 h-5 rounded-full bg-blue-700 border-2 border-white shadow-md";
       user.title = origin ? "Vị trí hiện tại" : "Tâm khu vực tham chiếu";
       markers.current.push(new maplibre.Marker({ element: user }).setLngLat([center.lng, center.lat]).addTo(instance));
-      filtered.forEach((point) => {
-        const button = document.createElement("button"); button.type = "button"; button.className = "w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-md"; button.title = `${pointLabel(point)}${point.name}`;
+      filtered.forEach((point, index) => {
+        const button = document.createElement("button"); button.type = "button"; button.className = "w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-md"; button.title = `${index + 1}. ${pointLabel(point)}${point.name}`; button.textContent = String(index + 1); button.style.cssText = "width:24px;height:24px;color:white;font-size:12px";
         button.onclick = () => onSelectPoint(point.id);
         markers.current.push(new maplibre.Marker({ element: button }).setLngLat([point.coords.lng, point.coords.lat]).addTo(instance));
       });
@@ -124,6 +126,11 @@ export function ServiceMapPanel({ isOpen, onClose, locationState, servicePoints,
   }, [center, filtered, locationState.accuracy, origin, onSelectPoint, mapReady]);
 
   if (!isOpen) return null;
+  if (providedPoints) return <section aria-label="Bản đồ điểm dịch vụ" className="min-w-0 overflow-hidden rounded-xl border">
+    <header className="flex items-center justify-between p-3"><strong>Bản đồ tham khảo</strong><button type="button" onClick={onClose}>Đóng bản đồ</button></header>
+    <p className="px-3 pb-2 text-xs text-slate-600">Chấm xanh: {origin ? "vị trí hiện tại" : "tâm khu vực"}. Số trên bản đồ khớp danh sách kết quả.</p>
+    <div className="relative h-[280px] bg-slate-100" role="region" aria-label="Bản đồ tương tác"><div ref={mapElement} style={{ position: "absolute", inset: 0 }} />{mapError && <p role="alert" className="absolute bottom-2 left-2 right-2 bg-white p-2 text-xs">Không tải được bản đồ. Danh sách và chỉ đường vẫn sử dụng được.</p>}</div>
+  </section>;
   return <section className="min-w-0 rounded-xl border bg-white overflow-hidden flex flex-col xl:h-[calc(100vh-140px)] xl:min-h-[580px] xl:max-h-[820px]" aria-label="Bản đồ điểm dịch vụ">
     <header className="flex items-center justify-between p-3 border-b"><strong>Điểm dịch vụ</strong><button type="button" onClick={onClose} aria-label="Đóng bản đồ">Đóng</button></header>
     <div className="flex min-h-0 flex-1 flex-col-reverse sm:min-h-[450px] sm:flex-row">

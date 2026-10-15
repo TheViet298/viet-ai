@@ -221,7 +221,20 @@ class EmergencyContext(BaseModel):
     safety_acknowledged_at: str | None = None
 
 
+class NearbyAction(BaseModel):
+    type: Literal["FIND_NEARBY"] = "FIND_NEARBY"
+    request_id: str
+    turn_id: str
+    category: Literal["CHARGING_STATION", "SHOWROOM", "SERVICE_WORKSHOP", "OTHER", "ALL"]
+    vehicle_type: Literal["CAR", "TWO_WHEELER"] = "CAR"
+    area_text: str | None = None
+    requires_location: bool = True
+    reason: str
+    limit: Literal[5] = 5
+
+
 class ChatResponseData(BaseModel):
+    nearby_action: NearbyAction | None = None
     emergency_context: EmergencyContext | None = None
     safety_status: Literal['unconfirmed', 'customer_reported_safe'] = 'unconfirmed'
     safety_acknowledged_at: str | None = None

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ChatMessage } from "../types";
+import { ChatMessage, NearbyAction } from "../types";
 import { sendChatMessage, getCaseStatus, acknowledgeCaseSafety, getSessionHistory } from "../api/chatApi";
 
 function getAuthOwner(): string {
@@ -107,6 +107,7 @@ export function useChat(context?: ChatUserContext | string) {
   const [criticalBannerDismissed, setCriticalBannerDismissed] = useState(false);
   const [sessionHasCritical, setSessionHasCritical] = useState(false);
   const [requestLocation, setRequestLocation] = useState(false);
+  const [nearbyAction, setNearbyAction] = useState<NearbyAction | null>(null);
   const [safetyPending, setSafetyPending] = useState(false);
   const [safetyError, setSafetyError] = useState<string | null>(null);
   const [incidentVersion, setIncidentVersion] = useState<number | null>(null);
@@ -215,6 +216,7 @@ export function useChat(context?: ChatUserContext | string) {
     setCriticalBannerDismissed(false);
     setSessionHasCritical(false);
     setRequestLocation(false);
+    setNearbyAction(null);
     setSessionId(`sess_vf_${Math.random().toString(36).substring(2, 9)}`);
     safetyRef.current = { caseId: null, version: 0, acknowledged: false, epoch: safetyRef.current.epoch + 1 };
     failedRequest.current = null;
@@ -279,6 +281,7 @@ export function useChat(context?: ChatUserContext | string) {
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setRequestLocation(false);
+    setNearbyAction(null);
     // 2. Kích hoạt trạng thái AI đang suy nghĩ
     setLoading(true);
 
@@ -341,6 +344,8 @@ export function useChat(context?: ChatUserContext | string) {
           setSessionHasCritical(false);
         }
 
+        setNearbyAction(data.nearby_action ?? null);
+
         // Backend trả về cờ request_location rõ ràng:
         if (data.request_location !== undefined) {
           setRequestLocation(Boolean(data.request_location));
@@ -396,6 +401,7 @@ export function useChat(context?: ChatUserContext | string) {
     canAcknowledgeSafety: Boolean(currentCaseId && incidentVersion),
     sessionHasCritical,
     requestLocation,
+    nearbyAction,
     sendMessage,
     resetChat,
     updateMessageChips,

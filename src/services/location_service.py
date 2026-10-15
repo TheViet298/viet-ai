@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from src.agents.guardrails import sanitize_pii
-from src.config import get_settings
 from src.services.session_store import get_store, now
 
 
@@ -38,26 +36,17 @@ def suggest_service_points(case_id: str, owner: str) -> list[dict]:
         row = db.execute("SELECT data FROM case_locations WHERE case_id=?", (case_id,)).fetchone()
     if not row or json.loads(row["data"])["status"] == "NOT_SHARED":
         return []
-    path = Path(get_settings().service_points_file)
-    if not path.exists():
-        return []
+    from src.services.service_point_catalog import nearby_service_points
     location = json.loads(row["data"])
-    points = json.loads(path.read_text(encoding="utf-8"))
-    matched = [
-        p
-        for p in points
-        if p.get("name")
-        and p.get("address")
-        and case["intent"] in p.get("intents", [])
-        and (not location["location_label"] or location["location_label"].casefold() in p.get("area", "").casefold())
-    ]
+    centers = {"Hà Nội": (21.0285, 105.8542), "TP. Hồ Chí Minh": (10.8231, 106.6297),
+               "Đà Nẵng": (16.0544, 108.2022), "Huế": (16.477861, 107.602),
+               "Cao tốc Long Thành": (10.7712, 106.945)}
     if location["status"] == "CONSENTED":
-        matched = [
-            p
-            for p in matched
-            if isinstance(p.get("latitude"), (int, float)) and isinstance(p.get("longitude"), (int, float))
-        ]
-        matched.sort(
-            key=lambda p: (p["latitude"] - location["latitude"]) ** 2 + (p["longitude"] - location["longitude"]) ** 2
-        )
-    return matched[:5]
+        lat, lng = location["latitude"], location["longitude"]
+    else:
+        center = centers.get(location["location_label"])
+        if not center:
+            return []
+        lat, lng = center
+    category = "CHARGING_STATION" if case["intent"] == "Charging/Battery" else "SERVICE_WORKSHOP"
+    return nearby_service_points(lat, lng, category, 50, 5)["points"]

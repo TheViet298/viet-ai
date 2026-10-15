@@ -30,7 +30,7 @@ export function calculateHaversineDistanceKm(
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0, 1 - a)));
   return EARTH_RADIUS_KM * c;
 }
 
@@ -65,10 +65,11 @@ export function getDirectionsUrl(
   destination: { lat: number; lng: number; address: string },
   origin?: Coordinates
 ): string {
-  if (origin && typeof origin.lat === "number" && typeof origin.lng === "number") {
-    return `https://www.google.com/maps/dir/?api=1&origin=${origin.lat},${origin.lng}&destination=${destination.lat},${destination.lng}&travelmode=driving`;
-  }
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination.address)}`;
+  const valid = (coord: Coordinates) => Number.isFinite(coord.lat) && Number.isFinite(coord.lng) && Math.abs(coord.lat) <= 90 && Math.abs(coord.lng) <= 180;
+  if (!valid(destination) || (origin && !valid(origin))) throw new Error("Tọa độ chỉ đường không hợp lệ");
+  const query = new URLSearchParams({ api: "1", destination: `${destination.lat},${destination.lng}`, travelmode: "driving" });
+  if (origin) query.set("origin", `${origin.lat},${origin.lng}`);
+  return `https://www.google.com/maps/dir/?${query}`;
 }
 
 /**

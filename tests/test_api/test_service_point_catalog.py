@@ -76,3 +76,8 @@ async def test_catalog_failure_returns_unavailable_not_verified_points(client, m
     assert response.status_code == 503
     assert "points" not in response.json()
     assert "invalid catalog data" not in response.text
+
+
+@pytest.fixture(autouse=True)
+def explicit_demo_catalog(monkeypatch):
+    monkeypatch.setenv("GPS_CATALOG_MODE", "demo")
