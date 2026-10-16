@@ -16,6 +16,18 @@ function load(relative, overrides = {}) {
   return module.exports;
 }
 
+test('chat allows a valid backend response beyond the previous eight-second cutoff', async () => {
+  const api = load('../src/features/chat/api/chatApi.ts', {
+    AbortSignal,
+    fetch: (_url, options) => new Promise((resolve, reject) => {
+      const timer = setTimeout(() => resolve({ ok: true, json: async () => ({ success: true, data: { message: 'Compared' } }) }), 8100);
+      options.signal.addEventListener('abort', () => { clearTimeout(timer); reject(options.signal.reason); }, { once: true });
+    }),
+  });
+  const result = await api.sendChatMessage({ sessionId: 'comparison-wait', message: 'So sánh VF6 và VF8' });
+  assert.equal(result.data.message, 'Compared');
+});
+
 test('Guest upload is rejected without login or upload network requests', async () => {
   const calls = [];
   const api = load('../src/features/chat/api/chatApi.ts', {

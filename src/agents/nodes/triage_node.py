@@ -11,6 +11,7 @@ from src.agents.routing import decide_routing
 from src.agents.state import AgentState, IntentType, PriorityLevel
 from src.services.agent_llm import structured_call
 from src.services.chat_classification import current_clause, denied_reports, temporal_context, without_denied_reports
+from src.services.chat_normalization import normalize_chat_text
 from src.services.followup_context import FAQ_FOLLOWUPS
 from src.services.location_extraction import extract_locations
 from src.services.tracer import sanitized_snapshot
@@ -27,6 +28,7 @@ class TriageResult(BaseModel):
 
 
 def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", "oos", "uncertain"]:
+    text = normalize_chat_text(text)
     if temporal_context(text) in {'resolved_past', 'hypothetical', 'knowledge'}:
         return 'faq'
     reports_denied = bool(denied_reports(text))
@@ -138,6 +140,7 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
 
 
 def extract_fields(text: str, *, asserted_only: bool = True) -> dict[str, str]:
+    text = normalize_chat_text(text)
     if asserted_only:
         if temporal_context(text) in {'hypothetical', 'resolved_past', 'knowledge'}:
             return {}
@@ -166,7 +169,7 @@ def extract_fields(text: str, *, asserted_only: bool = True) -> dict[str, str]:
 
 
 async def triage_node(state: AgentState) -> dict:
-    text = state.get("resolved_query") or state.get("latest_user_message", "")
+    text = normalize_chat_text(state.get("resolved_query") or state.get("latest_user_message", ""))
     lower = text.lower()
     extracted = extract_fields(text)
     previous_intent = state.get("intent")

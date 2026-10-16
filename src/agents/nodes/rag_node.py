@@ -31,7 +31,9 @@ async def rag_node(state: AgentState) -> dict:
     if not unsupported and remaining > 0:
         try:
             search_query = query + " chỉ báo giới hạn công suất" if is_turtle_question(query) else query
-            with observation('retrieval', as_type='retriever') as span:
+            with observation('retrieval', as_type='retriever', metadata={'layer': 'retrieval',
+                    'timeout_s': min(remaining, get_settings().rag_retrieval_timeout_s),
+                    'timeout_source': 'turn_deadline' if remaining <= get_settings().rag_retrieval_timeout_s else 'retrieval_limit'}) as span:
                 retrieval = await asyncio.wait_for(vinfast_manual_search(search_query, vehicle_model=state.get("vehicle_model")),
                                                    timeout=min(remaining, get_settings().rag_retrieval_timeout_s))
                 update_observation(span, output={'status': retrieval.get('status'),
@@ -43,6 +45,11 @@ async def rag_node(state: AgentState) -> dict:
             retrieval = RAGService.failure("ERROR", "retrieval_tool_error")
     citations = [c for c in retrieval.get("citations", []) if valid_citation(c, state.get("vehicle_model"))]
     citations = select_supported_evidence(query, citations)
+    color_snapshot = []
+    if (state.get('turn_understanding') or {}).get('goal') == 'appearance':
+        color_snapshot = [c for c in citations if c.get('catalog_scope') == 'model_colors']
+        if color_snapshot:
+            citations = color_snapshot
     if citations:
         layers = build_7_layer_context({**state, "rag_citations": citations}, load_prompt("rag_qa"))
         try:
@@ -63,9 +70,9 @@ async def rag_node(state: AgentState) -> dict:
         reply = "Tài liệu cần thiết vượt giới hạn xử lý hiện tại. Em sẽ chuyển chuyên viên kiểm tra đầy đủ điều kiện."
     generated = None
     if citations and state.get("confidence_score", 0) >= 0.60:
-        public_price = retrieval.get('diagnostics', {}).get('category') == 'verified_public_price_snapshot'
-        generated = None if public_price else await structured_call({**state, "rag_citations": citations}, "rag_qa", GroundedAnswer)
-        if generated is None and get_settings().agent_llm_enabled and not public_price:
+        public_snapshot = bool(color_snapshot) or retrieval.get('diagnostics', {}).get('category') == 'verified_public_price_snapshot'
+        generated = None if public_snapshot else await structured_call({**state, "rag_citations": citations}, "rag_qa", GroundedAnswer)
+        if generated is None and get_settings().agent_llm_enabled and not public_snapshot:
             citations = []
             reply = "Em chưa hoàn tất được việc tạo câu trả lời từ tài liệu đã tìm thấy. Quý khách vui lòng thử lại; em chưa thể xác nhận nội dung lúc này."
             retrieval = {**retrieval, "status": "ERROR", "diagnostics": {

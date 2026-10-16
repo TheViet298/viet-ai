@@ -6,6 +6,7 @@ import functools
 import inspect
 import os
 import re
+import time
 from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
 from hashlib import sha256
@@ -148,6 +149,7 @@ def bind_trace_attributes(*, session_id=None, user_id=None, tags=None, metadata=
 
 @contextmanager
 def observation(name: str, *, as_type='span', metadata=None, model=None):
+    started = time.monotonic()
     ctx, handle = None, None
     parent = _root.get()
     identity_token = _identity.set(dict(_identity.get()))
@@ -166,9 +168,12 @@ def observation(name: str, *, as_type='span', metadata=None, model=None):
             yield handle
     except BaseException as exc:
         from src.services.agent_llm import classify_provider_error
+        from src.services.request_diagnostics import failure_details
         outcome = 'cancelled' if isinstance(exc, asyncio.CancelledError) else classify_provider_error(exc)
         update_observation(handle, level='ERROR', status_message=outcome,
-                           metadata={**merged, 'outcome': outcome})
+                           metadata={**merged, 'outcome': outcome, 'failure_stage': name,
+                                     'elapsed_ms': round((time.monotonic() - started) * 1000, 3),
+                                     **failure_details(exc)})
         raise
     finally:
         _root.reset(root_token)
@@ -195,11 +200,14 @@ def trace_endpoint(name: str):
     def decorate(function):
         @functools.wraps(function)
         async def wrapped(*args, **kwargs):
-            with observation(name, metadata={'route': name}) as root:
+            with observation(name, metadata={'route': name, 'layer': 'api'}) as root:
                 arguments = inspect.signature(function).bind_partial(*args, **kwargs).arguments
                 payload = arguments.get('payload')
                 user = arguments.get('current_user')
                 if payload is not None:
+                    request_id = getattr(payload, 'request_id', None)
+                    if request_id:
+                        update_observation(root, metadata={'route': name, 'layer': 'api', 'request_id': str(request_id)[:128]})
                     update_trace_identity(session_id=getattr(payload, 'session_id', None),
                                           user_id=getattr(user, 'id', None))
                 result = await function(*args, **kwargs)

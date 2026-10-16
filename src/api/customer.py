@@ -379,7 +379,11 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         logger.warning(f"[403 FORBIDDEN] User {current_user.id} role '{current_user.role}' is not CUSTOMER")
         raise HTTPException(status_code=403, detail="Customer account required")
 
-    text = sanitize_pii(payload.message.strip())[0]
+    original_text = sanitize_pii(payload.message.strip())[0]
+    understood = db.info.get('conversation_turn') or {}
+    spelling = understood.get('normalization') or {}
+    from src.services.chat_normalization import normalize_chat_text, clarification_for
+    text = spelling.get('text') if spelling.get('original_text') == original_text else normalize_chat_text(original_text)
     lower_text = text.lower()
     ctx = payload.client_context
     user_id = current_user.id if current_user else None
@@ -400,7 +404,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         logger.info(f"[CHAT TRACE] Guest session='{payload.session_id}', guest_count={guest_count}, remaining={remaining_guest_msgs}")
         if classification.is_critical:
             reply = EMERGENCY_SAFE_GUIDANCE + " Vui lòng đăng nhập để tạo và theo dõi hồ sơ hỗ trợ."
-            emergency_message = Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='CUSTOMER', content=text,
+            emergency_message = Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='CUSTOMER', content=original_text,
                                         msg_metadata={'user_id': None, 'guest_session_id': payload.guest_session_id})
             db.add(emergency_message)
             db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='AGENT', content=reply))
@@ -413,6 +417,16 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         if guest_count >= 5:
             logger.warning(f"[403 FORBIDDEN] Guest session='{payload.session_id}' reached limit: guest_count={guest_count} >= 5")
             raise HTTPException(403, "Quý khách đã sử dụng hết 5 lượt chat thử nghiệm. Quý khách vui lòng đăng nhập để tiếp tục trải nghiệm ạ.")
+    if spelling.get('needs_confirmation'):
+        reply = clarification_for(text)
+        customer_message = Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='CUSTOMER',
+                                   content=original_text, msg_metadata={'user_id': user_id, 'guest_session_id': payload.guest_session_id})
+        db.add(customer_message)
+        db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='AGENT', content=reply,
+                       msg_metadata={'response_type': 'CLARIFICATION', 'user_id': user_id}))
+        db.info['chat_turn_customer_id'] = customer_message.id
+        return ApiResponse(success=True, data=ChatResponseData(response_type='CLARIFICATION', message=reply,
+                           remaining_guest_messages=remaining_guest_msgs), error=None)
     mock_cust_id = (current_user.mock_customer_id if current_user and current_user.mock_customer_id else
                     (ctx.mock_customer_id if ctx and ctx.mock_customer_id else f"GUEST_{(payload.guest_session_id or '')[:8]}"))
     user_is_demo = is_demo_user(db, current_user)
@@ -627,7 +641,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         case_id=active_case_id or payload.case_id,
         session_id=payload.session_id,
         sender_type=SenderType.CUSTOMER.value,
-        content=text,
+        content=original_text,
         msg_metadata={
             "user_id": user_id,
             "vehicle_context": vehicle_context,
@@ -952,7 +966,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         ai_res = await process_chat_message(
             text, session_id=f"cardd:{user_id}:{payload.session_id}", user_role="customer", owner=user_id,
             clarification_turn=prior_turns,
-            client_context={"vehicle_context": vehicle_context, "vehicle_model": vehicle_model, "original_user_message": text},
+            client_context={"vehicle_context": vehicle_context, "vehicle_model": vehicle_model, "original_user_message": original_text},
             persist_business_case=False, damage_evidence=exterior_signals[0].get("vision_evidence") if exterior_signals else None,
             application_db=db, application_session_id=payload.session_id,
         )
@@ -1618,7 +1632,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 client_context={
                     "vehicle_model": knowledge_model,
                     "vehicle_context": vehicle_context,
-                    "original_user_message": text,
+                    "original_user_message": original_text,
                     "conversation_context": conversation.model_dump(),
                     "turn_understanding": turn_understanding.model_dump(),
                     "llm_budget": understood.get('budget'),
@@ -1648,9 +1662,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             diag_stage = diag.get("stage")
             if diag_cat == "context_budget_exceeded" or diag_stage == "prompt":
                 agent_reply = "Tài liệu cần thiết vượt quá giới hạn xử lý hiện tại. Em sẽ chuyển chuyên viên kiểm tra đầy đủ điều kiện."
-            elif (not agent_reply or "chưa hoàn tất" in agent_reply) and (diag_stage == "generation" or diag_cat in ("generation_unavailable", "provider_error", "circuit_open", "rate_limited")):
+            elif ((diag_stage == "generation" and diag_cat not in {"unsupported_answer", "unsupported_numeric_claim"})
+                  or diag_cat in ("generation_unavailable", "provider_error", "circuit_open", "rate_limited")):
                 agent_reply = "Em chưa hoàn tất được việc tạo câu trả lời từ tài liệu đã tìm thấy. Quý khách vui lòng thử lại; em chưa thể xác nhận nội dung lúc này."
-            elif not agent_reply or "chưa có nguồn" in agent_reply:
+            elif not agent_reply or "chưa có nguồn" in agent_reply or "Tôi chưa có nguồn" in agent_reply:
                 agent_reply = "Em chưa có nguồn đã xác thực cho câu hỏi này. Quý khách có thể yêu cầu chuyển chuyên viên hỗ trợ."
         citations = []
         if ai_res.get("citations"):
@@ -3057,6 +3072,8 @@ def get_session_chat_history(
                 response_type=meta.get("response_type"),
                 citations=citations,
                 suggested_replies=meta.get("suggested_replies") or [],
+                vehicle_cards=meta.get("vehicle_cards") or [],
+                vehicle_comparison=bool(meta.get("vehicle_comparison")),
                 safe_guidance=meta.get("safe_guidance"),
                 case_id=msg.case_id,
                 priority=meta.get("priority"),

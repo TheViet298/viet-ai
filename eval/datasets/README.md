@@ -1,5 +1,11 @@
 # Bộ dữ liệu dịch vụ ô tô VinFast
 
+## Golden testcase cho Agent
+
+Bổ sung [10 ca gọi model thật, gồm nhận diện ảnh](live_model_cases_v1.jsonl): 6 hội thoại, 2 táp-lô và 2 ngoại thất/âm tính. [Hướng dẫn tự chạy và xem trên Langfuse](../../docs/guide/langfuse-live-model-eval.md).
+
+[golden_testcases_v1.jsonl](golden_testcases_v1.jsonl) gồm 60 ca safety, triage, RAG và hội thoại nhiều lượt. [Hướng dẫn schema và cách chạy](golden_testcases_v1.md) mô tả harness pytest offline, fixture tra cứu và giới hạn đánh giá. Nhãn đang ở trạng thái `draft_policy_review`; bộ này không thay thế master benchmark hoặc bộ nghiệm thu đã duyệt.
+
 Cập nhật: 2026-09-30. Đây là dữ liệu tình huống mô phỏng phục vụ hai luồng sẽ xây dựng sau; chưa phải kết quả chạy RAG hoặc Agent.
 
 | Bộ dữ liệu đang sử dụng | Chủ đề | Định dạng | Số case | Case mới |

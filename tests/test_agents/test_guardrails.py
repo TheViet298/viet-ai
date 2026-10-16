@@ -48,7 +48,7 @@ class TestHardSafetyRules:
     def test_running_vehicle_is_not_fire(self, text):
         assert evaluate_hard_safety(text)[0] is False
 
-    @pytest.mark.parametrize("text", ["Xe cháy khi đang chạy", "Xe chay", "Xe dang chay va boc khoi", "Xe có khói"])
+    @pytest.mark.parametrize("text", ["Xe cháy khi đang chạy", "Xe bi chay", "Xe dang chay va boc khoi", "Xe có khói"])
     def test_fire_still_overrides_running_context(self, text):
         assert evaluate_hard_safety(text) == (True, "SMOKE_OR_FIRE", "CRITICAL")
 

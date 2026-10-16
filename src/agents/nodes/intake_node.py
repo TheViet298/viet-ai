@@ -12,6 +12,7 @@ from src.agents.nodes.triage_node import extract_fields
 from src.agents.state import AgentState
 from src.config import get_settings
 from src.services.chat_classification import denied_reports
+from src.services.chat_normalization import normalize_chat_text
 from src.services.followup_context import resolve_faq_followup
 from src.services.tracer import sanitized_snapshot
 from src.services.vehicle_context import resolve_vehicle_context
@@ -19,8 +20,10 @@ from src.services.vehicle_context import resolve_vehicle_context
 
 async def intake_node(state: AgentState) -> dict:
     text, detected, types = sanitize_pii((state.get("latest_user_message") or state.get("query") or "").strip())
+    text = normalize_chat_text(text)
+    observed_text = '' if state.get('normalization_needs_confirmation') else text
     facts = sanitized_snapshot(state.get("captured_fields", {}))
-    context = dict(state.get('pending_vehicle_context') or resolve_vehicle_context(text, state.get("vehicle_context")))
+    context = dict(state.get('pending_vehicle_context') or resolve_vehicle_context(observed_text, state.get("vehicle_context")))
     previous_scope = (state.get('vehicle_context') or {}).get('incident_scope', 1)
     if context.get('incident_scope', 1) != previous_scope:
         context['scope_changed'] = True
@@ -29,7 +32,7 @@ async def intake_node(state: AgentState) -> dict:
     history = sanitized_snapshot(state.get("fact_history", []))
     facts, history = expire_dynamic_facts(facts, history)
     invalidated = set(facts) if context.get('scope_changed') else set()
-    for denied in denied_reports(text):
+    for denied in denied_reports(observed_text):
         for field, value in extract_fields(denied, asserted_only=False).items():
             if str(facts.get(field, '')).casefold() == value.casefold():
                 invalidated.add(field)
@@ -40,7 +43,7 @@ async def intake_node(state: AgentState) -> dict:
         for item in history:
             if item['field'] in invalidated and item['status'] == 'valid':
                 item.update(status='invalidated', valid_to=timestamp)
-    extracted = extract_fields(text)
+    extracted = extract_fields(observed_text)
     extracted.pop("vehicle_model", None)
     confirmed_model = context["incident_model"] if context["is_incident"] else context["owned_model"]
     if confirmed_model:
@@ -60,7 +63,8 @@ async def intake_node(state: AgentState) -> dict:
         "vehicle_context": context,
         'pending_vehicle_context': None,
         "latest_user_message": text,
-        "messages": [*([RemoveMessage(id=REMOVE_ALL_MESSAGES)] if context.get('scope_changed') else []), HumanMessage(content=text)],
+        "messages": [*([RemoveMessage(id=REMOVE_ALL_MESSAGES)] if context.get('scope_changed') else []),
+                     HumanMessage(content=state.get('original_user_message') or text)],
         "captured_fields": facts,
         "vehicle_model": context["models"][0] if len(context["models"]) == 1 else None,
         "fact_history": history,

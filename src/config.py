@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     google_api_key: str = ""
     model: str = ""
     model_name: str = "openai/gpt-5.6"
+    normalization_model: str = "gemini-2.5-flash-lite"
+    normalization_timeout_s: float = Field(default=3, gt=0, le=5)
     # Vision Configuration (GPT-6-Luna & Google)
     vision_provider: Literal["openai", "google"] = "openai"
     vision_model: str = "gpt-6-luna"

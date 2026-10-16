@@ -283,8 +283,20 @@ def process_cars_jsonl():
                 for hl in highlights:
                     if isinstance(hl, dict):
                         h_title = hl.get("title", "")
-                        h_desc = hl.get("desc", "")
+                        h_desc = hl.get("description") or hl.get("desc", "")
                         hl_lines.append(f"- {h_title}: {h_desc}")
+                        if h_title == "Thiết kế cá nhân hoá" and h_desc:
+                            chunks.append({
+                                "source_id": src_id,
+                                "chunk_id": f"{src_id}-{name.replace(' ', '').lower()}-colors",
+                                "title": f"Màu sắc ngoại thất VinFast {name}",
+                                "url": url, "source_type": "official_catalog",
+                                "verified_at": "2026-09-30", "applicable_models": [name],
+                                "section": f"Màu sắc {name}", "catalog_scope": "model_colors",
+                                "content": f"Màu sắc ngoại thất được giới thiệu cho dòng VinFast {name}: {h_desc}.\n"
+                                           "Đây là thông tin chung của mẫu xe, chưa xác nhận màu có sẵn cho từng phiên bản. "
+                                           "Cần đối chiếu phiên bản và tình trạng cung cấp tại showroom.",
+                            })
                     elif isinstance(hl, str):
                         hl_lines.append(f"- {hl}")
                 hl_text = "\n".join(hl_lines)

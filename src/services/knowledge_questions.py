@@ -367,12 +367,17 @@ def sales_parts(text: str, model: str | None) -> list[tuple[str, str, str | None
     drive_model = "VF" + drive.group(1).upper() if drive else (models[0] if len(models) == 1 else (None if is_general_lineup else model))
     parts = []
 
+    has_specific_aspect = any(term in lower for term in ("bảo hành", "bảo dưỡng", "cách sạc", "giá sạc", "áp suất lốp", "khiếu nại", "adas")) and not any(term in lower for term in ("mua xe", "lăn bánh", "trả góp"))
+
     is_car_overview = (
-        bool(ranking_aspect)
-        or any(term in lower for term in ("các dòng xe", "dòng xe", "các mẫu xe", "mẫu xe", "dải sản phẩm", "tư vấn xe", "tư vấn mua", "tư vấn", "mua xe", "tổng quan"))
-        or ("so sánh" in lower and len(models) >= 2)
-        or len(models) >= 2
-        or ((explicit_models(text) or "xe" in lower) and any(term in lower for term in ("như nào", "thế nào", "như thế nào", "là dòng", "là xe", "thông tin", "chi tiết", "hợp")))
+        not has_specific_aspect
+        and (
+            bool(ranking_aspect)
+            or any(term in lower for term in ("các dòng xe", "dòng xe", "các mẫu xe", "mẫu xe", "dải sản phẩm", "tư vấn xe", "tư vấn mua", "tư vấn", "mua xe", "tổng quan"))
+            or ("so sánh" in lower and len(models) >= 2)
+            or len(models) >= 2
+            or ((explicit_models(text) or "xe" in lower) and any(term in lower for term in ("như nào", "thế nào", "như thế nào", "là dòng", "là xe", "thông tin", "chi tiết", "hợp")))
+        )
     )
     if is_car_overview:
         overview = re.split(r"giá lăn bánh|chi phí lăn bánh|bảng giá|đăng ký lái thử|lái thử", text, maxsplit=1, flags=re.I)[0]
@@ -394,13 +399,14 @@ async def answer_sales_question(text: str, model: str | None, session_id: str, *
     models_found = explicit_models(text)
     ranking_aspect = detect_ranking_aspect(text)
     is_from_to = bool(re.search(r"từ\s+vf\s*(?:e34|[356789])\s+đến\s+vf\s*(?:e34|[356789])", text, re.I))
+    has_specific_aspect = any(term in text.lower() for term in ("bảo hành", "bảo dưỡng", "cách sạc", "giá sạc", "áp suất lốp", "khiếu nại", "adas")) and not any(term in text.lower() for term in ("mua xe", "lăn bánh", "trả góp"))
 
     # =========================================================================
     # THỨ TỰ ƯU TIÊN BẮT BUỘC:
     # 1. Nếu có >= 2 model trong câu hỏi (và không phải dạng dải "từ VF x đến VF y")
     # -> Nhánh SO SÁNH (bảng so sánh đúng các xe đó)
     # =========================================================================
-    if len(models_found) >= 2 and not is_from_to:
+    if len(models_found) >= 2 and not is_from_to and not has_specific_aspect:
         comp_text = format_vehicle_comparison(models_found)
         if comp_text:
             citations = []
