@@ -74,8 +74,10 @@
  docs/gps_plans/review-oct16/gps-preservation.json  |  15 +
  docs/gps_plans/review-oct16/vs-khoi-files.txt      |  89 +++
  docs/gps_plans/review-oct16/vs-khoi-stat.txt       |  90 +++
- docs/gps_plans/review-oct16/vs-long-files.txt      | 331 +++++++++
- docs/gps_plans/review-oct16/vs-long-stat.txt       | 332 +++++++++
+ docs/gps_plans/review-oct16/vs-long-files.txt      | 338 +++++++++
+ docs/gps_plans/review-oct16/vs-long-stat.txt       | 339 +++++++++
+ docs/gps_plans/review-oct16/vs-main-files.txt      | 426 +++++++++++
+ docs/gps_plans/review-oct16/vs-main-stat.txt       | 427 +++++++++++
  docs/gps_plans/update_gps_Oct_15.md                | 118 +++
  docs/gps_plans/user-guide.md                       |  43 ++
  docs/gps_plans/window-context.md                   | 135 ++++
@@ -336,4 +338,4 @@
  tests/test_rag_service.py                          |  41 ++
  tests/test_scripts/test_gps_workflow.py            | 179 +++++
  tree_back_end.txt                                  |  44 ++
- 338 files changed, 12932 insertions(+), 2012 deletions(-)
+ 340 files changed, 13799 insertions(+), 2012 deletions(-)

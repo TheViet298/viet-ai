@@ -76,6 +76,8 @@ A	docs/gps_plans/review-oct16/vs-khoi-files.txt
 A	docs/gps_plans/review-oct16/vs-khoi-stat.txt
 A	docs/gps_plans/review-oct16/vs-long-files.txt
 A	docs/gps_plans/review-oct16/vs-long-stat.txt
+A	docs/gps_plans/review-oct16/vs-main-files.txt
+A	docs/gps_plans/review-oct16/vs-main-stat.txt
 A	docs/gps_plans/update_gps_Oct_15.md
 A	docs/gps_plans/user-guide.md
 A	docs/gps_plans/window-context.md

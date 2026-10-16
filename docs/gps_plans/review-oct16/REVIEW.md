@@ -72,3 +72,10 @@ PR từ Khoi về Long hiện mang 331 file gồm GPS lẫn lịch sử ngoài G
 ## Bàn giao PR
 
 Báo cáo này ghi nhận kiểm tra local trước khi tạo PR. Hai PR draft cùng nguồn review/gps-integration-oct16, đích feature/agent-long và main. Chưa merge PR. Các con số diff phía trên chưa gồm gói tài liệu review này. Không đính kèm log cá nhân, bản backup hoặc credential.
+
+## Kiểm tra thêm trước khi mở PR
+
+- PR draft vào Long: 340 file, bao gồm 9 tài liệu review; vào main: 394 file theo diff ba chấm của PR tại thời điểm chuẩn bị.
+- Preview merge với main có 6 conflict: frontend/next.config.js; frontend/src/features/chat/api/chatApi.ts; components/ChatFeed.tsx; components/ChatMessageItem.tsx; components/CustomerChatContainer.tsx; hooks/useChat.ts (các đường dẫn components/hooks nằm trong frontend/src/features/chat). Chưa giải quyết, PR main bị chặn merge.
+- Bộ test nêu trên chạy trên bản tích hợp Khoi + Long; chưa chứng minh kết quả sau khi giải quyết conflict main.
+- Danh sách TXT với Long/main dùng merge base như diff PR. Các diff toàn nhánh bao gồm thay đổi lịch sử ngoài GPS; reviewer phải quyết định trước merge.
