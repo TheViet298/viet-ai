@@ -858,6 +858,11 @@ export function StaffConsoleShell() {
             <span className="text-slate-400 font-medium">Bàn Điều Phối</span>
             <span>/</span>
             <span className="font-semibold text-slate-900">{currentTabItem.label}</span>
+            {user?.isDemo && (
+              <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-700 border border-amber-500/30">
+                DEMO
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-3.5 text-[12px]">

@@ -45,35 +45,30 @@ const QUICK_PROMPTS = [
   {
     label: "Sạc không vào điện (CC01)",
     text: "Trụ sạc VinFast cắm súng vào xe nhưng đèn báo đỏ lỗi CC01 và không nhận điện.",
-    model: "VF8",
     category: "Sự cố",
     icon: "⚠",
   },
   {
     label: "Táp-lô hiện rùa vàng",
     text: "Xe tôi hiện biểu tượng con rùa màu vàng trên màn hình táp-lô, xe bị giới hạn công suất.",
-    model: "VF5",
     category: "Sự cố",
     icon: "⚠",
   },
   {
     label: "Lịch bảo dưỡng 12.000km",
     text: "Xe điện VinFast chạy được 12.000km cần bảo dưỡng và kiểm tra những hạng mục nào?",
-    model: "VF8",
     category: "Bảo dưỡng",
     icon: "🔧",
   },
   {
     label: "Tìm trạm sạc gần tôi",
     text: "Tìm trạm sạc xe điện VinFast gần vị trí của tôi nhất.",
-    model: "VF8",
     category: "Tra cứu",
     icon: "⚡",
   },
   {
     label: "Cách dùng app VinFast",
     text: "Hướng dẫn cách kết nối và đặt lịch sạc qua ứng dụng VinFast trên điện thoại.",
-    model: "VF8",
     category: "Hướng dẫn",
     icon: "📱",
   },
@@ -87,7 +82,6 @@ const ISSUE_CATEGORIES = [
     desc: "Cổng sạc kẹt, trụ báo đỏ CC01, ngắt nguồn hoặc sạc chậm",
     icon: BatteryCharging,
     query: "Trụ sạc VinFast báo đèn đỏ lỗi CC01 không sạc được điện.",
-    model: "VinFast VF8",
   },
   {
     id: "dashboard",
@@ -95,7 +89,6 @@ const ISSUE_CATEGORIES = [
     desc: "Biểu tượng con rùa vàng, áp suất lốp TPMS, cảnh báo bình 12V",
     icon: Camera,
     query: "Màn hình xe hiện biểu tượng con rùa vàng và đèn cảnh báo lạ.",
-    model: "VinFast VF5",
   },
   {
     id: "powertrain",
@@ -103,7 +96,6 @@ const ISSUE_CATEGORIES = [
     desc: "Kẹt cần số D/R, mất trợ lực lái, xe không di chuyển được",
     icon: Wrench,
     query: "Xe đã khởi động nhưng không gạt sang được số D để di chuyển.",
-    model: "VinFast VF5",
   },
   {
     id: "service",
@@ -111,7 +103,6 @@ const ISSUE_CATEGORIES = [
     desc: "Lịch bảo dưỡng 12.000km, cứu hộ pin lưu động, kiểm tra định kỳ",
     icon: ShieldCheck,
     query: "Cần tra cứu lịch bảo dưỡng định kỳ 12.000km và đặt hẹn dịch vụ.",
-    model: "VinFast VF8",
   },
 ];
 
@@ -460,7 +451,6 @@ export function LandingPage() {
   };
 
   const handleSubmit = (overrideQuery?: string, overrideModel?: string) => {
-    const targetModel = overrideModel || (selectedModel ? selectedModel : "VinFast VF8");
     const activePlaceholder = PLACEHOLDER_EXAMPLES[placeholderIndex] || "Trụ sạc báo đèn đỏ không nhận súng sạc thì xử lý sao?";
     const textToSend =
       overrideQuery ||
@@ -470,7 +460,11 @@ export function LandingPage() {
 
     try {
       sessionStorage.setItem("vf_initial_prompt", textToSend);
-      sessionStorage.setItem("vf_initial_model", targetModel);
+      if (overrideModel) {
+        sessionStorage.setItem("vf_initial_model", overrideModel);
+      } else {
+        sessionStorage.removeItem("vf_initial_model");
+      }
       if (imagePreview) {
         sessionStorage.setItem("vf_initial_image", imagePreview);
         sessionStorage.setItem("vf_initial_image_name", imageName || "anh_canh_bao.jpg");
@@ -479,7 +473,9 @@ export function LandingPage() {
 
     const queryParams = new URLSearchParams();
     if (textToSend) queryParams.set("prompt", textToSend);
-    queryParams.set("model", targetModel.replace("VinFast ", ""));
+    if (overrideModel) {
+      queryParams.set("model", overrideModel.replace("VinFast ", ""));
+    }
     router.push(`/chat?${queryParams.toString()}`);
   };
 
@@ -621,7 +617,7 @@ export function LandingPage() {
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => handleSubmit(qp.text, qp.model)}
+                  onClick={() => handleSubmit(qp.text)}
                   className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/90 bg-white px-3 py-1.5 text-[11.5px] font-medium text-slate-700 shadow-2xs hover:border-blue-300 hover:bg-blue-50/70 hover:text-[#1E40AF] transition active:scale-[0.98]"
                 >
                   <span className="text-[12px] opacity-80">{qp.icon}</span>
@@ -688,7 +684,7 @@ export function LandingPage() {
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() => handleSubmit(cat.query, cat.model)}
+                  onClick={() => handleSubmit(cat.query)}
                   style={{ transitionDelay: `${idx * 60}ms` }}
                   className="reveal group text-left p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 bg-slate-50/60 hover:bg-white hover:border-blue-300 shadow-2xs hover:shadow-sm transition-all flex items-center justify-between gap-3 active:scale-[0.98]"
                 >

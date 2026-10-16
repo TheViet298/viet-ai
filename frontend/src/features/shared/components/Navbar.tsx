@@ -81,8 +81,13 @@ export function Navbar() {
                 <ProductMark className="w-4 h-4 text-white" />
               </div>
               <div>
-                <div className="font-bold text-[16px] tracking-tight flex items-center font-display text-[#0F172A]">
-                  VF<span className="text-[#1E40AF] font-bold">Serv</span>
+                <div className="font-bold text-[16px] tracking-tight flex items-center font-display text-[#0F172A] gap-2">
+                  <span>VF<span className="text-[#1E40AF] font-bold">Serv</span></span>
+                  {user?.isDemo && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-700 border border-amber-500/30 tracking-normal">
+                      DEMO
+                    </span>
+                  )}
                 </div>
                 <div className="text-[9.5px] text-[#64748B] tracking-wider font-mono uppercase font-semibold">
                   VinFast EV Hub

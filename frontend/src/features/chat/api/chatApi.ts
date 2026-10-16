@@ -3,6 +3,7 @@ import {
   ArticleItem,
   AttachmentOut,
   ChatResponseData,
+  ChatSessionItem,
   ClientContext,
   CustomerCaseDetailData,
   CustomerCaseItem,
@@ -42,6 +43,30 @@ export async function uploadAttachment(file: File, imageKind: "auto" | "dashboar
   return res.json();
 }
 
+export function getOrCreateGuestId(): string {
+  if (typeof window === "undefined") return "guest";
+  try {
+    let guestId = localStorage.getItem("vf_guest_id");
+    if (!guestId || !/^gst_[a-zA-Z0-9_-]{8,64}$/.test(guestId)) {
+      const rand = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID().replace(/-/g, "").slice(0, 24)
+        : Math.random().toString(36).slice(2) + Date.now().toString(36);
+      guestId = `gst_${rand}`;
+      localStorage.setItem("vf_guest_id", guestId);
+    }
+    return guestId;
+  } catch {
+    return "guest";
+  }
+}
+
+export function clearGuestId(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem("vf_guest_id");
+  } catch {}
+}
+
 /**
  * Gửi tin nhắn chat từ khách hàng, hỗ trợ kèm mã định danh ảnh đã tải
  */
@@ -54,22 +79,26 @@ export async function sendChatMessage(params: {
   clientContext?: ClientContext;
 }): Promise<ApiResponse<ChatResponseData>> {
   const authHeaders = await getCustomerAuthHeaders();
+  const rawGuestId = getOrCreateGuestId();
+  const guestId = !authHeaders.Authorization
+    ? (rawGuestId && rawGuestId !== "guest" ? rawGuestId : (params.sessionId || rawGuestId))
+    : undefined;
   const res = await fetch(`${BASE_URL}/api/v1/customer/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...authHeaders,
+      ...(guestId ? { "X-Guest-Id": guestId, "X-Session-Id": guestId } : {}),
     },
     signal: typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(30000) : undefined,
     body: JSON.stringify({
       request_id: params.requestId,
       session_id: params.sessionId,
-      ...(!authHeaders.Authorization ? { guest_session_id: params.sessionId } : {}),
       case_id: params.caseId || null,
       message: params.message,
       attachment_ids: params.attachmentIds || [],
       client_context: params.clientContext || {},
-      guest_session_id: params.sessionId,
+      guest_session_id: guestId,
     }),
   });
 
@@ -102,9 +131,11 @@ export async function getSessionHistory(sessionId: string): Promise<ApiResponse<
   total: number;
 }>> {
   const authHeaders = await getCustomerAuthHeaders();
+  const guestId = !authHeaders.Authorization ? getOrCreateGuestId() : undefined;
   const res = await fetch(`${BASE_URL}/api/v1/customer/sessions/${sessionId}/history`, {
     headers: {
       ...authHeaders,
+      ...(guestId ? { "X-Guest-Id": guestId, "X-Session-Id": guestId } : {}),
     },
   });
   if (!res.ok) {
@@ -113,6 +144,94 @@ export async function getSessionHistory(sessionId: string): Promise<ApiResponse<
   }
   return res.json();
 }
+
+/**
+ * Lấy danh sách các cuộc trò chuyện của người dùng hoặc khách
+ */
+export async function fetchChatSessions(guestSessionId?: string): Promise<ApiResponse<{ sessions: ChatSessionItem[]; total: number }>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const effectiveGuestId = !authHeaders.Authorization ? (guestSessionId || getOrCreateGuestId()) : undefined;
+  const query = effectiveGuestId ? `?guest_session_id=${encodeURIComponent(effectiveGuestId)}` : "";
+  const res = await fetch(`${BASE_URL}/api/v1/customer/sessions${query}`, {
+    headers: {
+      ...authHeaders,
+      ...(effectiveGuestId ? { "X-Guest-Id": effectiveGuestId, "X-Session-Id": effectiveGuestId } : {}),
+    },
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    const error: any = new Error(`Failed to fetch chat sessions (${res.status}): ${errorText}`);
+    error.status = res.status;
+    throw error;
+  }
+  return res.json();
+}
+
+/**
+ * Đổi tên phiên trò chuyện
+ */
+export async function updateChatSessionTitle(sessionId: string, title: string, guestSessionId?: string): Promise<ApiResponse<{ session_id: string; title: string }>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const effectiveGuestId = !authHeaders.Authorization ? (guestSessionId || getOrCreateGuestId()) : undefined;
+  const query = effectiveGuestId ? `?guest_session_id=${encodeURIComponent(effectiveGuestId)}` : "";
+  const res = await fetch(`${BASE_URL}/api/v1/customer/sessions/${sessionId}${query}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders,
+      ...(effectiveGuestId ? { "X-Guest-Id": effectiveGuestId, "X-Session-Id": effectiveGuestId } : {}),
+    },
+    body: JSON.stringify({ title }),
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to update session title (${res.status}): ${errorText}`);
+  }
+  return res.json();
+}
+
+/**
+ * Xóa một phiên trò chuyện
+ */
+export async function deleteChatSession(sessionId: string, guestSessionId?: string): Promise<ApiResponse<{ deleted_session_id: string }>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const effectiveGuestId = !authHeaders.Authorization ? (guestSessionId || getOrCreateGuestId()) : undefined;
+  const query = effectiveGuestId ? `?guest_session_id=${encodeURIComponent(effectiveGuestId)}` : "";
+  const res = await fetch(`${BASE_URL}/api/v1/customer/sessions/${sessionId}${query}`, {
+    method: "DELETE",
+    headers: {
+      ...authHeaders,
+      ...(effectiveGuestId ? { "X-Guest-Id": effectiveGuestId, "X-Session-Id": effectiveGuestId } : {}),
+    },
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to delete session (${res.status}): ${errorText}`);
+  }
+  return res.json();
+}
+
+/**
+ * Xóa toàn bộ lịch sử trò chuyện
+ */
+export async function deleteAllChatSessions(guestSessionId?: string): Promise<ApiResponse<{ deleted_sessions_count: number }>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const effectiveGuestId = !authHeaders.Authorization ? (guestSessionId || getOrCreateGuestId()) : undefined;
+  const query = effectiveGuestId ? `?guest_session_id=${encodeURIComponent(effectiveGuestId)}` : "";
+  const res = await fetch(`${BASE_URL}/api/v1/customer/sessions${query}`, {
+    method: "DELETE",
+    headers: {
+      ...authHeaders,
+      ...(effectiveGuestId ? { "X-Guest-Id": effectiveGuestId, "X-Session-Id": effectiveGuestId } : {}),
+    },
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to delete all sessions (${res.status}): ${errorText}`);
+  }
+  return res.json();
+}
+
 
 /**
  * Tra cứu trạng thái hồ sơ theo mã Case ID (api-contract.md Mục 2.2)

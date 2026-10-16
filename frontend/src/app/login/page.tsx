@@ -12,6 +12,8 @@ import {
   Mail,
   AlertCircle,
   ArrowLeft,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useAuth, ProductMark, UserRole } from "@/features/shared";
 
@@ -21,11 +23,32 @@ export default function LoginPage() {
   const [activeTab, setActiveTab] = useState<"CUSTOMER" | "STAFF">("CUSTOMER");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [demoLoadingRole, setDemoLoadingRole] = useState<"STAFF" | "CUSTOMER" | null>(null);
 
   const goToRoleHome = (role: UserRole) => {
     router.push(role === "STAFF" ? "/console" : "/chat");
+  };
+
+  const handleQuickDemoLogin = async (username: string, role: "CUSTOMER" | "STAFF") => {
+    setDemoLoadingRole(role);
+    setActiveTab(role);
+    setErrorMessage("");
+    try {
+      const demoPassword = process.env.NEXT_PUBLIC_DEMO_PASSWORD || "DemoSecret@2026!Sec";
+      const authenticated = await login(username, demoPassword);
+      goToRoleHome(authenticated.role);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Không thể đăng nhập bằng tài khoản Demo. Vui lòng kiểm tra lại backend/database."
+      );
+    } finally {
+      setDemoLoadingRole(null);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -89,7 +112,6 @@ export default function LoginPage() {
               type="button"
               onClick={() => {
                 setActiveTab("CUSTOMER");
-                if (identifier === "staff@vinfast.vn") setIdentifier("");
                 setErrorMessage("");
               }}
               className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 transition ${activeTab === "CUSTOMER"
@@ -105,7 +127,6 @@ export default function LoginPage() {
               type="button"
               onClick={() => {
                 setActiveTab("STAFF");
-                setIdentifier("staff@vinfast.vn");
                 setErrorMessage("");
               }}
               className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 transition ${activeTab === "STAFF"
@@ -118,16 +139,95 @@ export default function LoginPage() {
             </button>
           </div>
 
+          {/* 1-Click Demo Quick Access cho Giám khảo / Thẩm định viên */}
+          <div className="mt-4 rounded-xl border border-amber-200/90 bg-gradient-to-b from-amber-50/90 to-amber-50/30 p-3.5 shadow-2xs">
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center gap-1.5 text-[12px] font-bold text-amber-900">
+                <Sparkles className="h-4 w-4 text-amber-600 shrink-0" />
+                <span>Trải nghiệm nhanh Demo Giám khảo</span>
+              </div>
+              <span className="text-[10px] font-semibold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                1-Click
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {/* Nút vào vai Staff Demo */}
+              <button
+                type="button"
+                disabled={submitting || demoLoadingRole !== null}
+                onClick={() => handleQuickDemoLogin("demo.staff@vinfast.vn", "STAFF")}
+                className="flex items-center justify-between gap-2 rounded-lg border border-purple-200/80 bg-white hover:bg-purple-50/70 p-2 text-left shadow-2xs transition-all hover:border-purple-300 hover:shadow-xs group cursor-pointer disabled:opacity-60"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-purple-100 text-purple-700 group-hover:bg-[#6D5BD0] group-hover:text-white transition-colors">
+                    <ShieldCheck className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[11.5px] font-bold text-slate-800 group-hover:text-purple-900 truncate">
+                      Vào vai Staff Demo
+                    </div>
+                    <div className="text-[10px] text-slate-500 truncate">
+                      Console điều phối 9 ca
+                    </div>
+                  </div>
+                </div>
+                {demoLoadingRole === "STAFF" ? (
+                  <span className="text-[10px] text-purple-600 font-bold animate-pulse">…</span>
+                ) : (
+                  <ArrowRight className="h-3.5 w-3.5 text-purple-400 group-hover:text-[#6D5BD0] group-hover:translate-x-0.5 transition-all shrink-0" />
+                )}
+              </button>
+
+              {/* Nút vào vai Khách hàng Demo */}
+              <button
+                type="button"
+                disabled={submitting || demoLoadingRole !== null}
+                onClick={() => handleQuickDemoLogin("demo.customer@vinfast.vn", "CUSTOMER")}
+                className="flex items-center justify-between gap-2 rounded-lg border border-blue-200/80 bg-white hover:bg-blue-50/70 p-2 text-left shadow-2xs transition-all hover:border-blue-300 hover:shadow-xs group cursor-pointer disabled:opacity-60"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-100 text-blue-700 group-hover:bg-[#1E40AF] group-hover:text-white transition-colors">
+                    <User className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[11.5px] font-bold text-slate-800 group-hover:text-blue-900 truncate">
+                      Vào vai Khách Demo
+                    </div>
+                    <div className="text-[10px] text-slate-500 truncate">
+                      Chat & Tra cứu hồ sơ
+                    </div>
+                  </div>
+                </div>
+                {demoLoadingRole === "CUSTOMER" ? (
+                  <span className="text-[10px] text-blue-600 font-bold animate-pulse">…</span>
+                ) : (
+                  <ArrowRight className="h-3.5 w-3.5 text-blue-400 group-hover:text-[#1E40AF] group-hover:translate-x-0.5 transition-all shrink-0" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="relative my-4 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200"></div>
+            </div>
+            <span className="relative bg-white px-2.5 text-[10.5px] font-semibold text-slate-400 uppercase tracking-wider">
+              Hoặc đăng nhập thủ công
+            </span>
+          </div>
+
           {/* Error notice */}
           {errorMessage && (
-            <div className="mt-4 mb-1 flex items-center gap-2 rounded-xl bg-[#FEF2F2] p-2.5 text-[12px] text-[#DC2626] border border-[#DC2626]/20">
+            <div className="mt-3 mb-1 flex items-center gap-2 rounded-xl bg-[#FEF2F2] p-2.5 text-[12px] text-[#DC2626] border border-[#DC2626]/20">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleLogin} className="mt-5 space-y-3.5">
+          <form onSubmit={handleLogin} className="mt-4 space-y-3.5">
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B] mb-1">
                 {activeTab === "STAFF" ? "Tài khoản Staff nội bộ" : "Số điện thoại / Tên đăng nhập"}
@@ -160,12 +260,25 @@ export default function LoginPage() {
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-[10px] border border-[#E2E8F0] bg-white py-2 pl-9 pr-3 text-[13px] text-[#0F172A] placeholder-[#64748B] focus:border-[#1E40AF] focus:outline-none"
+                  className="w-full rounded-[10px] border border-[#E2E8F0] bg-white py-2 pl-9 pr-10 text-[13px] text-[#0F172A] placeholder-[#64748B] focus:border-[#1E40AF] focus:outline-none"
                   placeholder="Nhập mật khẩu"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#64748B] hover:text-[#0F172A] transition-colors focus:outline-none"
+                  title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
               </div>
             </div>
 

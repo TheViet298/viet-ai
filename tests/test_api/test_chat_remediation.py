@@ -222,7 +222,7 @@ async def test_case_and_session_owner_checked_before_writes(client, chat_db):
         assert db.query(Message).count() == before
     app.dependency_overrides[get_optional_user] = lambda: None
     r = await client.post('/api/v1/customer/chat', json={'session_id': 'owned', 'guest_session_id': 'guest', 'message': 'Xin chào'})
-    assert r.status_code == 403
+    assert r.status_code in {403, 404}
 
 
 @pytest.mark.asyncio

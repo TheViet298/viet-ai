@@ -49,6 +49,8 @@ class RegisterRequest(BaseModel):
     full_name: str | None = None
     phone: str | None = None
     vehicle_model: str | None = None
+    session_id: str | None = None
+    guest_session_id: str | None = None
 
     @field_validator("username", mode="before")
     @classmethod
@@ -70,11 +72,13 @@ class UserOut(BaseModel):
     phone: str | None = None
     vehicle_model: str | None = None
     mock_customer_id: str | None = None
+    is_demo: bool = False
 
 
 class AuthResponseData(BaseModel):
     token: str
     user: UserOut
+    claimed_sessions: int = 0
 
 
 # ==============================================================================
@@ -263,6 +267,25 @@ class SessionHistoryResponseData(BaseModel):
     total: int = 0
 
 
+class ChatSessionListItem(BaseModel):
+    session_id: str
+    title: str
+    last_message: str | None = None
+    created_at: str
+    updated_at: str
+    message_count: int
+
+
+class ChatSessionListResponseData(BaseModel):
+    sessions: list[ChatSessionListItem] = Field(default_factory=list)
+    total: int = 0
+
+
+class UpdateSessionTitleRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=150)
+
+
+
 class CustomerCaseStatusData(BaseModel):
     emergency_context: EmergencyContext | None = None
     priority: str | None = None
@@ -284,6 +307,7 @@ class CustomerCaseItem(BaseModel):
     incident_version: int = 1
     id: str
     vehicle_model: str | None = None
+    vehicle_source: str | None = None
     vehicle_code_mock: str | None = None
     intent: str
     priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
@@ -438,6 +462,7 @@ class TicketItem(BaseModel):
     customer_name: str | None = None
     customer_phone: str | None = None
     vehicle_model: str
+    vehicle_source: str | None = None
     vehicle_code_mock: str | None = None
     intent: str
     priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
@@ -486,6 +511,7 @@ class TicketDetailCase(BaseModel):
     customer_phone: str | None = None
     vehicle_code_mock: str | None = None
     vehicle_model: str
+    vehicle_source: str | None = None
     intent: str
     priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
     status: str

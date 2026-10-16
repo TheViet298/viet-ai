@@ -102,6 +102,7 @@ def test_exporter_failure_does_not_change_business_result(monkeypatch):
 
 
 def test_callback_never_exports_raw_error_payload(monkeypatch):
+    pytest.importorskip("langfuse")
     import langfuse.langchain
     capture = []
     class BoundaryCallback:
@@ -119,6 +120,7 @@ def test_callback_never_exports_raw_error_payload(monkeypatch):
 
 
 def test_callback_masks_images_before_sdk_can_process_media(monkeypatch):
+    pytest.importorskip("langfuse")
     import langfuse.langchain
     from langchain_core.messages import HumanMessage
     captured = []

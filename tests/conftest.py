@@ -15,6 +15,7 @@ def isolated_agent_environment(monkeypatch, tmp_path):
     monkeypatch.setattr(observability, "_client", None)
     settings = get_settings()
     monkeypatch.setattr(settings, "agent_llm_enabled", False)
+    monkeypatch.setenv("DEMO_SEED_PASSWORD", "DemoSecret@2026!Sec")
     monkeypatch.setattr(settings, "database_url", f"sqlite:///{tmp_path / 'app.db'}")
     monkeypatch.setattr(settings, "chroma_persist_dir", str(tmp_path / "chroma"))
 

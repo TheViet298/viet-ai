@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, Children, isValidElement } from "react";
 import Link from "next/link";
 import { ExternalLink, FileText, Check } from "lucide-react";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
@@ -78,7 +78,7 @@ export function ChatMessageItem({
           - AI: Xám nhạt, KHÔNG VIỀN (Độ sâu bằng khác biệt màu nền)
       ───────────────────────────────────────────────────────────── */}
       <div
-        className={`max-w-[88%] sm:max-w-[76%] rounded-2xl p-3 sm:p-3.5 text-[13px] leading-relaxed transition-all ${isCustomer
+        className={`max-w-[88%] sm:max-w-[76%] rounded-2xl p-3 sm:p-3.5 text-[13px] leading-[1.5] transition-all ${isCustomer
             ? "bg-[#1E40AF] text-white rounded-tr-xs"
             : "bg-slate-100 text-slate-800 rounded-tl-xs"
           }`}
@@ -94,15 +94,17 @@ export function ChatMessageItem({
                 className="block max-h-[360px] w-auto max-w-full rounded-xl object-contain"
               />
             )}
-            {message.content && <div className="whitespace-pre-wrap leading-relaxed">{message.content}</div>}
+            {message.content && <div className="whitespace-pre-wrap leading-[1.5]">{message.content}</div>}
           </div>
         ) : (
-          <div className="chat-markdown-body text-[13px] leading-relaxed text-slate-800">
+          <div className="chat-markdown-body text-[13px] leading-[1.5] text-slate-800">
             <ReactMarkdown
               urlTransform={(url) => /^tel:\+?\d+$/.test(url) ? url : defaultUrlTransform(url)}
               remarkPlugins={[remarkGfm]}
               allowedElements={[
                 "p",
+                "h3",
+                "h4",
                 "strong",
                 "em",
                 "ul",
@@ -112,26 +114,100 @@ export function ChatMessageItem({
                 "code",
                 "span",
                 "br",
+                "table",
+                "thead",
+                "tbody",
+                "tr",
+                "th",
+                "td",
               ]}
               unwrapDisallowed={true}
               components={{
-                p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed whitespace-pre-line">{children}</p>,
+                h3: ({ children }) => (
+                  <h3 className="text-[14px] font-bold text-slate-900 mt-0.5 mb-1 tracking-tight">
+                    {children}
+                  </h3>
+                ),
+                h4: ({ children }) => (
+                  <h4 className="text-[13px] font-semibold text-slate-800 mt-2 mb-1">
+                    {children}
+                  </h4>
+                ),
+                table: ({ children }) => (
+                  <div className="my-2.5 w-full overflow-x-auto rounded-xl border border-slate-200/90 bg-white/70 shadow-xs">
+                    <table className="w-full min-w-[360px] sm:min-w-[420px] text-left text-[12px] sm:text-[12.5px] border-collapse">
+                      {children}
+                    </table>
+                  </div>
+                ),
+                thead: ({ children }) => (
+                  <thead className="bg-slate-200/70 text-slate-900 font-semibold border-b border-slate-200">
+                    {children}
+                  </thead>
+                ),
+                tbody: ({ children }) => (
+                  <tbody className="divide-y divide-slate-200/80 bg-white/50">
+                    {children}
+                  </tbody>
+                ),
+                tr: ({ children }) => (
+                  <tr className="hover:bg-slate-100/50 transition-colors">
+                    {children}
+                  </tr>
+                ),
+                th: ({ children }) => (
+                  <th className="px-3 py-2 text-slate-900 font-semibold border-r border-slate-200/70 last:border-r-0 whitespace-nowrap">
+                    {children}
+                  </th>
+                ),
+                td: ({ children }) => (
+                  <td className="px-3 py-2 text-slate-700 border-r border-slate-200/70 last:border-r-0 leading-relaxed">
+                    {children}
+                  </td>
+                ),
+                p: ({ children }) => {
+                  const childArray = Children.toArray(children);
+                  if (childArray.length === 1 && isValidElement(childArray[0])) {
+                    const el = childArray[0];
+                    if (el.type === "em" || (el.props as any)?.node?.tagName === "em") {
+                      return (
+                        <p className="mt-0.5 mb-2 text-[12px] text-slate-500 italic leading-[1.5]">
+                          {children}
+                        </p>
+                      );
+                    }
+                    if (el.type === "strong" || (el.props as any)?.node?.tagName === "strong") {
+                      return (
+                        <p className="mt-2.5 mb-1 text-[13px] font-semibold text-slate-900 leading-[1.5]">
+                          {children}
+                        </p>
+                      );
+                    }
+                  }
+                  return <p className="mb-2 last:mb-0 leading-[1.5] text-slate-800">{children}</p>;
+                },
                 strong: ({ children }) => (
                   <strong className="font-semibold text-slate-900">{children}</strong>
                 ),
-                em: ({ children }) => <em className="italic">{children}</em>,
+                em: ({ children }) => (
+                  <em className="italic text-slate-500 text-[12px] font-normal inline">
+                    {children}
+                  </em>
+                ),
                 ul: ({ children }) => (
-                  <ul className="my-2 space-y-1.5 list-disc pl-[18px] leading-relaxed marker:text-slate-400">
+                  <ul className="mb-2 space-y-1 list-disc pl-[18px] leading-[1.5] marker:text-slate-400">
                     {children}
                   </ul>
                 ),
                 ol: ({ children }) => (
-                  <ol className="my-2 space-y-1.5 list-decimal pl-[18px] leading-relaxed marker:text-slate-400">
+                  <ol className="mb-2 space-y-1 list-decimal pl-[18px] leading-[1.5] marker:text-slate-400">
                     {children}
                   </ol>
                 ),
                 li: ({ children }) => (
-                  <li className="pl-0.5 my-1.5 leading-relaxed text-slate-800">{children}</li>
+                  <li className="pl-0.5 leading-[1.5] text-slate-800 [&>p]:m-0 [&>p]:inline">
+                    {children}
+                  </li>
                 ),
                 a: ({ href, children }) => (
                   <a
@@ -167,17 +243,17 @@ export function ChatMessageItem({
             CẤP 2: NGUỒN TÀI LIỆU (KHÔNG CÓ KHUNG TO)
         ───────────────────────────────────────────────────────────── */}
         {message.citations && message.citations.length > 0 && (
-          <div className="mt-2 pt-1 flex items-center gap-1.5 text-[11px] text-slate-500">
-            {message.citations.slice(0, 1).map((cite, i) => (
+          <div className="mt-2 pt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+            {message.citations.map((cite, i) => (
               <a
                 key={i}
                 href={cite.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 hover:text-[#1E40AF] font-medium truncate"
+                className="inline-flex items-center gap-1 hover:text-[#1E40AF] font-medium max-w-full group"
                 title={cite.title}
               >
-                <FileText className="w-3 h-3 text-[#1E40AF] shrink-0" />
+                <FileText className="w-3 h-3 text-[#1E40AF] shrink-0 group-hover:scale-110 transition-transform" />
                 <span className="truncate max-w-[200px] sm:max-w-[260px]">
                   {cite.title.replace(/—.*$/, "").trim()}
                 </span>

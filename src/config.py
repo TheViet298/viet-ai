@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     # Database & Security
     database_url: str = "sqlite:///./data/app.db"
     auth_secret_key: SecretStr = SecretStr("")
-    staff_seed_password: str = "VinFast@ServiceFlow2026!Sec"
+    staff_seed_password: str = ""
 
     # Vector Store
     chroma_persist_dir: str = "./data/chroma"

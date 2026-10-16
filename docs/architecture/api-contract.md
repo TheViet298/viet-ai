@@ -1,8 +1,8 @@
 # API Contract Specification (Customer & Staff)
 
 > **Người phụ trách chính:** Triển (Backend) - Việt
-> **Cập nhật lần cuối:** 2026-10-10 (đồng bộ với Swagger `/docs` v1.1.0)  
-> **Trạng thái:** In Review (Đã chuẩn hóa No-PII Schema, Distinct State Rules và Safe Guidance)
+> **Cập nhật lần cuối:** 2026-10-11 (đồng bộ với Swagger `/docs` v1.2.0 — Session Lifecycle & Security Hardened)  
+> **Trạng thái:** Approved & Implemented (Bảo vệ IDOR 404, Session Takeover Prevention, Quản lý Cuộc trò chuyện & Cascade Deletion)
 
 ---
 
@@ -17,52 +17,83 @@
   "data": {},
   "error": null,
   "meta": {
-    "timestamp": "2026-09-24T10:00:00Z"
+    "timestamp": "2026-10-11T20:30:00Z"
   }
 }
 ```
 * **Bảo mật & Quyền riêng tư (Privacy Guardrail):**
   * Nhóm thiết kế theo chuẩn đề bài là **Không yêu cầu khách hàng nhập thông tin định danh cá nhân (PII) thật** (Họ tên, SĐT thật, CCCD, Biển số thật).
-  * Sử dụng định danh phiên: `session_id`, `mock_customer_id` (mã khách hàng nội bộ do backend tự gán khi đăng ký, không phải dữ liệu thật), `vehicle_model`, `vehicle_code_mock`.
-* **Quy tắc An toàn:** Không trả về Chain-of-Thought (suy luận nội bộ của LLM) trong response của Customer API. **Dữ liệu khách hàng/CSKH phải được mã hoá an toàn (ví dụ: AES-256), không được để ở dạng plain text trong các trường như notes, chat log...**
-* **RBAC:** Guest gọi được `/public/*`, `/customer/chat` (tối đa 5 lượt) và một số endpoint gắn với phiên qua header `X-Session-Id` (`feedback`, `actions`, `sessions/{id}/history`); Customer chỉ gọi chat/case của mình (kiểm tra `case.user_id == user.id` hoặc `case.session_id` khớp phiên guest); Staff mới gọi `/staff/*` và được bypass ownership. Backend trả `401` khi chưa đăng nhập, `403` khi sai role/ownership, `404` khi không thấy case, `409` khi trạng thái case không cho phép thao tác.
-* **Guest trial:** `guest_session_id` được giới hạn 5 lượt chat; response trả `remaining_guest_messages`. Guest vẫn nhận FAQ/citation nhưng phải login để theo dõi case.
+  * Sử dụng định danh phiên: `session_id` (UUID v4 ngẫu nhiên độ an toàn cao), `mock_customer_id` (mã khách hàng nội bộ do backend tự gán khi đăng ký, không phải dữ liệu thật), `vehicle_model`, `vehicle_code_mock`.
+* **Quy tắc An toàn & Chống Dò Quét (Anti-Enumeration 404):**
+  * Không trả về Chain-of-Thought (suy luận nội bộ của LLM) trong response của Customer API.
+  * Mọi endpoint truy vấn/thao tác trên Chat Session (`/customer/sessions/*`) **bắt buộc trả về HTTP 404 Not Found** thay vì 403 Forbidden nếu session không tồn tại hoặc không thuộc quyền sở hữu của người gọi, ngăn ngừa hoàn toàn tấn công dò session hợp lệ.
+* **RBAC & Guest Claim:**
+  * Guest gọi được `/public/*`, `/customer/chat` và quản lý phiên của mình qua `guest_session_id` / header `X-Session-Id`.
+  * Khi đăng nhập hoặc đăng ký tài khoản mới, client gửi `guest_session_id`. Backend thực thi gộp nguyên tử trong cùng 1 transaction: CHỈ gộp session có `owner == "guest:{id}"` sang `user:{user.id}`, loại bỏ hoàn toàn khả năng chiếm đoạt session (`Session Takeover`).
 
 ## 1.1. Auth, Public Content & Attachment APIs
 
 | Endpoint | Mô tả |
 | :--- | :--- |
-| `POST /api/v1/auth/login` | Xác thực username/password từ bảng `users`, trả bearer JWT và profile tối thiểu |
-| `POST /api/v1/auth/register` | Tạo Customer mới bằng username/password (>= 8 ký tự); backend tự gán role và `mock_customer_id` |
+| `POST /api/v1/auth/login` | Đăng nhập username/password, tự động gộp các phiên guest hợp lệ, trả token và `claimed_sessions` |
+| `POST /api/v1/auth/register` | Đăng ký Customer mới, tự động gộp các phiên guest hợp lệ, trả token và `claimed_sessions` |
 | `GET /api/v1/auth/me` | Xác thực bearer JWT, trả role/profile người dùng hiện tại |
 | `PATCH /api/v1/auth/me` | Cập nhật thông tin hồ sơ người dùng (họ tên, SĐT, dòng xe) |
 | `GET /api/v1/public/articles` | Landing/FAQ/Policy từ nguồn đã kiểm chứng |
 | `POST /api/v1/customer/attachments` | Upload ảnh riêng tư, trả `attachment_id` |
 
-`POST /customer/attachments` trả `attachment_id`, `analysis_status`, và (nếu Vision được bật) `ocr_text`, `detected_signals`, `vision_confidence`. Đây là quan sát sơ bộ, không phải chẩn đoán.
-
-### Auth request
+### Auth request (kèm guest session claim)
 
 ```json
-POST /api/v1/auth/register
+POST /api/v1/auth/login
 {
   "username": "customer_demo_01",
-  "password": "a-demo-password-with-8-or-more-characters"
+  "password": "user-secure-password",
+  "guest_session_id": "sess_vf_9f2b84cb-63df-4999-a419-5d26e1cb1db8"
 }
 ```
 
-Đăng ký công khai luôn tạo role `CUSTOMER`; client không được chọn role hoặc `mock_customer_id`. Username chỉ là định danh đăng nhập, không bắt buộc dùng tên/SĐT thật. Staff được cấp nội bộ và đăng nhập qua cùng endpoint. Guest không có bearer token hoặc user row. Token được gửi bằng `Authorization: Bearer <token>`; API nghiệp vụ tiếp tục giữ nguyên URL và response envelope.
+Response trả về:
+```json
+{
+  "success": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsIn...",
+    "claimed_sessions": 1,
+    "user": {
+      "id": "usr-uuid-001",
+      "username": "customer_demo_01",
+      "role": "CUSTOMER"
+    }
+  },
+  "error": null
+}
+```
 
-| Endpoint | Mô tả |
-| :--- | :--- |
-| `POST /api/v1/customer/location` | Customer consent vị trí hiện tại hoặc nhập khu vực cho case |
-| `GET /api/v1/customer/cases/{case_id}/service-points` | Lấy điểm dịch vụ/trạm sạc/showroom gợi ý cho case |
-| `POST /api/v1/customer/cases/{case_id}/confirmation` | Customer chọn `RESOLVED_CONFIRMED` hoặc `STILL_UNRESOLVED` (chỉ khi case đang `Resolved`) |
-| `POST /api/v1/customer/cases/{case_id}/actions` | Hành động của khách (`CONFIRM_RESOLUTION` / `REOPEN`), hỗ trợ cả Guest qua `X-Session-Id` |
-| `POST /api/v1/customer/cases/{case_id}/safety-acknowledgement` | Khách xác nhận đã ở vị trí an toàn cho case khẩn cấp đang mở |
-| `GET /api/v1/customer/sessions/{session_id}/history` | Lịch sử hội thoại của một phiên chat |
+---
 
-### 1.2. System & Chat endpoints khác
+## 1.2. Chat Session & Conversation Lifecycle APIs
+
+Chuẩn hóa bộ endpoint quản lý lịch sử hội thoại cho Web UI Sidebar:
+
+| Phương thức & Endpoint | Mô tả | Phân quyền & Bảo mật |
+| :--- | :--- | :--- |
+| `GET /api/v1/customer/sessions` | Lấy danh sách cuộc trò chuyện của User hoặc Guest | User: `owner == user:{id}`<br>Guest: `owner == guest:{guest_id}` |
+| `GET /api/v1/customer/sessions/{session_id}/history` | Lấy toàn bộ lịch sử tin nhắn của phiên chat | Trả 404 nếu không khớp owner |
+| `PATCH /api/v1/customer/sessions/{session_id}` | Đổi tên cuộc trò chuyện (tối đa 50 ký tự, bật `title_edited`) | Trả 404 nếu không khớp owner |
+| `DELETE /api/v1/customer/sessions/{session_id}` | Xóa 1 cuộc trò chuyện và xóa triệt để `Message`, `ChatRequestRecord` | Trả 404 nếu không khớp owner |
+| `DELETE /api/v1/customer/sessions` | Xóa toàn bộ lịch sử trò chuyện của tài khoản hiện tại | Xóa sạch messages và request records |
+
+> **Lưu ý về Route Aliasing:** Đường dẫn cũ `/api/v1/customer/chat/sessions/*` được giữ làm **deprecated alias** (`deprecated=True, include_in_schema=False`) để bảo đảm backward compatibility và sẽ được loại bỏ ở các phiên bản tiếp theo.
+
+### Cơ chế Auto-Title & Smart Caching
+1. Khi hội thoại mới chỉ có lời chào ("xin chào", "chào em", v.v.), tiêu đề mặc định là `"Cuộc trò chuyện mới"` và **không bị đóng băng** vào cơ sở dữ liệu.
+2. Khi người dùng gửi câu hỏi có nội dung thực đầu tiên ("Xe VF5 bảo hành bao lâu?"), tiêu đề được tự động trích xuất và lưu vào DB.
+3. Khi người dùng đổi tên thủ công qua `PATCH`, cờ `title_edited: true` được ghi nhận qua `flag_modified` của SQLAlchemy, đảm bảo auto-title không bao giờ ghi đè lên tên người dùng đã đặt.
+
+---
+
+## 1.3. System & Case Endpoints khác
 
 | Endpoint | Mô tả |
 | :--- | :--- |
