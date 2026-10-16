@@ -41,9 +41,11 @@ def _client(model: str, key: str, base_url: str, temperature: float, transport_t
             "Thư viện langchain-openai chưa được cài đặt. "
             "Cài đặt bằng lệnh: pip install langchain-openai"
         )
+    # Các dòng mô hình reasoning / gpt-5 / o1 trên LiteLLM Gateway chỉ chấp nhận temperature=1.0 mặc định
+    effective_temp = 1.0 if any(m in model.lower() for m in ["gpt-5", "o1", "o3"]) else temperature
     kwargs = {
         "model": model,
-        "temperature": temperature,
+        "temperature": effective_temp,
         "max_retries": 0,
         "timeout": transport_timeout,
     }

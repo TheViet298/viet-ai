@@ -31,6 +31,7 @@ export interface TicketItem {
   customer_name?: string;
   customer_phone?: string;
   vehicle_model: string;
+  vehicle_source?: "profile" | "user_stated" | "inferred" | string;
   vehicle_code_mock?: string;
   intent: TicketIntent;
   priority: TicketPriority;
@@ -58,6 +59,7 @@ export interface TicketDetail {
     customer_phone?: string;
     vehicle_code_mock?: string;
     vehicle_model: string;
+    vehicle_source?: "profile" | "user_stated" | "inferred" | string;
     intent: TicketIntent;
     priority: TicketPriority;
     status: TicketStatus;

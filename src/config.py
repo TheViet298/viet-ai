@@ -45,14 +45,14 @@ class Settings(BaseSettings):
     # Database & Security
     database_url: str = "sqlite:///./data/app.db"
     auth_secret_key: SecretStr = SecretStr("")
-    staff_seed_password: str = "VinFast@ServiceFlow2026!Sec"
+    staff_seed_password: str = ""
 
     # Vector Store
     chroma_persist_dir: str = "./data/chroma"
     agent_llm_enabled: bool = True
     agent_turn_timeout_s: float = Field(default=20, gt=0, le=60)
     agent_llm_timeout_s: float = Field(default=12, gt=0, le=30)
-    rag_retrieval_timeout_s: float = Field(default=5, gt=0, le=20)
+    rag_retrieval_timeout_s: float = Field(default=10, gt=0, le=20)
     agent_circuit_cooldown_s: float = Field(default=60, ge=1)
     rag_max_distance: float = Field(default=0.70, ge=0.0)
     rag_context_max_bytes: int = Field(default=6000, gt=0)

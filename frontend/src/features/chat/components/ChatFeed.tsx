@@ -26,18 +26,27 @@ export function ChatFeed({
   const bottomRef = useRef<HTMLDivElement>(null);
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
   const isNearBottomRef = useRef(true);
+  const lastSeenMsgCountRef = useRef(messages.length);
 
   // Kiểm tra vị trí cuộn của người dùng
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
     const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
-    
-    // Nếu cách đáy dưới 120px thì coi là đang ở đáy
-    const nearBottom = distanceFromBottom < 120;
+
+    // Nếu cách đáy dưới 180px thì coi là đang ở đáy
+    const nearBottom = distanceFromBottom < 180;
     isNearBottomRef.current = nearBottom;
-    setShowScrollBottomBtn(!nearBottom);
-  }, []);
+
+    if (nearBottom) {
+      lastSeenMsgCountRef.current = messages.length;
+      setShowScrollBottomBtn(false);
+    } else {
+      // Chỉ hiện nút khi người dùng đã cuộn lên trên VÀ có tin nhắn mới tới
+      const hasUnseenMessages = messages.length > lastSeenMsgCountRef.current;
+      setShowScrollBottomBtn(hasUnseenMessages);
+    }
+  }, [messages.length]);
 
   // Cuộn xuống đáy một cách an toàn
   const scrollToBottom = useCallback((smooth = true) => {
@@ -46,15 +55,22 @@ export function ChatFeed({
       behavior: smooth ? "smooth" : "auto",
     });
     setShowScrollBottomBtn(false);
-  }, []);
+    lastSeenMsgCountRef.current = messages.length;
+  }, [messages.length]);
 
   // Tự động cuộn khi tin nhắn mới, mở bản đồ hoặc thanh vị trí xuất hiện
   useEffect(() => {
-    const timer = setTimeout(() => {
-      scrollToBottom(true);
-    }, 120);
-    return () => clearTimeout(timer);
-  }, [messages, loading, isMapOpen, showLocationCard, scrollToBottom]);
+    if (isNearBottomRef.current) {
+      const timer = setTimeout(() => {
+        scrollToBottom(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      if (messages.length > lastSeenMsgCountRef.current) {
+        setShowScrollBottomBtn(true);
+      }
+    }
+  }, [messages.length, loading, isMapOpen, showLocationCard, scrollToBottom]);
 
   // Lắng nghe thay đổi kích thước khung chat khi trượt mở bản đồ (tránh chip bị cắt cụt)
   useEffect(() => {

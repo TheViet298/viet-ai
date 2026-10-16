@@ -151,7 +151,11 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
             # A named model/trim in a new question is not a quote slot answer.
             move = 'new_question'
         elif updates and goal:
-            move = 'supply_info'
+            if re.search(r'\b(?:nhu the nao|nhu nao|la dong|la xe gi|la xe nhu the nao)\b', lower):
+                move = 'new_question'
+                goal = None
+            else:
+                move = 'supply_info'
     if (move == 'new_question' and context.active_goal and not explicit_goal and not updates
             and len(text) < 180 and not re.search(r'thoi tiet|may bay|bong da|tesla|hyundai', lower)):
         from src.services.agent_llm import structured_call

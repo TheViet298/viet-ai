@@ -3,9 +3,9 @@ import { Navbar, Footer, AuthProvider } from "@/features/shared";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VF Serv — Dịch vụ & Điều phối Kỹ thuật Xe điện VinFast",
+  title: "VFServ — Dịch vụ & Điều phối Kỹ thuật Xe điện VinFast",
   description:
-    "Hệ thống tiếp nhận, xử lý sự cố kỹ thuật và điều phối dịch vụ xe điện VinFast thông minh (VF Serv).",
+    "Hệ thống tiếp nhận, xử lý sự cố kỹ thuật và điều phối dịch vụ xe điện VinFast thông minh (VFServ).",
 };
 
 export default function RootLayout({

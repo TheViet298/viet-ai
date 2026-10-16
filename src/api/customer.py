@@ -8,6 +8,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from sqlalchemy import func, update
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm.attributes import flag_modified
 
 from src.agents.chatbot_agent import process_chat_message
 from src.agents.guardrails import (
@@ -28,6 +29,8 @@ from src.models.db_models import (
     CaseBrief,
     CaseLocation,
     CaseUpdate,
+    ChatRequestRecord,
+    ChatSession,
     CustomerFeedback,
     Intent,
     Message,
@@ -48,6 +51,8 @@ from src.models.schemas import (
     CaseLocationPayload,
     CaseUpdateOut,
     ChatResponseData,
+    ChatSessionListItem,
+    ChatSessionListResponseData,
     Citation,
     ConversationItem,
     CustomerActionPayload,
@@ -69,8 +74,16 @@ from src.models.schemas import (
     ServicePointsData,
     SessionHistoryMessageItem,
     SessionHistoryResponseData,
+    UpdateSessionTitleRequest,
 )
-from src.services.auth import check_case_ownership, get_optional_user, require_customer
+from src.services.auth import (
+    check_case_ownership,
+    get_optional_user,
+    is_demo_user,
+    require_customer,
+    scoped_cases,
+    scoped_sessions,
+)
 from src.services.chat_cases import (
     clean_case_references,
     generate_case_id,
@@ -251,6 +264,7 @@ def determine_incident_clarification_prompt(
     error_code: str | None = None,
     charger_id: str | None = None,
     station_name: str | None = None,
+    is_profile_vehicle: bool = False,
 ) -> tuple[str, list[str]]:
     lower = query.lower()
     from src.agents.guardrails import strip_accents
@@ -260,11 +274,14 @@ def determine_incident_clarification_prompt(
     door_jam_accented = r"\b(kẹt cửa|cửa xe|cánh cửa|khóa cửa|kính cửa|cửa kính|không mở được cửa|mở cửa|cốp xe|khóa xe)\b"
     door_jam_unaccented = r"\b(ket cua|cua xe|canh cua|khoa cua|kinh cua|cua kinh|khong mo duoc cua|mo cua|cop xe|khoa xe)\b"
     if re.search(door_jam_accented, lower) or re.search(door_jam_unaccented, lower_unaccented):
+        intro = f"Dạ em ghi nhận sự cố liên quan đến xe {car_label} của anh/chị đúng không ạ? " if is_profile_vehicle else f"Dạ em ghi nhận xe {car_label} đang gặp vấn đề về cửa/khóa xe. "
         msg = (
-            f"Dạ em ghi nhận xe {car_label} đang gặp vấn đề về cửa/khóa xe. "
+            intro +
             "Hiện tại người trên xe có bị mắc kẹt không ạ? Cửa nào đang bị kẹt và anh/chị có thể thoát ra ngoài xe an toàn không?"
         )
         suggested = ["Tôi đang ở ngoài xe", "Mọi người đều an toàn", "Cửa bên lái bị kẹt", "Cần hỗ trợ khẩn cấp"]
+        if is_profile_vehicle:
+            suggested = ["Đúng", "Xe khác"] + [s for s in suggested if s not in ["Đúng", "Xe khác"]]
         return msg, suggested
 
     # 2. Subtype: Cảnh báo táp-lô / Rùa vàng / Vận hành yếu / Vô lăng rung
@@ -272,11 +289,14 @@ def determine_incident_clarification_prompt(
         re.search(r"\b(rùa vàng|con rùa|chạy yếu|vô lăng rung|rung|mất lái|đèn vàng)\b", lower)
         or re.search(r"\b(rua vang|con rua|chay yeu|vo lang rung|rung|mat lai|den vang)\b", lower_unaccented)
     ):
+        intro = f"Dạ em ghi nhận xe {car_label} của anh/chị đang có cảnh báo vận hành (rùa vàng hoặc chạy yếu/rung) đúng không ạ? " if is_profile_vehicle else f"Dạ em ghi nhận xe {car_label} đang có cảnh báo vận hành (rùa vàng hoặc chạy yếu/rung). "
         msg = (
-            f"Dạ em ghi nhận xe {car_label} đang có cảnh báo vận hành (rùa vàng hoặc chạy yếu/rung). "
+            intro +
             "Anh/chị đã đỗ xe ở vị trí an toàn chưa ạ? Xe hiện còn di chuyển được không và mức pin còn khoảng bao nhiêu %?"
         )
         suggested = ["Đã dừng ở nơi an toàn", "Pin còn dưới 20%", "Xe vẫn di chuyển chậm được", "Cần gọi cứu hộ"]
+        if is_profile_vehicle:
+            suggested = ["Đúng", "Xe khác"] + [s for s in suggested if s not in ["Đúng", "Xe khác"]]
         return msg, suggested
 
     # 3. Subtype: Lỗi sạc cụ thể (Đã có error_code sạc / trạm sạc / hoặc có từ khoá sạc)
@@ -291,35 +311,47 @@ def determine_incident_clarification_prompt(
     )
     if is_charging_related:
         if error_code and not charger_id and not station_name:
+            intro = f"Dạ em đã ghi nhận xe {car_label} của anh/chị đúng không ạ? Xe đang báo lỗi {error_code.upper()}. " if is_profile_vehicle else f"Dạ em đã ghi nhận xe {car_label} đang báo lỗi {error_code.upper()}. "
             msg = (
-                f"Dạ em đã ghi nhận xe {car_label} đang báo lỗi {error_code.upper()}. "
+                intro +
                 "Anh/chị vui lòng cho em biết tên trạm sạc hoặc số trụ đang cắm để kỹ thuật viên kiểm tra kết nối từ xa nhé ạ?"
             )
             suggested = ["Trạm Vincom Landmark 81, trụ 3", "Trạm Vincom Metropolis, trụ P02", "Trạm sạc cao tốc"]
+            if is_profile_vehicle:
+                suggested = ["Đúng", "Xe khác"] + [s for s in suggested if s not in ["Đúng", "Xe khác"]]
             return msg, suggested
         elif (charger_id or station_name) and not error_code:
             loc = station_name or charger_id
+            intro = f"Dạ em ghi nhận xe {car_label} của anh/chị đang ở {loc} đúng không ạ? " if is_profile_vehicle else f"Dạ em ghi nhận xe {car_label} đang ở {loc}. "
             msg = (
-                f"Dạ em ghi nhận xe {car_label} đang ở {loc}. "
+                intro +
                 "Màn hình xe hoặc đèn trụ có báo mã lỗi cụ thể nào (ví dụ: CC01, 0x41) không ạ? "
                 "Anh/chị cũng có thể chụp ảnh màn hình táp-lô để em nhận diện sơ bộ nhé."
             )
             suggested = ["Lỗi communication error 0x41", "Mã lỗi CC01", "Đèn trụ nháy đỏ, không hiện mã"]
+            if is_profile_vehicle:
+                suggested = ["Đúng", "Xe khác"] + [s for s in suggested if s not in ["Đúng", "Xe khác"]]
             return msg, suggested
         else:
+            intro = f"Dạ em ghi nhận xe {car_label} của anh/chị đang gặp vấn đề kỹ thuật liên quan đến sạc pin đúng không ạ? " if is_profile_vehicle else f"Dạ em ghi nhận xe {car_label} đang gặp vấn đề kỹ thuật liên quan đến sạc pin. "
             msg = (
-                f"Dạ em ghi nhận xe {car_label} đang gặp vấn đề kỹ thuật liên quan đến sạc pin. "
+                intro +
                 "Anh/chị có thể cho em biết trạm sạc, số trụ hoặc mã lỗi hiển thị trên táp-lô (ví dụ: CC01, 0x41) không ạ?"
             )
             suggested = ["Xem bản đồ trạm sạc ›", "Mã lỗi CC01, trụ P02", "Đèn trụ nháy đỏ"]
+            if is_profile_vehicle:
+                suggested = ["Đúng", "Xe khác"] + [s for s in suggested if s not in ["Đúng", "Xe khác"]]
             return msg, suggested
 
     # 4. Fallback sự cố kỹ thuật chung (KHÔNG giả định là sạc)
+    intro = f"Dạ em ghi nhận sự cố liên quan đến xe {car_label} của anh/chị đúng không ạ? " if is_profile_vehicle else f"Dạ em ghi nhận xe {car_label} đang gặp sự cố kỹ thuật. "
     msg = (
-        f"Dạ em ghi nhận xe {car_label} đang gặp sự cố kỹ thuật. "
+        intro +
         "Anh/chị vui lòng cho em biết xe hiện đang báo mã lỗi gì trên táp-lô hoặc mô tả thêm tình trạng vận hành để kỹ thuật viên hỗ trợ nhé ạ."
     )
     suggested = ["Xe báo lỗi trên màn hình", "Xe không di chuyển được", "Cần gọi cứu hộ"]
+    if is_profile_vehicle:
+        suggested = ["Đúng", "Xe khác"] + [s for s in suggested if s not in ["Đúng", "Xe khác"]]
     return msg, suggested
 
 
@@ -384,7 +416,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             ), error=None)
         if guest_count >= 5:
             logger.warning(f"[403 FORBIDDEN] Guest session='{payload.session_id}' reached limit: guest_count={guest_count} >= 5")
-            raise HTTPException(403, "Bạn đã sử dụng hết 5 lượt chat thử nghiệm. Vui lòng đăng nhập để tiếp tục.")
+            raise HTTPException(403, "Quý khách đã sử dụng hết 5 lượt chat thử nghiệm. Quý khách vui lòng đăng nhập để tiếp tục trải nghiệm ạ.")
     if spelling.get('needs_confirmation'):
         reply = clarification_for(text)
         customer_message = Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='CUSTOMER',
@@ -397,6 +429,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                            remaining_guest_messages=remaining_guest_msgs), error=None)
     mock_cust_id = (current_user.mock_customer_id if current_user and current_user.mock_customer_id else
                     (ctx.mock_customer_id if ctx and ctx.mock_customer_id else f"GUEST_{(payload.guest_session_id or '')[:8]}"))
+    user_is_demo = is_demo_user(db, current_user)
     previous_context = {}
     dashboard_image_context = {}
     exterior_image_context = {}
@@ -411,6 +444,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             dashboard_image_context = metadata.get("dashboard_image_context", {})
             exterior_image_context = metadata.get("exterior_image_context", {})
             break
+    prior_agent_messages = db.query(Message).filter(
+        Message.session_id == payload.session_id,
+        Message.sender_type == SenderType.AGENT.value,
+    ).order_by(Message.created_at.desc(), Message.id.desc()).all()
     vehicle_context = resolve_vehicle_context(text, previous_context)
     understood = db.info.get('conversation_turn') or {}
     conversation = ConversationContext.model_validate(understood.get('context') or {})
@@ -427,14 +464,91 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         active_case = resolve_authorized_active_case(db, current_user, payload.session_id, bound_case_id, payload.guest_session_id) if bound_case_id else None
         active_case_id = active_case.id if active_case else None
         payload = payload.model_copy(update={'case_id': active_case_id})
-    vehicle_model = vehicle_context.get("incident_model") if vehicle_context["is_incident"] else (
-        vehicle_context["models"][0] if len(vehicle_context["models"]) == 1 else None
+    explicit_model_match = re.search(r"\b(vf\s*e34|vf\s*[356789]|e34)\b", text, re.I)
+    explicit_model = (
+        "e34" if explicit_model_match and "e34" in explicit_model_match.group(0).lower()
+        else (re.sub(r"\s+", "", explicit_model_match.group(0)).upper() if explicit_model_match else None)
     )
-    # Compatibility for clients explicitly supplying a model, or authenticated customer model, never a server default.
-    if not vehicle_model and ctx and ctx.vehicle_model and len(vehicle_context["models"]) < 2:
-        vehicle_model = ctx.vehicle_model
-    elif not vehicle_model and current_user and current_user.vehicle_model:
-        vehicle_model = current_user.vehicle_model
+
+    clean_confirm = text.strip().lower()
+    is_confirm_yes = clean_confirm in {"đúng", "dung", "đúng rồi", "chính xác", "dung roi", "chinh xac"}
+    is_confirm_other = clean_confirm in {"xe khác", "xe khac", "dòng khác", "dong khac", "đổi xe", "doi xe"}
+    is_short_model_answer = bool(explicit_model and len(text.strip().split()) <= 3 and previous_context.get("is_incident"))
+
+    is_incident_flow = bool(
+        vehicle_context.get("is_incident")
+        or classification.request_kind in {"incident", "complaint"}
+        or classification.is_critical
+        or vehicle_context.get("customer_vehicle_incident")
+        or (previous_context.get("is_incident") and (is_confirm_yes or is_confirm_other or is_short_model_answer))
+    )
+    if is_incident_flow:
+        vehicle_context["is_incident"] = True
+
+    profile_model = (
+        current_user.vehicle_model if current_user and current_user.vehicle_model
+        else (ctx.vehicle_model if ctx and ctx.vehicle_model else None)
+    )
+
+    # Kiểm tra xem phiên này đã từng hỏi xác nhận xe hồ sơ chưa
+    profile_already_prompted = bool(
+        previous_context.get("profile_vehicle_prompted")
+        or any(
+            (msg.msg_metadata or {}).get("profile_vehicle_prompted")
+            for msg in prior_agent_messages
+        )
+    )
+
+    vehicle_source: str | None = None
+    is_profile_vehicle = False
+
+    if is_incident_flow:
+        # Luồng sự cố:
+        # 1. Xe khách nêu tên rõ trong câu sự cố (user_stated)
+        if explicit_model:
+            vehicle_model = explicit_model
+            vehicle_source = "user_stated"
+        # 1.1 Khách xác nhận "Đúng" -> chuyển thành user_stated
+        elif is_confirm_yes and (previous_context.get("vehicle_model") or profile_model):
+            vehicle_model = previous_context.get("vehicle_model") or profile_model
+            vehicle_source = "user_stated"
+        # 1.2 Khách bấm "Xe khác" -> xóa dòng xe để hỏi lại
+        elif is_confirm_other:
+            vehicle_model = None
+            vehicle_source = "user_stated"
+        elif vehicle_context.get("incident_model"):
+            vehicle_model = vehicle_context.get("incident_model")
+            vehicle_source = previous_context.get("vehicle_source") or "profile"
+        # 2. owned_model từ hồ sơ (profile)
+        elif profile_model:
+            vehicle_model = profile_model
+            vehicle_source = previous_context.get("vehicle_source") or "profile"
+            # Chỉ hỏi xác nhận nhẹ MỘT LẦN duy nhất khi mới bắt đầu luồng sự cố bằng xe hồ sơ
+            if not profile_already_prompted:
+                is_profile_vehicle = True
+        # 3. Hỏi lại dòng xe nếu hồ sơ trống hoặc guest
+        else:
+            vehicle_model = None
+            vehicle_source = "inferred"
+    else:
+        # Luồng tư vấn giữ nguyên: xe nêu tên thắng, câu tổng quan không ép model hồ sơ
+        target_model = explicit_model or vehicle_context.get("target_model") or (
+            vehicle_context["models"][0] if len(vehicle_context.get("models", [])) == 1 else None
+        )
+        if not target_model and ctx and ctx.vehicle_model:
+            target_model = ctx.vehicle_model
+        vehicle_model = target_model
+        vehicle_source = "user_stated" if target_model else None
+
+    vehicle_context["vehicle_source"] = vehicle_source
+    vehicle_context["vehicle_model"] = vehicle_model
+    vehicle_context["incident_model"] = vehicle_model if is_incident_flow else None
+    if profile_model:
+        vehicle_context["owned_model"] = profile_model
+    vehicle_context["is_profile_vehicle"] = is_profile_vehicle
+    if is_profile_vehicle or profile_already_prompted:
+        vehicle_context["profile_vehicle_prompted"] = True
+
     vehicle_code = (ctx.vehicle_code_mock if ctx else None) or "VF-SF-00231"
     resolved_text = vehicle_context["resolved_query"]
     if conversation.active_goal and turn_understanding.move not in {'new_incident', 'new_question'}:
@@ -445,6 +559,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         new_model = vehicle_context.get("incident_model") or vehicle_model
         if new_model and active_case.vehicle_model != new_model:
             active_case.vehicle_model = new_model
+            active_case.updated_at = datetime.now(UTC)
+        if vehicle_source and active_case.vehicle_source != vehicle_source:
+            active_case.vehicle_source = vehicle_source
             active_case.updated_at = datetime.now(UTC)
         brief = db.query(CaseBrief).filter_by(case_id=active_case.id).first()
         if brief:
@@ -489,7 +606,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             raise HTTPException(status_code=404, detail="Không tìm thấy ảnh đính kèm.")
         for att in atts:
             owner_id = (att.detected_signals or {}).get("owner_user_id")
-            legacy_case = db.get(Case, att.case_id) if owner_id is None and att.case_id else None
+            legacy_case = scoped_cases(db, current_user).filter(Case.id == att.case_id).first() if owner_id is None and att.case_id else None
             if owner_id != user_id and not (legacy_case and legacy_case.user_id == user_id):
                 raise HTTPException(status_code=403, detail="Ảnh đính kèm không thuộc khách hàng này.")
             if att.detected_signals:
@@ -587,8 +704,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             if not case:
                 case = Case(id=generate_case_id(db), user_id=user_id, session_id=payload.session_id,
                             mock_customer_id=mock_cust_id, vehicle_model=vehicle_model,
+                            vehicle_source=vehicle_source,
                             intent=Intent.SERVICE_INCIDENT.value, priority=priority,
-                            status=TicketStatus.STAFF_REVIEWING.value)
+                            status=TicketStatus.STAFF_REVIEWING.value,
+                            is_demo=user_is_demo)
                 db.add(case)
                 db.flush()
             else:
@@ -696,7 +815,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     if is_direct_danger or is_turtle_critical:
         # BỎ QUA HỎI LÀM RÕ -> TẠO CASE CRITICAL NGAY LẬP TỨC
         new_case_id = active_case_id or payload.case_id or generate_case_id(db)
-        case = db.get(Case, new_case_id)
+        case = scoped_cases(db, current_user).filter(Case.id == new_case_id).first()
         if not case:
             case = Case(
                 id=new_case_id,
@@ -707,9 +826,11 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=vehicle_model,
+                vehicle_source=vehicle_source,
                 intent=Intent.SERVICE_INCIDENT.value,
                 priority=Priority.CRITICAL.value,
                 status=TicketStatus.STAFF_REVIEWING.value,
+                is_demo=user_is_demo,
             )
             db.add(case)
             db.flush()
@@ -857,9 +978,12 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 case = Case(
                     id=generate_case_id(db), user_id=user_id, session_id=payload.session_id,
                     mock_customer_id=mock_cust_id, vehicle_code_mock=vehicle_code,
-                    vehicle_model=brief_data.get("vehicle_model"), intent=ai_res.get("intent") or "Service/Incident",
+                    vehicle_model=brief_data.get("vehicle_model") or vehicle_model,
+                    vehicle_source=vehicle_source,
+                    intent=ai_res.get("intent") or "Service/Incident",
                     priority=ai_res.get("priority", "MEDIUM"),
                     status=ai_res.get("ticket_status") or TicketStatus.STAFF_REVIEWING.value,
+                    is_demo=user_is_demo,
                 )
                 db.add(case)
                 db.flush()
@@ -993,7 +1117,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         )
         case = None
         if create_case:
-            case = db.get(Case, payload.case_id) if payload.case_id else None
+            case = scoped_cases(db, current_user).filter(Case.id == payload.case_id).first() if payload.case_id else None
             if case:
                 check_case_ownership(case, current_user)
                 ranks = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
@@ -1005,8 +1129,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                     id=generate_case_id(db), user_id=user_id,
                     session_id=payload.session_id, mock_customer_id=mock_cust_id,
                     vehicle_code_mock=vehicle_code, vehicle_model=dashboard_model,
+                    vehicle_source=vehicle_source or "inferred",
                     intent=Intent.SERVICE_INCIDENT.value, priority=priority,
                     status=TicketStatus.STAFF_REVIEWING.value,
+                    is_demo=user_is_demo,
                 )
                 db.add(case)
                 db.flush()
@@ -1071,7 +1197,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         case = active_case
         if not case:
             case = Case(id=generate_case_id(db), user_id=user_id, session_id=payload.session_id,
-                        intent=Intent.SERVICE_INCIDENT.value, priority="LOW", status="Staff Reviewing")
+                        vehicle_model=vehicle_model, vehicle_source=vehicle_source,
+                        intent=Intent.SERVICE_INCIDENT.value, priority="LOW", status="Staff Reviewing",
+                        is_demo=user_is_demo)
             db.add(case)
             db.flush()
         if not db.query(CaseBrief).filter_by(case_id=case.id).first():
@@ -1128,7 +1256,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     is_complaint = any(kw in lower_text for kw in complaint_keywords)
     if is_complaint:
         new_case_id = active_case_id or generate_case_id(db)
-        case = db.get(Case, new_case_id)
+        case = scoped_cases(db, current_user).filter(Case.id == new_case_id).first()
         is_financial = any(kw in lower_text for kw in ["trừ tiền", "hoàn tiền"])
         case_prio = Priority.HIGH.value if is_financial else Priority.MEDIUM.value
         if "khen ngợi" in lower_text:
@@ -1144,9 +1272,11 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=vehicle_model,
+                vehicle_source=vehicle_source,
                 intent=Intent.COMPLAINT_FEEDBACK.value,
                 priority=case_prio,
                 status=TicketStatus.STAFF_REVIEWING.value,
+                is_demo=user_is_demo,
             )
             db.add(case)
             db.flush()
@@ -1255,6 +1385,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         is_technical_incident = False
     elif classification.request_kind == "incident":
         is_technical_incident = True
+    elif (previous_context.get("is_incident") or is_incident_flow) and (
+        is_confirm_yes or is_confirm_other or (explicit_model and len(text.strip().split()) <= 3)
+    ):
+        is_technical_incident = True
 
     if not classification.is_critical and not payload.attachment_ids:
         case_snapshot = None
@@ -1300,9 +1434,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
 
         if is_capabilities:
             greeting_reply = (
-                "Chào bạn! Tôi có thể hỗ trợ tìm hiểu xe VinFast, tra cứu bảo hành và bảo dưỡng, "
+                "Chào Quý khách! Em là Trợ lý CSKH VinFast (VFServ). Em có thể hỗ trợ tìm hiểu xe VinFast, tra cứu bảo hành và bảo dưỡng, "
                 "hướng dẫn về sạc và ứng dụng, tiếp nhận sự cố kỹ thuật hoặc khiếu nại, "
-                "và theo dõi hồ sơ hỗ trợ. Bạn muốn được hỗ trợ nội dung nào?"
+                "và theo dõi hồ sơ hỗ trợ. Quý khách cần em hỗ trợ nội dung nào ạ?"
             )
         elif short_name:
             full_lower = customer_name.lower()
@@ -1315,13 +1449,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 for mn in ["an", "bình", "cường", "dũng", "hùng", "long", "minh", "nam", "phúc", "quân", "tuấn", "việt"]
             )
             title = "chị" if is_female else "anh" if is_male else None
-
-            if title:
-                greeting_reply = f"Chào {title} {short_name}! Em giúp gì được cho {title} hôm nay ạ?"
-            else:
-                greeting_reply = f"Chào {short_name}! Em giúp gì được cho bạn hôm nay ạ?"
+            salutation = f"{title} {short_name}" if title else short_name
+            greeting_reply = f"Chào {salutation}! Em là Trợ lý CSKH VinFast (VFServ). Rất vui được hỗ trợ Quý khách hôm nay. Quý khách có thể chọn nhanh các chủ đề bên dưới hoặc nhập câu hỏi trực tiếp ạ!"
         else:
-            greeting_reply = "Chào bạn! Em là Trợ lý VF Serv. Em có thể hỗ trợ gì cho bạn hôm nay ạ?"
+            greeting_reply = "Dạ chào Quý khách! Em là Trợ lý CSKH VinFast (VFServ). Rất vui được hỗ trợ Quý khách hôm nay. Quý khách có thể chọn nhanh các chủ đề bên dưới hoặc nhập câu hỏi trực tiếp ạ!"
 
         suggested_replies = [
             "Tư vấn xe",
@@ -1370,21 +1501,32 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         kw in lower_text for kw in ["xe tôi", "xe của tôi", "đang hiện", "vừa hiện", "bị hiện", "đang bị", "bây giờ"]
     )
     if is_active_turtle and not is_turtle_critical and classification.temporal_context not in {"resolved_past", "hypothetical", "knowledge"}:
-        turtle_reply = (
-            "Em đã ghi nhận xe của anh/chị đang hiện cảnh báo rùa vàng. "
-            "Anh/chị đã ở vị trí an toàn chưa, và xe hiện còn di chuyển được không ạ?"
-            + (" Anh/chị cho em biết dòng xe đang gặp sự cố nhé." if not vehicle_context.get("incident_model")
-               else f" Em ghi nhận dòng xe {vehicle_context['incident_model']}.")
+        effective_model = (
+            vehicle_context.get("incident_model")
+            or vehicle_model
+            or (current_user.vehicle_model if current_user else None)
+            or (payload.client_context.vehicle_model if payload.client_context else None)
         )
+        if effective_model:
+            vehicle_context["incident_model"] = effective_model
+            turtle_reply = (
+                f"Xe {effective_model} của anh/chị đang hiện cảnh báo rùa vàng, anh/chị đã ở nơi an toàn chưa?"
+            )
+        else:
+            turtle_reply = (
+                "Em đã ghi nhận xe của anh/chị đang hiện cảnh báo rùa vàng. "
+                "Anh/chị đã ở vị trí an toàn chưa, và xe hiện còn di chuyển được không ạ? "
+                "Anh/chị cho em biết dòng xe đang gặp sự cố nhé."
+            )
         if any(term in text.casefold() for term in ("là gì", "ý nghĩa", "giải thích")):
             turtle_reply = (
                 "Biểu tượng rùa vàng báo xe đang giới hạn công suất trong chế độ bảo vệ an toàn; "
                 "chỉ biểu tượng này chưa đủ xác định nguyên nhân.\n\n" + turtle_reply
             )
         suggested_replies = [
+            "Đã ở nơi an toàn",
             "Xe vẫn đi chậm được",
             "Xe không di chuyển được",
-            "Hiện kèm mã lỗi khác",
             "Cách khắc phục tạm thời",
         ]
         agent_msg = Message(
@@ -1416,7 +1558,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
 
     if not is_technical_incident and any(k in lower_text for k in ["gần tôi", "gần nhất", "tìm trạm", "tìm showroom", "xung quanh đây", "trạm sạc quanh", "xưởng gần", "xưởng dịch vụ", "danh sách xưởng", "tìm xưởng"]):
         target = "showroom" if "showroom" in lower_text else "xưởng dịch vụ" if "xưởng" in lower_text else "trạm sạc"
-        reply = f"Anh/chị vui lòng chia sẻ vị trí để tìm {target} gần mình. Nếu không dùng GPS, anh/chị có thể nhập khu vực hoặc địa chỉ."
+        reply = f"Quý khách vui lòng chia sẻ vị trí để tìm {target} gần mình. Nếu không dùng GPS, Quý khách có thể nhập khu vực hoặc địa chỉ."
         db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
                        sender_type="AGENT", content=reply, msg_metadata={"action": "find_service_point"}))
         db.flush()
@@ -1455,15 +1597,30 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
 
         # Gọi Chatbot Agent Core AI (Tra cứu RAG ChromaDB / Fallback KB)
         models_in_question = vehicle_context["models"]
-        knowledge_model = models_in_question[0] if len(models_in_question) == 1 else (
-            None if len(models_in_question) > 1 else vehicle_model
+        has_owner_incident = any(
+            k in lower_text for k in ("xe tôi", "xe của tôi", "xe mình", "bị ", "lỗi", "sạc", "bảo dưỡng", "rùa vàng")
+        )
+        is_general_inquiry = any(
+            k in lower_text for k in ("các dòng xe", "dòng xe", "các mẫu xe", "mẫu xe", "dải sản phẩm", "toàn bộ xe", "mua xe gì", "tư vấn xe", "tư vấn mua", "xe nào hợp", "tổng quan")
+        ) and not has_owner_incident
+
+        if len(models_in_question) == 1:
+            knowledge_model = models_in_question[0]
+        elif len(models_in_question) > 1 or is_general_inquiry:
+            knowledge_model = None
+        else:
+            knowledge_model = vehicle_model
+        effective_user_vehicle = (
+            (current_user.vehicle_model if current_user else None)
+            or (payload.client_context.vehicle_model if payload.client_context else None)
         )
         if knowledge_parts:
             db.info['conversation_route'] = 'sales'
             ai_res = await answer_sales_question(resolved_text, knowledge_model, payload.session_id,
                                                 conversation_context=conversation.model_dump(),
                                                 turn_understanding=turn_understanding.model_dump(),
-                                                llm_budget=understood.get('budget'))
+                                                llm_budget=understood.get('budget'),
+                                                user_vehicle=effective_user_vehicle)
         else:
             db.info['conversation_route'] = 'knowledge'
             ai_res = await process_chat_message(
@@ -1484,9 +1641,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 },
             )
         agent_reply = ai_res.get("reply") or (
-            "Theo tài liệu chính thức từ VinFast, anh/chị có thể tra cứu thông tin chi tiết, "
+            "Theo tài liệu chính thức từ VinFast, Quý khách có thể tra cứu thông tin chi tiết, "
             "quản lý tình trạng xe và đặt lịch dịch vụ trực tiếp trên Ứng dụng VinFast.\n\n"
-            "Anh/chị cần em hỗ trợ thao tác cụ thể nào không ạ?"
+            "Quý khách cần em hỗ trợ thao tác cụ thể nào không ạ?"
         )
         db.info['conversation_claims'] = ai_res.get('answer_claims', [])
         db.info['conversation_retrieval'] = ai_res.get('retrieval_diagnostics', {})
@@ -1504,11 +1661,11 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             diag_cat = diag.get("category")
             diag_stage = diag.get("stage")
             if diag_cat == "context_budget_exceeded" or diag_stage == "prompt":
-                agent_reply = "Tài liệu cần thiết vượt quá giới hạn xử lý hiện tại. Tôi sẽ chuyển chuyên viên kiểm tra đầy đủ điều kiện."
-            elif (diag_stage == "generation" and diag_cat not in {"unsupported_answer", "unsupported_numeric_claim"}) or diag_cat in ("generation_unavailable", "provider_error", "circuit_open", "rate_limited"):
-                agent_reply = "Tôi chưa hoàn tất được việc tạo câu trả lời từ tài liệu đã tìm thấy. Anh/chị vui lòng thử lại; tôi không thể xác nhận nội dung lúc này."
-            elif not agent_reply or "Tôi chưa có nguồn" in agent_reply:
-                agent_reply = "Tôi chưa có nguồn đã xác thực cho câu hỏi này. Anh/chị có thể yêu cầu chuyển chuyên viên hỗ trợ."
+                agent_reply = "Tài liệu cần thiết vượt quá giới hạn xử lý hiện tại. Em sẽ chuyển chuyên viên kiểm tra đầy đủ điều kiện."
+            elif (not agent_reply or "chưa hoàn tất" in agent_reply) and ((diag_stage == "generation" and diag_cat not in {"unsupported_answer", "unsupported_numeric_claim"}) or diag_cat in ("generation_unavailable", "provider_error", "circuit_open", "rate_limited")):
+                agent_reply = "Em chưa hoàn tất được việc tạo câu trả lời từ tài liệu đã tìm thấy. Quý khách vui lòng thử lại; em chưa thể xác nhận nội dung lúc này."
+            elif not agent_reply or "chưa có nguồn" in agent_reply:
+                agent_reply = "Em chưa có nguồn đã xác thực cho câu hỏi này. Quý khách có thể yêu cầu chuyển chuyên viên hỗ trợ."
         citations = []
         if ai_res.get("citations"):
             seen_sources = set()
@@ -1668,7 +1825,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     # TRƯỜNG HỢP A: ĐÃ ĐỦ DỮ KIỆN KỸ THUẬT -> TẠO CASE (Staff Reviewing)
     if has_sufficient_detail and car_model:
         new_case_id = active_case_id or generate_case_id(db)
-        case = db.get(Case, new_case_id)
+        case = scoped_cases(db, current_user).filter(Case.id == new_case_id).first()
         target_intent = Intent.CHARGING_BATTERY.value if is_charging_incident else Intent.SERVICE_INCIDENT.value
         if not case:
             case = Case(
@@ -1680,9 +1837,11 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
                 vehicle_code_mock=vehicle_code,
                 vehicle_model=car_model,
+                vehicle_source=vehicle_source,
                 intent=target_intent,
                 priority=Priority.HIGH.value,
                 status=TicketStatus.STAFF_REVIEWING.value,
+                is_demo=user_is_demo,
             )
             db.add(case)
             db.flush()
@@ -1857,9 +2016,16 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         if not car_model:
             clarification_msg = "Anh/chị đang gặp sự cố với dòng xe nào ạ?"
             suggested_replies = ["VF3", "VF5", "VF6", "VF7", "VF8", "VF9", "e34"]
+        elif is_confirm_yes:
+            clarification_msg = (
+                f"Dạ em đã ghi nhận xác nhận về xe {car_label}. "
+                "Anh/chị vui lòng mô tả thêm triệu chứng hoặc mã lỗi hiển thị để em hỗ trợ nhé ạ."
+            )
+            suggested_replies = ["Xe báo lỗi trên màn hình", "Sạc không vào điện", "Xe có cảnh báo rùa vàng", "Cần gọi cứu hộ"]
         else:
             clarification_msg, suggested_replies = determine_incident_clarification_prompt(
-                text, car_label, error_code=error_code, charger_id=charger_id, station_name=station_name
+                text, car_label, error_code=error_code, charger_id=charger_id, station_name=station_name,
+                is_profile_vehicle=is_profile_vehicle,
             )
 
         agent_msg = Message(
@@ -1873,6 +2039,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 "response_type": "CLARIFICATION",
                 "user_id": user_id,
                 "suggested_replies": suggested_replies,
+                "profile_vehicle_prompted": is_profile_vehicle or profile_already_prompted,
             },
         )
         db.add(agent_msg)
@@ -1896,7 +2063,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
 
     # TRƯỜNG HỢP C: ĐÃ HỎI 2 LƯỢT VẪN THIẾU DỮ KIỆN -> TẠO CASE 'Needs Information'
     new_case_id = active_case_id or generate_case_id(db)
-    case = db.get(Case, new_case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == new_case_id).first()
     if not case:
         case = Case(
             id=new_case_id,
@@ -1907,9 +2074,11 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             mock_customer_phone=current_user.phone if current_user and current_user.phone else None,
             vehicle_code_mock=vehicle_code,
             vehicle_model=car_model,
+            vehicle_source=vehicle_source,
             intent=Intent.SERVICE_INCIDENT.value,
             priority=Priority.MEDIUM.value,
             status=TicketStatus.NEEDS_INFORMATION.value,
+            is_demo=user_is_demo,
         )
         db.add(case)
         db.flush()
@@ -1991,7 +2160,7 @@ def submit_case_location(
     Khách hàng chia sẻ vị trí sự cố (Consent hoặc tự nhập) theo api-contract.md 1.1 & ADR-005.
     Tuyệt đối không tự động trích xuất GPS từ ảnh/EXIF.
     """
-    case = db.get(Case, payload.case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == payload.case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {payload.case_id}")
     check_case_ownership(case, current_user)
@@ -2114,7 +2283,7 @@ def get_case_service_points(
     Lấy danh sách điểm hỗ trợ / trạm sạc / xưởng dịch vụ gợi ý theo sự cố (ADR-005).
     P0 dùng 3-5 điểm seed demo phù hợp intent.
     """
-    case = db.get(Case, case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
     check_case_ownership(case, current_user)
@@ -2151,7 +2320,7 @@ def confirm_customer_case_resolution(
     - RESOLVED_CONFIRMED: Khách hàng hài lòng -> Chuyển trạng thái sang 'Closed'
     - STILL_UNRESOLVED: Khách phản ánh chưa xong -> Chuyển trạng thái sang 'Reopened' (quay lại Staff Queue)
     """
-    case = db.get(Case, case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
     check_case_ownership(case, current_user)
@@ -2270,7 +2439,7 @@ def handle_customer_action(
     - REOPEN: Yêu cầu mở lại vì chưa giải quyết xong -> Chuyển trạng thái 'Reopened'
     Hỗ trợ xác thực qua Token đăng nhập hoặc Header X-Session-Id.
     """
-    case = db.get(Case, case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
     if current_user and current_user.role != UserRole.CUSTOMER.value:
@@ -2402,7 +2571,7 @@ def list_customer_cases(
     Lấy danh sách các Case thuộc về chính Customer đang đăng nhập theo api-contract.md Mục 2.3.
     Hỗ trợ tìm kiếm theo query và lọc theo status.
     """
-    db_query = db.query(Case).options(joinedload(Case.brief))
+    db_query = scoped_cases(db, current_user).options(joinedload(Case.brief))
 
     # Lọc theo quyền sở hữu của Customer
     if current_user.role != "STAFF":
@@ -2429,6 +2598,7 @@ def list_customer_cases(
                 **safety_fields(c),
                 id=c.id,
                 vehicle_model=c.vehicle_model,
+                vehicle_source=c.vehicle_source,
                 vehicle_code_mock=c.vehicle_code_mock,
                 intent=c.intent,
                 priority=c.priority,
@@ -2458,7 +2628,7 @@ def get_customer_case_detail(
     ảnh đính kèm và lịch sử hội thoại đã kiểm tra ownership.
     """
     case = (
-        db.query(Case)
+        scoped_cases(db, current_user)
         .options(
             joinedload(Case.brief),
             joinedload(Case.location),
@@ -2554,6 +2724,7 @@ def get_customer_case_detail(
         id=case.id,
         **safety_fields(case),
         vehicle_model=case.vehicle_model,
+        vehicle_source=case.vehicle_source,
         vehicle_code_mock=case.vehicle_code_mock,
         intent=case.intent,
         priority=case.priority,
@@ -2588,7 +2759,15 @@ def get_customer_case_status(
     Tra cứu trạng thái hồ sơ của khách hàng theo api-contract.md Mục 2.2 & gate-g2-proposal.md.
     Hỗ trợ kiểm tra quyền qua Token đăng nhập hoặc Header X-Session-Id.
     """
-    case = db.get(Case, case_id)
+    if current_user:
+        case = scoped_cases(db, current_user).filter(Case.id == case_id).first()
+    elif x_session_id:
+        sess = db.query(ChatSession).filter(ChatSession.id == x_session_id).first()
+        sess_demo = bool(sess.is_demo) if sess else False
+        case = db.query(Case).filter(Case.id == case_id, Case.is_demo == sess_demo).first()
+    else:
+        case = scoped_cases(db, None).filter(Case.id == case_id).first()
+
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
 
@@ -2648,7 +2827,7 @@ def reopen_customer_case(
     """
     Mở lại Case đã Resolved hoặc Closed theo api-contract.md Mục 2.3.
     """
-    case = db.get(Case, case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
 
@@ -2710,7 +2889,7 @@ def _handle_submit_feedback(
     if not target_case_id:
         raise HTTPException(status_code=400, detail="Mã hồ sơ (case_id) không được để trống.")
 
-    case = db.get(Case, target_case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == target_case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {target_case_id}")
 
@@ -2802,7 +2981,7 @@ def submit_customer_feedback_alias(
 @router.post("/cases/{case_id}/safety-acknowledgement", response_model=ApiResponse[SafetyAcknowledgementData])
 def acknowledge_safety(case_id: str, payload: SafetyAcknowledgementPayload,
                        current_user: User = Depends(require_customer), db: Session = Depends(get_db)):
-    case = db.get(Case, case_id)
+    case = scoped_cases(db, current_user).filter(Case.id == case_id).first()
     if not case:
         raise HTTPException(404, "Không tìm thấy hồ sơ.")
     check_case_ownership(case, current_user)
@@ -2827,19 +3006,32 @@ def acknowledge_safety(case_id: str, payload: SafetyAcknowledgementPayload,
 
 
 @router.get("/sessions/{session_id}/history", response_model=ApiResponse[SessionHistoryResponseData])
+@router.get("/chat/sessions/{session_id}/history", response_model=ApiResponse[SessionHistoryResponseData], deprecated=True, include_in_schema=False)
 def get_session_chat_history(
     session_id: str,
     guest_session_id: str | None = Query(None),
     x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    x_guest_id: str | None = Header(None, alias="X-Guest-Id"),
     current_user: User | None = Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
     """
     Lấy toàn bộ lịch sử hội thoại của một phiên chat theo session_id.
-    Bảo đảm phân quyền truy cập:
-    - Nếu phiên có tin nhắn của khách hàng đã đăng nhập, chỉ chính tài khoản đó mới xem được.
-    - Nếu là phiên thử nghiệm guest, khách hàng phải cung cấp guest_session_id hoặc X-Session-Id khớp.
+    Bảo đảm phân quyền truy cập: nếu không tìm thấy hoặc không thuộc về user/guest, trả về 404 để chống dò session.
     """
+    session = scoped_sessions(db, current_user).filter(ChatSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+
+    if current_user:
+        if session.owner != f"user:{current_user.id}" and current_user.role != "STAFF":
+            raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+    else:
+        provided_guest = x_guest_id or guest_session_id or x_session_id
+        is_owner = bool(provided_guest and session.owner == f"guest:{provided_guest}")
+        if not is_owner:
+            raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+
     messages = (
         db.query(Message)
         .filter(Message.session_id == session_id)
@@ -2853,17 +3045,12 @@ def get_session_chat_history(
             active_case_id = msg.case_id
         meta = msg.msg_metadata or {}
         msg_user_id = meta.get("user_id")
-        msg_guest_id = meta.get("guest_session_id")
 
         if msg_user_id:
             if not current_user:
-                raise HTTPException(status_code=401, detail="Vui lòng đăng nhập để xem lịch sử phiên này.")
+                raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
             if current_user.id != msg_user_id and current_user.role != "STAFF":
-                raise HTTPException(status_code=403, detail="Bạn không có quyền truy cập lịch sử phiên này.")
-        elif msg_guest_id and not current_user:
-            provided_guest = guest_session_id or x_session_id
-            if provided_guest and provided_guest != msg_guest_id and session_id != msg_guest_id:
-                raise HTTPException(status_code=403, detail="Bạn không có quyền truy cập lịch sử phiên này.")
+                raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
 
     items = []
     for msg in messages:
@@ -2903,3 +3090,283 @@ def get_session_chat_history(
         error=None,
     )
 
+
+GREETING_PREFIX_REGEX = re.compile(
+    r"^(?:dạ\s+)?(?:em\s+)?(?:(?:xin\s+)?chào(?:\s+(?:bạn|em|ad|admin|trợ\s+lý|vinfast|vfserv|anh|chị|quý\s+khách|cô|chú|bác))?|"
+    r"hello|hi|alo|hé\s+lô|hey)[\s,!\.:;~-]*",
+    re.IGNORECASE,
+)
+
+
+def truncate_title(text: str, max_chars: int = 40) -> str:
+    """Cắt tối đa max_chars theo ranh giới từ tiếng Việt, tránh cắt giữa chữ."""
+    text = text.strip()
+    if not text:
+        return "Cuộc trò chuyện mới"
+    if len(text) <= max_chars:
+        return text
+    truncated = text[:max_chars]
+    last_space = truncated.rfind(" ")
+    if last_space >= 15:
+        truncated = truncated[:last_space]
+    return truncated.rstrip() + "..."
+
+
+def extract_session_title(messages: list[Message], default: str = "Cuộc trò chuyện mới") -> str:
+    """
+    Lấy tiêu đề tự động từ tin nhắn đầu có nội dung thực.
+    Cắt bỏ phần chào đầu câu nếu câu có nội dung hỏi thực sự.
+    Nếu toàn bộ là câu chào, trả về default để không đóng băng tiêu đề sớm.
+    """
+    for msg in messages:
+        if msg.sender_type == "CUSTOMER" and msg.content:
+            clean = msg.content.strip()
+            first_line = clean.splitlines()[0].strip() if clean else ""
+            if not first_line:
+                continue
+            stripped = GREETING_PREFIX_REGEX.sub("", first_line).strip()
+            # Bỏ qua nếu quá ngắn (< 3 ký tự) hoặc chỉ là từ chào/thử nghiệm ("t", "test", "alo", "hi"...)
+            if len(stripped) < 3 or stripped.lower() in (
+                "trợ lý", "bot", "vinfast", "vfserv", "ad", "admin",
+                "bạn", "em", "anh", "chị", "quý khách", "test", "alo", "cho hỏi"
+            ):
+                continue
+            capitalized = stripped[0].upper() + stripped[1:] if len(stripped) > 1 else stripped.upper()
+            return truncate_title(capitalized, 40)
+
+    return default
+
+
+@router.get("/sessions", response_model=ApiResponse[ChatSessionListResponseData])
+@router.get("/chat/sessions", response_model=ApiResponse[ChatSessionListResponseData], deprecated=True, include_in_schema=False)
+def list_chat_sessions(
+    guest_session_id: str | None = Query(None),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    x_guest_id: str | None = Header(None, alias="X-Guest-Id"),
+    current_user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    """Lấy danh sách các phiên trò chuyện của người dùng hiện tại hoặc guest."""
+    if current_user:
+        owner = f"user:{current_user.id}"
+        sessions = scoped_sessions(db, current_user).filter(ChatSession.owner == owner).all()
+    else:
+        guest_id = x_guest_id or guest_session_id or x_session_id
+        if not guest_id:
+            return ApiResponse(success=True, data=ChatSessionListResponseData(sessions=[], total=0))
+        sessions = scoped_sessions(db, None).filter(
+            (ChatSession.owner == f"guest:{guest_id}") |
+            (ChatSession.id == guest_id)
+        ).all()
+
+    session_ids = [s.id for s in sessions]
+    if not session_ids:
+        return ApiResponse(success=True, data=ChatSessionListResponseData(sessions=[], total=0))
+
+    messages = (
+        db.query(Message)
+        .filter(Message.session_id.in_(session_ids))
+        .order_by(Message.created_at.asc(), Message.id.asc())
+        .all()
+    )
+
+    messages_by_session: dict[str, list[Message]] = {sid: [] for sid in session_ids}
+    for m in messages:
+        if m.session_id in messages_by_session:
+            messages_by_session[m.session_id].append(m)
+
+    def has_customer_message(msgs: list[Message]) -> bool:
+        return any(
+            m.sender_type == "CUSTOMER" and m.content and m.content.strip()
+            for m in msgs
+        )
+
+    # Dọn dẹp các session rỗng hoặc chỉ có tin nhắn tự động bot (không có tin nhắn của người dùng)
+    empty_sessions = [
+        s for s in sessions
+        if not (s.memory_states or {}).get("title_edited")
+        and not has_customer_message(messages_by_session.get(s.id, []))
+    ]
+    if empty_sessions:
+        for es in empty_sessions:
+            db.delete(es)
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+        sessions = [s for s in sessions if s not in empty_sessions]
+
+    items = []
+    has_dirty_titles = False
+    for s in sessions:
+        s_msgs = messages_by_session.get(s.id, [])
+        mem = s.memory_states or {}
+        custom_title = mem.get("title")
+        title_edited = mem.get("title_edited", False)
+
+        # Bỏ qua các session không có tin nhắn nào của người dùng (chỉ có lời chào tự động bot)
+        if not title_edited and not has_customer_message(s_msgs):
+            continue
+
+        # Nếu title chưa từng được sửa tay mà bị cụt (<= 2 ký tự như "T" hoặc "Test"), coi là chưa hợp lệ
+        is_invalid_persisted = (
+            not title_edited
+            and custom_title
+            and (len(custom_title.strip()) < 3 or custom_title.strip().lower() in ("test", "t"))
+        )
+
+        if title_edited and custom_title:
+            title = custom_title
+        elif custom_title and custom_title != "Cuộc trò chuyện mới" and not is_invalid_persisted:
+            title = custom_title
+        else:
+            title = extract_session_title(s_msgs)
+            # Chỉ lưu title khi đã lấy được nội dung thực (không lưu nếu vẫn là "Cuộc trò chuyện mới")
+            if title and title != "Cuộc trò chuyện mới":
+                mem_copy = dict(mem)
+                mem_copy["title"] = title
+                s.memory_states = mem_copy
+                flag_modified(s, "memory_states")
+                has_dirty_titles = True
+            elif is_invalid_persisted:
+                # Dọn dẹp title bị hỏng trong memory_states
+                mem_copy = dict(mem)
+                mem_copy.pop("title", None)
+                s.memory_states = mem_copy
+                flag_modified(s, "memory_states")
+                has_dirty_titles = True
+
+        last_msg = s_msgs[-1].content if s_msgs else None
+        created_at = s_msgs[0].created_at if s_msgs else utcnow()
+        updated_at = s_msgs[-1].created_at if s_msgs else created_at
+
+        items.append(
+            ChatSessionListItem(
+                session_id=s.id,
+                title=title,
+                last_message=last_msg,
+                created_at=created_at.isoformat() if created_at else utcnow().isoformat(),
+                updated_at=updated_at.isoformat() if updated_at else utcnow().isoformat(),
+                message_count=len(s_msgs),
+            )
+        )
+
+    if has_dirty_titles:
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+
+    items = [item for item in items if item.message_count > 0]
+    items.sort(key=lambda x: x.updated_at, reverse=True)
+    return ApiResponse(success=True, data=ChatSessionListResponseData(sessions=items, total=len(items)))
+
+
+@router.patch("/sessions/{session_id}", response_model=ApiResponse[dict])
+@router.patch("/chat/sessions/{session_id}", response_model=ApiResponse[dict], deprecated=True, include_in_schema=False)
+def update_chat_session_title(
+    session_id: str,
+    payload: UpdateSessionTitleRequest,
+    guest_session_id: str | None = Query(None),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    x_guest_id: str | None = Header(None, alias="X-Guest-Id"),
+    current_user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    """Đổi tên phiên trò chuyện. Kiểm tra quyền sở hữu chặt chẽ, trả 404 nếu không khớp."""
+    session = scoped_sessions(db, current_user).filter(ChatSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+
+    if current_user:
+        if session.owner != f"user:{current_user.id}" and current_user.role != "STAFF":
+            raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+    else:
+        provided_guest = x_guest_id or guest_session_id or x_session_id
+        is_owner = (
+            (provided_guest and session.owner == f"guest:{provided_guest}")
+            or (session.owner == f"guest:{session_id}")
+        )
+        if not is_owner:
+            raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+
+    new_title = payload.title.strip()
+    if not new_title:
+        raise HTTPException(status_code=400, detail="Tiêu đề cuộc trò chuyện không được để trống.")
+
+    memories = dict(session.memory_states or {})
+    memories["title"] = truncate_title(new_title, 50)
+    memories["title_edited"] = True  # Đánh dấu đã đổi thủ công để auto-title không bao giờ ghi đè
+    session.memory_states = memories
+    flag_modified(session, "memory_states")
+    db.commit()
+    return ApiResponse(success=True, data={"session_id": session_id, "title": memories["title"]})
+
+
+@router.delete("/sessions/{session_id}", response_model=ApiResponse[dict])
+@router.delete("/chat/sessions/{session_id}", response_model=ApiResponse[dict], deprecated=True, include_in_schema=False)
+def delete_chat_session(
+    session_id: str,
+    guest_session_id: str | None = Query(None),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    x_guest_id: str | None = Header(None, alias="X-Guest-Id"),
+    current_user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    """Xóa một phiên trò chuyện và các tin nhắn liên quan. Trả 404 nếu không tìm thấy hoặc không thuộc sở hữu."""
+    session = scoped_sessions(db, current_user).filter(ChatSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+
+    if current_user:
+        if session.owner != f"user:{current_user.id}" and current_user.role != "STAFF":
+            raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+    else:
+        provided_guest = x_guest_id or guest_session_id or x_session_id
+        is_owner = (
+            (provided_guest and session.owner == f"guest:{provided_guest}")
+            or (session.owner == f"guest:{session_id}")
+        )
+        if not is_owner:
+            raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
+
+    db.query(Message).filter(Message.session_id == session_id).delete(synchronize_session=False)
+    db.query(ChatRequestRecord).filter(ChatRequestRecord.session_id == session_id).delete(synchronize_session=False)
+    db.delete(session)
+    db.commit()
+    return ApiResponse(success=True, data={"deleted_session_id": session_id})
+
+
+@router.delete("/sessions", response_model=ApiResponse[dict])
+@router.delete("/chat/sessions", response_model=ApiResponse[dict], deprecated=True, include_in_schema=False)
+def delete_all_chat_sessions(
+    guest_session_id: str | None = Query(None),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    x_guest_id: str | None = Header(None, alias="X-Guest-Id"),
+    current_user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    """Xóa toàn bộ lịch sử trò chuyện của người dùng hiện tại (chỉ xóa đúng owner hiện tại)."""
+    if current_user:
+        owner = f"user:{current_user.id}"
+        sessions = scoped_sessions(db, current_user).filter(ChatSession.owner == owner).all()
+    else:
+        provided_guest = x_guest_id or guest_session_id or x_session_id
+        if not provided_guest:
+            raise HTTPException(status_code=400, detail="Thiếu thông tin phiên guest.")
+        owner = f"guest:{provided_guest}"
+        sessions = scoped_sessions(db, None).filter(
+            (ChatSession.owner == owner) |
+            (ChatSession.id == provided_guest)
+        ).all()
+
+    deleted_count = len(sessions)
+    session_ids = [s.id for s in sessions]
+    if session_ids:
+        db.query(Message).filter(Message.session_id.in_(session_ids)).delete(synchronize_session=False)
+        db.query(ChatRequestRecord).filter(ChatRequestRecord.session_id.in_(session_ids)).delete(synchronize_session=False)
+        for s in sessions:
+            db.delete(s)
+        db.commit()
+
+    return ApiResponse(success=True, data={"deleted_sessions_count": deleted_count})

@@ -52,7 +52,8 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
     # 2. Dấu hiệu tình trạng thực tế / sự cố hiện tại của xe (has_current_failure)
     # Phải kiểm tra trước câu hỏi giải thích ("tại sao", "khi nào") để không bị lọt sự cố (e.g. "Tại sao xe tôi không sạc được?")
     current_failure_regex = (
-        r"(?:xe\s*(?:vf\s*(?:[356789]|e34)|e34)?\s*(?:của\s*(?:tôi|mình|em))?\s*(?:đang|bị|vừa|báo|hiện)|bây giờ|đang\s*(?:ở|bị|kẹt|dừng|chạy))|"
+        r"(?:gặp\s+sự\s+cố|sự\s+cố\s+về|sạc\s+không\s+vào|không\s+vào\s+điện)|"
+        r"(?:xe\s*(?:vf\s*(?:[356789]|e34)|e34)?\s*(?:của\s*(?:tôi|mình|em|nhà\s+tôi))?\s*(?:đang|bị|vừa|báo|hiện|gặp)|bây giờ|đang\s*(?:ở|bị|kẹt|dừng|chạy))|"
         r"(?:không\s+(?:nhận\s*sạc|sạc được|khởi động|đi được|chạy được|chạy nổi|di chuyển được|vào điện|lên nguồn|mở (?:cửa|khóa) được|mở được (?:cửa|khóa)))|"
         r"(?:bị|đang|báo)\s+(?:hỏng|kẹt|gãy|vỡ|lỗi|đơ|đen|mờ đen|mã|ma)|"
         r"(?:báo|hiện|nổi)\s+(?:(?:mã|lỗi|code)\s*[a-z0-9_-]{2,10}|(?=[a-z0-9_-]*\d)[a-z0-9_-]{3,10})|"
@@ -63,7 +64,8 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
         r"cứu tôi|cần cứu hộ|gọi cứu hộ|^cứu hộ[.!? ]*$|không chạy nổi|không thể tăng tốc|lỗi\s+(?:[a-z]*\d+|0x)"
     )
     current_failure_unaccented_regex = (
-        r"(?:xe\s*(?:vf\s*(?:[356789]|e34)|e34)?\s*(?:cua\s*(?:toi|minh|em))?\s*(?:dang|bi|vua|bao|hien)|bay gio|dang\s*(?:o|bi|ket|dung|chay))|"
+        r"(?:gap\s+su\s+co|su\s+co\s+ve|sac\s+khong\s+vao|khong\s+vao\s+dien)|"
+        r"(?:xe\s*(?:vf\s*(?:[356789]|e34)|e34)?\s*(?:cua\s*(?:toi|minh|em|nha\s+toi))?\s*(?:dang|bi|vua|bao|hien|gap)|bay gio|dang\s*(?:o|bi|ket|dung|chay))|"
         r"(?:khong\s+(?:nhan\s*sac|sac duoc|khoi dong|di duoc|chay duoc|chay noi|di chuyen duoc|vao dien|len nguon|mo (?:cua|khoa) duoc))|"
         r"(?:bi|dang|bao)\s+(?:hong|ket|gay|vo|loi|do|den|mo den|ma)|"
         r"(?:bao|hien)\s+(?:(?:ma|loi|code)\s*[a-z0-9_-]{2,10}|(?=[a-z0-9_-]*\d)[a-z0-9_-]{3,10})|"

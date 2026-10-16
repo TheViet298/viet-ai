@@ -1,59 +1,100 @@
-"""Provision one staff account without exposing staff registration publicly.
+"""Provision one real staff account (is_demo=False) for ServiceFlow.
 
-Usage: python -m src.create_staff staff@example.com
-The password is entered interactively and stored only as an Argon2id hash.
+Usage:
+    python -m src.create_staff staff@example.com
+    # Or non-interactively via arguments/env:
+    python -m src.create_staff --username staff@vinfast.vn --password MySecretPassword123!
+    # Or reading from environment:
+    STAFF_SEED_USERNAME=... STAFF_SEED_PASSWORD=... python -m src.create_staff
 """
 
 import argparse
-from getpass import getpass
+import os
+import sys
 import uuid
+from getpass import getpass
 
 from sqlalchemy.exc import IntegrityError
 
 from src.config import get_settings
-from src.db import SessionLocal
+from src.db import SessionLocal, ensure_schema
 from src.models.db_models import User, UserRole
 from src.services.auth import hash_password
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Create an internal ServiceFlow staff account")
-    parser.add_argument("username", help="Staff login username or internal email")
-    args = parser.parse_args()
-    username = args.username.strip()
+def create_or_update_staff(username: str, password: str) -> None:
+    username = username.strip()
     if len(username) < 3:
-        parser.error("username must contain at least 3 characters")
-
-    password = getpass("Password (minimum 12 characters): ")
-    confirmation = getpass("Confirm password: ")
+        raise ValueError("username must contain at least 3 characters")
     if len(password) < 12:
-        parser.error("staff password must contain at least 12 characters")
-    if password != confirmation:
-        parser.error("passwords do not match")
+        raise ValueError("staff password must contain at least 12 characters")
 
-    settings = get_settings()
-    if settings.app_env == "production" and len(settings.auth_secret_key.get_secret_value()) < 32:
-        parser.error("AUTH_SECRET_KEY must be configured before provisioning production staff")
-
+    ensure_schema()
     with SessionLocal() as db:
-        if db.query(User.id).filter(User.username == username).first():
-            parser.error("username already exists")
+        existing = db.query(User).filter(User.username == username).first()
+        if existing:
+            existing.password_hash = hash_password(password)
+            existing.role = UserRole.STAFF.value
+            existing.is_demo = False
+            db.commit()
+            print(f"[create_staff] Updated existing staff account: {username} (is_demo=False)")
+            return
+
         user = User(
-            id=str(uuid.uuid4()),
+            id=f"STAFF_{uuid.uuid4().hex[:8]}",
             username=username,
             password_hash=hash_password(password),
             role=UserRole.STAFF.value,
+            full_name="Nhân viên Dịch vụ VinFast",
+            phone="1900232389",
+            vehicle_model=None,
             mock_customer_id=None,
+            is_demo=False,
         )
         db.add(user)
         try:
             db.commit()
+            print(f"[create_staff] Created staff account: {username} (is_demo=False)")
         except IntegrityError:
             db.rollback()
-            parser.error("username already exists")
+            raise ValueError(f"Username {username} already exists")
 
-    print(f"Staff account created: {username}")
-    return 0
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Create a real ServiceFlow staff account (is_demo=False)")
+    parser.add_argument("pos_username", nargs="?", default=None, help="Staff login username or email")
+    parser.add_argument("--username", "-u", default=None, help="Staff login username or email")
+    parser.add_argument("--password", "-p", default=None, help="Staff password (min 12 chars)")
+    args = parser.parse_args()
+
+    username = args.username or args.pos_username or os.environ.get("STAFF_SEED_USERNAME")
+    password = args.password or os.environ.get("STAFF_SEED_PASSWORD")
+
+    if not username:
+        if sys.stdin.isatty():
+            username = input("Staff username / email: ").strip()
+        else:
+            parser.error("Username is required via argument or STAFF_SEED_USERNAME env var")
+
+    if not password:
+        if sys.stdin.isatty():
+            password = getpass("Password (minimum 12 characters): ")
+            confirmation = getpass("Confirm password: ")
+            if password != confirmation:
+                parser.error("Passwords do not match")
+        else:
+            parser.error("Password is required via --password or STAFF_SEED_PASSWORD env var")
+
+    settings = get_settings()
+    if settings.app_env == "production" and len(settings.auth_secret_key.get_secret_value()) < 32:
+        parser.error("AUTH_SECRET_KEY must be configured with >=32 chars before provisioning production staff")
+
+    try:
+        create_or_update_staff(username, password)
+        return 0
+    except Exception as exc:
+        print(f"[create_staff ERROR] {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

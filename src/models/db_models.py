@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime
 from enum import StrEnum
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, false
 from sqlalchemy.dialects.sqlite import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -165,6 +165,7 @@ class User(Base):
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     vehicle_model: Mapped[str | None] = mapped_column(String(50), nullable=True)
     mock_customer_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false(), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     cases: Mapped[list["Case"]] = relationship(back_populates="user")
@@ -187,6 +188,7 @@ class Case(Base):
     mock_customer_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)  # Demo seed only
     vehicle_code_mock: Mapped[str | None] = mapped_column(String(50), nullable=True)  # format VF-SF-xxxxx
     vehicle_model: Mapped[str | None] = mapped_column(String(50), nullable=True)  # VF3 | VF5 | VF6...
+    vehicle_source: Mapped[str | None] = mapped_column(String(30), nullable=True, default=None)  # profile | user_stated | inferred
     intent: Mapped[str] = mapped_column(String(50), nullable=False)
     priority: Mapped[str] = mapped_column(String(20), nullable=False, default=Priority.MEDIUM.value)
     status: Mapped[str] = mapped_column(String(30), nullable=False, default=TicketStatus.NEW.value)
@@ -194,6 +196,7 @@ class Case(Base):
     safety_acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     incident_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default='1')
     assigned_staff_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false(), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
@@ -252,6 +255,7 @@ class ChatSession(Base):
     owner: Mapped[str] = mapped_column(String(100), nullable=False)
     lease_token: Mapped[str | None] = mapped_column(String(36), nullable=True)
     lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false(), index=True)
     memory_states: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict, server_default='{}')
 
 

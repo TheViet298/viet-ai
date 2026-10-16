@@ -24,15 +24,22 @@ def test_runner_imports_database_only_after_isolation(tmp_path):
     import json
     import subprocess
     import sys
+    import shutil
+    from uuid import uuid4
     from pathlib import Path
     root = Path(__file__).resolve().parents[1]
-    result = subprocess.run([sys.executable, str(root / 'scripts/check_langfuse_matrix.py'),
-                             '--probe-isolation', '--output-dir', str(tmp_path / 'run')],
-                            cwd=root, capture_output=True, text=True, timeout=30)
-    assert result.returncode == 0, result.stderr[-1000:]
-    data = json.loads(result.stdout)
-    for path in data.values():
-        assert Path(path).resolve().is_relative_to(tmp_path.resolve())
+    probe_dir = root / '.test-runs' / f'probe-{uuid4().hex[:8]}'
+    try:
+        result = subprocess.run([sys.executable, str(root / 'scripts/check_langfuse_matrix.py'),
+                                 '--probe-isolation', '--output-dir', str(probe_dir)],
+                                cwd=root, capture_output=True, text=True, timeout=30)
+        assert result.returncode == 0, result.stderr[-1000:]
+        data = json.loads(result.stdout)
+        for path in data.values():
+            assert Path(path).resolve().is_relative_to(probe_dir.resolve())
+    finally:
+        if probe_dir.exists():
+            shutil.rmtree(probe_dir, ignore_errors=True)
 
 
 def test_validation_user_passes_real_upload_rbac(tmp_path):

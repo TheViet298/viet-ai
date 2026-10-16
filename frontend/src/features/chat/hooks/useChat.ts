@@ -33,8 +33,8 @@ export interface ChatUserContext {
 }
 
 export function getSalutation(fullName?: string): { title: string; shortName: string; pronoun: string } {
-  if (!fullName || !fullName.trim()) {
-    return { title: "", shortName: "", pronoun: "bạn" };
+  if (!fullName || !fullName.trim() || ["guest", "khách", "khách hàng", "anh/chị"].includes(fullName.trim().toLowerCase())) {
+    return { title: "", shortName: "", pronoun: "Quý khách" };
   }
   const parts = fullName.trim().split(/\s+/);
   const shortName = parts[parts.length - 1];
@@ -52,7 +52,7 @@ export function getSalutation(fullName?: string): { title: string; shortName: st
   if (isMale) {
     return { title: "anh", shortName, pronoun: "anh" };
   }
-  return { title: "", shortName, pronoun: "bạn" };
+  return { title: "", shortName, pronoun: "Quý khách" };
 }
 
 export function createWelcomeMessage(context?: ChatUserContext | string): ChatMessage {
@@ -62,19 +62,19 @@ export function createWelcomeMessage(context?: ChatUserContext | string): ChatMe
   const { title, shortName, pronoun } = getSalutation(userName);
 
   let content: string;
-  if (shortName) {
+  if (shortName && !["guest", "khách", "khách hàng", "anh/chị"].includes(shortName.toLowerCase())) {
     const greetingStart = title ? `Chào ${title} ${shortName}!` : `Chào ${shortName}!`;
     if (caseId) {
       content = `${greetingStart} Hồ sơ ${caseId} đang được kỹ thuật viên kiểm tra. Em giúp gì thêm được cho ${pronoun} hôm nay ạ?`;
     } else {
-      content = `${greetingStart} Em là Trợ lý VF Serv. Em có thể hỗ trợ gì cho ${pronoun} hôm nay ạ?`;
+      content = `${greetingStart} Em là Trợ lý VFServ. Em có thể hỗ trợ gì cho ${pronoun} hôm nay ạ?`;
     }
   } else {
     // Khách vãng lai (Guest)
     if (caseId) {
-      content = `Chào bạn! Hồ sơ ${caseId} đang được kỹ thuật viên kiểm tra. Bạn cần em hỗ trợ thêm thông tin gì không ạ?`;
+      content = `Chào Quý khách! Hồ sơ ${caseId} đang được kỹ thuật viên kiểm tra. Quý khách cần em hỗ trợ thêm thông tin gì không ạ?`;
     } else {
-      content = `Chào bạn! Em là Trợ lý VF Serv. Em có thể hỗ trợ gì cho bạn hôm nay ạ?`;
+      content = `Chào Quý khách! Em là Trợ lý VFServ. Em có thể hỗ trợ gì cho Quý khách hôm nay ạ?`;
     }
   }
 
@@ -92,6 +92,24 @@ export function createWelcomeMessage(context?: ChatUserContext | string): ChatMe
   };
 }
 
+let sessionCounter = 0;
+
+export function generateSecureSessionId(): string {
+  sessionCounter = (sessionCounter + 1) % 10000;
+  const seq = sessionCounter.toString(36);
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    const raw = crypto.randomUUID().replace(/-/g, "").slice(0, 24);
+    return `sess_vf_${raw}_${seq}`;
+  }
+  const randArr = new Uint32Array(4);
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    crypto.getRandomValues(randArr);
+    const hex = Array.from(randArr).map((n) => n.toString(16).padStart(8, "0")).join("").slice(0, 24);
+    return `sess_vf_${hex}_${seq}`;
+  }
+  return `sess_vf_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}_${seq}`;
+}
+
 export const INITIAL_WELCOME_MESSAGE: ChatMessage = createWelcomeMessage();
 
 export function useChat(context?: ChatUserContext | string) {
@@ -100,7 +118,7 @@ export function useChat(context?: ChatUserContext | string) {
   const [messages, setMessages] = useState<ChatMessage[]>(() => [createWelcomeMessage(ctx)]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sessionId, setSessionId] = useState(() => `sess_vf_${Math.random().toString(36).substring(2, 9)}`);
+  const [sessionId, setSessionId] = useState(() => generateSecureSessionId());
   const [currentCaseId, setCurrentCaseId] = useState<string | null>(() => ctx.caseId || null);
   const [storageRestored, setStorageRestored] = useState(false);
   const [criticalBanner, setCriticalBanner] = useState(false);
@@ -130,11 +148,18 @@ export function useChat(context?: ChatUserContext | string) {
   useEffect(() => {
     const savedCase = storedCaseId();
     if (!ctx.caseId) setCurrentCaseId(savedCase);
-    if (!ctx.caseId || ctx.caseId === savedCase) {
+
+    // Kiểm tra xem có initial prompt đang chờ từ URL hoặc sessionStorage không
+    const hasPendingPrompt = typeof window !== "undefined" && (
+      Boolean(typeof sessionStorage !== "undefined" && sessionStorage.getItem("vf_initial_prompt")) ||
+      Boolean(typeof window.location !== "undefined" && new URLSearchParams(window.location.search).get("prompt"))
+    );
+
+    if (!hasPendingPrompt && (!ctx.caseId || ctx.caseId === savedCase)) {
       try {
         const key = storageKey("session");
         const savedSession = key ? localStorage.getItem(key) : null;
-        if (savedSession && /^sess_vf_[a-z0-9_-]+$/.test(savedSession) && savedSession.length <= 64) {
+        if (savedSession && /^sess_vf_[a-zA-Z0-9_-]+$/.test(savedSession) && savedSession.length <= 64) {
           setSessionId(savedSession);
           void (async () => {
             try {
@@ -201,7 +226,13 @@ export function useChat(context?: ChatUserContext | string) {
     return () => { cancelled = true; clearInterval(timer); window.removeEventListener("focus", onFocus); };
   }, [currentCaseId, storageRestored]);
 
+  const lastUserRef = useRef(ctx.userName);
   useEffect(() => {
+    if (lastUserRef.current !== ctx.userName) {
+      lastUserRef.current = ctx.userName;
+      resetChat();
+      return;
+    }
     setMessages((prev) => {
       if (prev.length === 1 && prev[0].id === "welcome-1") {
         return [createWelcomeMessage(ctx)];
@@ -220,12 +251,56 @@ export function useChat(context?: ChatUserContext | string) {
     setCriticalBannerDismissed(false);
     setSessionHasCritical(false);
     setRequestLocation(false);
-    setSessionId(`sess_vf_${Math.random().toString(36).substring(2, 9)}`);
+    setSessionId(generateSecureSessionId());
     safetyRef.current = { caseId: null, version: 0, acknowledged: false, epoch: safetyRef.current.epoch + 1 };
     failedRequest.current = null;
     setIncidentVersion(null);
     setSafetyError(null);
     setSafetyPending(false);
+  };
+
+  const loadSession = async (targetSessionId: string) => {
+    if (targetSessionId === sessionId) return;
+    const currentGen = ++conversationGeneration.current;
+    setLoading(true);
+    setSessionId(targetSessionId);
+    setMessages([createWelcomeMessage(ctx)]); // Reset ngay lập tức để tránh chồng chéo tin nhắn cũ
+    try {
+      const key = storageKey("session");
+      if (key) localStorage.setItem(key, targetSessionId);
+    } catch {}
+
+    try {
+      const hist = await getSessionHistory(targetSessionId);
+      if (currentGen !== conversationGeneration.current) return;
+      if (hist?.success && hist?.data?.messages && hist.data.messages.length > 0) {
+        const mapped: ChatMessage[] = hist.data.messages.map((m) => ({
+          id: m.id,
+          sender: m.sender === "CUSTOMER" ? "CUSTOMER" : "AGENT",
+          content: m.content,
+          timestamp: m.timestamp,
+          response_type: m.response_type,
+          citations: m.citations,
+          suggested_replies: m.suggested_replies,
+          safe_guidance: m.safe_guidance,
+          case_id: m.case_id,
+          priority: m.priority,
+        }));
+        setMessages(mapped);
+        setCurrentCaseId(hist.data.case_id || null);
+      } else {
+        setMessages([createWelcomeMessage(ctx)]);
+        setCurrentCaseId(null);
+      }
+    } catch {
+      if (currentGen === conversationGeneration.current) {
+        setMessages([createWelcomeMessage(ctx)]);
+      }
+    } finally {
+      if (currentGen === conversationGeneration.current) {
+        setLoading(false);
+      }
+    }
   };
 
   const updateMessageChips = (messageId: string, newChips: string[]) => {
@@ -405,6 +480,7 @@ export function useChat(context?: ChatUserContext | string) {
     requestLocation,
     sendMessage,
     resetChat,
+    loadSession,
     updateMessageChips,
   };
 }

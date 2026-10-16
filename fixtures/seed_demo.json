@@ -1,0 +1,531 @@
+[
+  {
+    "scenario_key": "DEMO_SCENARIO_01_CC01_REVIEWING",
+    "index": "001",
+    "intent": "Charging/Battery",
+    "priority": "HIGH",
+    "status": "Staff Reviewing",
+    "vehicle_model": "VF8",
+    "vehicle_code_mock": "VF8-ECO-2024",
+    "user_key": "customer1",
+    "safety_status": "customer_reported_safe",
+    "safety_acknowledged_offset_minutes": 40,
+    "created_offset_hours": 2,
+    "updated_offset_hours": 1,
+    "location": {
+      "status": "SUCCESS",
+      "source": "DEVICE_GPS",
+      "location_label": "Trụ sạc #03 - Trạm sạc VinFast Landmark 81, P.22, Bình Thạnh, TP.HCM",
+      "latitude": 10.7951,
+      "longitude": 106.7218,
+      "precision": "EXACT",
+      "share_with_staff": true
+    },
+    "brief": {
+      "summary": "Trụ sạc báo lỗi CC01, súng sạc bị kẹt tại cổng sạc xe VF8. Khách hàng đã ở vị trí an toàn.",
+      "captured_fields": {
+        "vehicle_model": "VF8",
+        "error_code": "CC01",
+        "charger_id": "VN-CS-HCM-001",
+        "issue_type": "CHARGING_GUN_STUCK",
+        "safety_confirmed": true
+      },
+      "suggested_action": "Chuyên viên liên hệ hỗ trợ mở khóa súng sạc thủ công qua chốt giật khẩn cấp, cử kỹ thuật viên nếu chưa tháo được.",
+      "confidence_score": 0.98
+    },
+    "messages": [
+      {
+        "sender": "CUSTOMER",
+        "content": "Tôi đang sạc ở Landmark 81 thì trụ báo lỗi CC01 và súng sạc bị kẹt cứng không rút ra được, xe đang ở mức pin 45%.",
+        "offset_minutes": 60
+      },
+      {
+        "sender": "AGENT",
+        "content": "Dạ em đã ghi nhận sự cố lỗi CC01 và kẹt súng sạc xe VF8 tại trạm Landmark 81. Em đã chuyển hồ sơ tới chuyên viên hỗ trợ khẩn cấp.",
+        "offset_minutes": 58
+      },
+      {
+        "sender": "CUSTOMER",
+        "content": "Tôi đã tắt máy và đang đứng ở khu vực sảnh chờ an toàn rồi nhé.",
+        "offset_minutes": 40
+      }
+    ],
+    "updates": [
+      {
+        "author_type": "STAFF",
+        "status_after_update": "Staff Reviewing",
+        "customer_message": "Chuyên viên dịch vụ VinFast đang tiếp nhận và hướng dẫn thao tác giật chốt cơ học trong cốp xe.",
+        "next_step": "Kỹ thuật viên trạm sạc đang di chuyển đến trụ sạc hỗ trợ khách hàng.",
+        "awaiting_customer_confirmation": false,
+        "offset_minutes": 30
+      }
+    ],
+    "session_id": "sess_vf_98234",
+    "attachment": {
+      "id": "ATT-20260930-001",
+      "storage_key": "private/attachments/att_001.jpg",
+      "mime_type": "image/jpeg",
+      "analysis_status": "ANALYZED",
+      "ocr_text": "Lỗi CC01 trạm sạc",
+      "detected_signals": {"error_code": "CC01"},
+      "vision_confidence": 0.95
+    }
+  },
+  {
+    "scenario_key": "DEMO_SCENARIO_02_TURTLE_HIGHWAY_CRITICAL",
+    "index": "002",
+    "intent": "Service/Incident",
+    "priority": "CRITICAL",
+    "status": "New",
+    "vehicle_model": "VF8",
+    "vehicle_code_mock": "VF8-PLUS-2023",
+    "user_key": "customer1",
+    "safety_status": "unconfirmed",
+    "safety_acknowledged_offset_minutes": null,
+    "created_offset_hours": 1,
+    "updated_offset_hours": 1,
+    "location": {
+      "status": "SUCCESS",
+      "source": "DEVICE_GPS",
+      "location_label": "Km 188 Cao tốc Pháp Vân - Cầu Giẽ, hướng đi Hà Nội",
+      "latitude": 20.8523,
+      "longitude": 105.9142,
+      "precision": "EXACT",
+      "share_with_staff": true
+    },
+    "brief": {
+      "summary": "CẢNH BÁO NGUY HIỂM: Xe báo rùa vàng giảm công suất đột ngột trên cao tốc. Khách hàng chưa xác nhận an toàn.",
+      "captured_fields": {
+        "vehicle_model": "VF8",
+        "warning_type": "TURTLE_ON_HIGHWAY",
+        "speed_reduced": true,
+        "safety_acknowledged": false,
+        "hazard_level": "EXTREME"
+      },
+      "suggested_action": "HƯỚNG DẪN KHẨN CẤP: Bật đèn khẩn cấp hazard, tấp xe vào làn dừng khẩn cấp ngay, di chuyển toàn bộ người ra sau hộ lan và gọi cứu hộ 1900232389.",
+      "confidence_score": 0.99
+    },
+    "messages": [
+      {
+        "sender": "CUSTOMER",
+        "content": "Xe tôi đang chạy trên cao tốc Pháp Vân Cầu Giẽ thì hiện hình con rùa vàng, xe bị giảm công suất không đạp ga lên được, rất nguy hiểm!",
+        "offset_minutes": 45
+      },
+      {
+        "sender": "AGENT",
+        "content": "CẢNH BÁO AN TOÀN KHẨN CẤP: Quý khách hãy bật đèn báo nguy hazard, quan sát gương và tấp xe ngay vào làn dừng khẩn cấp bên phải. Toàn bộ hành khách nhanh chóng rời xe và đứng sau dải hộ lan an toàn!",
+        "offset_minutes": 44
+      }
+    ],
+    "updates": []
+  },
+  {
+    "scenario_key": "DEMO_SCENARIO_03_NEEDS_INFO_MISSING_FIELDS",
+    "index": "003",
+    "intent": "Service/Incident",
+    "priority": "MEDIUM",
+    "status": "Needs Information",
+    "vehicle_model": "VF5",
+    "vehicle_code_mock": "VF5-PLUS-2024",
+    "user_key": "customer2",
+    "safety_status": "customer_reported_safe",
+    "safety_acknowledged_offset_minutes": 100,
+    "created_offset_hours": 4,
+    "updated_offset_hours": 3,
+    "location": null,
+    "brief": {
+      "summary": "Màn hình giải trí xe thỉnh thoảng chớp đen khi khởi động. Thiếu thông tin phiên bản phần mềm và điều kiện tái hiện.",
+      "captured_fields": {
+        "vehicle_model": "VF5",
+        "symptom": "SCREEN_FLICKER",
+        "missing_fields": ["software_version", "reproduction_steps", "current_location"]
+      },
+      "suggested_action": "Liên hệ khách hàng để kiểm tra phiên bản phần mềm F域 và lịch sử cập nhật OTA gần nhất.",
+      "confidence_score": 0.85
+    },
+    "messages": [
+      {
+        "sender": "CUSTOMER",
+        "content": "Chào em, xe chị gần đây màn hình trung tâm thỉnh thoảng bị nháy đen một cái lúc mới bật xe.",
+        "offset_minutes": 240
+      },
+      {
+        "sender": "AGENT",
+        "content": "Dạ em chào chị. Để kỹ thuật viên kiểm tra chính xác, chị cho em hỏi phiên bản phần mềm xe hiện tại và hiện tượng này xảy ra mỗi ngày hay chỉ thỉnh thoảng ạ?",
+        "offset_minutes": 238
+      }
+    ],
+    "updates": [
+      {
+        "author_type": "STAFF",
+        "status_after_update": "Needs Information",
+        "customer_message": "Cố vấn dịch vụ đang chờ khách hàng phản hồi thêm thông tin phiên bản phần mềm trong phần Cài đặt > Thông tin xe.",
+        "next_step": "Gọi điện lại cho khách hàng sau 2 giờ nếu chưa có thông tin bổ sung.",
+        "awaiting_customer_confirmation": false,
+        "offset_minutes": 180
+      }
+    ]
+  },
+  {
+    "scenario_key": "DEMO_SCENARIO_04_WALLBOX_IN_PROGRESS",
+    "index": "004",
+    "intent": "Charging/Battery",
+    "priority": "MEDIUM",
+    "status": "In Progress",
+    "vehicle_model": "VF9",
+    "vehicle_code_mock": "VF9-PLUS-2024",
+    "user_key": "customer2",
+    "safety_status": "customer_reported_safe",
+    "safety_acknowledged_offset_minutes": 300,
+    "created_offset_hours": 8,
+    "updated_offset_hours": 2,
+    "location": {
+      "status": "SUCCESS",
+      "source": "MANUAL_INPUT",
+      "location_label": "Khu đô thị Vinhomes Ocean Park, Gia Lâm, Hà Nội",
+      "latitude": 20.9954,
+      "longitude": 105.9482,
+      "precision": "APPROXIMATE",
+      "share_with_staff": true
+    },
+    "brief": {
+      "summary": "Bộ sạc treo tường Wallbox 7.4kW tại nhà nhấp nháy đèn đỏ báo lỗi tiếp địa (Ground Fault).",
+      "captured_fields": {
+        "vehicle_model": "VF9",
+        "charger_type": "WALLBOX_7_4KW",
+        "error_indicator": "LED_RED_BLINK",
+        "potential_cause": "EARTH_LEAKAGE"
+      },
+      "suggested_action": "Kỹ thuật viên dịch vụ lưu động đến đo đạc hệ thống tiếp địa và kiểm tra bộ chuyển đổi nguồn.",
+      "confidence_score": 0.94
+    },
+    "messages": [
+      {
+        "sender": "CUSTOMER",
+        "content": "Bộ sạc Wallbox 7.4kW ở nhà tôi cắm vào xe không nhận, đèn trên cục sạc cứ chớp đỏ liên tục.",
+        "offset_minutes": 480
+      },
+      {
+        "sender": "AGENT",
+        "content": "Dạ hiện tượng đèn đỏ chớp thường liên quan đến dây tiếp địa hoặc nguồn điện áp đầu vào. Em đã lập hồ sơ chuyển đội ngũ Kỹ thuật lưu động.",
+        "offset_minutes": 475
+      }
+    ],
+    "updates": [
+      {
+        "author_type": "STAFF",
+        "status_after_update": "In Progress",
+        "customer_message": "Kỹ thuật viên dịch vụ VinFast (Mr. Hoàng - 0903123456) đang trên đường đến địa chỉ nhà khách hàng kiểm tra bộ sạc.",
+        "next_step": "Dự kiến có mặt lúc 14:30 để đo thông số điện trở tiếp địa.",
+        "awaiting_customer_confirmation": false,
+        "offset_minutes": 120
+      }
+    ]
+  },
+  {
+    "scenario_key": "DEMO_SCENARIO_05_RESOLVED_AWAITING_CONFIRMATION",
+    "index": "005",
+    "intent": "Service/Incident",
+    "priority": "HIGH",
+    "status": "Resolved",
+    "vehicle_model": "VF8",
+    "vehicle_code_mock": "VF8-ECO-2024",
+    "user_key": "customer1",
+    "safety_status": "customer_reported_safe",
+    "safety_acknowledged_offset_minutes": 600,
+    "created_offset_hours": 12,
+    "updated_offset_hours": 1,
+    "location": {
+      "status": "SUCCESS",
+      "source": "DEVICE_GPS",
+      "location_label": "Trạm sạc Vincom Mega Mall Thảo Điền, TP. Thủ Đức",
+      "latitude": 10.8016,
+      "longitude": 106.7412,
+      "precision": "EXACT",
+      "share_with_staff": true
+    },
+    "brief": {
+      "summary": "Lỗi không mở được nắp cổng sạc điện tử trên xe VF8. Kỹ thuật viên lưu động đã xử lý bôi trơn chốt lẫy.",
+      "captured_fields": {
+        "vehicle_model": "VF8",
+        "component": "CHARGE_PORT_DOOR",
+        "action_taken": "LUBRICATED_ACTUATOR"
+      },
+      "suggested_action": "Đã xử lý xong cơ cấu nắp sạc tại chỗ. Đang chờ khách hàng kiểm tra và xác nhận hoàn thành.",
+      "confidence_score": 0.96
+    },
+    "messages": [
+      {
+        "sender": "CUSTOMER",
+        "content": "Cửa nắp cổng sạc xe tôi bị kẹt bấm không bung ra được dù đã bấm nút mở khóa trên màn hình.",
+        "offset_minutes": 720
+      },
+      {
+        "sender": "AGENT",
+        "content": "Em đã gửi yêu cầu cho kỹ thuật viên trạm sạc Thảo Điền đến hỗ trợ anh mở chốt khẩn cấp.",
+        "offset_minutes": 710
+      }
+    ],
+    "updates": [
+      {
+        "author_type": "STAFF",
+        "status_after_update": "Resolved",
+        "customer_message": "Kỹ thuật viên đã xử lý xong chốt cổng sạc và kiểm tra đóng mở 5 lần ổn định. Kính mời quý khách kiểm tra và xác nhận hoàn tất hồ sơ.",
+        "next_step": "Chờ khách hàng nhấn nút Xác nhận trên ứng dụng.",
+        "awaiting_customer_confirmation": true,
+        "offset_minutes": 60
+      }
+    ]
+  },
+  {
+    "scenario_key": "DEMO_SCENARIO_06_RESOLVED_TEST_REOPEN",
+    "index": "006",
+    "intent": "Service/Incident",
+    "priority": "MEDIUM",
+    "status": "Resolved",
+    "vehicle_model": "VF5",
+    "vehicle_code_mock": "VF5-PLUS-2024",
+    "user_key": "customer1",
+    "safety_status": "customer_reported_safe",
+    "safety_acknowledged_offset_minutes": 1200,
+    "created_offset_hours": 20,
+    "updated_offset_hours": 3,
+    "location": {
+      "status": "SUCCESS",
+      "source": "DEVICE_GPS",
+      "location_label": "Xưởng dịch vụ VinFast Times City, Hai Bà Trưng, Hà Nội",
+      "latitude": 20.9958,
+      "longitude": 105.8677,
+      "precision": "EXACT",
+      "share_with_staff": true
+    },
+    "brief": {
+      "summary": "Điều hòa xe làm mát chậm vào buổi trưa. Xưởng đã vệ sinh lọc gió và kiểm tra áp suất gas lạnh.",
+      "captured_fields": {
+        "vehicle_model": "VF5",
+        "system": "HVAC",
+        "action": "CABIN_FILTER_CLEANED"
+      },
+      "suggested_action": "Theo dõi khả năng làm lạnh thực tế. Khách hàng có thể nhấn Mở lại nếu cảm thấy chưa đạt yêu cầu.",
+      "confidence_score": 0.91
+    },
+    "messages": [
+      {
+        "sender": "CUSTOMER",
+        "content": "Điều hòa xe VF5 trưa nắng bật mức gió lớn nhưng mát rất chậm.",
+        "offset_minutes": 1200
+      },
+      {
+        "sender": "AGENT",
+        "content": "Dạ em đã tạo phiếu tiếp nhận để xưởng Times City kiểm tra áp suất hệ thống HVAC cho xe mình.",
+        "offset_minutes": 1190
+      }
+    ],
+    "updates": [
+      {
+        "author_type": "STAFF",
+        "status_after_update": "Resolved",
+        "customer_message": "Hồ sơ đã được xử lý hoàn tất tại Xưởng Times City. Nếu hệ thống điều hòa vẫn chưa đạt nhiệt độ mong muốn, quý khách có thể gửi yêu cầu Mở lại hồ sơ.",
+        "next_step": "Hồ sơ đã Resolved, sẵn sàng cho khách hàng kiểm tra hoặc Reopen.",
+        "awaiting_customer_confirmation": true,
+        "offset_minutes": 180
+      }
+    ]
+  },
+  {
+    "scenario_key": "DEMO_SCENARIO_07_CLOSED_5_STAR_FEEDBACK",
+    "index": "007",
+    "intent": "Service/Incident",
+    "priority": "MEDIUM",
+    "status": "Closed",
+    "vehicle_model": "VF8",
+    "vehicle_code_mock": "VF8-ECO-2024",
+    "user_key": "customer1",
+    "safety_status": "customer_reported_safe",
+    "safety_acknowledged_offset_minutes": 1800,
+    "created_offset_hours": 36,
+    "updated_offset_hours": 10,
+    "location": {
+      "status": "SUCCESS",
+      "source": "DEVICE_GPS",
+      "location_label": "Vincom Center Trần Duy Hưng, Cầu Giấy, Hà Nội",
+      "latitude": 21.0071,
+      "longitude": 105.7937,
+      "precision": "EXACT",
+      "share_with_staff": true
+    },
+    "brief": {
+      "summary": "Lốp xe báo áp suất thấp 1.8 bar. Đội cứu hộ VinFast đã tới bơm bù và vá lỗ đinh an toàn tại chỗ.",
+      "captured_fields": {
+        "vehicle_model": "VF8",
+        "issue": "TIRE_PRESSURE_LOW",
+        "resolution": "ON_SITE_REPAIR"
+      },
+      "suggested_action": "Đã hoàn thành cứu hộ tại chỗ. Khách hàng rất hài lòng và đánh giá 5 sao.",
+      "confidence_score": 0.99
+    },
+    "messages": [
+      {
+        "sender": "CUSTOMER",
+        "content": "Bánh sau bên phải xe báo còn 1.8 bar, chắc bị dính đinh ở hầm Vincom Trần Duy Hưng.",
+        "offset_minutes": 2160
+      },
+      {
+        "sender": "AGENT",
+        "content": "Dạ em đã chuyển thông tin tới đội cứu hộ di động nội thành Hà Nội hỗ trợ anh ngay lập tức.",
+        "offset_minutes": 2150
+      }
+    ],
+    "updates": [
+      {
+        "author_type": "STAFF",
+        "status_after_update": "Closed",
+        "customer_message": "Đội cứu hộ đã vá xong lốp xe và cân chỉnh lại áp suất 4 bánh tiêu chuẩn 2.5 bar.",
+        "next_step": "Hồ sơ hoàn tất xuất sắc.",
+        "awaiting_customer_confirmation": false,
+        "offset_minutes": 600
+      }
+    ],
+    "feedback": {
+      "rating": 5,
+      "comment": "Nhân viên cứu hộ đến cực nhanh chỉ sau 15 phút, thao tác chuyên nghiệp và rất niềm nở. Dịch vụ số 1!",
+      "reason_tags": ["XU_LY_NHANH", "NHIET_TINH", "HAI_LONG", "DUNG_HEN"]
+    }
+  },
+  {
+    "scenario_key": "DEMO_SCENARIO_08_CLOSED_1_STAR_FEEDBACK",
+    "index": "008",
+    "intent": "Complaint/Feedback",
+    "priority": "HIGH",
+    "status": "Closed",
+    "vehicle_model": "VF9",
+    "vehicle_code_mock": "VF9-PLUS-2024",
+    "user_key": "customer2",
+    "safety_status": "customer_reported_safe",
+    "safety_acknowledged_offset_minutes": 2500,
+    "created_offset_hours": 48,
+    "updated_offset_hours": 12,
+    "location": {
+      "status": "SUCCESS",
+      "source": "DEVICE_GPS",
+      "location_label": "Trạm dừng nghỉ Km 77 Cao tốc Hà Nội - Hải Phòng",
+      "latitude": 20.8142,
+      "longitude": 106.1824,
+      "precision": "EXACT",
+      "share_with_staff": true
+    },
+    "brief": {
+      "summary": "Khách hàng khiếu nại thời gian cứu hộ xe ắc quy 12V trễ hẹn hơn 1 tiếng trên cao tốc Hà Nội - Hải Phòng.",
+      "captured_fields": {
+        "vehicle_model": "VF9",
+        "complaint_type": "RESCUE_DELAY",
+        "promised_eta_mins": 30,
+        "actual_eta_mins": 95
+      },
+      "suggested_action": "Quản lý dịch vụ gọi điện xin lỗi trực tiếp, giải thích nguyên nhân kẹt xe và gửi voucher bảo dưỡng tri ân.",
+      "confidence_score": 0.97
+    },
+    "messages": [
+      {
+        "sender": "CUSTOMER",
+        "content": "Tôi rất bức xúc vì tổng đài hẹn 30 phút có xe cứu hộ đến kích bình 12V mà tôi phải đợi gần 2 tiếng giữa trời nắng gắt!",
+        "offset_minutes": 2880
+      },
+      {
+        "sender": "AGENT",
+        "content": "Dạ VinFast vô cùng xin lỗi quý khách về sự chậm trễ này do xe cứu hộ gặp ùn tắc trên tuyến đường tiếp cận. Em chuyển ngay cho Trưởng ca dịch vụ can thiệp.",
+        "offset_minutes": 2870
+      }
+    ],
+    "updates": [
+      {
+        "author_type": "STAFF",
+        "status_after_update": "Closed",
+        "customer_message": "Đại diện ban quản lý chất lượng dịch vụ VinFast đã gọi điện xin lỗi và ghi nhận phản ánh của quý khách.",
+        "next_step": "Rà soát lại quy trình điều phối xe cứu hộ trên các tuyến cao tốc phía Bắc.",
+        "awaiting_customer_confirmation": false,
+        "offset_minutes": 720
+      }
+    ],
+    "feedback": {
+      "rating": 1,
+      "comment": "Thời gian chờ đợi quá lâu, không đúng cam kết ban đầu làm nhỡ toàn bộ công việc quan trọng của tôi.",
+      "reason_tags": ["DEN_TRE", "THOI_GIAN_CHO_LAU", "CHUA_HAI_LONG", "SAI_CAM_KET"]
+    }
+  },
+  {
+    "scenario_key": "DEMO_SCENARIO_09_AUTO_CLOSED_72H",
+    "index": "009",
+    "intent": "Service/Incident",
+    "priority": "LOW",
+    "status": "Closed",
+    "vehicle_model": "VF5",
+    "vehicle_code_mock": "VF5-PLUS-2024",
+    "user_key": "customer2",
+    "safety_status": "customer_reported_safe",
+    "safety_acknowledged_offset_minutes": 5500,
+    "created_offset_hours": 96,
+    "updated_offset_hours": 20,
+    "is_auto_closed": true,
+    "location": {
+      "status": "SUCCESS",
+      "source": "MANUAL_INPUT",
+      "location_label": "Hầm B2 Vincom Center Liễu Giai, Ba Đình, Hà Nội",
+      "latitude": 21.0315,
+      "longitude": 105.8143,
+      "precision": "APPROXIMATE",
+      "share_with_staff": true
+    },
+    "brief": {
+      "summary": "Hướng dẫn khách hàng cài đặt lại chìa khóa thông minh Smartkey sau khi thay pin. Ca đã Resolved quá 72h không phản hồi.",
+      "captured_fields": {
+        "vehicle_model": "VF5",
+        "device": "SMARTKEY",
+        "instruction": "PAIRING_PROCEDURE",
+        "auto_closed_reason": "INACTIVITY_EXCEEDED_72H"
+      },
+      "suggested_action": "Hệ thống tự động lưu trữ và đóng hồ sơ sau 72 giờ khách hàng không có phản hồi bổ sung.",
+      "confidence_score": 0.99
+    },
+    "messages": [
+      {
+        "sender": "CUSTOMER",
+        "content": "Chìa khóa xe tôi mới thay pin nhưng bấm nút mở cốp không nhạy, cần cài đặt lại thế nào?",
+        "offset_minutes": 5760
+      },
+      {
+        "sender": "AGENT",
+        "content": "Dạ quý khách vui lòng đặt chìa khóa vào khay sạc không dây và giữ nút Start/Stop trong 5 giây để xe nhận lại mã hóa chìa ạ.",
+        "offset_minutes": 5750
+      }
+    ],
+    "updates": [
+      {
+        "author_type": "STAFF",
+        "status_after_update": "Resolved",
+        "customer_message": "Chuyên viên đã hướng dẫn khách hàng ghép đôi chìa khóa thành công qua điện thoại.",
+        "next_step": "Chờ khách hàng xác nhận nghiệm thu.",
+        "awaiting_customer_confirmation": true,
+        "offset_minutes": 4800
+      },
+      {
+        "author_type": "SYSTEM",
+        "status_after_update": "Closed",
+        "customer_message": "Hồ sơ sự cố đã được hệ thống tự động lưu trữ và đóng sau 72 giờ không có phản hồi thêm.",
+        "next_step": "Quý khách có thể yêu cầu mở lại nếu sự cố phát sinh trở lại.",
+        "awaiting_customer_confirmation": false,
+        "offset_minutes": 1200
+      }
+    ],
+    "audit_logs": [
+      {
+        "staff_id": "SYSTEM_AUTO_CLOSE",
+        "action": "CLOSE",
+        "previous_status": "Resolved",
+        "new_status": "Closed",
+        "notes": "[SYSTEM AUTO-CLOSE] Tự động đóng hồ sơ sau 72h không có phản hồi từ khách hàng.",
+        "offset_minutes": 1200
+      }
+    ]
+  }
+]

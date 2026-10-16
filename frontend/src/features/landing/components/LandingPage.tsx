@@ -45,35 +45,30 @@ const QUICK_PROMPTS = [
   {
     label: "Sạc không vào điện (CC01)",
     text: "Trụ sạc VinFast cắm súng vào xe nhưng đèn báo đỏ lỗi CC01 và không nhận điện.",
-    model: "VF8",
     category: "Sự cố",
     icon: "⚠",
   },
   {
     label: "Táp-lô hiện rùa vàng",
     text: "Xe tôi hiện biểu tượng con rùa màu vàng trên màn hình táp-lô, xe bị giới hạn công suất.",
-    model: "VF5",
     category: "Sự cố",
     icon: "⚠",
   },
   {
     label: "Lịch bảo dưỡng 12.000km",
     text: "Xe điện VinFast chạy được 12.000km cần bảo dưỡng và kiểm tra những hạng mục nào?",
-    model: "VF8",
     category: "Bảo dưỡng",
     icon: "🔧",
   },
   {
     label: "Tìm trạm sạc gần tôi",
     text: "Tìm trạm sạc xe điện VinFast gần vị trí của tôi nhất.",
-    model: "VF8",
     category: "Tra cứu",
     icon: "⚡",
   },
   {
     label: "Cách dùng app VinFast",
     text: "Hướng dẫn cách kết nối và đặt lịch sạc qua ứng dụng VinFast trên điện thoại.",
-    model: "VF8",
     category: "Hướng dẫn",
     icon: "📱",
   },
@@ -87,7 +82,6 @@ const ISSUE_CATEGORIES = [
     desc: "Cổng sạc kẹt, trụ báo đỏ CC01, ngắt nguồn hoặc sạc chậm",
     icon: BatteryCharging,
     query: "Trụ sạc VinFast báo đèn đỏ lỗi CC01 không sạc được điện.",
-    model: "VinFast VF8",
   },
   {
     id: "dashboard",
@@ -95,7 +89,6 @@ const ISSUE_CATEGORIES = [
     desc: "Biểu tượng con rùa vàng, áp suất lốp TPMS, cảnh báo bình 12V",
     icon: Camera,
     query: "Màn hình xe hiện biểu tượng con rùa vàng và đèn cảnh báo lạ.",
-    model: "VinFast VF5",
   },
   {
     id: "powertrain",
@@ -103,7 +96,6 @@ const ISSUE_CATEGORIES = [
     desc: "Kẹt cần số D/R, mất trợ lực lái, xe không di chuyển được",
     icon: Wrench,
     query: "Xe đã khởi động nhưng không gạt sang được số D để di chuyển.",
-    model: "VinFast VF5",
   },
   {
     id: "service",
@@ -111,7 +103,6 @@ const ISSUE_CATEGORIES = [
     desc: "Lịch bảo dưỡng 12.000km, cứu hộ pin lưu động, kiểm tra định kỳ",
     icon: ShieldCheck,
     query: "Cần tra cứu lịch bảo dưỡng định kỳ 12.000km và đặt hẹn dịch vụ.",
-    model: "VinFast VF8",
   },
 ];
 
@@ -372,7 +363,7 @@ export function LandingPage() {
           setArticles(res.data.articles);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     // RBAC: Chỉ truy xuất và hiển thị hồ sơ cá nhân khi vai trò là CUSTOMER đã đăng nhập (Guest không có thẻ này)
     if (role === "CUSTOMER" && user) {
@@ -460,7 +451,6 @@ export function LandingPage() {
   };
 
   const handleSubmit = (overrideQuery?: string, overrideModel?: string) => {
-    const targetModel = overrideModel || (selectedModel ? selectedModel : "VinFast VF8");
     const activePlaceholder = PLACEHOLDER_EXAMPLES[placeholderIndex] || "Trụ sạc báo đèn đỏ không nhận súng sạc thì xử lý sao?";
     const textToSend =
       overrideQuery ||
@@ -470,16 +460,22 @@ export function LandingPage() {
 
     try {
       sessionStorage.setItem("vf_initial_prompt", textToSend);
-      sessionStorage.setItem("vf_initial_model", targetModel);
+      if (overrideModel) {
+        sessionStorage.setItem("vf_initial_model", overrideModel);
+      } else {
+        sessionStorage.removeItem("vf_initial_model");
+      }
       if (imagePreview) {
         sessionStorage.setItem("vf_initial_image", imagePreview);
         sessionStorage.setItem("vf_initial_image_name", imageName || "anh_canh_bao.jpg");
       }
-    } catch {}
+    } catch { }
 
     const queryParams = new URLSearchParams();
     if (textToSend) queryParams.set("prompt", textToSend);
-    queryParams.set("model", targetModel.replace("VinFast ", ""));
+    if (overrideModel) {
+      queryParams.set("model", overrideModel.replace("VinFast ", ""));
+    }
     router.push(`/chat?${queryParams.toString()}`);
   };
 
@@ -621,7 +617,7 @@ export function LandingPage() {
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => handleSubmit(qp.text, qp.model)}
+                  onClick={() => handleSubmit(qp.text)}
                   className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/90 bg-white px-3 py-1.5 text-[11.5px] font-medium text-slate-700 shadow-2xs hover:border-blue-300 hover:bg-blue-50/70 hover:text-[#1E40AF] transition active:scale-[0.98]"
                 >
                   <span className="text-[12px] opacity-80">{qp.icon}</span>
@@ -647,9 +643,8 @@ export function LandingPage() {
 
           {/* Gợi ý cuộn xuống (Tự ẩn khi cuộn) */}
           <div
-            className={`pt-6 transition-all duration-300 ${
-              hasScrolled ? "opacity-0 pointer-events-none translate-y-2" : "opacity-100"
-            }`}
+            className={`pt-6 transition-all duration-300 ${hasScrolled ? "opacity-0 pointer-events-none translate-y-2" : "opacity-100"
+              }`}
           >
             <a
               href="#issue-categories"
@@ -689,7 +684,7 @@ export function LandingPage() {
                 <button
                   key={cat.id}
                   type="button"
-                  onClick={() => handleSubmit(cat.query, cat.model)}
+                  onClick={() => handleSubmit(cat.query)}
                   style={{ transitionDelay: `${idx * 60}ms` }}
                   className="reveal group text-left p-3.5 sm:p-4 rounded-2xl border border-slate-200/80 bg-slate-50/60 hover:bg-white hover:border-blue-300 shadow-2xs hover:shadow-sm transition-all flex items-center justify-between gap-3 active:scale-[0.98]"
                 >
@@ -819,13 +814,12 @@ export function LandingPage() {
                       ].map((st) => (
                         <div key={st.step} className="flex flex-col items-center">
                           <div
-                            className={`h-6 w-full rounded-md flex items-center justify-center text-[10px] font-bold transition ${
-                              st.done
+                            className={`h-6 w-full rounded-md flex items-center justify-center text-[10px] font-bold transition ${st.done
                                 ? "bg-emerald-500 text-white"
                                 : st.current
-                                ? "bg-[#1E40AF] text-white ring-2 ring-blue-100"
-                                : "bg-slate-100 text-slate-400"
-                            }`}
+                                  ? "bg-[#1E40AF] text-white ring-2 ring-blue-100"
+                                  : "bg-slate-100 text-slate-400"
+                              }`}
                           >
                             {st.done ? "✓" : st.step}
                           </div>
@@ -973,11 +967,10 @@ export function LandingPage() {
                   key={c.id}
                   type="button"
                   onClick={() => setSelectedArticleCategory(c.id)}
-                  className={`px-3 py-1 rounded-lg text-[12px] font-medium transition ${
-                    selectedArticleCategory === c.id
+                  className={`px-3 py-1 rounded-lg text-[12px] font-medium transition ${selectedArticleCategory === c.id
                       ? "bg-[#1E40AF] text-white font-semibold shadow-2xs"
                       : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-                  }`}
+                    }`}
                 >
                   {c.label}
                 </button>
@@ -1087,7 +1080,7 @@ export function LandingPage() {
               Sẵn sàng đồng hành cùng bạn trên mọi nẻo đường
             </h2>
             <p className="mx-auto max-w-lg text-[13.5px] text-slate-300 leading-relaxed">
-              Trợ lý VF Serv AI túc trực 24/7 để tiếp nhận, hỗ trợ và kết nối kỹ thuật viên giải quyết sự cố tức thời.
+              Trợ lý VFServ AI túc trực 24/7 để tiếp nhận, hỗ trợ và kết nối kỹ thuật viên giải quyết sự cố tức thời.
             </p>
           </div>
 
@@ -1121,11 +1114,10 @@ export function LandingPage() {
           {/* Màn hình lớn (Desktop / Tablet >= sm): Bong bóng góc dưới phải */}
           <aside
             aria-label="Thông báo hồ sơ đang xử lý"
-            className={`hidden sm:block fixed bottom-6 right-6 z-40 transition-all duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none ${
-              isBubbleMounted
+            className={`hidden sm:block fixed bottom-6 right-6 z-40 transition-all duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none ${isBubbleMounted
                 ? "opacity-100 translate-y-0 translate-x-0"
                 : "opacity-0 translate-y-4 translate-x-2 pointer-events-none"
-            }`}
+              }`}
           >
             {isCaseBubbleExpanded ? (
               /* Thẻ mở rộng rút gọn đúng 2 dòng, cả thẻ bấm được */
@@ -1218,11 +1210,10 @@ export function LandingPage() {
           {/* Màn hình hẹp (< sm / Mobile): Thanh mỏng cố định phía dưới, không dùng thẻ nổi che màn hình */}
           <aside
             aria-label="Hồ sơ đang xử lý trên di động"
-            className={`sm:hidden fixed bottom-0 left-0 right-0 z-40 border-t px-3.5 py-2 backdrop-blur-md shadow-[0_-4px_16px_rgba(0,0,0,0.06)] transition-all duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none ${bubbleConfig.mobileClass} ${
-              isBubbleMounted
+            className={`sm:hidden fixed bottom-0 left-0 right-0 z-40 border-t px-3.5 py-2 backdrop-blur-md shadow-[0_-4px_16px_rgba(0,0,0,0.06)] transition-all duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none ${bubbleConfig.mobileClass} ${isBubbleMounted
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-full pointer-events-none"
-            }`}
+              }`}
           >
             <Link
               href="/track-case"

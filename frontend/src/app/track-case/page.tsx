@@ -951,8 +951,11 @@ export default function TrackCasePage() {
                 </div>
               )}
 
-              {/* KHỐI NHẮC XÁC NHẬN AN TOÀN (Ưu tiên cao - khi safety_status = unconfirmed) */}
-              {currentCase.safetyStatus === "unconfirmed" && (
+              {/* KHỐI NHẮC XÁC NHẬN AN TOÀN (Ưu tiên cao - khi safety_status = unconfirmed trên ca khẩn cấp) */}
+              {(currentCase.priority === "CRITICAL" || currentCase.priority === "HIGH") &&
+                currentCase.status !== "Closed" &&
+                currentCase.status !== "Resolved" &&
+                currentCase.safetyStatus === "unconfirmed" && (
                 <div className="rounded-2xl border-2 border-amber-400 bg-amber-50/90 p-4 sm:p-5 shadow-sm space-y-3 animate-fadeIn">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">

@@ -12,6 +12,9 @@ import {
   MapPin,
   Map,
   Compass,
+  Plus,
+  PanelLeft,
+  History,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -22,6 +25,7 @@ import { ChatFeed } from "./ChatFeed";
 import { ChatInputBar } from "./ChatInputBar";
 import { LocationConsentCard } from "./LocationConsentCard";
 import { ServiceMapPanel } from "./ServiceMapPanel";
+import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { getAiSystemStatus, uploadAttachment } from "../api/chatApi";
 import { getUploadError } from "../uploadState";
 import { useAuth, ProductMark } from "@/features/shared";
@@ -39,6 +43,7 @@ function CustomerChatSession() {
     input,
     setInput,
     loading,
+    sessionId,
     currentCaseId,
     criticalBanner,
     criticalBannerDismissed,
@@ -50,20 +55,40 @@ function CustomerChatSession() {
     requestLocation,
     sendMessage,
     resetChat,
+    loadSession,
     updateMessageChips,
   } = useChat({
     userName: user?.name,
   });
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    try {
+      const saved = localStorage.getItem("vf_chat_sidebar_open");
+      return saved !== null ? saved === "true" : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const handleToggleSidebar = (open: boolean) => {
+    setIsSidebarOpen(open);
+    try {
+      localStorage.setItem("vf_chat_sidebar_open", String(open));
+    } catch {}
+  };
+
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
   const [uploadedAttachmentId, setUploadedAttachmentId] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
   const [resolvedImageKind, setResolvedImageKind] = useState<"dashboard" | "charger" | "exterior" | null>(null);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const [isModalBlockingChat, setIsModalBlockingChat] = useState<boolean>(false);
   const uploadRequestId = useRef(0);
   const hasSentInitialPrompt = useRef(false);
-  const [aiStatus, setAiStatus] = useState<string>("Trợ lý VF Serv • Hỗ trợ dịch vụ xe điện VinFast");
+  const [aiStatus, setAiStatus] = useState<string>("Trợ lý VFServ • Hỗ trợ dịch vụ xe điện VinFast");
 
   // ===========================================================================
   // SERVICE MAP PREVIEW & LOCATION CONSENT (ADR-005, screen-spec.md Section 5.4, CUS-03)
@@ -118,37 +143,46 @@ function CustomerChatSession() {
     getAiSystemStatus()
       .then((res) => {
         if (res?.status === "ready") {
-          setAiStatus("Trợ lý VF Serv • Sẵn sàng hỗ trợ");
+          setAiStatus("Trợ lý VFServ • Sẵn sàng hỗ trợ");
         }
       })
       .catch(() => { });
   }, []);
 
-  // Pre-load draft or auto-send prompt from Landing Hero if available
+  // Pre-load draft or auto-send prompt from Landing Hero or URL if available
   useEffect(() => {
     if (hasSentInitialPrompt.current) return;
 
     try {
-      const savedPrompt = sessionStorage.getItem("vf_initial_prompt");
-      sessionStorage.removeItem("vf_initial_model");
+      // 1. Đọc prompt từ URL hoặc sessionStorage
+      const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+      const urlPrompt = urlParams?.get("prompt");
+      const savedPrompt = urlPrompt || sessionStorage.getItem("vf_initial_prompt");
       const savedImg = sessionStorage.getItem("vf_initial_image");
       const savedImgName = sessionStorage.getItem("vf_initial_image_name");
+
+      // 2. Xóa ngay lập tức khỏi sessionStorage và URL TRƯỚC KHI gửi (tránh F5 gửi lại)
+      sessionStorage.removeItem("vf_initial_prompt");
+      sessionStorage.removeItem("vf_initial_model");
+      if (savedImg) {
+        sessionStorage.removeItem("vf_initial_image");
+        sessionStorage.removeItem("vf_initial_image_name");
+      }
+      if (urlParams && (urlParams.has("prompt") || urlParams.has("model"))) {
+        window.history.replaceState({}, "", "/chat");
+      }
 
       if (savedImg) {
         setImagePreview(savedImg);
         setImageName(savedImgName || "anh_canh_bao.jpg");
-        sessionStorage.removeItem("vf_initial_image");
-        sessionStorage.removeItem("vf_initial_image_name");
       }
 
-      if (savedPrompt) {
-        sessionStorage.removeItem("vf_initial_prompt");
+      if (savedPrompt && savedPrompt.trim()) {
+        hasSentInitialPrompt.current = true;
         if (!savedImg) {
-          // Gửi trực tiếp tin nhắn bằng sendMessage thay vì setInput rồi bắt bấm gửi lần 2
-          hasSentInitialPrompt.current = true;
           sendMessage(savedPrompt.trim());
         } else {
-          setInput(savedPrompt);
+          setInput(savedPrompt.trim());
         }
       }
     } catch { }
@@ -316,53 +350,114 @@ function CustomerChatSession() {
 
       <div
         className={`mx-auto px-4 py-3 sm:py-4 transition-all duration-300 ${
-          isMapOpen ? "max-w-7xl" : "max-w-4xl"
+          isMapOpen ? "max-w-7xl" : isSidebarOpen ? "max-w-6xl" : "max-w-4xl"
         }`}
       >
 
-      {/* Main Layout: Desktop 55/45 khi mở map, Mặc định chat chiếm toàn bộ max-w-4xl */}
+      {/* Mobile Drawer Sidebar */}
+      <ChatHistorySidebar
+        currentSessionId={sessionId}
+        onSelectSession={loadSession}
+        onNewChat={handleResetAll}
+        isOpen={isMobileDrawerOpen}
+        onToggleCollapse={() => setIsMobileDrawerOpen(false)}
+        isGuest={role === "GUEST"}
+        userId={user?.id || (role === "GUEST" ? "guest" : undefined)}
+        isMobileDrawer={true}
+        onCloseMobileDrawer={() => setIsMobileDrawerOpen(false)}
+        refreshTrigger={messages.length}
+        onModalOpenChange={setIsModalBlockingChat}
+      />
+
+      {/* Main Layout: Desktop 55/45 khi mở map, Mặc định chat chiếm toàn bộ container */}
       <div
         className={`grid gap-4 items-start transition-all duration-300 ${
           isMapOpen ? "lg:grid-cols-[1.12fr_0.88fr]" : "grid-cols-1"
         }`}
       >
         {/* =============================================================
-            KHUNG CHAT CHÍNH (RỘNG RÃI, CHIẾM 70% CHIỀU CAO, KHÔNG BỊ BÓP)
+            KHUNG CHAT CHÍNH VỚI SIDEBAR LỊCH SỬ (PHƯƠNG ÁN 1)
         ============================================================= */}
-        <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden flex flex-col h-[calc(100vh-140px)] min-h-[580px] max-h-[820px]">
-          {/* Header thu gọn thấp (~40px) */}
-          <div className="px-3.5 py-2 bg-slate-50/90 text-slate-900 flex items-center justify-between border-b border-slate-200/80">
-            <div className="flex items-center space-x-2 min-w-0">
-              <div className="w-7 h-7 rounded-lg bg-[#1E40AF] flex items-center justify-center text-white shrink-0 shadow-2xs">
-                <ProductMark className="w-4 h-4 text-white" />
-              </div>
-              <div className="min-w-0">
-                <div className="font-bold text-[13px] text-slate-900 truncate">
-                  VF Serv AI · <span className="font-normal text-slate-600">Trợ lý Dịch vụ VinFast</span>
+        <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden flex flex-row h-[calc(100vh-140px)] min-h-[580px] max-h-[820px]">
+          {/* Desktop Left Sidebar: Option 1 */}
+          <ChatHistorySidebar
+            currentSessionId={sessionId}
+            onSelectSession={loadSession}
+            onNewChat={handleResetAll}
+            isOpen={isSidebarOpen}
+            onToggleCollapse={() => handleToggleSidebar(false)}
+            isGuest={role === "GUEST"}
+            userId={user?.id || (role === "GUEST" ? "guest" : undefined)}
+            refreshTrigger={messages.length}
+            onModalOpenChange={setIsModalBlockingChat}
+          />
+
+          {/* Cột Chat chính bên phải */}
+          <div className="flex-1 flex flex-col min-w-0 h-full">
+            {/* Header thu gọn thấp (~40px) */}
+            <div className="px-3.5 py-2 bg-slate-50/90 text-slate-900 flex items-center justify-between border-b border-slate-200/80">
+              <div className="flex items-center space-x-2 min-w-0">
+                {/* Nút mở sidebar khi thu gọn trên Desktop */}
+                {!isSidebarOpen && (
+                  <button
+                    type="button"
+                    onClick={() => handleToggleSidebar(true)}
+                    className="hidden lg:flex p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-200/70 transition"
+                    title="Mở lịch sử cuộc trò chuyện"
+                  >
+                    <PanelLeft className="w-4 h-4" />
+                  </button>
+                )}
+                {/* Nút mở lịch sử trên Mobile */}
+                <button
+                  type="button"
+                  onClick={() => setIsMobileDrawerOpen(true)}
+                  className="lg:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-200/70 transition"
+                  title="Lịch sử cuộc trò chuyện"
+                >
+                  <History className="w-4 h-4" />
+                </button>
+
+                <div className="w-7 h-7 rounded-lg bg-[#1E40AF] flex items-center justify-center text-white shrink-0 shadow-2xs">
+                  <ProductMark className="w-4 h-4 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-[13px] text-slate-900 truncate">
+                    VFServ AI · <span className="font-normal text-slate-600">Trợ lý Dịch vụ VinFast</span>
+                  </div>
+                </div>
+                <div className="text-[11px] text-slate-500 hidden sm:flex items-center gap-1.5 pl-2 border-l border-slate-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse shrink-0" />
+                  <span className="truncate max-w-[200px]">
+                    {role === "GUEST" ? "Guest" : "Sẵn sàng 24/7"}
+                  </span>
                 </div>
               </div>
-              <div className="text-[11px] text-slate-500 hidden sm:flex items-center gap-1.5 pl-2 border-l border-slate-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse shrink-0" />
-                <span className="truncate max-w-[200px]">
-                  {role === "GUEST" ? "Guest" : "Sẵn sàng 24/7"}
-                </span>
+
+              {/* Header Right Actions:
+                  Chỉ giữ một nút "Cuộc trò chuyện mới" ở sidebar.
+                  Header chat chỉ hiện icon "+" khi sidebar thu gọn hoặc trên mobile. */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {!isSidebarOpen && (
+                  <button
+                    type="button"
+                    onClick={handleResetAll}
+                    className="hidden lg:flex p-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 shadow-2xs transition active:scale-95"
+                    title="Cuộc trò chuyện mới"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleResetAll}
+                  className="lg:hidden p-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-200 shadow-2xs transition active:scale-95"
+                  title="Cuộc trò chuyện mới"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
               </div>
             </div>
-
-            {/* Header Right Actions: Gộp Làm mới & Chọn xe thành 1 hàng thấp */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={handleResetAll}
-                className="flex items-center gap-1 rounded-lg bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 text-[11.5px] font-medium px-2 py-1 border border-slate-200 shadow-2xs transition active:scale-95"
-                title="Làm mới cuộc trò chuyện"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span className="hidden sm:inline">Làm mới</span>
-              </button>
-
-            </div>
-          </div>
 
           {/* Case Status Strip: Thanh mỏng 1 dòng khi đã có Case ID */}
           {currentCaseId && (
@@ -478,8 +573,8 @@ function CustomerChatSession() {
             input={input}
             onChangeInput={setInput}
             onSend={submit}
-            disabled={loading || isUploadingImage || (!!imagePreview && !uploadedAttachmentId)}
-            uploadDisabled={loading || isUploadingImage || role !== "CUSTOMER"}
+            disabled={loading || isUploadingImage || isModalBlockingChat || (!!imagePreview && !uploadedAttachmentId)}
+            uploadDisabled={loading || isUploadingImage || isModalBlockingChat || role !== "CUSTOMER"}
             uploadHint={role !== "CUSTOMER" ? "Đăng nhập tài khoản khách hàng để tải ảnh" : undefined}
             imageReady={!!uploadedAttachmentId}
             imagePreview={imagePreview}
@@ -502,6 +597,7 @@ function CustomerChatSession() {
             <span>Dữ liệu được mã hóa và bảo mật theo chính sách quyền riêng tư VinFast.</span>
           </div>
         </div>
+      </div>
 
         {/* =============================================================
             CỘT PHẢI (DESKTOP): CHỈ TRƯỢT RA KHI KHÁCH KÍCH HOẠT ACTION (XEM MAP)

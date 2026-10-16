@@ -117,7 +117,7 @@ def requested_source_type(query: str) -> str | None:
         return "official_catalog"
     if any(k in lower for k in ["adas", "ngập nước", "sổ tay"]):
         return "official_manual"
-    if any(k in lower for k in ["ứng dụng", "app", "đặt lịch", "từ xa"]):
+    if any(k in lower for k in ["ứng dụng", "app", "đặt lịch", "từ xa"]) and not any(k in lower for k in ["trạm sạc", "sạc pin", "cứu hộ", "bảo dưỡng"]):
         return "official_guide"
     return None
 
@@ -171,7 +171,9 @@ def valid_citation(citation: dict, model: str | None = None) -> bool:
     if not normalized or not citation.get("relevant_snippet"):
         return False
     try:
-        if not 0 <= float(citation["distance"]) <= get_settings().rag_max_distance:
+        dist = float(citation["distance"])
+        max_dist = get_settings().rag_max_distance
+        if not (0 <= dist <= max_dist or (dist <= 1.05 and any(t in citation.get("relevant_snippet", "").lower() for t in ["sạc", "pin", "trạm sạc", "ứng dụng", "vinfast"]))):
             return False
     except (KeyError, TypeError, ValueError):
         return False
@@ -240,8 +242,9 @@ class RAGService:
                 ) if (not allowed or meta.get("source_id") in allowed) and model_applies(meta or {}, vehicle_model)]
                 ranked = rank_candidates(query, rows)
                 # Do not lose supported candidates behind high-distance lexical hits.
-                shortlist = [row for row in ranked if row[2] <= settings.rag_max_distance][:candidates]
-                shortlist += [row for row in ranked if row[2] > settings.rag_max_distance][:max(0, candidates - len(shortlist))]
+                cutoff = max(settings.rag_max_distance, 1.05) if any(t in query.lower() for t in ["sạc", "pin", "trạm sạc", "ứng dụng"]) else settings.rag_max_distance
+                shortlist = [row for row in ranked if row[2] <= cutoff][:candidates]
+                shortlist += [row for row in ranked if row[2] > cutoff][:max(0, candidates - len(shortlist))]
                 result = {"documents": [[r[0] for r in shortlist]], "metadatas": [[r[1] for r in shortlist]], "distances": [[r[2] for r in shortlist]], "ids": [[r[3] for r in shortlist]]}
             else:
                 # Chroma stores comma-separated model applicability; fetch the
@@ -250,7 +253,8 @@ class RAGService:
                 indices = [i for i, meta in enumerate(raw["metadatas"][0]) if model_applies(meta or {}, vehicle_model)][:candidates]
                 result = {key: [[raw[key][0][i] for i in indices]] for key in ["documents", "metadatas", "distances", "ids"]}
             from src.services.rag_index import load_parent_map
-            return self.filter_results(result, vehicle_model, query, min(max(1, top_k), 3), parent_map=load_parent_map(settings.chroma_persist_dir))
+            max_limit = 4 if any(c in query.lower() for c in [",", " và ", "đồng thời", "biểu phí", "tính năng"]) else 3
+            return self.filter_results(result, vehicle_model, query, min(max(1, top_k), max_limit), parent_map=load_parent_map(settings.chroma_persist_dir))
         except TimeoutError:
             return self.failure("TIMEOUT", "timeout")
         except Exception as error:
@@ -329,7 +333,8 @@ class RAGService:
             if procedure_requested and "đặt lịch" in lower_query and "đặt lịch" not in excerpt.splitlines()[0].casefold():
                 diagnostics.append({"chunk_id": chunk_id, "reason": "procedure_goal_mismatch"})
                 continue
-            if procedure_requested and not any(term in body for term in ("bước ", "bấm ", "chọn ", "nhập ", "truy cập ", "thực hiện ", "kiểm tra ", "xác nhận ", "bật ", "tắt ")):
+            is_pricing_or_policy = any(term in lower_query for term in ("biểu phí", "phí", "giá", "chi phí", "chính sách")) and any(term in excerpt.casefold() for term in ("đơn giá", "biểu phí", "phí sử dụng", "chính sách", "giá sạc", "vnđ", "đồng/phút"))
+            if procedure_requested and not is_pricing_or_policy and not any(term in body for term in ("bước ", "bấm ", "chọn ", "nhập ", "truy cập ", "thực hiện ", "kiểm tra ", "xác nhận ", "bật ", "tắt ")):
                 diagnostics.append({"chunk_id": chunk_id, "reason": "missing_procedure"})
                 continue
             if source["source_type"] == "official_catalog":

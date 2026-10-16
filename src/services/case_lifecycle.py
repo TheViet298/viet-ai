@@ -21,20 +21,25 @@ logger = logging.getLogger("case_lifecycle")
 AUTO_CLOSE_HOURS = 72  # 72 giờ (3 ngày) chuẩn cho khách hàng xe điện
 
 
-def process_auto_close_expired_cases(db: Session, expired_hours: int = AUTO_CLOSE_HOURS) -> int:
+def process_auto_close_expired_cases(
+    db: Session,
+    expired_hours: int = AUTO_CLOSE_HOURS,
+    is_demo: bool | None = None,
+) -> int:
     """
     Quét và tự động đóng các ca đã ở trạng thái Resolved quá `expired_hours` giờ
     mà khách hàng không có phản hồi xác nhận hay khiếu nại thêm.
     Ghi vết rõ ràng: StaffAuditLog và CaseUpdate với nhãn [SYSTEM AUTO-CLOSE].
+    Hỗ trợ cách ly 2 chiều qua cờ `is_demo`.
     """
     now_utc = utcnow()
     cutoff_time = now_utc - timedelta(hours=expired_hours)
 
-    expired_cases = (
-        db.query(Case)
-        .filter(Case.status == TicketStatus.RESOLVED.value, Case.updated_at < cutoff_time)
-        .all()
-    )
+    query = db.query(Case).filter(Case.status == TicketStatus.RESOLVED.value, Case.updated_at < cutoff_time)
+    if is_demo is not None:
+        query = query.filter(Case.is_demo == is_demo)
+
+    expired_cases = query.all()
 
     if not expired_cases:
         return 0
@@ -93,7 +98,11 @@ async def auto_close_background_loop(interval_seconds: int = 600):
         try:
             db = SessionLocal()
             try:
-                process_auto_close_expired_cases(db, AUTO_CLOSE_HOURS)
+                # Quét và đóng hồ sơ cho cả hai không gian độc lập, tránh lẫn lộn log và audit
+                closed_real = process_auto_close_expired_cases(db, AUTO_CLOSE_HOURS, is_demo=False)
+                closed_demo = process_auto_close_expired_cases(db, AUTO_CLOSE_HOURS, is_demo=True)
+                if closed_real > 0 or closed_demo > 0:
+                    logger.info(f"[AUTO-CLOSE WORKER] Đã quét xong: {closed_real} ca thật, {closed_demo} ca demo đã đóng.")
             finally:
                 db.close()
         except asyncio.CancelledError:

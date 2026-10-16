@@ -85,6 +85,16 @@ export interface ChatMessage {
   image?: { src: string; name: string };
 }
 
+export interface ChatSessionItem {
+  session_id: string;
+  title: string;
+  last_message?: string | null;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+}
+
+
 export interface QuickPrompt {
   label: string;
   model: VehicleModel;

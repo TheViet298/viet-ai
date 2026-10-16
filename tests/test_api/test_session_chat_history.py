@@ -68,9 +68,9 @@ async def test_get_session_history_forbidden_for_other_user(client, history_db):
     }, headers=headers1)
     assert res.status_code == 200
 
-    # User 2 cố tình truy cập lịch sử của User 1
+    # User 2 cố tình truy cập lịch sử của User 1 -> 404 Not Found để chống dò session
     history_res = await client.get(f"/api/v1/customer/sessions/{session_id}/history", headers=headers2)
-    assert history_res.status_code == 403
+    assert history_res.status_code == 404
 
 @pytest.mark.asyncio
 async def test_get_session_history_guest_denied_for_registered_session(client, history_db):
@@ -83,6 +83,6 @@ async def test_get_session_history_guest_denied_for_registered_session(client, h
         "message": "Tin nhắn bảo mật",
     }, headers=headers1)
 
-    # Guest không truyền auth token
+    # Guest không truyền auth token -> 404 Not Found để chống dò session
     history_res = await client.get(f"/api/v1/customer/sessions/{session_id}/history")
-    assert history_res.status_code in {401, 403}
+    assert history_res.status_code == 404

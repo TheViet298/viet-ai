@@ -17,9 +17,13 @@ def generate_case_id(db: Session) -> str:
 
 
 def resolve_authorized_active_case(db: Session, user: User | None, session_id: str, case_id: str | None, guest_session_id: str | None = None) -> Case | None:
+    from src.services.auth import is_demo_user, scoped_cases
+
+    user_is_demo = is_demo_user(db, user) if user else False
     if case_id:
-        case = db.get(Case, case_id)
+        case = scoped_cases(db, user).filter(Case.id == case_id).first()
         if not case:
+            # Nếu case tồn tại ở phân vùng khác (demo vs real), không tiết lộ và trả None
             return None
         if not user:
             # Guest: cho phép nếu case thuộc session này hoặc không có user_id
@@ -34,7 +38,7 @@ def resolve_authorized_active_case(db: Session, user: User | None, session_id: s
         case = None
     # Guard sessions against cross-user tampering: chỉ chặn khi người dùng A cố tình truy cập session của người dùng B khác
     if user:
-        for existing in db.query(Case).filter_by(session_id=session_id).all():
+        for existing in scoped_cases(db, user).filter(Case.session_id == session_id).all():
             if existing.user_id and existing.user_id != user.id:
                 raise HTTPException(403, 'Phiên hội thoại không thuộc khách hàng này.')
         for message in db.query(Message).filter_by(session_id=session_id, sender_type='CUSTOMER').all():
@@ -44,7 +48,7 @@ def resolve_authorized_active_case(db: Session, user: User | None, session_id: s
     if case:
         # Closed IDs supplied by a stale client cannot silently reopen a case.
         return case if case.status in ACTIVE_CASE_STATUSES else None
-    return db.query(Case).filter(Case.session_id == session_id, Case.status.in_(ACTIVE_CASE_STATUSES)).order_by(Case.created_at.desc()).first()
+    return scoped_cases(db, user).filter(Case.session_id == session_id, Case.status.in_(ACTIVE_CASE_STATUSES)).order_by(Case.created_at.desc()).first()
 
 
 def clean_case_references(text: str, case_id: str | None) -> str:

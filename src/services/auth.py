@@ -153,15 +153,61 @@ def require_staff(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
+def is_demo_user(db: Session, user: User | None) -> bool:
+    """Đọc cờ is_demo chuẩn xác từ database theo user.id, không tin JWT client."""
+    if not user:
+        return False
+    db_user = db.get(User, user.id)
+    if db_user:
+        return bool(db_user.is_demo)
+    return bool(getattr(user, "is_demo", False))
+
+
+def scoped_cases(db: Session, user: User | None = None):
+    """
+    Query Case cách ly tuyệt đối 2 chiều:
+    - User/Staff thật (hoặc Guest): CHỈ thấy case thật (is_demo == False).
+    - User/Staff demo: CHỈ thấy case demo (is_demo == True).
+    """
+    demo_flag = is_demo_user(db, user)
+    return db.query(Case).filter(Case.is_demo == demo_flag)
+
+
+def scoped_sessions(db: Session, user: User | None = None):
+    """
+    Query ChatSession cách ly tuyệt đối 2 chiều:
+    - User thật (hoặc Guest): CHỈ thấy session thật (is_demo == False).
+    - User demo: CHỈ thấy session demo (is_demo == True).
+    """
+    from src.models.db_models import ChatSession
+
+    demo_flag = is_demo_user(db, user)
+    return db.query(ChatSession).filter(ChatSession.is_demo == demo_flag)
+
+
 def check_case_ownership(case: Case, user: User | None = None, session_id: str | None = None) -> None:
     """
-    Xác thực quyền sở hữu hồ sơ sự cố (Chống triệt để lỗ hổng IDOR).
-    Quy tắc duy nhất:
-    1. Nhân viên dịch vụ (STAFF): Toàn quyền truy cập để điều phối và xử lý.
-    2. Khách hàng đã đăng nhập: Phải khớp định danh mạnh `case.user_id == user.id`.
-    3. Khách hàng dùng thử (Guest): Phải khớp `case.session_id == session_id` của đúng phiên chat tạo ca.
-    Không có bất kỳ nhánh bypass hay fallback nào khác.
+    Xác thực quyền sở hữu hồ sơ sự cố (Chống triệt để lỗ hổng IDOR và cách ly 2 chiều Demo/Real).
+    Quy tắc:
+    1. Cách ly 2 chiều is_demo:
+       - user.is_demo phải khớp case.is_demo (Guest coi như is_demo=False).
+       - Khi khác is_demo: Trả 404 Not Found (chặn rò rỉ ID giữa môi trường demo và thật).
+    2. Phân quyền vai trò:
+       - Nhân viên (STAFF): Toàn quyền truy cập ca trong cùng phân vùng is_demo.
+       - Khách hàng đã đăng nhập (CUSTOMER): Phải khớp định danh `case.user_id == user.id`.
+       - Khách hàng dùng thử (Guest): Phải khớp `case.session_id == session_id` và case.is_demo == False.
+       - Nếu sai ownership: Trả 403 Forbidden.
     """
+    user_is_demo = bool(getattr(user, "is_demo", False)) if user else None
+    case_is_demo = bool(getattr(case, "is_demo", False))
+
+    # Cách ly 2 chiều khi có thông tin người dùng: khác phân vùng demo/thật trả 404 Not Found
+    if user is not None and user_is_demo != case_is_demo:
+        raise HTTPException(
+            status_code=404,
+            detail="Không tìm thấy hồ sơ sự cố yêu cầu.",
+        )
+
     if user and user.role == UserRole.STAFF.value:
         return
 

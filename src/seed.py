@@ -1,13 +1,24 @@
-"""Seed dữ liệu mẫu chuẩn hóa cho SQLite theo đúng đặc tả demo-scenarios.md và data-model.md.
+"""Seed dữ liệu mẫu cách ly 2 chiều (is_demo=True) chuẩn hóa cho ServiceFlow.
 
-Chạy (từ thư mục gốc):
-    python -m src.seed            # Chỉ seed nếu DB còn trống
-    python -m src.seed --reset    # Xóa sạch dữ liệu cũ và seed lại từ đầu
+Theo đúng quyết định kiến trúc:
+- Chỉ thao tác trên các bản ghi có cờ is_demo=True.
+- Mật khẩu đọc trực tiếp từ biến môi trường DEMO_SEED_PASSWORD (không hardcode, không fallback).
+- Dữ liệu thật (is_demo=False) tuyệt đối không bị ảnh hưởng.
+- 9 kịch bản định nghĩa trong fixtures/seed_demo.json.
+- Mã case theo tiền tố DEMO-YYYYMMDD-xxx với thời gian tương đối tính từ thời điểm chạy.
+
+Cách chạy:
+    python -m src.seed --demo
+    python -m src.seed --demo --reset --yes
 """
 
+import argparse
+import json
+import os
 import sys
 import uuid
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 # Ensure UTF-8 output on Windows console
 if hasattr(sys.stdout, "reconfigure"):
@@ -16,8 +27,8 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
-from src.db import Base, SessionLocal, engine
 from src.config import get_settings
+from src.db import Base, SessionLocal, engine, ensure_schema
 from src.models.db_models import (
     Attachment,
     AttachmentStatus,
@@ -26,11 +37,9 @@ from src.models.db_models import (
     CaseBrief,
     CaseLocation,
     CaseUpdate,
+    ChatSession,
     CustomerFeedback,
     Intent,
-    LocationPrecision,
-    LocationSource,
-    LocationStatus,
     Message,
     Priority,
     SenderType,
@@ -39,460 +48,325 @@ from src.models.db_models import (
     TicketStatus,
     User,
     UserRole,
+    utcnow,
 )
 from src.services.auth import hash_password
 
 
-def seed_database() -> None:
-    if get_settings().app_env == "production":
-        raise RuntimeError("Demo seed data is disabled in production")
-    # Đảm bảo các bảng SQLite đã được khởi tạo
+DEMO_USERS_MAP = {
+    "staff": {
+        "id": "USER_DEMO_STAFF",
+        "username": "demo.staff@vinfast.vn",
+        "role": UserRole.STAFF.value,
+        "full_name": "Chuyên viên Demo VinFast",
+        "phone": "1900232389",
+        "vehicle_model": None,
+        "mock_customer_id": None,
+    },
+    "customer1": {
+        "id": "USER_DEMO_CUST_01",
+        "username": "demo.customer@vinfast.vn",
+        "role": UserRole.CUSTOMER.value,
+        "full_name": "Khách hàng Demo 1",
+        "phone": "0912345678",
+        "vehicle_model": "VF8",
+        "mock_customer_id": "CUST_DEMO_01",
+    },
+    "customer2": {
+        "id": "USER_DEMO_CUST_02",
+        "username": "demo.customer2@vinfast.vn",
+        "role": UserRole.CUSTOMER.value,
+        "full_name": "Khách hàng Demo 2",
+        "phone": "0987654321",
+        "vehicle_model": "VF9",
+        "mock_customer_id": "CUST_DEMO_02",
+    },
+}
+
+
+def load_scenarios() -> list[dict]:
+    root = Path(__file__).resolve().parents[1]
+    fixtures_path = root / "fixtures" / "seed_demo.json"
+    if not fixtures_path.exists():
+        raise FileNotFoundError(f"Không tìm thấy file kịch bản mẫu tại {fixtures_path}")
+    return json.loads(fixtures_path.read_text(encoding="utf-8"))
+
+
+def reset_demo_data(db) -> int:
+    """Xóa an toàn và triệt để các bản ghi demo (is_demo=True), không đụng chạm dữ liệu thật."""
+    demo_cases = db.query(Case).filter(Case.is_demo.is_(True)).all()
+    demo_case_ids = [c.id for c in demo_cases]
+
+    if demo_case_ids:
+        db.query(CaseLocation).filter(CaseLocation.case_id.in_(demo_case_ids)).delete(synchronize_session=False)
+        db.query(CaseUpdate).filter(CaseUpdate.case_id.in_(demo_case_ids)).delete(synchronize_session=False)
+        db.query(CustomerFeedback).filter(CustomerFeedback.case_id.in_(demo_case_ids)).delete(synchronize_session=False)
+        db.query(Attachment).filter(Attachment.case_id.in_(demo_case_ids)).delete(synchronize_session=False)
+        db.query(StaffAuditLog).filter(StaffAuditLog.case_id.in_(demo_case_ids)).delete(synchronize_session=False)
+        db.query(CaseBrief).filter(CaseBrief.case_id.in_(demo_case_ids)).delete(synchronize_session=False)
+        db.query(Message).filter(Message.case_id.in_(demo_case_ids)).delete(synchronize_session=False)
+        db.query(Case).filter(Case.id.in_(demo_case_ids)).delete(synchronize_session=False)
+
+    db.query(ChatSession).filter(ChatSession.is_demo.is_(True)).delete(synchronize_session=False)
+    db.query(User).filter(User.is_demo.is_(True)).delete(synchronize_session=False)
+
+    db.commit()
+    return len(demo_case_ids)
+
+
+def seed_database(reset: bool = False, demo: bool = True) -> None:
+    """
+    Hàm seed dữ liệu kịch bản demo cách ly 2 chiều.
+    Yêu cầu cờ is_demo=True và mật khẩu từ biến môi trường DEMO_SEED_PASSWORD.
+    """
+    ensure_schema()
+
+    demo_password = os.environ.get("DEMO_SEED_PASSWORD")
+    if not demo_password:
+        raise ValueError(
+            "Biến môi trường DEMO_SEED_PASSWORD không được để trống khi thực hiện seed demo. "
+            "Vui lòng cấu hình DEMO_SEED_PASSWORD."
+        )
+
     Base.metadata.create_all(bind=engine)
-
-    reset = "--reset" in sys.argv
-    if reset and "--yes" not in sys.argv:
-        if sys.stdin.isatty():
-            confirm = input("[CẢNH BÁO] Thao tác này sẽ xóa sạch toàn bộ DB và seed lại từ đầu. Tiếp tục? (y/N): ")
-            if confirm.strip().lower() not in ("y", "yes"):
-                print("[seed] Đã hủy thao tác reset.")
-                return
-        else:
-            raise RuntimeError("Yêu cầu thêm cờ '--yes' khi chạy '--reset' trong môi trường script (python -m src.seed --reset --yes).")
-
-    settings = get_settings()
-    staff_pwd = settings.staff_seed_password or "VinFast@ServiceFlow2026!Sec"
+    scenarios = load_scenarios()
+    now = datetime.now(UTC)
+    date_str = now.strftime("%Y%m%d")
 
     with SessionLocal() as db:
         if reset:
-            for model in (
-                CaseLocation,
-                CaseUpdate,
-                CustomerFeedback,
-                Attachment,
-                StaffAuditLog,
-                CaseBrief,
-                Message,
-                Case,
-                User,
-            ):
-                db.query(model).delete()
-            db.commit()
-            print("[seed] Đã xóa toàn bộ dữ liệu cũ.")
-        elif db.query(Case).count() > 0:
-            print("[seed] DB đã có dữ liệu. Sử dụng flag '--reset --yes' nếu muốn seed lại.")
-            return
+            deleted_count = reset_demo_data(db)
+            print(f"[seed] Đã dọn dẹp sạch {deleted_count} ca sự cố demo cũ.")
 
-        now = datetime.now(UTC)
+        # 1. Khởi tạo/Cập nhật các tài khoản người dùng Demo
+        users_created = {}
+        for key, uinfo in DEMO_USERS_MAP.items():
+            user = db.query(User).filter(User.username == uinfo["username"]).first()
+            if not user:
+                user = User(
+                    id=uinfo["id"],
+                    username=uinfo["username"],
+                    password_hash=hash_password(demo_password),
+                    role=uinfo["role"],
+                    full_name=uinfo["full_name"],
+                    phone=uinfo["phone"],
+                    vehicle_model=uinfo["vehicle_model"],
+                    mock_customer_id=uinfo["mock_customer_id"],
+                    is_demo=True,
+                    created_at=now - timedelta(days=7),
+                )
+                db.add(user)
+                db.flush()
+            else:
+                user.password_hash = hash_password(demo_password)
+                user.role = uinfo["role"]
+                user.is_demo = True
+                user.full_name = uinfo["full_name"]
+                user.phone = uinfo["phone"]
+                user.vehicle_model = uinfo["vehicle_model"]
+                user.mock_customer_id = uinfo["mock_customer_id"]
+                db.flush()
+            users_created[key] = user
 
-        # ======================================================================
-        # 0. TÀI KHOẢN NGƯỜI DÙNG THỰC (auth-and-rbac.md & ADR-004)
-        # ======================================================================
-        user_staff = User(
-            id="STAFF_001",
-            username="staff@vinfast.vn",
-            password_hash=hash_password(staff_pwd),
-            role=UserRole.STAFF.value,
-            full_name="Cố vấn Dịch vụ VinFast",
-            phone="1900232389",
-            vehicle_model=None,
-            mock_customer_id=None,
-            created_at=now - timedelta(days=30),
-        )
-        user_cust_1 = User(
-            id="USER_CUST_01",
-            username="customer@vinfast.vn",
-            password_hash=hash_password("customer123"),
-            role=UserRole.CUSTOMER.value,
-            full_name="Nguyễn Văn Tuấn",
-            phone="0912345678",
-            vehicle_model="VF8",
-            mock_customer_id="CUST_MOCK_01",
-            created_at=now - timedelta(days=10),
-        )
-        user_cust_2 = User(
-            id="USER_CUST_02",
-            username="customer2@vinfast.vn",
-            password_hash=hash_password("customer123"),
-            role=UserRole.CUSTOMER.value,
-            full_name="Trần Thị Mai",
-            phone="0987654321",
-            vehicle_model="VF5",
-            mock_customer_id="CUST_MOCK_02",
-            created_at=now - timedelta(days=5),
-        )
-        db.add_all([user_staff, user_cust_1, user_cust_2])
-        db.flush()
+        # 2. Xây dựng 9 Kịch bản sự cố Demo
+        seeded_cases_count = 0
+        for item in scenarios:
+            scenario_key = item["scenario_key"]
+            case_id = f"DEMO-{date_str}-{item['index']}"
+            session_id = item.get("session_id") or f"DEMO-SESS-{date_str}-{item['index']}"
+            user_obj = users_created[item["user_key"]]
 
-        # ======================================================================
-        # KỊCH BẢN DEMO 1: Sự cố không sạc được tại Trụ sạc (P0 - Charging/Battery)
-        # ======================================================================
-        case_1 = Case(
-            id="CASE-20260924-001",
-            user_id=user_cust_1.id,
-            session_id="sess_vf_98234",
-            mock_customer_id="CUST_MOCK_01",
-            mock_customer_name="Khách hàng Demo 01",
-            mock_customer_phone="0900-000-231",
-            vehicle_code_mock="VF-SF-00231",
-            vehicle_model="VF8",
-            intent=Intent.CHARGING_BATTERY.value,
-            priority=Priority.HIGH.value,
-            status=TicketStatus.STAFF_REVIEWING.value,
-            created_at=now - timedelta(hours=3),
-            updated_at=now - timedelta(hours=2, minutes=50),
-        )
+            existing_case = db.query(Case).filter(Case.id == case_id).first()
+            if existing_case and not reset:
+                # Idempotent: Bỏ qua nếu đã tồn tại trường hợp này trong ngày
+                continue
 
-        brief_1 = CaseBrief(
-            id=str(uuid.uuid4()),
-            case_id=case_1.id,
-            summary="Xe VF8 không nhận sạc DC tại trạm Metropolis, màn hình xe báo mã lỗi CC01 và đèn trụ báo đỏ.",
-            captured_fields={
-                "vehicle_model": "VF8",
-                "station_location": "Vincom Metropolis Liễu Giai",
-                "charger_id": "VN-CS-HN042-P02",
-                "error_code": "CC01",
-                "current_soc": "18%",
-                "visual_signals": [
-                    {
-                        "error_code_candidate": "CC01",
-                        "charger_lamp": "RED",
-                        "warning_type": "CHARGING_COMMUNICATION_ERROR",
-                    }
-                ],
-            },
-            suggested_action="Kiểm tra tín hiệu handshake giao tiếp trụ sạc P02 từ xa hoặc cử nhân viên kỹ thuật trạm hỗ trợ cắm lại cáp sạc.",
-            confidence_score=0.92,
-            is_edited_by_staff=False,
-            generated_at=now - timedelta(hours=2, minutes=55),
-        )
+            created_time = now - timedelta(hours=item.get("created_offset_hours", 2))
+            updated_time = now - timedelta(hours=item.get("updated_offset_hours", 1))
 
-        msg_1_1 = Message(
-            id=str(uuid.uuid4()),
-            case_id=case_1.id,
-            session_id=case_1.session_id,
-            sender_type=SenderType.CUSTOMER.value,
-            content="Xe VF8 của tôi không nhận sạc ở trạm Metropolis, trụ báo đèn đỏ.",
-            created_at=now - timedelta(hours=3),
-        )
-        msg_1_2 = Message(
-            id=str(uuid.uuid4()),
-            case_id=case_1.id,
-            session_id=case_1.session_id,
-            sender_type=SenderType.AGENT.value,
-            content="Dạ em ghi nhận xe VF8 đang không nhận sạc tại trạm Metropolis. Màn hình xe có hiển thị mã lỗi (ví dụ: CC01, BMS_012) hoặc anh/chị có mã trụ sạc không ạ?",
-            msg_metadata={"turn": 1, "suggested_replies": ["Mã lỗi CC01, trụ P02", "Đèn đỏ, không hiện mã"]},
-            created_at=now - timedelta(hours=2, minutes=58),
-        )
-        msg_1_3 = Message(
-            id=str(uuid.uuid4()),
-            case_id=case_1.id,
-            session_id=case_1.session_id,
-            sender_type=SenderType.CUSTOMER.value,
-            content="Mã lỗi trên màn hình là CC01, tôi cắm trụ VN-CS-HN042-P02, pin còn 18%.",
-            created_at=now - timedelta(hours=2, minutes=56),
-        )
-        msgs_1 = [msg_1_1, msg_1_2, msg_1_3]
+            safety_ack_time = None
+            if item.get("safety_acknowledged_offset_minutes") is not None:
+                safety_ack_time = now - timedelta(minutes=item["safety_acknowledged_offset_minutes"])
 
-        # Ảnh đính kèm cho Scenario 1 theo ADR-004 & demo-scenarios.md
-        att_1 = Attachment(
-            id="ATT-20260930-001",
-            case_id=case_1.id,
-            message_id=msg_1_1.id,
-            storage_key="data/attachments/demo_screen_cc01.jpg",
-            mime_type="image/jpeg",
-            analysis_status=AttachmentStatus.ANALYZED.value,
-            ocr_text="Mã lỗi CC01 - Trụ sạc VN-CS-HN042-P02 đèn báo nhấp nháy đỏ",
-            detected_signals={
-                "error_code_candidate": "CC01",
-                "charger_lamp": "RED",
-                "warning_type": "CHARGING_COMMUNICATION_ERROR",
-            },
-            vision_confidence=0.92,
-            created_at=now - timedelta(hours=3),
-        )
+            # 2.1 ChatSession Demo
+            chat_session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+            if not chat_session:
+                chat_session = ChatSession(
+                    id=session_id,
+                    owner=f"user:{user_obj.id}",
+                    is_demo=True,
+                )
+                db.add(chat_session)
+                db.flush()
 
-        # Vị trí đã consent cho Case 1 theo ADR-005
-        loc_1 = CaseLocation(
-            id=str(uuid.uuid4()),
-            case_id=case_1.id,
-            status=LocationStatus.CONSENTED.value,
-            source=LocationSource.MAP_PICKER.value,
-            location_label="Trạm sạc Vincom Metropolis Liễu Giai, Ba Đình, Hà Nội",
-            latitude=21.0315,
-            longitude=105.8145,
-            precision=LocationPrecision.EXACT.value,
-            share_with_staff=True,
-            created_at=now - timedelta(hours=2, minutes=55),
-        )
+            # 2.2 Case Demo
+            case = Case(
+                id=case_id,
+                user_id=user_obj.id,
+                session_id=session_id,
+                mock_customer_id=user_obj.mock_customer_id,
+                mock_customer_name=user_obj.full_name,
+                mock_customer_phone=user_obj.phone,
+                vehicle_code_mock=item["vehicle_code_mock"],
+                vehicle_model=item["vehicle_model"],
+                intent=item["intent"],
+                priority=item["priority"],
+                status=item["status"],
+                safety_status=item["safety_status"],
+                safety_acknowledged_at=safety_ack_time,
+                incident_version=1,
+                is_demo=True,
+                created_at=created_time,
+                updated_at=updated_time,
+            )
+            db.add(case)
+            db.flush()
 
-        # ======================================================================
-        # KỊCH BẢN DEMO 2: Sự cố khẩn cấp trên Cao tốc (CRITICAL - Hard Safety Rule)
-        # ======================================================================
-        case_2 = Case(
-            id="CASE-20260924-002",
-            user_id=user_cust_1.id,
-            session_id="sess_vf_99120",
-            mock_customer_id="CUST_MOCK_01",
-            mock_customer_name="Khách hàng Demo 01",
-            mock_customer_phone="0900-000-231",
-            vehicle_code_mock="VF-SF-99120",
-            vehicle_model="VF9",
-            intent=Intent.SERVICE_INCIDENT.value,
-            priority=Priority.CRITICAL.value,
-            status=TicketStatus.STAFF_REVIEWING.value,
-            created_at=now - timedelta(hours=1, minutes=15),
-            updated_at=now - timedelta(hours=1, minutes=10),
-        )
+            # 2.3 CaseBrief
+            brief_data = item.get("brief")
+            if brief_data:
+                brief = CaseBrief(
+                    id=str(uuid.uuid4()),
+                    case_id=case.id,
+                    summary=brief_data["summary"],
+                    captured_fields=brief_data["captured_fields"],
+                    suggested_action=brief_data["suggested_action"],
+                    confidence_score=brief_data.get("confidence_score", 0.95),
+                    is_edited_by_staff=False,
+                    generated_at=created_time,
+                )
+                db.add(brief)
 
-        brief_2 = CaseBrief(
-            id=str(uuid.uuid4()),
-            case_id=case_2.id,
-            summary="SỰ CỐ NGUY HIỂM: Xe VF9 đang di chuyển trên cao tốc Long Thành - Dầu Giây báo rùa vàng và mất công suất đột ngột, xe đang dừng giữa đường.",
-            captured_fields={
-                "vehicle_model": "VF9",
-                "incident_location": "Cao tốc Long Thành - Dầu Giây (Km 28)",
-                "warning_signal": "Rùa vàng (Turtle Mode)",
-                "symptom": "Mất công suất, dừng giữa đường",
-                "risk_level": "CRITICAL",
-                "immediate_action_required": True,
-            },
-            suggested_action="Kích hoạt điều phối cứu hộ cao tốc ngay lập tức; chuyên viên gọi trực tiếp cho khách hàng để hướng dẫn an toàn.",
-            confidence_score=0.99,
-            is_edited_by_staff=False,
-            generated_at=now - timedelta(hours=1, minutes=14),
-        )
+            # 2.4 CaseLocation (nếu có)
+            loc_data = item.get("location")
+            if loc_data:
+                loc = CaseLocation(
+                    id=str(uuid.uuid4()),
+                    case_id=case.id,
+                    status=loc_data.get("status", "SUCCESS"),
+                    source=loc_data.get("source", "DEVICE_GPS"),
+                    location_label=loc_data.get("location_label"),
+                    latitude=loc_data.get("latitude"),
+                    longitude=loc_data.get("longitude"),
+                    precision=loc_data.get("precision", "EXACT"),
+                    share_with_staff=loc_data.get("share_with_staff", True),
+                    created_at=created_time,
+                )
+                db.add(loc)
 
-        msgs_2 = [
-            Message(
-                id=str(uuid.uuid4()),
-                case_id=case_2.id,
-                session_id=case_2.session_id,
-                sender_type=SenderType.CUSTOMER.value,
-                content="Xe tôi đang chạy trên cao tốc Long Thành thì tự nhiên hiện rùa vàng và mất công suất, xe đang dừng giữa đường nguy hiểm quá!",
-                created_at=now - timedelta(hours=1, minutes=15),
-            ),
-            Message(
-                id=str(uuid.uuid4()),
-                case_id=case_2.id,
-                session_id=case_2.session_id,
-                sender_type=SenderType.AGENT.value,
-                content="Dạ em hiểu tình huống khẩn cấp của anh/chị. Em đã tạo hồ sơ khẩn cấp gửi ngay đến đội ngũ cứu hộ kỹ thuật VinFast. Anh/chị hãy BẬT ĐÈN KHẨN CẤP (Hazard), từ từ tấp xe vào làn dừng khẩn cấp an toàn, di chuyển người ra ngoài lan can bảo vệ và liên hệ ngay Hotline cứu hộ 1900-232389.",
-                msg_metadata={
-                    "priority": Priority.CRITICAL.value,
-                    "safe_guidance": "Bật đèn Hazard, tấp xe vào làn dừng khẩn cấp an toàn, gọi Hotline cứu hộ 1900-232389.",
-                },
-                created_at=now - timedelta(hours=1, minutes=14),
-            ),
-        ]
+            # 2.4.1 Attachment (nếu có, e.g. scenario 1)
+            att_data = item.get("attachment")
+            if att_data:
+                att = Attachment(
+                    id=att_data["id"],
+                    case_id=case.id,
+                    storage_key=att_data["storage_key"],
+                    mime_type=att_data.get("mime_type", "image/jpeg"),
+                    analysis_status=att_data.get("analysis_status", AttachmentStatus.UPLOADED.value),
+                    ocr_text=att_data.get("ocr_text"),
+                    detected_signals=att_data.get("detected_signals"),
+                    vision_confidence=att_data.get("vision_confidence"),
+                    created_at=created_time,
+                )
+                db.add(att)
 
-        audit_2 = StaffAuditLog(
-            id=str(uuid.uuid4()),
-            case_id=case_2.id,
-            staff_id="STAFF_001",
-            action=StaffAction.APPROVE.value,
-            previous_state={"status": TicketStatus.STAFF_REVIEWING.value},
-            new_state={"status": TicketStatus.IN_PROGRESS.value},
-            notes="Đã gọi khách hàng hướng dẫn an toàn và chuyển đội cứu hộ cao tốc khu vực trạm thu phí Dầu Giây.",
-            created_at=now - timedelta(hours=1),
-        )
+            # 2.5 Messages
+            for m in item.get("messages", []):
+                msg_time = now - timedelta(minutes=m["offset_minutes"])
+                msg = Message(
+                    id=str(uuid.uuid4()),
+                    case_id=case.id,
+                    session_id=session_id,
+                    sender_type=m["sender"],
+                    content=m["content"],
+                    created_at=msg_time,
+                )
+                db.add(msg)
 
-        # Vị trí cho Case 2 (Người dùng nhập tay vị trí cao tốc)
-        loc_2 = CaseLocation(
-            id=str(uuid.uuid4()),
-            case_id=case_2.id,
-            status=LocationStatus.CONSENTED.value,
-            source=LocationSource.USER_TEXT.value,
-            location_label="Cao tốc Long Thành - Dầu Giây (Km 28)",
-            latitude=10.7712,
-            longitude=106.9450,
-            precision=LocationPrecision.APPROXIMATE.value,
-            share_with_staff=True,
-            created_at=now - timedelta(hours=1, minutes=14),
-        )
+            # 2.6 CaseUpdates
+            for u in item.get("updates", []):
+                u_time = now - timedelta(minutes=u["offset_minutes"])
+                update = CaseUpdate(
+                    id=str(uuid.uuid4()),
+                    case_id=case.id,
+                    author_type=u["author_type"],
+                    status_after_update=u["status_after_update"],
+                    customer_message=u["customer_message"],
+                    next_step=u["next_step"],
+                    awaiting_customer_confirmation=u.get("awaiting_customer_confirmation", False),
+                    created_at=u_time,
+                )
+                db.add(update)
 
-        update_2 = CaseUpdate(
-            id=str(uuid.uuid4()),
-            case_id=case_2.id,
-            author_type=AuthorType.STAFF.value,
-            status_after_update=TicketStatus.IN_PROGRESS.value,
-            customer_message="Đội cứu hộ cao tốc đã xuất phát từ trạm thu phí Dầu Giây, dự kiến tiếp cận xe trong 15 phút. Quý khách vui lòng đứng an toàn phía sau lan can đường.",
-            next_step="Kỹ thuật viên cứu hộ liên hệ trực tiếp số điện thoại.",
-            awaiting_customer_confirmation=False,
-            created_at=now - timedelta(hours=1),
-        )
+            # 2.7 Audit Logs (nếu có riêng, e.g. scenario 9)
+            for a in item.get("audit_logs", []):
+                a_time = now - timedelta(minutes=a["offset_minutes"])
+                audit = StaffAuditLog(
+                    id=str(uuid.uuid4()),
+                    case_id=case.id,
+                    staff_id=a["staff_id"],
+                    action=a["action"],
+                    previous_state={"status": a.get("previous_status", "Resolved")},
+                    new_state={"status": a.get("new_status", "Closed")},
+                    notes=a["notes"],
+                    created_at=a_time,
+                )
+                db.add(audit)
 
-        # ======================================================================
-        # KỊCH BẢN DEMO 3: Khách hàng hỏi thông tin sạc (Needs Information)
-        # ======================================================================
-        case_3 = Case(
-            id="CASE-20260924-003",
-            user_id=user_cust_1.id,
-            session_id="sess_vf_11045",
-            mock_customer_id="CUST_MOCK_01",
-            mock_customer_name="Khách hàng Demo 01",
-            mock_customer_phone="0900-000-231",
-            vehicle_code_mock="VF-SF-00445",
-            vehicle_model="VF3",
-            intent=Intent.SERVICE_INCIDENT.value,
-            priority=Priority.MEDIUM.value,
-            status=TicketStatus.NEEDS_INFORMATION.value,
-            created_at=now - timedelta(hours=5),
-            updated_at=now - timedelta(hours=4, minutes=30),
-        )
+            # 2.8 CustomerFeedback (nếu có, e.g. scenario 7 & 8)
+            fb_data = item.get("feedback")
+            if fb_data:
+                fb = CustomerFeedback(
+                    id=str(uuid.uuid4()),
+                    case_id=case.id,
+                    rating=fb_data["rating"],
+                    comment=fb_data.get("comment"),
+                    reason_tags=fb_data.get("reason_tags", []),
+                    created_at=updated_time,
+                    updated_at=updated_time,
+                )
+                db.add(fb)
 
-        brief_3 = CaseBrief(
-            id=str(uuid.uuid4()),
-            case_id=case_3.id,
-            summary="Khách hàng hỏi về việc sạc xe VF3 tại nhà bị chậm, đã qua 2 lượt làm rõ nhưng chưa cung cấp thông số bộ sạc hoặc nguồn điện sử dụng.",
-            captured_fields={
-                "vehicle_model": "VF3",
-                "inquiry": "Sạc tại nhà bị chậm",
-                "missing_info": ["Công suất bộ sạc", "Loại ổ cắm", "Nguồn điện tiếp địa"],
-            },
-            suggested_action="Nhân viên CSKH liên hệ qua số điện thoại để hướng dẫn kiểm tra thông số bộ sạc treo tường.",
-            confidence_score=0.75,
-            is_edited_by_staff=False,
-            generated_at=now - timedelta(hours=4, minutes=50),
-        )
+            seeded_cases_count += 1
 
-        msgs_3 = [
-            Message(
-                id=str(uuid.uuid4()),
-                case_id=case_3.id,
-                session_id=case_3.session_id,
-                sender_type=SenderType.CUSTOMER.value,
-                content="Xe VF3 của tôi sạc ở nhà cả đêm mà chỉ lên được có vài phần trăm.",
-                created_at=now - timedelta(hours=5),
-            ),
-            Message(
-                id=str(uuid.uuid4()),
-                case_id=case_3.id,
-                session_id=case_3.session_id,
-                sender_type=SenderType.AGENT.value,
-                content="Dạ anh/chị cho em hỏi mình đang dùng bộ sạc di động 2.2kW cắm ổ dân dụng hay trụ sạc treo tường 7.4kW ạ? Đèn trên bộ sạc báo màu gì ạ?",
-                msg_metadata={"turn": 1, "suggested_replies": ["Sạc di động 2.2kW", "Bộ sạc treo tường 7.4kW"]},
-                created_at=now - timedelta(hours=4, minutes=58),
-            ),
-            Message(
-                id=str(uuid.uuid4()),
-                case_id=case_3.id,
-                session_id=case_3.session_id,
-                sender_type=SenderType.CUSTOMER.value,
-                content="Tôi cũng không rõ loại nào, cắm vào ổ điện bình thường thôi.",
-                created_at=now - timedelta(hours=4, minutes=52),
-            ),
-            Message(
-                id=str(uuid.uuid4()),
-                case_id=case_3.id,
-                session_id=case_3.session_id,
-                sender_type=SenderType.AGENT.value,
-                content="Dạ hệ thống đã ghi nhận hồ sơ và chuyển thông tin đến chuyên viên kỹ thuật. Do cần thêm thông số bộ sạc, nhân viên hỗ trợ sẽ liên hệ trực tiếp với anh/chị để tư vấn chi tiết ạ.",
-                msg_metadata={"turn": 2},
-                created_at=now - timedelta(hours=4, minutes=50),
-            ),
-        ]
-
-        # ======================================================================
-        # KỊCH BẢN DEMO 4: Tư vấn chính sách giá & ưu đãi (Resolved + Feedback)
-        # ======================================================================
-        case_4 = Case(
-            id="CASE-20260924-004",
-            user_id=user_cust_2.id,
-            session_id="sess_vf_55412",
-            mock_customer_id="CUST_MOCK_02",
-            mock_customer_name="Khách hàng Demo 02",
-            mock_customer_phone="0911-222-333",
-            vehicle_code_mock="VF-SF-00312",
-            vehicle_model="VF5",
-            intent=Intent.SALES_GENERAL_INFO.value,
-            priority=Priority.LOW.value,
-            status=TicketStatus.RESOLVED.value,
-            created_at=now - timedelta(days=1),
-            updated_at=now - timedelta(hours=18),
-        )
-
-        brief_4 = CaseBrief(
-            id=str(uuid.uuid4()),
-            case_id=case_4.id,
-            summary="Khách hàng tìm hiểu chính sách ưu đãi miễn phí sạc pin tại trạm V-GREEN và gói thuê pin xe VF5.",
-            captured_fields={
-                "vehicle_model": "VF5",
-                "inquiry_type": "Chính sách sạc & Gói thuê pin",
-                "resolution": "Đã giải thích chi tiết chính sách miễn phí sạc V-GREEN đến hết 30/06/2027.",
-            },
-            suggested_action="Gửi email tổng hợp bảng so sánh chi phí lăn bánh kèm chính sách sạc ưu đãi.",
-            confidence_score=0.98,
-            is_edited_by_staff=True,
-            generated_at=now - timedelta(days=1, minutes=-1),
-        )
-
-        msgs_4 = [
-            Message(
-                id=str(uuid.uuid4()),
-                case_id=case_4.id,
-                session_id=case_4.session_id,
-                sender_type=SenderType.CUSTOMER.value,
-                content="Cho mình hỏi xe VF5 hiện nay có được miễn phí sạc ở trạm công cộng không?",
-                created_at=now - timedelta(days=1),
-            ),
-            Message(
-                id=str(uuid.uuid4()),
-                case_id=case_4.id,
-                session_id=case_4.session_id,
-                sender_type=SenderType.AGENT.value,
-                content="Dạ hiện nay các dòng xe điện VinFast (bao gồm VF5) đang được áp dụng chương trình miễn phí sạc tại hệ thống trạm sạc V-GREEN trên toàn quốc đến hết ngày 30/06/2027 theo chính sách 'Mãnh liệt Tinh thần Việt Nam'.",
-                msg_metadata={
-                    "citations": [{"source_id": "SRC-PR-2024", "title": "Chương trình Mãnh liệt Tinh thần Việt Nam"}]
-                },
-                created_at=now - timedelta(days=1, minutes=-1),
-            ),
-        ]
-
-        audit_4 = StaffAuditLog(
-            id=str(uuid.uuid4()),
-            case_id=case_4.id,
-            staff_id="STAFF_001",
-            action=StaffAction.RESOLVE.value,
-            previous_state={"status": TicketStatus.IN_PROGRESS.value},
-            new_state={"status": TicketStatus.RESOLVED.value},
-            notes="Đã gửi tài liệu chính sách qua email và khách hàng xác nhận đã hiểu rõ.",
-            created_at=now - timedelta(hours=18),
-        )
-
-        update_4 = CaseUpdate(
-            id=str(uuid.uuid4()),
-            case_id=case_4.id,
-            author_type=AuthorType.STAFF.value,
-            status_after_update=TicketStatus.RESOLVED.value,
-            customer_message="Đã gửi tài liệu chi tiết chương trình miễn phí sạc V-GREEN và bảng tính thuê pin VF5 đến email khách hàng.",
-            next_step="Khách hàng xác nhận kết quả hỗ trợ trên ứng dụng.",
-            awaiting_customer_confirmation=True,
-            created_at=now - timedelta(hours=18),
-        )
-
-        feedback_4 = CustomerFeedback(
-            id=str(uuid.uuid4()),
-            case_id=case_4.id,
-            rating=5,
-            comment="Nhân viên hỗ trợ tư vấn rất nhanh và nhiệt tình, cảm ơn VinFast!",
-            created_at=now - timedelta(hours=17),
-        )
-
-        # Lưu toàn bộ vào SQLite
-        db.add_all([case_1, case_2, case_3, case_4])
-        db.add_all([brief_1, brief_2, brief_3, brief_4])
-        db.add_all(msgs_1 + msgs_2 + msgs_3 + msgs_4)
-        db.add_all([att_1])
-        db.add_all([loc_1, loc_2])
-        db.add_all([update_2, update_4])
-        db.add_all([audit_2, audit_4])
-        db.add(feedback_4)
         db.commit()
+        print(f"[seed] Đã hoàn tất khởi tạo {seeded_cases_count} ca sự cố demo (tiền tố DEMO-{date_str}-xxx).")
 
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="ServiceFlow Demo Data Seed (2-way Isolated)")
+    parser.add_argument("--demo", action="store_true", help="Kích hoạt seed dữ liệu kịch bản Demo (bắt buộc)")
+    parser.add_argument("--reset", action="store_true", help="Dọn dẹp sạch dữ liệu demo cũ trước khi dựng lại")
+    parser.add_argument("--yes", "-y", action="store_true", help="Xác nhận tiếp tục không cần hỏi tương tác")
+    args = parser.parse_args()
+
+    if not args.demo:
         print(
-            "[seed] Đã seed thành công 4 kịch bản chuẩn hóa (CASE-20260924-001 -> 004) kèm Location & Updates vào SQLite!"
+            "CẢNH BÁO: Lệnh seed chỉ dành cho dữ liệu Demo có cờ is_demo=True.\n"
+            "Vui lòng chạy kèm cờ '--demo':\n"
+            "    python -m src.seed --demo\n"
+            "    python -m src.seed --demo --reset --yes",
+            file=sys.stderr,
         )
+        return 1
+
+    if args.reset and not args.yes:
+        if sys.stdin.isatty():
+            confirm = input("[CẢNH BÁO] Thao tác này sẽ xóa sạch dữ liệu DEMO cũ. Tiếp tục? (y/N): ")
+            if confirm.strip().lower() not in ("y", "yes"):
+                print("[seed] Đã hủy thao tác reset.")
+                return 0
+        else:
+            print("[seed ERROR] Cần thêm cờ '--yes' khi chạy '--reset' trong script tự động.", file=sys.stderr)
+            return 1
+
+    try:
+        seed_database(reset=args.reset, demo=True)
+        return 0
+    except Exception as exc:
+        print(f"[seed ERROR] {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
-    seed_database()
+    raise SystemExit(main())

@@ -51,22 +51,21 @@ async def run_chat_turn(payload, user, db, handler):
     async with observed_lock(lock, 'application.session_lock'):
         db.expire_all()
         resolve_authorized_active_case(db, user, payload.session_id, payload.case_id, payload.guest_session_id)
+        user_is_demo = bool(getattr(user, "is_demo", False)) if user else False
         session = db.get(ChatSession, payload.session_id)
         if not session:
-            session = ChatSession(id=payload.session_id, owner=owner)
+            session = ChatSession(id=payload.session_id, owner=owner, is_demo=user_is_demo)
             db.add(session)
             try:
                 db.commit()
             except IntegrityError:
                 db.rollback()
                 session = db.get(ChatSession, payload.session_id)
+        if bool(getattr(session, "is_demo", False)) != user_is_demo:
+            raise HTTPException(404, "Không tìm thấy phiên trò chuyện.")
         if session.owner != owner:
-            if session.owner and (session.owner.startswith('guest:') or session.owner == 'guest:None'):
-                session.owner = owner
-                db.commit()
-            else:
-                logger.warning(f"[403 FORBIDDEN] session.owner mismatch: db_owner='{session.owner}', request_owner='{owner}', session_id='{payload.session_id}'")
-                raise HTTPException(403, f'Phiên hội thoại không thuộc khách hàng này (owner={session.owner}).')
+            logger.warning(f"[404 NOT FOUND] session.owner mismatch: db_owner='{session.owner}', request_owner='{owner}', session_id='{payload.session_id}'")
+            raise HTTPException(404, "Không tìm thấy phiên trò chuyện.")
         request_key = hashlib.sha256(f'{owner}:{payload.request_id}'.encode()).hexdigest() if payload.request_id else None
         fingerprint = hashlib.sha256(json.dumps(payload.model_dump(), sort_keys=True, ensure_ascii=False).encode()).hexdigest()
         record = db.get(ChatRequestRecord, request_key) if request_key else None
@@ -147,12 +146,14 @@ async def run_chat_turn(payload, user, db, handler):
                 # receive guidance, but cannot commit an ownerless case.
                 raise HTTPException(401, 'Vui lòng đăng nhập để tạo và theo dõi hồ sơ hỗ trợ.')
             if data.case_id:
-                case = db.get(Case, data.case_id)
-                for key, value in safety_fields(case).items():
-                    setattr(data, key, value)
-                data.priority = case.priority
-                data.status = case.status
-                data.show_emergency_banner = case.priority == 'CRITICAL' and case.status not in {'Closed', 'Resolved'}
+                from src.services.auth import scoped_cases
+                case = scoped_cases(db, user).filter(Case.id == data.case_id).first()
+                if case:
+                    for key, value in safety_fields(case).items():
+                        setattr(data, key, value)
+                    data.priority = case.priority
+                    data.status = case.status
+                    data.show_emergency_banner = case.priority == 'CRITICAL' and case.status not in {'Closed', 'Resolved'}
             if user:
                 data.emergency_context = session_emergency_context(db, user.id, payload.session_id)
                 data.show_emergency_banner = bool(data.show_emergency_banner or data.emergency_context)
@@ -173,7 +174,8 @@ async def run_chat_turn(payload, user, db, handler):
                 accept_application_memory(session, payload.session_id, latest.content, data, context, before_turn,
                                           observation_text='' if spelling.needs_confirmation else spelling.text)
             stored = (session.memory_states or {}).get(payload.session_id, {})
-            case = db.get(Case, data.case_id) if data.case_id else None
+            from src.services.auth import scoped_cases
+            case = scoped_cases(db, user).filter(Case.id == data.case_id).first() if data.case_id else None
             brief = db.query(CaseBrief).filter_by(case_id=case.id).first() if case else None
             case_snapshot = {'id': case.id, 'status': case.status,
                              'facts': dict(brief.captured_fields or {}) if brief else {}} if case else None
