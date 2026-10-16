@@ -141,4 +141,39 @@ Các nhận xét sau phản ánh thời điểm kiểm tra, không thay thế ti
 
 ---
 
+## 2026-10-14 (Chat: Bảng GFM Markdown, Trích dẫn nguồn & So sánh xe)
+
+| Member | Task | Status | Output | Time |
+|---|---|---|---|---|
+| Thế Việt | Chốt tích hợp phần chat: render bảng GFM Markdown, trích dẫn nguồn, luồng so sánh xe và session hardening; review, fix lỗi và push lên nhánh `test/agent-long` | ✅ Done | `ChatMessageItem.tsx`, `useChat.ts` | 4.5h |
+| Long | Soạn prompt RAG so sánh xe (VF 3 đến VF 9), phối hợp chỉnh format trả về | ✅ Done | `src/services/rag_service.py`, `src/agents/chatbot_agent.py` | 3.5h |
+| Triển | Phân tích luồng session state, đề xuất cách tránh ngắt phiên khi payload bảng lớn | ✅ Done | `src/api/customer.py` | 3h |
+| Khôi | Tổng hợp và đối chiếu dữ liệu kỹ thuật xe (kích thước, pin, tầm vận hành) vào kho tri thức RAG | ✅ Done | `src/services/rag_service.py` | 3h |
+| Cả nhóm | Họp daily, kiểm tra kịch bản so sánh xe nhiều lượt và hiển thị bảng trên desktop/mobile | ✅ Done | Kiểm thử thủ công | 2h |
+
+**Tổng kết ngày:**
+1. Khách có thể so sánh các dòng xe VinFast qua bảng Markdown, kèm nguồn trích dẫn.
+2. Thế Việt chốt phần tích hợp, fix các luồng chưa đúng và push lên nhánh chung.
+
+---
+
+## 2026-10-15 (Cô lập Demo, PostgreSQL, Phân định dòng xe & Luồng HITL)
+
+| Member | Task | Status | Output | Time |
+|---|---|---|---|---|
+| Thế Việt | Lead tích hợp: chốt và push các thay đổi trong ngày; fix test các luồng chưa đúng (demo login 1-click, kết nối PostgreSQL `psycopg` v3, tách `target_model`/`owned_model`, banner `/track-case`); chạy lại test backend và build frontend | ✅ Done | `src/services/vehicle_context.py`, `src/db.py`, `frontend/` | 6h |
+| Long | Cùng thảo luận hướng phân định intent tư vấn và sự cố; xây dựng bộ test dòng xe | ✅ Done | `tests/test_api/test_vehicle_model_resolution.py` | 4.5h |
+| Triển | Đề xuất cách cô lập dữ liệu demo hai chiều (`is_demo`); rà soát schema `Case` và migration | ✅ Done | `src/models/schemas.py`, `src/api/staff.py` | 4h |
+| Khôi | Rà soát luồng ca thiếu thông tin, viết mục `Needs Information Loop` và sơ đồ sequence; hỗ trợ test hồi quy | ✅ Done | `docs/product/user-flows.md` | 3.5h |
+| Cả nhóm | Kiểm thử chéo toàn hệ thống trước Gate G3 | ✅ Done | Kiểm thử thủ công + test tự động | 2h |
+
+**Tổng kết ngày:**
+1. Lỗi nhầm dòng xe khi khách chuyển từ hỏi tư vấn sang báo sự cố đã được sửa.
+2. Dữ liệu demo và dữ liệu thật được tách riêng; hệ thống chạy được trên cả SQLite và PostgreSQL.
+3. Đã mô tả luồng ca thiếu thông tin (`Needs Information Loop`) trong tài liệu nghiệp vụ.
+4. Thế Việt chốt các thay đổi, fix test và push lên remote.
+
+---
+
 <!-- Format: copy block trên cho mỗi ngày làm việc -->
+
