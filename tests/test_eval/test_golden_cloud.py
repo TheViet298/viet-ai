@@ -1,5 +1,7 @@
 import pytest
 
+pytest.importorskip("langfuse")
+
 
 @pytest.mark.asyncio
 async def test_sdk_receives_evaluation_objects_with_writable_score_fields():

@@ -123,8 +123,14 @@ async def run_chat_turn(payload, user, db, handler):
             data.vehicle_cards = select_vehicle_cards(card_text, active_goal=conversation.active_goal, context_topic=conversation.topic)
             data.vehicle_comparison = len(data.vehicle_cards) == 2 and 'so sánh' in card_text.casefold()
             if data.vehicle_cards:
+                client_ctx = getattr(payload, 'client_context', None)
+                user_vehicle = (
+                    client_ctx.get('vehicle_model')
+                    if isinstance(client_ctx, dict)
+                    else getattr(client_ctx, 'vehicle_model', None)
+                ) or getattr(user, 'vehicle_model', None)
                 if re.fullmatch(r'\s*(?:(?:(?:tư vấn|giới thiệu|thông tin)(?: về)?(?: xe| mẫu xe)?\s+)?(?:vinfast\s+)?vf\s*[356789](?:\s+(?:(?:phiên bản|bản)\s+)?(?:eco|plus))?|so sánh\s+vf\s*[356789]\s+(?:và|với)\s+vf\s*[356789]|so sánh\s+vf\s*8\s+(?:eco|plus)\s+(?:và|với)\s+(?:vf\s*8\s+)?(?:eco|plus))[.!?]?\s*', payload.message, re.I):
-                    data.message = vehicle_overview_reply(data.vehicle_cards)
+                    data.message = vehicle_overview_reply(data.vehicle_cards, user_vehicle=user_vehicle)
                     data.response_type = 'FAQ_ANSWER'
                 if all(card.model == 'VF8' for card in data.vehicle_cards):
                     data.suggested_replies = ['Dự toán lăn bánh ' + card.name for card in data.vehicle_cards]

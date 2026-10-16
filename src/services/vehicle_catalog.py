@@ -82,7 +82,7 @@ def select_vehicle_cards(text: str, *, active_goal: str | None = None, context_t
     return cards
 
 
-def vehicle_overview_reply(cards: list[VehicleCard]) -> str:
+def vehicle_overview_reply(cards: list[VehicleCard], user_vehicle: str | None = None) -> str:
     if cards and all(card.model == 'VF8' for card in cards):
         intro = 'VF 8 là mẫu SUV điện phân khúc D với 5 chỗ ngồi. '
         intro += 'Hai phiên bản Eco và Plus có những điểm khác biệt sau:' if len(cards) == 2 else 'Thông tin phiên bản anh/chị đang quan tâm:'
@@ -91,22 +91,36 @@ def vehicle_overview_reply(cards: list[VehicleCard]) -> str:
             specs = {spec.label: spec.value for spec in card.specs}
             drive = 'dẫn động AWD' if card.variant == 'plus' else 'dẫn động cầu trước'
             price = card.price_label.replace('Từ ', 'từ ', 1)
-            lines.append(f'- **{card.name} ({price})**: công suất {specs["Công suất tối đa"]}, '
+            lines.append(f'- **{card.name} ({price})**: Công suất tối đa {specs["Công suất tối đa"]}, '
                          f'{drive}; quãng đường công bố {specs["Quãng đường"]}, sạc nhanh {specs["Thời gian sạc"]}.')
         lines.append('Quãng đường thực tế phụ thuộc điều kiện sử dụng. Giá bán trên là giá niêm yết chưa phải là giá lăn bánh.')
+        if user_vehicle:
+            norm_user = re.sub(r'\s+', '', user_vehicle).upper()
+            user_display = re.sub(r'^(VF)(\d)', r'\1 \2', norm_user)
+            if not any(card.model.upper() == norm_user for card in cards):
+                lines.append(f'*(Anh/chị đang dùng {user_display}, nếu muốn so sánh chi tiết với VF 8 em có thể hỗ trợ ạ.)*')
         return '\n\n'.join(lines)
-    return ('Anh/chị xem thông tin công bố của ' + ', '.join(card.name for card in cards)
-            + ' trong các thẻ dưới đây. Thông số áp dụng cho phiên bản ghi trên thẻ; giá lăn bánh và ưu đãi cần showroom xác nhận.')
+    res = ('Anh/chị xem thông tin công bố của ' + ', '.join(card.name for card in cards)
+           + ' trong các thẻ dưới đây. Thông số áp dụng cho phiên bản ghi trên thẻ; giá lăn bánh và ưu đãi cần showroom xác nhận.')
+    if user_vehicle:
+        norm_user = re.sub(r'\s+', '', user_vehicle).upper()
+        user_display = re.sub(r'^(VF)(\d)', r'\1 \2', norm_user)
+        if not any(card.model.upper() == norm_user for card in cards):
+            target = cards[0].name if cards else 'mẫu xe này'
+            res += f'\n\n*(Anh/chị đang dùng {user_display}, nếu muốn so sánh chi tiết với {target} em có thể hỗ trợ ạ.)*'
+    return res
 
 
 def vehicle_comparison_reply(cards: list[VehicleCard]) -> str:
     names = [card.name.replace('VinFast ', '') for card in cards]
     rows = [('Giá bán từ', [card.price_label.removeprefix('Từ ') for card in cards]),
-            ('Quãng đường mỗi lần sạc', [next((s.value for s in card.specs if s.label.startswith('Quãng đường')), 'Chưa có dữ liệu') for card in cards]),
+            ('Quãng đường', [next((s.value for s in card.specs if 'Quãng đường' in s.label), 'Chưa có dữ liệu') for card in cards]),
             ('Dung lượng pin khả dụng', [card.battery_capacity or 'Chưa có dữ liệu' for card in cards]),
-            ('Thời gian sạc nhanh (10%–70%)', [card.fast_charge_time or 'Chưa có dữ liệu' for card in cards]),
-            ('Số chỗ ngồi', [next((s.value for s in card.specs if s.label == 'Số chỗ ngồi'), 'Chưa có dữ liệu') for card in cards])]
-    lines = [f'Dạ, em gửi anh/chị thông tin so sánh giữa {names[0]} và {names[1]}:']
+            ('Sạc nhanh', [card.fast_charge_time or next((s.value for s in card.specs if 'Sạc nhanh' in s.label), 'Chưa có dữ liệu') for card in cards]),
+            ('Công suất', [next((s.value for s in card.specs if 'Công suất' in s.label), 'Chưa có dữ liệu') for card in cards]),
+            ('Số chỗ', [next((s.value for s in card.specs if 'Số chỗ' in s.label), 'Chưa có dữ liệu') for card in cards])]
+    lines = [f'### So sánh thông số kỹ thuật {names[0]} và {names[1]}',
+             f'Dạ, em gửi anh/chị thông tin so sánh giữa {names[0]} và {names[1]}:']
     lines.extend(f'- **{label}**: {names[0]} {values[0]}; {names[1]} {values[1]}.' for label, values in rows)
     lines.append('Quãng đường thực tế phụ thuộc điều kiện sử dụng. Các chuẩn NEDC/WLTP khác nhau không nên so trực tiếp; giá lăn bánh và ưu đãi cần showroom xác nhận.')
     return '\n\n'.join(lines)
