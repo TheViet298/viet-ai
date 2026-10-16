@@ -67,7 +67,7 @@ test('useChat hydrates messages from restored session', async () => {
     case_id: 'CASE-20261006-001',
     messages: [
       { id: 'msg-1', sender: 'CUSTOMER', content: 'Xe báo lỗi sạc', timestamp: '2026-10-06T10:00:00Z' },
-      { id: 'msg-2', sender: 'AGENT', content: 'Em ghi nhận sự cố sạc', timestamp: '2026-10-06T10:00:05Z' },
+      { id: 'msg-2', sender: 'AGENT', content: 'Em ghi nhận sự cố sạc', timestamp: '2026-10-06T10:00:05Z', vehicle_cards: [{ model: 'VF5' }] },
     ],
     total: 2,
   };
@@ -96,6 +96,7 @@ test('useChat hydrates messages from restored session', async () => {
   assert.equal(messages.length, 2);
   assert.equal(messages[0].content, 'Xe báo lỗi sạc');
   assert.equal(messages[1].content, 'Em ghi nhận sự cố sạc');
+  assert.equal(messages[1].vehicle_cards, historyData.messages[1].vehicle_cards);
 });
 
 test('useChat dismisses location request card when switching topic', async () => {
@@ -117,4 +118,44 @@ test('useChat dismisses location request card when switching topic', async () =>
 
   // requestLocation phải được đặt về false
   assert.equal(states[9], false);
+});
+
+test('a rejected stored session is replaced without retaining its case', async () => {
+  const { states, effectCallbacks } = harness({
+    initialStorage: {
+      'vf_chat_session:guest': 'sess_vf_wrongowner',
+      'vf_chat_case:guest': 'CASE-OTHER',
+    },
+    getSessionHistory: async () => { throw new Error('Failed to fetch session history (403): forbidden'); },
+  });
+  for (const cb of effectCallbacks) await cb();
+  await new Promise(resolve => setTimeout(resolve, 10));
+  assert.notEqual(states[3], 'sess_vf_wrongowner');
+  assert.equal(states[4], null);
+  assert.equal(states[0][0].id, 'welcome-1');
+});
+
+test('chat waits for auth and remounts its session when the account changes', () => {
+  let auth = { isReady: false, user: null };
+  const source = fs.readFileSync(path.join(__dirname, '../src/features/chat/components/CustomerChatContainer.tsx'), 'utf8');
+  const compiled = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+  }).outputText;
+  const module = { exports: {} };
+  vm.runInNewContext(compiled, {
+    module, exports: module.exports,
+    require: id => {
+      if (id === '@/features/shared') return { useAuth: () => auth };
+      if (id === 'react/jsx-runtime') return { jsx: (type, props, key) => ({ type, props, key }) };
+      return {};
+    },
+  });
+  const render = module.exports.CustomerChatContainer;
+  assert.equal(render(), null);
+  auth = { isReady: true, user: { id: 'customer1' } };
+  assert.equal(render().key, 'customer1');
+  auth = { isReady: true, user: { id: 'customer2' } };
+  assert.equal(render().key, 'customer2');
+  auth = { isReady: true, user: null };
+  assert.equal(render().key, 'guest');
 });

@@ -1,0 +1,15 @@
+{
+  "gps_baseline_files": 62,
+  "unchanged_files": 53,
+  "changed_files": [
+    "frontend/src/features/chat/api/chatApi.ts",
+    "frontend/src/features/chat/components/CustomerChatContainer.tsx",
+    "frontend/src/features/chat/hooks/useChat.ts",
+    "frontend/src/features/chat/types.ts",
+    "frontend/tests/e2e/gps-real.spec.ts",
+    "frontend/tests/location-runtime.test.cjs",
+    "src/api/customer.py",
+    "src/models/schemas.py",
+    "tests/test_api/test_contextual_nearby.py"
+  ]
+}

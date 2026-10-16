@@ -32,8 +32,26 @@ export interface NearbyAction {
   limit: 5;
 }
 
+export interface VehicleCard {
+  battery_capacity?: string | null;
+  fast_charge_time?: string | null;
+  variant?: string | null;
+  specs_source_url?: string | null;
+  test_drive_url?: string | null;
+  rolling_cost_url?: string | null;
+  model: string;
+  name: string;
+  image_url: string;
+  specs: { label: string; value: string }[];
+  price_label: string;
+  source_url: string;
+  verified_at: string;
+}
+
 export interface ChatResponseData {
   nearby_action?: NearbyAction | null;
+  vehicle_comparison?: boolean;
+  vehicle_cards?: VehicleCard[];
   emergency_context?: { case_id: string; incident_version: number; safety_status: string } | null;
   safety_status?: "unconfirmed" | "customer_reported_safe";
   safety_acknowledged_at?: string | null;
@@ -64,6 +82,8 @@ export interface ApiResponse<T> {
 }
 
 export interface ChatMessage {
+  vehicle_comparison?: boolean;
+  vehicle_cards?: VehicleCard[];
   id: string;
   sender: "CUSTOMER" | "AGENT" | "SYSTEM";
   content: string;

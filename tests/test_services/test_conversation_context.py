@@ -4,6 +4,20 @@ from src.services.conversation_context import ConversationContext, apply_turn, u
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize('question', ['vf8 plus có những màu gì', 'VF8 Plus mau nao?', 'Màu sắc ngoại thất VF8 Plus',
+                                    'VF8 Plus có màu trắng không?', 'VF8 Plus co mau trang khong?'])
+async def test_color_question_switches_away_from_pending_quote(question):
+    context = ConversationContext(active_goal='quote', subject='VF8')
+    turn = await understand_turn(question, context, [], {})
+    assert turn.move == 'new_question'
+    assert turn.goal == 'appearance'
+    assert turn.subject == 'VF8'
+    assert turn.updates['version'] == 'Plus'
+    assert 'lăn bánh' not in turn.resolved_query
+    assert not turn.needs_confirmation
+
+
+@pytest.mark.asyncio
 async def test_pending_quote_accepts_version_battery_and_city():
     context = ConversationContext(active_goal='quote', subject='VF8')
     turn = await understand_turn('VF8 Plus, mua kèm pin, Hà Nội', context, [], {})

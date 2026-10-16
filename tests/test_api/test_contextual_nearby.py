@@ -91,6 +91,9 @@ async def test_real_chat_action_followup_and_no_automatic_case(client, database)
     first = await chat("Tìm trạm sạc gần đây")
     assert first["case_id"] is None
     assert first["nearby_action"]["category"] == "CHARGING_STATION"
+    unaccented = await chat("tim tru sac gan day")
+    assert unaccented["nearby_action"]["category"] == "CHARGING_STATION"
+    assert unaccented["response_type"] == "FAQ_ANSWER"
     second = await chat("còn showroom thì sao")
     assert second["nearby_action"]["category"] == "SHOWROOM"
     area = await chat("showroom ở Huế")

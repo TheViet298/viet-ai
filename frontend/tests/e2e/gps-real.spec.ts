@@ -83,3 +83,21 @@ test('explicit area in chat finds Hue showrooms without requesting browser GPS',
   const link = new URL((await region.getByRole('link', { name: 'Chỉ đường Google Maps' }).first().getAttribute('href'))!);
   expect(link.searchParams.has('origin')).toBe(false);
 });
+
+
+test('logout clears GPS consent and requires a new deliberate location choice', async ({ page, context }) => {
+  await context.grantPermissions(['geolocation']);
+  await context.setGeolocation({ latitude: 10.7769, longitude: 106.7009, accuracy: 20 });
+  await login(page);
+  await page.getByRole('button', { name: 'Tìm điểm gần đây', exact: true }).click();
+  const nearby = page.waitForResponse(r => r.url().includes('/service-points/nearby?'));
+  await page.getByRole('button', { name: 'Dùng vị trí hiện tại' }).click();
+  await nearby;
+  await expect(page.getByRole('link', { name: 'Chỉ đường Google Maps' })).toHaveCount(5);
+  await page.getByTitle('Đăng xuất', { exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Chỉ đường Google Maps' })).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Tìm điểm gần đây', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Chỉ đường Google Maps' })).toHaveCount(0);
+});

@@ -9,7 +9,8 @@ from src.services.memory_buffer import compact_memory
 from src.services.session_store import decode_state, encode_state
 
 
-def accept_application_memory(session, session_id: str, text: str, data, context: dict, before_turn: int) -> None:
+def accept_application_memory(session, session_id: str, text: str, data, context: dict, before_turn: int,
+                              *, observation_text: str | None = None) -> None:
     from src.agents.nodes.triage_node import extract_fields
     from src.services.chat_classification import denied_reports
 
@@ -24,7 +25,8 @@ def accept_application_memory(session, session_id: str, text: str, data, context
         state['messages'][-1] = AIMessage(content=data.message)
     facts, history = expire_dynamic_facts(state.get('captured_fields', {}), state.get('fact_history', []))
     invalidated = set(facts) if context.get('scope_changed') else set()
-    for denied in denied_reports(text):
+    observation_text = text if observation_text is None else observation_text
+    for denied in denied_reports(observation_text):
         for field, value in extract_fields(denied, asserted_only=False).items():
             if str(facts.get(field, '')).casefold() == value.casefold():
                 invalidated.add(field)
@@ -33,7 +35,7 @@ def accept_application_memory(session, session_id: str, text: str, data, context
         for item in history:
             if item['field'] in invalidated and item['status'] == 'valid':
                 item.update(status='invalidated', valid_to=datetime.now(UTC).isoformat())
-    observed = extract_fields(text)
+    observed = extract_fields(observation_text)
     observed.pop('vehicle_model', None)
     model = context.get('incident_model') if context.get('is_incident') else context.get('owned_model')
     if model:

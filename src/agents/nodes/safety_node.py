@@ -3,6 +3,7 @@ from __future__ import annotations
 from src.agents.context_manager import resolve_policy_conflict
 from src.agents.guardrails import EMERGENCY_SAFE_GUIDANCE, evaluate_hard_safety
 from src.agents.state import AgentState
+from src.services.chat_normalization import clarification_for
 
 
 async def safety_node(state: AgentState) -> dict:
@@ -50,4 +51,9 @@ async def safety_node(state: AgentState) -> dict:
             "response": reply,
             "final_response": reply,
         }
+    if state.get('normalization_needs_confirmation'):
+        reply = clarification_for(text)
+        return {'is_critical': False, 'safety_trigger': None, 'priority': priority,
+                'response_type': 'CLARIFICATION', 'response': reply, 'final_response': reply,
+                'needs_staff_review': False, 'case_brief': None, 'case_id': None, 'guardrails': flags}
     return {"is_critical": False, "safety_trigger": trigger, "priority": priority, "guardrails": flags}

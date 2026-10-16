@@ -9,6 +9,7 @@ import {
   ClientContext,
   CustomerCaseDetailData,
   CustomerCaseItem,
+  VehicleCard,
 } from "../types";
 
 const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
@@ -92,6 +93,7 @@ export async function sendChatMessage(params: {
       "Content-Type": "application/json",
       ...authHeaders,
     },
+    // Backend turn budget is 20 seconds; leave room for transport and persistence.
     signal: typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(30000) : undefined,
     body: JSON.stringify({
       request_id: params.requestId,
@@ -126,6 +128,8 @@ export async function getSessionHistory(sessionId: string): Promise<ApiResponse<
     timestamp: string;
     response_type?: "CLARIFICATION" | "FAQ_ANSWER" | "CASE_CREATED";
     citations?: Citation[];
+    vehicle_cards?: VehicleCard[];
+    vehicle_comparison?: boolean;
     suggested_replies?: string[];
     safe_guidance?: string;
     case_id?: string | null;

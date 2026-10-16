@@ -42,8 +42,13 @@ def normalize_google_usage(usage: dict | None) -> dict[str, int] | None:
 
 
 async def provider_generation(name: str, provider: str, model: str, call, *, attempt: int = 1):
+    from src.config import get_settings
+    settings = get_settings()
+    limits = {'vision.route': settings.image_routing_timeout_s, 'vision.dashboard': settings.dashboard_vision_timeout_s,
+              'vision.exterior': settings.exterior_vision_timeout_s}
     with observation(name, as_type='generation', model=model,
-                     metadata={'provider': provider, 'attempt': attempt}) as span:
+                     metadata={'provider': provider, 'attempt': attempt, 'layer': 'vision',
+                               'timeout_s': limits.get(name), 'timeout_source': 'vision_operation_limit'}) as span:
         result = await call()
         if provider == 'google':
             try:

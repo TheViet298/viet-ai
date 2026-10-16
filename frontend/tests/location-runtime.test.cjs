@@ -27,7 +27,7 @@ function harness() {
       if (id === 'react') return react;
       if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (id === '../hooks/useChat') return { useChat: () => ({ ...chat, currentCaseId: caseId }) };
-      if (id === '@/features/shared') return { useAuth: () => ({ role: 'CUSTOMER' }), ProductMark: 'ProductMark' };
+      if (id === '@/features/shared') return { useAuth: () => ({ role: 'CUSTOMER', isReady: true }), ProductMark: 'ProductMark' };
       if (id === '../api/chatApi') return { submitCustomerLocation(payload) { calls.push(payload); return fail ? Promise.reject(new Error('offline')) : Promise.resolve({}); } };
       if (id === '../constants/servicePoints') return { getSeedServicePoints: () => [] };
       if (id === '../utils/locationTracking') return load('../src/features/chat/utils/locationTracking.ts');
@@ -37,7 +37,7 @@ function harness() {
     return exports;
   }
   const { CustomerChatContainer } = load('../src/features/chat/components/CustomerChatContainer.tsx');
-  function render() { cursor=0; dirty=false; tree=CustomerChatContainer(); while(effects.length) effects.shift()(); }
+  function render() { cursor=0; dirty=false; tree=CustomerChatContainer(); if (typeof tree?.type === 'function') tree=tree.type(tree.props); while(effects.length) effects.shift()(); }
   function nodes(node) { if (!node || typeof node !== 'object') return []; if (Array.isArray(node)) return node.flatMap(n=>nodes(n)); return [node,...nodes(node.props?.children)]; }
   function card() { return nodes(tree).find(n=>n.type==='LocationConsentCard')?.props; }
   return { calls, card, action(value = { type: 'FIND_NEARBY', request_id: String(Date.now()), turn_id: 'turn', category: 'CHARGING_STATION', vehicle_type: 'CAR', requires_location: true, reason: 'Tìm trạm sạc', limit: 5 }) { chat.nearbyAction=value; dirty=true; },

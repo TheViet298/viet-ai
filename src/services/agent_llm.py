@@ -10,21 +10,23 @@ from pydantic import BaseModel
 from src.agents.context_manager import build_7_layer_context, load_prompt, trim_context_layers
 from src.agents.state import AgentState
 from src.config import get_settings
+from src.services.observability import observation
 from src.services.tracer import record_trace_step, sanitized_snapshot
-from src.services.observability import observation, current_trace_id
 
 T = TypeVar("T", bound=BaseModel)
 _circuits: dict[str, dict] = {}
 
 
-def circuit_key() -> str:
+def circuit_key(normalization: bool = False) -> str:
     s = get_settings()
-    key_val = s.openai_api_key or s.google_api_key or ""
-    return sha256((str(key_val) + str(getattr(s, "model_name", "model"))).encode()).hexdigest()
+    key_val = (s.google_api_key if s.google_api_key.startswith('AIza') else s.openai_api_key) if normalization else (
+        s.openai_api_key or s.google_api_key)
+    model = s.normalization_model if normalization else s.model_name
+    return sha256((str(key_val) + str(model)).encode()).hexdigest()
 
 
-def open_circuit() -> None:
-    _circuits[circuit_key()] = {"until": time.monotonic() + get_settings().agent_circuit_cooldown_s, "probe": False}
+def open_circuit(normalization: bool = False) -> None:
+    _circuits[circuit_key(normalization)] = {"until": time.monotonic() + get_settings().agent_circuit_cooldown_s, "probe": False}
 
 
 def reset_circuits() -> None:
@@ -33,7 +35,8 @@ def reset_circuits() -> None:
 
 def classify_provider_error(error: Exception) -> str:
     # Only the category leaves this function; never persist exception payloads.
-    if isinstance(error, TimeoutError):
+    from src.services.request_diagnostics import failure_details
+    if failure_details(error)['failure_kind'] == 'timeout':
         return "timeout"
     text = str(error).casefold()
     if any(term in text for term in ["429", "quota", "resource_exhausted", "rate limit"]):
@@ -43,7 +46,8 @@ def classify_provider_error(error: Exception) -> str:
     return "provider_error"
 
 
-def record_outcome(state: AgentState, prompt: str, decision: str, usage: dict | None = None, parsed=None) -> None:
+def record_outcome(state: AgentState, prompt: str, decision: str, usage: dict | None = None, parsed=None,
+                   diagnostics: dict | None = None) -> None:
     usage = usage or {}
     state["last_llm_outcome"] = decision
     with observation('llm.outcome', metadata={'outcome': decision, 'prompt_name': prompt}):
@@ -52,7 +56,9 @@ def record_outcome(state: AgentState, prompt: str, decision: str, usage: dict | 
         record_trace_step(
             state.get("session_id", "unspecified"), state.get("turn", 0), "llm", prompt, decision,
             tokens_in=usage.get("input_tokens"), tokens_out=usage.get("output_tokens"),
-            metadata={"model": getattr(get_settings(), "model_name", "gemini"), "output": sanitized_snapshot(parsed.model_dump()) if isinstance(parsed, BaseModel) else None},
+            metadata={"model": get_settings().normalization_model if prompt == 'normalization' else get_settings().model_name,
+                      "diagnostics": diagnostics or {},
+                      "output": sanitized_snapshot(parsed.model_dump()) if isinstance(parsed, BaseModel) else None},
         )
     except Exception:
         pass
@@ -61,39 +67,65 @@ def record_outcome(state: AgentState, prompt: str, decision: str, usage: dict | 
 async def structured_call(state: AgentState, prompt: str, schema: type[T], *, callbacks=None) -> T | None:
     """Optional online generation; deterministic, safe fallback when unavailable."""
     settings = get_settings()
+    normalization = prompt == 'normalization'
     has_key = bool(settings.openai_api_key or settings.google_api_key)
     if not has_key or not settings.agent_llm_enabled:
         return None
+    if normalization and 'gemini' in settings.normalization_model.lower() and not (
+            settings.google_api_key.startswith('AIza') or settings.openai_api_key and settings.openai_base_url):
+        record_outcome(state, prompt, 'not_configured')
+        return None
     budget = state.setdefault("llm_budget", {"deadline": time.monotonic() + settings.agent_turn_timeout_s, "attempts": 0})
     remaining = budget["deadline"] - time.monotonic()
-    if budget["attempts"] >= 1 or remaining <= 0:
+    attempts_key = 'normalization_attempts' if normalization else 'attempts'
+    if budget.get(attempts_key, 0) >= 1 or remaining <= 0:
         record_outcome(state, prompt, "budget_exhausted")
         return None
-    key = circuit_key()
+    key = circuit_key(normalization)
     circuit = _circuits.get(key)
     if circuit and (time.monotonic() < circuit["until"] or circuit["probe"]):
         record_outcome(state, prompt, "circuit_open")
         return None
     if circuit:
         circuit["probe"] = True
-    budget["attempts"] += 1
-    from src.services.llm import get_llm
+    budget[attempts_key] = budget.get(attempts_key, 0) + 1
+    from src.services.llm import get_llm, get_normalization_llm
 
+    stage, limit, timeout_source = 'llm.prepare', None, None
     try:
-        layers = build_7_layer_context(state, load_prompt(prompt))
-        try:
-            messages = trim_context_layers(layers, max_bytes=settings.agent_context_max_bytes)
-        except ValueError:
-            record_outcome(state, prompt, "context_budget_exceeded")
+        if normalization:
+            from langchain_core.messages import HumanMessage, SystemMessage
+            messages = [SystemMessage(content=load_prompt(prompt)), HumanMessage(content=str({
+                'message': state.get('latest_user_message', ''), 'recent': state.get('memory_summary', '')}))]
+            if sum(len(str(m.content).encode('utf-8')) for m in messages) > settings.agent_context_max_bytes:
+                record_outcome(state, prompt, 'context_budget_exceeded')
+                return None
+        else:
+            layers = build_7_layer_context(state, load_prompt(prompt))
+            try:
+                messages = trim_context_layers(layers, max_bytes=settings.agent_context_max_bytes)
+            except ValueError:
+                record_outcome(state, prompt, "context_budget_exceeded")
+                return None
+            if layers.retrieval_context and not any(layers.retrieval_context in str(m.content) for m in messages):
+                record_outcome(state, prompt, "context_budget_exceeded")
+                return None
+        remaining = budget['deadline'] - time.monotonic()
+        model_timeout = settings.normalization_timeout_s if normalization else settings.agent_llm_timeout_s
+        limit = min(remaining, model_timeout)
+        if limit <= 0:
+            record_outcome(state, prompt, 'budget_exhausted')
             return None
-        if layers.retrieval_context and not any(layers.retrieval_context in str(m.content) for m in messages):
-            record_outcome(state, prompt, "context_budget_exceeded")
-            return None
-        result = await asyncio.wait_for(
-            get_llm().with_structured_output(schema, include_raw=True).ainvoke(
-                messages, **({'config': {'callbacks': callbacks}} if callbacks is not None else {})
-            ), timeout=min(remaining, settings.agent_llm_timeout_s)
-        )
+        stage = 'llm.call'
+        timeout_source = 'turn_deadline' if remaining <= model_timeout else 'model_call_limit'
+        with observation('llm.call', metadata={'layer': 'model', 'timeout_s': limit,
+                'timeout_source': timeout_source,
+                'remaining_turn_s': remaining}):
+            result = await asyncio.wait_for(
+                (get_normalization_llm() if normalization else get_llm()).with_structured_output(schema, include_raw=True).ainvoke(
+                    messages, **({'config': {'callbacks': callbacks}} if callbacks is not None else {})
+                ), timeout=limit
+            )
         raw = result.get("raw")
         usage = getattr(raw, "usage_metadata", None) or {}
         parsed = result.get("parsed")
@@ -103,13 +135,16 @@ async def structured_call(state: AgentState, prompt: str, schema: type[T], *, ca
         return parsed if isinstance(parsed, schema) else None
     except asyncio.CancelledError:
         if circuit and _circuits.get(key) is circuit:
-            open_circuit()
-        record_outcome(state, prompt, "cancelled")
+            open_circuit(normalization)
+        record_outcome(state, prompt, "cancelled", diagnostics={'failure_stage': stage, 'timeout_s': limit,
+                                                               'timeout_source': timeout_source})
         raise
     except Exception as error:
+        from src.services.request_diagnostics import failure_details
         decision = classify_provider_error(error)
         if decision in {"rate_limited", "auth_error"} or circuit:
-            open_circuit()
-        record_outcome(state, prompt, decision)
+            open_circuit(normalization)
+        record_outcome(state, prompt, decision, diagnostics={**failure_details(error), 'failure_stage': stage,
+                                                            'timeout_s': limit, 'timeout_source': timeout_source})
         # Do not log exception payloads that may contain user data or API credentials.
         return None

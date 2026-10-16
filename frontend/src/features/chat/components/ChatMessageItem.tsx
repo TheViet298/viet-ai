@@ -1,4 +1,6 @@
 "use client";
+import { VehicleInfoCard } from "./VehicleInfoCard";
+import { VehicleComparison } from "./VehicleComparison";
 
 import { useMemo, useEffect, useState } from "react";
 import Link from "next/link";
@@ -29,11 +31,14 @@ export function ChatMessageItem({
     ? timestamp.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
     : "";
   const isCustomer = message.sender === "CUSTOMER";
+  const hasVehicleCards = !isCustomer && Boolean(message.vehicle_cards?.length);
+  const isComparison = hasVehicleCards && message.vehicle_comparison && message.vehicle_cards?.length === 2;
 
   // Chuẩn hóa ký tự bullet point, tách dòng nếu bị dồn và lọc emoji đầu mục
   const normalizedContent = useMemo(() => {
     if (!message.content) return "";
     let text = message.content;
+    text = text.replace(/Thông số theo FAQ VinFast;\s*/gi, "");
 
     // 1. Xóa các mã nguồn học thuật thô lọt vào text (vd: [SRC-006], [SRC-001], [1], [2])
     text = text.replace(/\s*\[(?:SRC-[A-Za-z0-9_-]+|\d+)\]/g, "");
@@ -78,6 +83,20 @@ export function ChatMessageItem({
         <span>·</span>
         <time dateTime={message.timestamp || undefined}>{displayTime}</time>
       </div>
+
+      {hasVehicleCards && (
+        <>
+          {isComparison ? <VehicleComparison cards={message.vehicle_cards!} /> : <div className="grid w-full max-w-[596px] grid-cols-1 gap-2 sm:grid-cols-2">
+            {message.vehicle_cards!.map(card => <VehicleInfoCard key={`${card.model}-${card.variant || card.name}`} card={card} />)}
+          </div>}
+          {!isComparison && isLastMessage && message.suggested_replies?.length ? (
+            <div className="grid w-full max-w-[596px] grid-cols-1 gap-2 py-2 sm:grid-cols-2">
+              {message.suggested_replies.map(reply => <button key={reply} type="button" onClick={() => onSelectReply(reply)}
+                className="min-h-11 w-full max-w-[294px] rounded-xl border border-slate-200 bg-white px-4 py-2 text-left text-sm text-slate-800 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">{reply}</button>)}
+            </div>
+          ) : null}
+        </>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
           CẤP 1: BONG BÓNG DUY NHẤT (MỘT TIN NHẮN CHỈ MỘT BOX)
@@ -223,7 +242,7 @@ export function ChatMessageItem({
           - CHỈ HIỆN DƯỚI TIN NHẮN CUỐI CÙNG (Tối đa 4 chip cho lời chào hoặc 2-3 chip sự cố)
           - Tự động biến mất sau khi khách gửi tin nhắn mới
       ───────────────────────────────────────────────────────────── */}
-      {isLastMessage && message.suggested_replies && message.suggested_replies.length > 0 && (
+      {!hasVehicleCards && isLastMessage && message.suggested_replies && message.suggested_replies.length > 0 && (
         <ClarificationChips
           chips={message.suggested_replies.slice(0, 4)}
           onSelectChip={onSelectReply}

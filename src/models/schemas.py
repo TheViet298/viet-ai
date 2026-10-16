@@ -233,8 +233,31 @@ class NearbyAction(BaseModel):
     limit: Literal[5] = 5
 
 
+class VehicleSpec(BaseModel):
+    label: str
+    value: str
+
+
+class VehicleCard(BaseModel):
+    battery_capacity: str | None = None
+    fast_charge_time: str | None = None
+    model: str
+    name: str
+    image_url: str
+    specs: list[VehicleSpec]
+    price_label: str
+    source_url: str
+    verified_at: str
+    variant: str | None = None
+    specs_source_url: str | None = None
+    test_drive_url: str | None = None
+    rolling_cost_url: str | None = None
+
+
 class ChatResponseData(BaseModel):
     nearby_action: NearbyAction | None = None
+    vehicle_comparison: bool = False
+    vehicle_cards: list[VehicleCard] = Field(default_factory=list)
     emergency_context: EmergencyContext | None = None
     safety_status: Literal['unconfirmed', 'customer_reported_safe'] = 'unconfirmed'
     safety_acknowledged_at: str | None = None
@@ -257,6 +280,8 @@ class ChatResponseData(BaseModel):
 
 
 class SessionHistoryMessageItem(BaseModel):
+    vehicle_comparison: bool = False
+    vehicle_cards: list[VehicleCard] = Field(default_factory=list)
     id: str
     sender: Literal["CUSTOMER", "AGENT", "STAFF", "SYSTEM"]
     content: str

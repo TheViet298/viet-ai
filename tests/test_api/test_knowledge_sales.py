@@ -4,6 +4,58 @@ pytest_plugins = ["tests.test_api.test_customer_chat_regressions"]
 
 
 @pytest.mark.asyncio
+async def test_color_question_after_quote_uses_knowledge_in_same_session(client, customer_db, monkeypatch):
+    import src.api.customer as api
+    from src.agents.nodes import rag_node as node
+
+    async def missing(*args, **kwargs):
+        return {"status": "NO_SOURCE", "citations": [], "diagnostics": {"category": "no_eligible_evidence"}}
+
+    queries = []
+
+    async def answer(text, **kwargs):
+        queries.append(text)
+        assert 'lăn bánh' not in text
+        return {"reply": "Thông tin màu sắc VF8 Plus từ nguồn sản phẩm.", "citations": []}
+
+    monkeypatch.setattr(node, 'vinfast_manual_search', missing)
+    monkeypatch.setattr(api, 'process_chat_message', answer)
+    first = await client.post('/api/v1/customer/chat', json={
+        'session_id': 'quote-then-colors', 'message': 'Dự toán lăn bánh VinFast VF 8 Plus',
+    })
+    assert first.status_code == 200
+    second = await client.post('/api/v1/customer/chat', json={
+        'session_id': 'quote-then-colors', 'message': 'vf8 plus có những màu gì',
+    })
+    assert second.status_code == 200
+    assert len(queries) == 1
+    assert 'Thông tin màu sắc' in second.json()['data']['message']
+    assert 'chi-phi-lan-banh' not in second.json()['data']['message']
+    assert not second.json()['data']['vehicle_cards']
+
+
+@pytest.mark.asyncio
+async def test_unsupported_color_answer_is_not_reported_as_generation_failure(client, customer_db, monkeypatch):
+    import src.api.customer as api
+
+    async def unsupported(text, **kwargs):
+        return {
+            'reply': 'Hiện chưa có tài liệu chính thức đã xác thực đủ để trả lời yêu cầu này.',
+            'citations': [], 'is_no_source': True,
+            'retrieval_diagnostics': {'stage': 'generation', 'category': 'unsupported_answer'},
+        }
+
+    monkeypatch.setattr(api, 'process_chat_message', unsupported)
+    response = await client.post('/api/v1/customer/chat', json={
+        'session_id': 'unsupported-colors', 'message': 'vf8 plus có những màu gì',
+    })
+    assert response.status_code == 200
+    reply = response.json()['data']['message']
+    assert 'chưa có tài liệu' in reply
+    assert 'chưa hoàn tất' not in reply
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("followup", [
     "Sao không có giá chính xác?",
     "Sao không có giá lăn bánh?",
