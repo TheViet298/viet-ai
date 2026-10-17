@@ -400,6 +400,7 @@ class ServicePointItem(BaseModel):
     booking_url: str | None = None
     dong_son: bool = False
     operating_hours: str | None = None
+    hours: str | None = None
     charger_types: list[str] | None = None
     services_offered: list[str] | None = None
     power_info: str | None = None
@@ -411,6 +412,8 @@ class ServicePointItem(BaseModel):
 class ServicePointsData(BaseModel):
     case_id: str
     needs_location: bool = False
+    no_points_nearby: bool = False
+    message: str | None = None
     last_updated_label: str | None = None
     rescue_hotline: str | None = None
     recommended_points: list[ServicePointItem] = []

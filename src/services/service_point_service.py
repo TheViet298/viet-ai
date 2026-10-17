@@ -50,46 +50,71 @@ DEFAULT_SEARCH_RADIUS: dict[str, float] = {
     "showroom": 50.0,
 }
 
-# Tọa độ trung tâm hành chính (Quận/Huyện ưu tiên trước, Tỉnh/Thành phố fallback)
-AREA_CENTERS: list[tuple[str, str, tuple[float, float]]] = [
-    # Cấp Quận/Huyện/Điểm cụ thể
-    ("ninh kiều", "district", (10.0342, 105.7885)),
-    ("bình thủy", "district", (10.0718, 105.7282)),
-    ("ba đình", "district", (21.0341, 105.8244)),
-    ("hoàn kiếm", "district", (21.0285, 105.8542)),
-    ("cầu giấy", "district", (21.0362, 105.7906)),
-    ("đống đa", "district", (21.0181, 105.8299)),
-    ("hải châu", "district", (16.0544, 108.2022)),
-    ("thanh khê", "district", (16.0617, 108.1822)),
-    ("quận 1", "district", (10.7769, 106.7009)),
-    ("quận 7", "district", (10.7340, 106.7218)),
-    ("tân bình", "district", (10.8015, 106.6534)),
-    ("long thành", "district", (10.7712, 106.9450)),
-    ("cao tốc long thành", "poi", (10.7712, 106.9450)),
-    ("đà lạt", "district", (11.9404, 108.4583)),
+# Tọa độ trung tâm Quận/Huyện (22 mục tham chiếu cấp quận)
+DISTRICT_CENTERS: dict[str, tuple[str, tuple[float, float]]] = {
+    # Cần Thơ
+    "ninh kiều": ("cần thơ", (10.0342, 105.7885)),
+    "bình thủy": ("cần thơ", (10.0718, 105.7282)),
+    "cái răng": ("cần thơ", (9.9880, 105.7483)),
+    # Hà Nội
+    "ba đình": ("hà nội", (21.0341, 105.8244)),
+    "hoàn kiếm": ("hà nội", (21.0285, 105.8542)),
+    "cầu giấy": ("hà nội", (21.0362, 105.7906)),
+    "đống đa": ("hà nội", (21.0181, 105.8299)),
+    "hai bà trưng": ("hà nội", (21.0080, 105.8500)),
+    "hà đông": ("hà nội", (20.9720, 105.7740)),
+    # Đà Nẵng
+    "hải châu": ("đà nẵng", (16.0544, 108.2022)),
+    "thanh khê": ("đà nẵng", (16.0617, 108.1822)),
+    "sơn trà": ("đà nẵng", (16.0820, 108.2430)),
+    # TP. Hồ Chí Minh
+    "quận 1": ("hồ chí minh", (10.7769, 106.7009)),
+    "quận 3": ("hồ chí minh", (10.7844, 106.6843)),
+    "quận 7": ("hồ chí minh", (10.7340, 106.7218)),
+    "tân bình": ("hồ chí minh", (10.8015, 106.6534)),
+    "bình thạnh": ("hồ chí minh", (10.8106, 106.7091)),
+    "thủ đức": ("hồ chí minh", (10.8494, 106.7537)),
+    # Đồng Nai
+    "long thành": ("đồng nai", (10.7712, 106.9450)),
+    # Lâm Đồng
+    "đà lạt": ("lâm đồng", (11.9404, 108.4583)),
+    # Khánh Hòa
+    "nha trang": ("khánh hòa", (12.2388, 109.1967)),
+    # Bà Rịa - Vũng Tàu
+    "vũng tàu": ("bà rịa vũng tàu", (10.3460, 107.0843)),
+}
 
-    # Cấp Tỉnh/Thành phố
-    ("cần thơ", "province", (10.0452, 105.7469)),
-    ("can tho", "province", (10.0452, 105.7469)),
-    ("hà nội", "province", (21.0285, 105.8542)),
-    ("ha noi", "province", (21.0285, 105.8542)),
-    ("tp. hồ chí minh", "province", (10.8231, 106.6297)),
-    ("hồ chí minh", "province", (10.8231, 106.6297)),
-    ("ho chi minh", "province", (10.8231, 106.6297)),
-    ("sài gòn", "province", (10.8231, 106.6297)),
-    ("sai gon", "province", (10.8231, 106.6297)),
-    ("tphcm", "province", (10.8231, 106.6297)),
-    ("đà nẵng", "province", (16.0544, 108.2022)),
-    ("da nang", "province", (16.0544, 108.2022)),
-    ("hải phòng", "province", (20.8449, 106.6881)),
-    ("hai phong", "province", (20.8449, 106.6881)),
-    ("huế", "province", (16.4637, 107.5909)),
-    ("hue", "province", (16.4637, 107.5909)),
-    ("lâm đồng", "province", (11.9404, 108.4583)),
-    ("lam dong", "province", (11.9404, 108.4583)),
-    ("hà giang", "province", (22.8233, 104.9839)),
-    ("cà mau", "province", (9.1768, 105.1524)),
-]
+# Tọa độ trung tâm Tỉnh/Thành phố (20 tỉnh/thành phố lớn)
+PROVINCE_CENTERS: dict[str, tuple[float, float]] = {
+    "cần thơ": (10.0452, 105.7469),
+    "can tho": (10.0452, 105.7469),
+    "hà nội": (21.0285, 105.8542),
+    "ha noi": (21.0285, 105.8542),
+    "tp. hồ chí minh": (10.8231, 106.6297),
+    "hồ chí minh": (10.8231, 106.6297),
+    "ho chi minh": (10.8231, 106.6297),
+    "sài gòn": (10.8231, 106.6297),
+    "sai gon": (10.8231, 106.6297),
+    "tphcm": (10.8231, 106.6297),
+    "đà nẵng": (16.0544, 108.2022),
+    "da nang": (16.0544, 108.2022),
+    "hải phòng": (20.8449, 106.6881),
+    "hai phong": (20.8449, 106.6881),
+    "huế": (16.4637, 107.5909),
+    "thừa thiên huế": (16.4637, 107.5909),
+    "hue": (16.4637, 107.5909),
+    "lâm đồng": (11.9404, 108.4583),
+    "lam dong": (11.9404, 108.4583),
+    "hà giang": (22.8233, 104.9839),
+    "cà mau": (9.1768, 105.1524),
+    "đồng nai": (10.9574, 106.8427),
+    "bình dương": (11.1603, 106.6576),
+    "quảng ninh": (20.9505, 107.0734),
+    "khánh hòa": (12.2388, 109.1967),
+    "bà rịa vũng tàu": (10.3460, 107.0843),
+    "thanh hóa": (19.8067, 105.7852),
+    "nghệ an": (18.6734, 105.6813),
+}
 
 
 def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
@@ -114,13 +139,26 @@ def is_valid_vietnam_coord(lat: float | None, lng: float | None) -> bool:
 
 
 def infer_coordinates_from_label(label: str | None) -> tuple[float, float] | None:
-    """Khớp khu vực từ chuỗi nhãn theo thứ tự ưu tiên: Cấp Quận/Huyện trước, Cấp Tỉnh/Thành sau."""
+    """Khớp khu vực từ chuỗi nhãn theo thứ tự ưu tiên:
+    1. Quét tìm Quận/Huyện có trong DISTRICT_CENTERS. Nếu khớp -> trả về tọa độ tâm quận.
+    2. Nếu không khớp tâm quận (hoặc quận không có trong bảng): Quét tìm Tỉnh/Thành phố trong PROVINCE_CENTERS -> fallback về tâm tỉnh.
+    3. Nếu nhãn chỉ có phường (không khớp quận và không có tỉnh), hoặc tỉnh không nhận diện được -> trả về None.
+    """
     if not label or not label.strip():
         return None
     norm = label.strip().lower()
-    for alias, level, coords in AREA_CENTERS:
-        if alias in norm:
+
+    # 1. Tìm Quận/Huyện
+    for district_alias, (_prov, coords) in DISTRICT_CENTERS.items():
+        if district_alias in norm:
             return coords
+
+    # 2. Fallback về tâm Tỉnh/Thành phố
+    for prov_alias, coords in PROVINCE_CENTERS.items():
+        if prov_alias in norm:
+            return coords
+
+    # 3. Phường đơn lẻ hoặc địa danh lạ không có tỉnh -> None
     return None
 
 
@@ -335,6 +373,7 @@ def format_service_point_item(
         booking_url=sp.booking_url,
         dong_son=bool(sp.dong_son),
         operating_hours=sp.operating_hours,
+        hours=sp.operating_hours,
         services_offered=sp.services_offered,
         power_info=power_info,
         status=sp.status,
@@ -430,10 +469,122 @@ def build_case_service_points_response(
     else:
         last_updated_label = "Dữ liệu thu thập tháng 10/2026"
 
+    # Xử lý cờ vùng thưa và nhu cầu định vị
+    no_points_nearby = False
+    message = None
+    if can_calculate_km and len(recommended_points) == 0:
+        no_points_nearby = True
+        message = "Chưa có điểm dịch vụ trong 150 km quanh vị trí của bạn; vui lòng gọi hotline"
+        needs_location = False
+    else:
+        needs_location = not can_calculate_km
+
     return ServicePointsData(
         case_id=case.id,
-        needs_location=not can_calculate_km,
+        needs_location=needs_location,
+        no_points_nearby=no_points_nearby,
+        message=message,
         last_updated_label=last_updated_label,
         rescue_hotline=rescue_hotline,
         recommended_points=recommended_points,
     )
+
+
+def search_service_points_catalog(
+    lat: float,
+    lng: float,
+    category: str = "ALL",
+    radius_km: float = 50.0,
+    limit: int = 5,
+    vehicle_type: str = "CAR",
+    db: Session | None = None,
+) -> dict:
+    """Tra cứu điểm dịch vụ cho tool vinfast_nearby_search và endpoint /customer/service-points/nearby.
+
+    - Nếu chạy ở chế độ demo (GPS_CATALOG_MODE=demo): dùng catalog demo từ file JSON để giữ tính toàn vẹn cho test fixture.
+    - Chế độ chuẩn (production / database): truy vấn trực tiếp bảng `service_points` qua SQLAlchemy,
+      áp dụng bộ lọc is_visible=True, is_car_compatible=True (nếu vehicle_type='CAR'),
+      xếp xưởng service_car/service_car_partner trước service_gsm.
+    """
+    import os
+    if os.environ.get("GPS_CATALOG_MODE") == "demo":
+        from src.services.service_point_catalog import default_catalog_adapter, nearby_service_points
+        return nearby_service_points(lat, lng, category, radius_km, limit, default_catalog_adapter(), vehicle_type)
+
+    if not all(math.isfinite(v) for v in (lat, lng, radius_km)) or abs(lat) > 90 or abs(lng) > 180 or radius_km <= 0:
+        raise ValueError("Invalid search coordinates")
+    if vehicle_type not in {"CAR", "TWO_WHEELER"}:
+        raise ValueError("Unsupported vehicle type")
+
+    limit = min(100, max(1, limit))
+
+    # Ánh xạ category
+    cat_map = {
+        "CHARGING_STATION": "charging_station",
+        "SHOWROOM": "showroom",
+        "SERVICE_WORKSHOP": "workshop",
+    }
+    db_cat = cat_map.get(category)
+
+    should_close_db = False
+    if db is None:
+        from src.db import SessionLocal
+        db = SessionLocal()
+        should_close_db = True
+
+    try:
+        is_car = (vehicle_type == "CAR")
+        nearby_raw = find_nearby_service_points(
+            db=db,
+            lat=lat,
+            lng=lng,
+            category=db_cat,
+            radius_km=radius_km,
+            limit=limit,
+            is_car_compatible=is_car,
+        )
+
+        points = []
+        for sp, dist in nearby_raw:
+            cat_out = "SHOWROOM"
+            if sp.category == "charging_station":
+                cat_out = "CHARGING_STATION"
+            elif sp.category == "workshop":
+                cat_out = "SERVICE_WORKSHOP"
+
+            points.append({
+                "id": sp.id,
+                "name": sp.name,
+                "address": sp.address,
+                "category": cat_out,
+                "vehicle_type": vehicle_type,
+                "latitude": sp.latitude,
+                "longitude": sp.longitude,
+                "distance_km": round(dist, 3),
+                "source": "VinFast Database",
+                "updated_at": sp.crawled_at.strftime("%Y-%m-%d") if sp.crawled_at else "2026-10-15",
+                "verification_status": "VERIFIED",
+                "demo": False,
+                "phone": sp.phone,
+                "hotline_service": sp.hotline_service,
+                "booking_url": sp.booking_url,
+                "operating_hours": sp.operating_hours,
+                "hours": sp.operating_hours,
+                "dong_son": bool(sp.dong_son),
+                "services_offered": sp.services_offered,
+            })
+
+        return {
+            "points": points,
+            "source": "VinFast Database",
+            "updated_at": "2026-10-15",
+            "verification_status": "VERIFIED",
+            "demo": False,
+            "distance_method": "AIRLINE",
+            "radius_km": radius_km,
+            "limit": limit,
+            "vehicle_type": vehicle_type,
+        }
+    finally:
+        if should_close_db:
+            db.close()

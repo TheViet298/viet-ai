@@ -15,7 +15,9 @@ from src.services.service_point_service import (
     build_case_service_points_response,
     find_nearby_service_points,
     haversine_km,
+    infer_coordinates_from_label,
     is_heavy_incident_or_needs_rescue,
+    search_service_points_catalog,
 )
 
 
@@ -294,3 +296,196 @@ def test_sparse_area_stepwise_radius_expansion(step3_db_session):
     # Tìm kiếm tại tọa độ quá xa (> 200km, ví dụ giữa biển Đông hoặc Côn Đảo chưa có xưởng)
     results_empty = find_nearby_service_points(db, lat=8.68, lng=106.60, category="workshop", radius_km=50.0)
     assert results_empty == []
+
+
+def test_sparse_area_no_points_nearby_flag_and_needs_location(step3_db_session):
+    """
+    Item B: Vùng thưa: Khi khách đã chia sẻ GPS nhưng trong 150km không có điểm nào:
+    - no_points_nearby = True
+    - message = "Chưa có điểm dịch vụ trong 150 km quanh vị trí của bạn; vui lòng gọi hotline"
+    - recommended_points = []
+    - needs_location = False (khách ĐÃ chia sẻ vị trí thành công)
+    - Nếu sự cố nặng: vẫn giữ rescue_hotline
+    """
+    db = step3_db_session
+    user = User(id="u_sparse", username="u_sparse", password_hash="dummy", role=UserRole.CUSTOMER.value)
+    db.add(user)
+
+    case = Case(
+        id="CASE-SPARSE-01",
+        user_id=user.id,
+        session_id="s_sparse",
+        intent="Service/Incident",
+        priority="CRITICAL",  # Sự cố nặng
+    )
+    loc = CaseLocation(
+        id="loc_sparse_01",
+        case_id=case.id,
+        status="CONSENTED",
+        source="BROWSER_GPS",
+        location_label="Vùng biển xa",
+        latitude=8.68,  # Ngoài 150km so với mọi điểm trong DB test
+        longitude=106.60,
+        precision="EXACT",
+        share_with_staff=True,
+    )
+    case.location = loc
+    db.add_all([case, loc])
+    db.commit()
+
+    resp = build_case_service_points_response(db, case)
+    assert resp.no_points_nearby is True
+    assert "150 km" in (resp.message or "")
+    assert resp.recommended_points == []
+    assert resp.needs_location is False
+    assert resp.rescue_hotline == VINFAST_HOTLINE
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "status,input_lat,input_lng,label,share_staff,expected_lat,expected_lng,expected_label,expected_share",
+    [
+        ("CONSENTED", 21.0315, 105.8145, "29 Liễu Giai, Hà Nội", True, 21.0315, 105.8145, "29 Liễu Giai, Hà Nội", True),
+        ("MANUAL", 21.0315, 105.8145, "Ba Đình, Hà Nội", True, None, None, "Ba Đình, Hà Nội", True),
+        ("NOT_SHARED", 21.0315, 105.8145, "Không muốn chia sẻ", False, None, None, "", False),
+        ("UNKNOWN", 21.0315, 105.8145, "Khu vực chung", True, None, None, "Khu vực chung", True),
+    ],
+)
+async def test_location_create_vs_update_consistency_table(
+    client, step3_db_session, status, input_lat, input_lng, label, share_staff,
+    expected_lat, expected_lng, expected_label, expected_share
+):
+    """
+    Item D: Nhất quán POST /customer/location:
+    So sánh nhánh tạo mới và nhánh cập nhật cho từng status (CONSENTED, MANUAL, NOT_SHARED, UNKNOWN)
+    về latitude, longitude, location_label, share_with_staff.
+    Cả 2 nhánh phải cho ra kết quả hoàn toàn giống nhau!
+    """
+    db = step3_db_session
+    user = User(id=f"u_eq_{status}", username=f"u_eq_{status}", password_hash="dummy", role=UserRole.CUSTOMER.value)
+    db.add(user)
+
+    case_create = Case(id=f"CASE-CREATE-{status}", user_id=user.id, session_id=f"sc_{status}", intent="Service/Incident")
+    case_update = Case(id=f"CASE-UPDATE-{status}", user_id=user.id, session_id=f"su_{status}", intent="Service/Incident")
+    # Cho case_update có sẵn vị trí ban đầu để kích hoạt nhánh UPDATE
+    initial_loc = CaseLocation(
+        id=f"loc_init_{status}",
+        case_id=case_update.id,
+        status="CONSENTED",
+        source="BROWSER_GPS",
+        location_label="Tọa độ cũ",
+        latitude=10.0,
+        longitude=105.0,
+        precision="EXACT",
+        share_with_staff=False,
+    )
+    db.add_all([case_create, case_update, initial_loc])
+    db.commit()
+
+    token = create_token(user_id=user.id, role=user.role)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    payload_create = {
+        "case_id": case_create.id,
+        "status": status,
+        "source": "BROWSER_GPS" if status == "CONSENTED" else "USER_TEXT",
+        "location_label": label,
+        "latitude": input_lat,
+        "longitude": input_lng,
+        "precision": "EXACT" if status == "CONSENTED" else "APPROXIMATE",
+        "share_with_staff": share_staff,
+    }
+    payload_update = dict(payload_create, case_id=case_update.id)
+
+    # 1. Gọi nhánh CREATE (chưa có CaseLocation)
+    res_create = await client.post("/api/v1/customer/location", json=payload_create, headers=headers)
+    assert res_create.status_code == 200
+    data_c = res_create.json()["data"]
+
+    # 2. Gọi nhánh UPDATE (đã có CaseLocation)
+    res_update = await client.post("/api/v1/customer/location", json=payload_update, headers=headers)
+    assert res_update.status_code == 200
+    data_u = res_update.json()["data"]
+
+    # 3. Đối chiếu cả hai nhánh với kỳ vọng và đối chiếu lẫn nhau
+    for field, expected in [
+        ("latitude", expected_lat),
+        ("longitude", expected_lng),
+        ("location_label", expected_label),
+        ("share_with_staff", expected_share),
+    ]:
+        assert data_c[field] == expected, f"CREATE field {field} mismatch: {data_c[field]} vs {expected}"
+        assert data_u[field] == expected, f"UPDATE field {field} mismatch: {data_u[field]} vs {expected}"
+        assert data_c[field] == data_u[field], f"CREATE vs UPDATE mismatch on field {field}"
+
+
+def test_area_matching_without_gps_fallback_and_unrecognized(step3_db_session):
+    """
+    Item E: Khớp khu vực không GPS:
+    - Quận không có trong bảng (nhưng có tỉnh): fallback về tâm tỉnh.
+    - Tỉnh không nhận diện được: trả về None -> needs_location = True, recommended_points = [].
+    - Nhãn chỉ có phường (không khớp quận, không có tỉnh): trả về None -> needs_location = True.
+    """
+    # 1. Quận không có trong bảng DISTRICT_CENTERS: Chương Mỹ -> fallback về tâm Hà Nội (21.0285, 105.8542)
+    coords_district_fallback = infer_coordinates_from_label("Huyện Chương Mỹ, Hà Nội")
+    assert coords_district_fallback == (21.0285, 105.8542)
+
+    # 2. Tỉnh không nhận diện được -> None
+    coords_unknown_prov = infer_coordinates_from_label("Quận Nowhere, Tỉnh Fantasyland")
+    assert coords_unknown_prov is None
+
+    # 3. Nhãn chỉ có phường đơn lẻ (không có quận/huyện trong bảng và không có tỉnh) -> None
+    coords_ward_only = infer_coordinates_from_label("Phường Bến Nghé")
+    assert coords_ward_only is None
+
+    # Kiểm tra hành vi end-to-end với case
+    db = step3_db_session
+    user = User(id="u_area", username="u_area", password_hash="dummy", role=UserRole.CUSTOMER.value)
+    db.add(user)
+
+    case_unknown = Case(id="CASE-AREA-UNREC", user_id=user.id, session_id="s_area", intent="Service/Incident")
+    loc_unknown = CaseLocation(
+        id="loc_unrec", case_id=case_unknown.id, status="MANUAL", source="USER_TEXT",
+        location_label="Địa danh không xác định", precision="APPROXIMATE", share_with_staff=True
+    )
+    case_unknown.location = loc_unknown
+    db.add_all([case_unknown, loc_unknown])
+    db.commit()
+
+    resp_unrec = build_case_service_points_response(db, case_unknown)
+    assert resp_unrec.needs_location is True
+    assert resp_unrec.recommended_points == []
+
+
+def test_search_service_points_catalog_direct(step3_db_session):
+    """
+    Item C: Kiểm tra search_service_points_catalog truy vấn qua service_point_service:
+    - is_visible=True, is_car_compatible=True
+    - GSM xếp sau xưởng car/partner
+    """
+    db = step3_db_session
+    now = utcnow()
+    sp_car = ServicePoint(
+        id="ws_catalog_car", source_file="service_2s", category="workshop", category_slug="service_car",
+        name="Xưởng Ô tô VinFast Test", address="Hà Nội", latitude=21.028, longitude=105.854,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    sp_gsm = ServicePoint(
+        id="ws_catalog_gsm", source_file="service_2s", category="workshop", category_slug="service_gsm",
+        name="Xưởng Taxi GSM Test", address="Hà Nội", latitude=21.027, longitude=105.853,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    db.add_all([sp_car, sp_gsm])
+    db.commit()
+
+    res = search_service_points_catalog(
+        lat=21.0285, lng=105.8542, category="SERVICE_WORKSHOP", radius_km=10.0, limit=5, vehicle_type="CAR", db=db
+    )
+    assert res["source"] == "VinFast Database"
+    assert res["verification_status"] == "VERIFIED"
+    assert len(res["points"]) >= 2
+    # car workshop phải xếp trước GSM bất kể khoảng cách
+    assert res["points"][0]["id"] == "ws_catalog_car"
+

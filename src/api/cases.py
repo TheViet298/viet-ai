@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 
 from src.db import get_db
-from src.models.db_models import Case
+from src.models.db_models import Case, User
+from src.models.schemas import ApiResponse, ServicePointsData
+from src.services.auth import get_optional_user
 
 router = APIRouter(prefix="/cases", tags=["cases-legacy"])
 
@@ -75,3 +77,28 @@ def get_case(case_id: str, db: Session = Depends(get_db)):
             for m in case.messages
         ],
     }
+
+
+@router.get("/{case_id}/service-points", response_model=ApiResponse[ServicePointsData])
+def get_case_service_points(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
+    """
+    Lấy danh sách điểm hỗ trợ / trạm sạc / xưởng dịch vụ gợi ý theo sự cố (ADR-005).
+    Truy vấn bảng service_points theo khoảng cách Haversine và phân loại theo intent / triage.
+    """
+    case = db.get(Case, case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
+
+    from src.services.service_point_service import build_case_service_points_response
+
+    data = build_case_service_points_response(db=db, case=case)
+    return ApiResponse(
+        success=True,
+        data=data,
+        error=None,
+    )
+

@@ -24,14 +24,14 @@ async def vinfast_station_search(case_id: str, customer_id: str) -> list[dict]:
 
 async def vinfast_nearby_search(latitude: float, longitude: float, category: str,
                                vehicle_type: str = "CAR", radius_km: float = 50) -> dict:
-    """Search the shared snapshot after caller obtains consent or a manual reference centre.
+    """Search service points through service_point_service after caller obtains consent or a manual reference centre.
 
     This deterministic tool is used by the customer action flow; coordinates never
     need to enter a language-model prompt or a case merely to perform a lookup.
     """
-    from src.services.service_point_catalog import nearby_service_points
     if category not in {"ALL", "CHARGING_STATION", "SHOWROOM", "SERVICE_WORKSHOP", "OTHER"}:
         raise ValueError("Unsupported nearby category")
     if not 0 < radius_km <= 1000:
         raise ValueError("Invalid search radius")
-    return await asyncio.to_thread(nearby_service_points, latitude, longitude, category, radius_km, 5, vehicle_type=vehicle_type)
+    from src.services.service_point_service import search_service_points_catalog
+    return await asyncio.to_thread(search_service_points_catalog, latitude, longitude, category, radius_km, 5, vehicle_type)
