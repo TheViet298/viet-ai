@@ -46,7 +46,10 @@ def record_trace_step(
         "cost": cost,
         "metadata": sanitized_snapshot({**(metadata or {}), **({'correlation_id': trace_id} if trace_id else {})}),
     }
-    get_store().record_trace(event)
+    try:
+        get_store().record_trace(event)
+    except ValueError:
+        pass
     return event
 
 

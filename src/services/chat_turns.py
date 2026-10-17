@@ -249,8 +249,11 @@ async def _run_chat_turn(payload, user, db, handler):
                 successful=not budget.get('presentation_failed') and (answer_path == 'snapshot' or generated_outcome.get('successful', data.response_type not in {'NO_SOURCE', 'ERROR'})),
                 stages=budget.get('stage_outcomes', []))
             from src.services.tracer import record_trace_step
-            record_trace_step(payload.session_id, before_turn + 1, 'application', 'final_response',
-                              final_diagnostics['final_outcome'], metadata=final_diagnostics)
+            try:
+                record_trace_step(payload.session_id, before_turn + 1, 'application', 'final_response',
+                                  final_diagnostics['final_outcome'], metadata=final_diagnostics)
+            except Exception:
+                pass
             session.memory_states = {**(session.memory_states or {}), payload.session_id: {
                 **stored, 'conversation_context': conversation.model_dump(), 'turn_understanding': turn.model_dump(),
                 'conversation_progress': progress.model_dump(),
