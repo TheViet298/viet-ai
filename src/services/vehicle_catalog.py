@@ -99,7 +99,8 @@ def select_vehicle_cards(text: str, *, active_goal: str | None = None, context_t
         selected = requested_variants(lower, model, len(models) == 1)
         if selected and any(v not in {c.variant for c in available} for v in selected):
             return []
-        cards.extend([c for v in selected for c in available if c.variant == v] if selected else available if len(models) == 1 else available[:1])
+        default = [card for card in available if card.variant == 'eco'] or available[:1]
+        cards.extend([c for v in selected for c in available if c.variant == v] if selected else available if len(models) == 1 else default)
     return cards
 
 

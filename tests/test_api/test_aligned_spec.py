@@ -320,7 +320,10 @@ async def test_guest_chat_trial(client):
     }
     res_blocked = await client.post("/api/v1/customer/chat", json=payload_blocked)
     assert res_blocked.status_code == 403
-    assert "hết 5 lượt chat" in res_blocked.json()["detail"]
+    assert res_blocked.json()['detail'] == {
+        'code': 'GUEST_LIMIT_REACHED',
+        'message': 'Quý khách đã hết lượt sử dụng, cần phải đăng nhập để sử dụng tiếp dịch vụ',
+    }
 
 
 @pytest.mark.asyncio

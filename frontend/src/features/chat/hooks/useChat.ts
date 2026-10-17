@@ -132,6 +132,7 @@ export function useChat(context?: ChatUserContext | string) {
   const safetyRef = useRef({ caseId: currentCaseId, version: 0, acknowledged: false, epoch: 0 });
   const failedRequest = useRef<{ key: string; id: string; caseId: string | null } | null>(null);
   const conversationGeneration = useRef(0);
+  const [guestLimitReached, setGuestLimitReached] = useState(false);
 
   const applySafety = (input: { case_id?: string | null; incident_version?: number | null; safety_status?: string; emergency_context?: { case_id: string; incident_version: number; safety_status: string } | null }) => {
     const data = input.emergency_context || input;
@@ -248,6 +249,7 @@ export function useChat(context?: ChatUserContext | string) {
     setMessages([createWelcomeMessage(ctx, language)]);
     setInput("");
     setLoading(false);
+    setGuestLimitReached(false);
     setCurrentCaseId(null);
     setCriticalBanner(false);
     setCriticalBannerDismissed(false);
@@ -266,6 +268,7 @@ export function useChat(context?: ChatUserContext | string) {
     const currentGen = ++conversationGeneration.current;
     setLoading(true);
     setSessionId(targetSessionId);
+    setGuestLimitReached(false);
     setMessages([createWelcomeMessage(ctx, language)]); // Reset ngay lập tức để tránh chồng chéo tin nhắn cũ
     try {
       const key = storageKey("session");
@@ -398,6 +401,7 @@ export function useChat(context?: ChatUserContext | string) {
 
       if (response.success && response.data) {
         const data = response.data;
+        setGuestLimitReached(data.remaining_guest_messages === 0);
         if (getSelectionVersion?.() === languageSelectionVersion) setLanguage(data.language || language);
         ++safetyRef.current.epoch;
         failedRequest.current = null;
@@ -445,6 +449,11 @@ export function useChat(context?: ChatUserContext | string) {
       }
     } catch (err: any) {
       if (generation !== conversationGeneration.current) return;
+      if (err?.status === 403 && err?.code === "GUEST_LIMIT_REACHED") {
+        setGuestLimitReached(true);
+        failedRequest.current = null;
+        return;
+      }
       const errorContent = t("Chưa nhận được phản hồi từ hệ thống. Anh/chị vui lòng gửi lại câu hỏi sau ít phút. Lượt gửi này chưa xác nhận tạo hồ sơ hoặc thông báo cứu hộ.");
       const errorMsg: ChatMessage = {
         id: `error_${Date.now()}`,
@@ -460,6 +469,7 @@ export function useChat(context?: ChatUserContext | string) {
   };
 
   return {
+    guestLimitReached,
     messages,
     input,
     setInput,

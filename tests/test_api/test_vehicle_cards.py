@@ -3,6 +3,56 @@ import pytest
 pytest_plugins = ['tests.test_api.test_customer_chat_regressions']
 
 
+@pytest.mark.parametrize('model', ['VF3', 'VF6', 'VF7', 'VF8', 'VF9'])
+def test_comparison_without_trim_defaults_to_eco(model):
+    from src.services.vehicle_catalog import select_vehicle_cards
+    cards = select_vehicle_cards(f'So sánh VF5 và {model}')
+    assert [(card.model, card.variant) for card in cards] == [('VF5', None), (model, 'eco')]
+
+
+@pytest.mark.asyncio
+async def test_history_title_generation_cannot_overwrite_new_conversation_memory(client, customer_db, monkeypatch):
+    import src.api.customer as api
+    from src.models.db_models import ChatSession, Message
+    from sqlalchemy.orm import Session
+    from sqlalchemy import update
+    session_id = 'title-concurrent-memory'
+    customer_db.add(ChatSession(id=session_id, owner='user:regression-customer', memory_states={}))
+    customer_db.add(Message(id='title-message', session_id=session_id, sender_type='CUSTOMER', content='Giá VF5 bao nhiêu?'))
+    customer_db.commit()
+    memory = {session_id: {'conversation_context': {'subject': 'VF5', 'active_goal': 'quote'}}}
+
+    def title_while_turn_finishes(messages):
+        with Session(customer_db.get_bind()) as writer:
+            writer.execute(update(ChatSession).where(ChatSession.id == session_id).values(memory_states=memory))
+            writer.commit()
+        return 'Giá VF5 bao nhiêu?'
+
+    monkeypatch.setattr(api, 'extract_session_title', title_while_turn_finishes)
+    response = await client.get('/api/v1/customer/sessions')
+    assert response.status_code == 200
+    customer_db.expire_all()
+    assert customer_db.get(ChatSession, session_id).memory_states == memory
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('followup,models,comparison', [
+    ('Còn VF7 thì sao?', {'VF7'}, False),
+    ('So sánh với VF7', {'VF5', 'VF7'}, True),
+])
+async def test_product_followup_keeps_cards_and_previous_comparison_model(client, customer_db, followup, models, comparison):
+    session = 'product-followup'
+    for message in ['Giá VF5 bao nhiêu?', followup]:
+        response = await client.post('/api/v1/customer/chat', json={'session_id': session, 'message': message})
+        assert response.status_code == 200
+    data = response.json()['data']
+    assert {card['model'] for card in data['vehicle_cards']} == models
+    assert all(card['image_url'] for card in data['vehicle_cards'])
+    assert data['vehicle_comparison'] is comparison
+    history = await client.get(f'/api/v1/customer/sessions/{session}/history')
+    assert history.json()['data']['messages'][-1]['vehicle_cards'] == data['vehicle_cards']
+
+
 @pytest.mark.parametrize('model,variants', [('VF3', ['eco', 'plus']), ('VF5', [None]),
     ('VF6', ['eco', 'plus']), ('VF7', ['eco', 'plus', 'plus-awd']),
     ('VF8', ['eco', 'plus']), ('VF9', ['eco', 'plus'])])

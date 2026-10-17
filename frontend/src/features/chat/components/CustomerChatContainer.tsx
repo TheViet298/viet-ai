@@ -41,6 +41,7 @@ function CustomerChatSession() {
   const { t } = useLocale();
   const { user, role } = useAuth();
   const {
+    guestLimitReached,
     messages,
     input,
     setInput,
@@ -572,6 +573,11 @@ function CustomerChatSession() {
               {resolvedImageKind && <p role="status" className="mt-1">{t("Đã tự nhận diện:")}{" "}{resolvedImageKind === "exterior" ? t("Ngoại thất xe") : resolvedImageKind === "charger" ? t("Trụ sạc") : t("Táp-lô")}</p>}
               {imageUploadError && <p role="alert" className="mt-1 text-red-700">{imageUploadError}</p>}
             </div>
+          )}
+          {guestLimitReached && role !== "CUSTOMER" && (
+            <p role="alert" className="border-t border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {t("Quý khách đã hết lượt sử dụng, cần phải đăng nhập để sử dụng tiếp dịch vụ")}
+            </p>
           )}
           <ChatInputBar
             input={input}

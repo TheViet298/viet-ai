@@ -134,6 +134,11 @@ def cost_subject_for(text: str) -> str | None:
 async def understand_turn(text: str, context: ConversationContext, recent_turns: list[dict], budget: dict) -> TurnUnderstanding:
     original_text = text
     text = normalize_chat_text(text)
+    # Resolve the comparison before replacing the previous subject.
+    comparison = re.fullmatch(r'\s*so sanh(?:\s+(?:xe nay|xe do|voi))?\s+(vf\s*[356789])\s*[.!?]?\s*', normalized(text))
+    if (comparison and context.subject and context.active_goal in {'overview', 'quote', 'range', 'capacity', 'test_drive'}
+            and comparison[1].replace(' ', '').upper() != context.subject):
+        text = f'So sánh {context.subject} với {comparison[1].upper()}'
     lower = normalized(text)
     classification = classify_chat_context(text)
     updates = user_updates(text)
@@ -163,6 +168,9 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
         explicit_goal = 'out_of_scope'
     from src.services.vehicle_card_intent import is_generic_vehicle_overview, is_general_vehicle_advice
     if is_general_vehicle_advice(text) or (not explicit_goal and is_generic_vehicle_overview(text)):
+        explicit_goal = 'overview'
+    from src.services.vehicle_catalog import is_generic_vehicle_comparison
+    if is_generic_vehicle_comparison(text):
         explicit_goal = 'overview'
     move: Move = 'new_question'
     ambiguous_reference = False
@@ -224,7 +232,7 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
         # Interest in a car does not identify the vehicle reporting an incident.
         subject = updates.get('model')
     query = text
-    if goal and move != 'new_incident':
+    if goal and move != 'new_incident' and not is_generic_vehicle_comparison(text):
         prefix = {'quote': 'Giá niêm yết và dự toán lăn bánh', 'test_drive': 'Đăng ký lái thử',
                   'maintenance': 'Bảo dưỡng', 'warranty': 'Bảo hành',
                   'range': 'Quãng đường một lần sạc', 'charging': 'Thời gian sạc',

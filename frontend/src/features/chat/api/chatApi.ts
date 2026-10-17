@@ -108,7 +108,12 @@ export async function sendChatMessage(params: {
 
   if (!res.ok) {
     const errorText = await res.text();
-    throw new Error(`Chat API error (${res.status}): ${errorText}`);
+    let detail;
+    try { detail = JSON.parse(errorText).detail; } catch {}
+    throw Object.assign(new Error(`Chat API error (${res.status}): ${errorText}`), {
+      status: res.status,
+      code: detail?.code || (res.status === 403 && typeof detail === "string" && detail.includes("5 lượt") ? "GUEST_LIMIT_REACHED" : undefined),
+    });
   }
 
   return res.json();

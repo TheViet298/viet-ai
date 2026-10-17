@@ -416,7 +416,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             ), error=None)
         if guest_count >= 5:
             logger.warning(f"[403 FORBIDDEN] Guest session='{payload.session_id}' reached limit: guest_count={guest_count} >= 5")
-            raise HTTPException(403, "Quý khách đã sử dụng hết 5 lượt chat thử nghiệm. Quý khách vui lòng đăng nhập để tiếp tục trải nghiệm ạ.")
+            raise HTTPException(403, {'code': 'GUEST_LIMIT_REACHED', 'message': 'Quý khách đã hết lượt sử dụng, cần phải đăng nhập để sử dụng tiếp dịch vụ'})
     if re.fullmatch(r'(?:cảm ơn|cám ơn)(?:\s+(?:bạn|em|anh|chị))?(?:[,!.\s]*(?:tôi|em|mình)?\s*(?:đã )?(?:hiểu rồi|hiểu|rõ rồi))?[!.\s]*', text, re.I):
         reply = 'Dạ, rất vui được hỗ trợ Quý khách. Khi cần thêm thông tin, Quý khách cứ nhắn em nhé.'
         customer_message = Message(id=str(uuid.uuid4()), session_id=payload.session_id,
@@ -3214,7 +3214,6 @@ def list_chat_sessions(
         sessions = [s for s in sessions if s not in empty_sessions]
 
     items = []
-    has_dirty_titles = False
     for s in sessions:
         s_msgs = messages_by_session.get(s.id, [])
         mem = s.memory_states or {}
@@ -3238,20 +3237,8 @@ def list_chat_sessions(
             title = custom_title
         else:
             title = extract_session_title(s_msgs)
-            # Chỉ lưu title khi đã lấy được nội dung thực (không lưu nếu vẫn là "Cuộc trò chuyện mới")
-            if title and title != "Cuộc trò chuyện mới":
-                mem_copy = dict(mem)
-                mem_copy["title"] = title
-                s.memory_states = mem_copy
-                flag_modified(s, "memory_states")
-                has_dirty_titles = True
-            elif is_invalid_persisted:
-                # Dọn dẹp title bị hỏng trong memory_states
-                mem_copy = dict(mem)
-                mem_copy.pop("title", None)
-                s.memory_states = mem_copy
-                flag_modified(s, "memory_states")
-                has_dirty_titles = True
+            # Generated titles are derived on read; writing the whole JSON here can
+            # overwrite conversation memory committed by a concurrent chat turn.
 
         last_msg = s_msgs[-1].content if s_msgs else None
         created_at = s_msgs[0].created_at if s_msgs else utcnow()
@@ -3267,12 +3254,6 @@ def list_chat_sessions(
                 message_count=len(s_msgs),
             )
         )
-
-    if has_dirty_titles:
-        try:
-            db.commit()
-        except Exception:
-            db.rollback()
 
     items = [item for item in items if item.message_count > 0]
     items.sort(key=lambda x: x.updated_at, reverse=True)

@@ -49,6 +49,7 @@ export interface ChatResponseData {
   response?: string;
   intent?: string;
   case_id?: string | null;
+  remaining_guest_messages?: number | null;
   clarification_turn?: number;
   max_clarification_turns?: number;
   suggested_replies?: string[];

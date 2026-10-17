@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale } from "@/features/shared/context/LocaleContext";
+import { NewsSection } from "./NewsSection";
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
@@ -1037,7 +1038,7 @@ export function LandingPage() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────
-          7. DẢI TIN CẬY (3 Ý MỘT DÒNG, TIẾNG THƯỜNG KHÔNG JARGON)
+          7. DẢI TIN CẬY
       ───────────────────────────────────────────────────────── */}
       <section className="py-10 border-t border-slate-200/80 bg-white">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -1076,7 +1077,7 @@ export function LandingPage() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────
-          8. DẢI CTA CUỐI NỀN TỐI (DARK BAND CTA)
+          8. DẢI CTA NỀN TỐI (DARK BAND CTA)
       ───────────────────────────────────────────────────────── */}
       <section className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl rounded-3xl bg-slate-950 text-white p-8 sm:p-12 text-center space-y-5 shadow-lg relative overflow-hidden reveal">
@@ -1108,6 +1109,7 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+      <NewsSection />
       {/* ─────────────────────────────────────────────────────────
           BONG BÓNG THEO DÕI HỒ SƠ NỔI (DESKTOP: PILL/CARD GÓC PHẢI; MOBILE: THANH MỎNG DƯỚI CÙNG)
       ───────────────────────────────────────────────────────── */}

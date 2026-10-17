@@ -308,6 +308,7 @@ export const ENGLISH: Record<string, string> = {
   "Chưa xác định chắc loại ảnh. Vui lòng chọn ảnh rõ hơn hoặc xóa ảnh và mô tả bằng chữ.": "The image type is unclear. Choose a clearer image or remove it and describe the issue in text.",
   "Dịch vụ phân tích ảnh hiện chưa xử lý được yêu cầu. Vui lòng thử tải lại ảnh hoặc xóa ảnh để gửi mô tả bằng chữ.": "Image analysis is unavailable. Upload the image again or remove it and describe the issue in text.",
   "Chưa lưu được xác nhận an toàn. Anh/chị vui lòng thử lại.": "Your safety confirmation could not be saved. Please try again.",
+  "Quý khách đã hết lượt sử dụng, cần phải đăng nhập để sử dụng tiếp dịch vụ": "You have used all your messages. Please sign in to continue chatting.",
   "Chưa nhận được phản hồi từ hệ thống. Anh/chị vui lòng gửi lại câu hỏi sau ít phút. Lượt gửi này chưa xác nhận tạo hồ sơ hoặc thông báo cứu hộ.": "No response was received. Please try again shortly. This attempt does not confirm that a case was created or roadside assistance was notified.",
   "Dữ liệu được mã hóa và bảo mật theo chính sách quyền riêng tư VinFast.": "See the VinFast privacy policy for how your data is handled.",
   "Dịch vụ lịch sử trò chuyện chưa sẵn sàng (404 Not Found).": "Conversation history is currently unavailable.",

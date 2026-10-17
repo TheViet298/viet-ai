@@ -38,6 +38,30 @@ function harness(sendChatMessage, language = "vi") {
   return { hook: module.exports.useChat(), states, preferredLanguage: () => preferredLanguage };
 }
 
+test('guest limit is exposed above composer without a generic assistant failure', async () => {
+  const error = Object.assign(new Error('limit'), { status: 403, code: 'GUEST_LIMIT_REACHED' });
+  const { hook, states } = harness(async () => { throw error; });
+  await hook.sendMessage('Còn VF7 thì sao?');
+  assert.equal(states[0].filter(message => message.sender === 'AGENT').length, 1);
+  assert.equal(states.at(-1), true, 'exposes exhausted guest state');
+});
+
+test('last successful guest turn exposes the limit while retaining the answer', async () => {
+  const { hook, states } = harness(async () => ({ success: true, data: {
+    message: 'Thông tin VF7', remaining_guest_messages: 0,
+  } }));
+  await hook.sendMessage('VF7');
+  assert.equal(states[0].at(-1).content, 'Thông tin VF7');
+  assert.equal(states.at(-1), true);
+});
+
+test('unrelated forbidden response still reports a transport error', async () => {
+  const { hook, states } = harness(async () => { throw Object.assign(new Error('forbidden'), {status: 403}); });
+  await hook.sendMessage('VF7');
+  assert.match(states[0].at(-1).content, /chưa nhận được phản hồi/i);
+  assert.equal(states.at(-1), false);
+});
+
 for (const [name, text, transport] of [
   ['concept network failure', 'Con rùa vàng là gì?', async () => { throw new Error('offline'); }],
   ['incident network failure', 'Xe tôi bị mất phanh', async () => { throw new Error('offline'); }],

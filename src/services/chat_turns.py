@@ -136,6 +136,8 @@ async def _run_chat_turn(payload, user, db, handler):
                 vehicle_overview_reply,
             )
             card_text = '' if spelling.needs_confirmation else spelling.text
+            if not spelling.needs_confirmation and is_generic_vehicle_comparison(turn.resolved_query):
+                card_text = turn.resolved_query
             generated_outcome = db.info.pop('conversation_final', {})
             answer_path = ('clarification' if spelling.needs_confirmation else
                            'incident' if turn.goal == 'incident' else

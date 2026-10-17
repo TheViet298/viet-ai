@@ -29,6 +29,7 @@
   * Mọi endpoint truy vấn/thao tác trên Chat Session (`/customer/sessions/*`) **bắt buộc trả về HTTP 404 Not Found** thay vì 403 Forbidden nếu session không tồn tại hoặc không thuộc quyền sở hữu của người gọi, ngăn ngừa hoàn toàn tấn công dò session hợp lệ.
 * **RBAC & Guest Claim:**
   * Guest gọi được `/public/*`, `/customer/chat` và quản lý phiên của mình qua `guest_session_id` / header `X-Session-Id`.
+  * Khi hết lượt guest, `/customer/chat` trả HTTP 403 với `detail.code = "GUEST_LIMIT_REACHED"` và `detail.message = "Quý khách đã hết lượt sử dụng, cần phải đăng nhập để sử dụng tiếp dịch vụ"`. Frontend hiển thị thông báo ngay trên ô nhập; `remaining_guest_messages = 0` trong phản hồi thành công cũng kích hoạt thông báo này.
   * Khi đăng nhập hoặc đăng ký tài khoản mới, client gửi `guest_session_id`. Backend thực thi gộp nguyên tử trong cùng 1 transaction: CHỈ gộp session có `owner == "guest:{id}"` sang `user:{user.id}`, loại bỏ hoàn toàn khả năng chiếm đoạt session (`Session Takeover`).
 
 ## 1.1. Auth, Public Content & Attachment APIs

@@ -46,7 +46,8 @@ def classify_vehicle_card_intent(text: str, *, active_goal: str | None = None,
         if understanding.cost_subject not in {None, 'vehicle_purchase'}:
             return None
         active_goal = understanding.goal
-    bare = bool(re.fullmatch(_MODEL + _VARIANT, lower))
+    bare = bool(re.fullmatch(_MODEL + _VARIANT, lower) or re.fullmatch(
+        r'con\s+' + _MODEL + _VARIANT + r'(?:\s+thi sao)?\s*[.!?]?', lower))
     if bare:
         topic = strip_accents(context_topic.casefold()).replace('đ', 'd')
         if active_goal not in {None, 'overview', 'quote', 'test_drive', 'range', 'capacity'} or _SERVICE.search(topic):
