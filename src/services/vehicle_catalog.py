@@ -16,10 +16,12 @@ import json
 from pathlib import Path
 
 FACT_PATH = Path(__file__).resolve().parents[2] / 'data/verified/vehicle_facts.json'
+FIXTURE_FACT_PATH = Path(__file__).resolve().parents[2] / 'fixtures/vehicle_facts.json'
 
 
 def catalog_facts() -> list[dict]:
-    return json.loads(FACT_PATH.read_text(encoding='utf-8'))['facts']
+    path = FACT_PATH if FACT_PATH.is_file() else FIXTURE_FACT_PATH
+    return json.loads(path.read_text(encoding='utf-8'))['facts']
 
 
 def catalog_cards(models: list[str] | None = None) -> list[VehicleCard]:
@@ -151,6 +153,8 @@ def format_catalog_color_reply(text: str, citations: list[dict]) -> str:
     model-level availability caveats remain untouched.
     """
     path = FACT_PATH.with_name('catalog_colors.json')
+    if not path.is_file():
+        path = FIXTURE_FACT_PATH.with_name('catalog_colors.json')
     records = json.loads(path.read_text(encoding='utf-8'))['records']
     for record in records:
         names = [item['name'] for item in record['swatches']]
