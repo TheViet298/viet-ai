@@ -77,7 +77,7 @@ def progress_reply(turn: TurnUnderstanding, context: ConversationContext, progre
                       'concept': 'khái niệm vừa trao đổi'}.get(context.active_goal, context.active_goal)
         return f'Em vẫn đang hỗ trợ {goal_label}' + (f' của {context.subject}' if context.subject else '') + '. Anh/chị muốn em giải thích thêm phần nào, hay hướng dẫn bước tiếp theo?'
     facts = progress.known_facts
-    summary = ', '.join(facts[k] for k in ('model', 'version', 'battery', 'city', 'area', 'time_window', 'component') if k in facts)
+    summary = ', '.join(facts[k] for k in ('model', 'version', 'battery', 'city', 'area', 'date', 'time_window', 'component') if k in facts)
     if progress.state == 'cancelled_intent':
         if turn.move == 'ask_status':
             return 'Trong chat này em chưa đặt lịch hay tạo hồ sơ đặt hẹn cho Quý khách. Ý định đặt hẹn đã dừng; nếu có lịch đặt riêng ngoài chat, Quý khách cần kiểm tra tại nơi đã đặt.'
@@ -96,7 +96,7 @@ def progress_reply(turn: TurnUnderstanding, context: ConversationContext, progre
         reply = opening + (f'Thông tin đang có: {summary}. ' if summary else '')
         reply += f'Quý khách có thể đăng ký qua Ứng dụng VinFast hoặc liên hệ {place} để xác nhận giờ hẹn.'
         if 'exact_date' in progress.missing_fields:
-            reply += ' Quý khách muốn hẹn vào ngày cụ thể nào? “Thứ bảy” chưa đủ để xác nhận ngày hẹn.'
+            reply += ' Quý khách muốn hẹn vào ngày, tháng, năm cụ thể nào? Em đã ghi nhận mốc thời gian tương đối ở trên; nơi đặt lịch cần xác nhận ngày hẹn chính xác.'
         elif progress.missing_fields:
             labels = {'city': 'khu vực thuận tiện', 'date': 'ngày mong muốn'}
             reply += ' Để hướng dẫn tiếp, Quý khách cho em biết ' + ' và '.join(labels[k] for k in progress.missing_fields) + ' nhé.'

@@ -33,6 +33,7 @@ function harness({ sendChatMessage, getSessionHistory, initialStorage = {} }) {
       removeItem: (k) => { delete storage[k]; },
     },
     require: (id) => {
+      if (id.endsWith('/LocaleContext')) return {useLocale: () => ({language: "vi", setLanguage() {}, t: text => text}), translate: text => text};
       if (id === 'react') return {
         useState: (initial) => {
           const index = states.length;

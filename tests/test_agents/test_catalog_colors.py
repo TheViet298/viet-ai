@@ -37,6 +37,7 @@ async def test_verified_color_snapshot_preserves_names_and_scope_without_generat
     from src.config import get_settings
     snippet = 'Màu sắc ngoại thất VinFast VF8: Infinity Blanc Jet Black Crimson Red Ivy Green.\nThông tin chung mẫu xe, chưa xác nhận màu có sẵn cho từng phiên bản.'
     citation = {**source_registry()['SRC-009'], 'source_id': 'SRC-009', 'applicable_models': ['VF8'],
+                'url': 'https://vinfastauto.com/vn_vi/dat-coc-xe-vf8', 'verified_at': '2026-10-16',
                 'catalog_scope': 'model_colors', 'relevant_snippet': snippet, 'distance': 0.2}
 
     async def search(*args, **kwargs):
@@ -51,4 +52,6 @@ async def test_verified_color_snapshot_preserves_names_and_scope_without_generat
     out = await node.rag_node({'latest_user_message': 'VF8 Plus có những màu gì?', 'vehicle_model': 'VF8',
                               'confidence_score': 0.9, 'turn_understanding': {'goal': 'appearance'}})
     assert out['retrieval_status'] == 'SUCCESS'
-    assert snippet in out['response']
+    assert 'Infinity Blanc; Jet Black; Crimson Red; Ivy Green.' in out['response']
+    assert 'chưa xác nhận màu có sẵn cho từng phiên bản' in out['response']
+    assert out['rag_citations'][0]['relevant_snippet'] == snippet

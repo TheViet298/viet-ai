@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import time
 
 from pydantic import BaseModel, Field
@@ -11,7 +12,7 @@ from src.agents.state import AgentState
 from src.agents.tools.vinfast_tools import vinfast_manual_search
 from src.config import get_settings
 from src.services.agent_llm import structured_call
-from src.services.answer_evidence import AnswerClaim, extract_numeric_claims, is_turtle_question, validate_answer_claims
+from src.services.answer_evidence import AnswerClaim, canonical_answer_claim, extract_numeric_claims, has_color_evidence, is_color_question, is_turtle_question, normalized, validate_answer_claims
 from src.services.observability import observation, update_observation
 from src.services.rag_service import RAGService, select_supported_evidence, valid_citation
 
@@ -34,7 +35,9 @@ async def rag_node(state: AgentState) -> dict:
             with observation('retrieval', as_type='retriever', metadata={'layer': 'retrieval',
                     'timeout_s': min(remaining, get_settings().rag_retrieval_timeout_s),
                     'timeout_source': 'turn_deadline' if remaining <= get_settings().rag_retrieval_timeout_s else 'retrieval_limit'}) as span:
-                retrieval = await asyncio.wait_for(vinfast_manual_search(search_query, vehicle_model=state.get("vehicle_model")),
+                understanding = state.get('turn_understanding') or {}
+                purpose = {key: understanding[key] for key in ('cost_subject', 'source_need') if understanding.get(key)}
+                retrieval = await asyncio.wait_for(vinfast_manual_search(search_query, vehicle_model=state.get("vehicle_model"), **purpose),
                                                    timeout=min(remaining, get_settings().rag_retrieval_timeout_s))
                 update_observation(span, output={'status': retrieval.get('status'),
                                                  'source_count': len(retrieval.get('citations', [])),
@@ -46,10 +49,11 @@ async def rag_node(state: AgentState) -> dict:
     citations = [c for c in retrieval.get("citations", []) if valid_citation(c, state.get("vehicle_model"))]
     citations = select_supported_evidence(query, citations)
     color_snapshot = []
-    if (state.get('turn_understanding') or {}).get('goal') == 'appearance':
-        color_snapshot = [c for c in citations if c.get('catalog_scope') == 'model_colors']
-        if color_snapshot:
-            citations = color_snapshot
+    if (state.get('turn_understanding') or {}).get('goal') == 'appearance' or is_color_question(query):
+        color_snapshot = [c for c in citations if has_color_evidence(c)]
+        # Color entities are rendered verbatim from qualifying evidence. Empty
+        # generated claims must never let specs become a fabricated color list.
+        citations = color_snapshot
     if citations:
         layers = build_7_layer_context({**state, "rag_citations": citations}, load_prompt("rag_qa"))
         try:
@@ -61,16 +65,23 @@ async def rag_node(state: AgentState) -> dict:
             retrieval = {**retrieval, "status": "NO_SOURCE", "citations": [], "diagnostics": {
                 **retrieval.get("diagnostics", {}), "category": "context_budget_exceeded", "stage": "prompt",
                 "selected_parent_ids": [], "prompt_max_bytes": get_settings().agent_context_max_bytes}}
-    reply = "Hiện chưa có tài liệu chính thức đã xác thực đủ để trả lời yêu cầu này. Em sẽ ghi nhận để chuyên viên kiểm tra."
+    reply = "Em chưa tìm được tài liệu chính thức đủ để xác nhận thông tin này. Quý khách có thể liên hệ chuyên viên VinFast để đối chiếu."
     if "điều kiện" in query.casefold() and "bảo hành" in query.casefold():
-        reply = "Quý khách đang hỏi điều kiện bảo hành của xe vừa trao đổi. Hiện em chưa có đoạn tài liệu xác thực đủ để giải thích điều kiện này; em sẽ chuyển chuyên viên kiểm tra, tránh nhầm với điều kiện bảo hành pin hoặc từng hạng mục."
+        reply = "Em chưa có đủ thông tin để xác nhận điều kiện bảo hành này. Quý khách có thể liên hệ chuyên viên VinFast, cung cấp đời xe và hạng mục cần bảo hành để đối chiếu."
     if retrieval.get("status") in {"UNAVAILABLE", "ERROR", "TIMEOUT"}:
-        reply = "Hệ thống tra cứu hiện chưa hoàn tất được yêu cầu. Em sẽ chuyển chuyên viên kiểm tra."
+        reply = "Em chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ."
     elif retrieval.get("diagnostics", {}).get("category") == "context_budget_exceeded":
-        reply = "Tài liệu cần thiết vượt giới hạn xử lý hiện tại. Em sẽ chuyển chuyên viên kiểm tra đầy đủ điều kiện."
+        reply = "Em chưa đối chiếu đủ các điều kiện để xác nhận thông tin này. Quý khách có thể liên hệ chuyên viên VinFast để được kiểm tra đầy đủ."
+    tariff_snapshot = [c for c in citations if c.get('source_type') == 'official_service'
+                       and re.search(r'\d[\d.,]*\s*(?:vnđ|vnd|đồng)/(?:kwh|phút)', c['relevant_snippet'], re.I)] if any(
+                           term in normalized(query) for term in ('bieu phi', 'phi sac', 'gia sac')) else []
+    if tariff_snapshot:
+        # Keep rates, session-completion condition and minute tiers together.
+        citations = tariff_snapshot
     generated = None
     if citations and state.get("confidence_score", 0) >= 0.60:
-        public_snapshot = bool(color_snapshot) or retrieval.get('diagnostics', {}).get('category') == 'verified_public_price_snapshot'
+        public_snapshot = bool(color_snapshot or tariff_snapshot) or retrieval.get('diagnostics', {}).get('category') in {
+            'verified_public_price_snapshot', 'verified_catalog_fact_snapshot'}
         generated = None if public_snapshot else await structured_call({**state, "rag_citations": citations}, "rag_qa", GroundedAnswer)
         if generated is None and get_settings().agent_llm_enabled and not public_snapshot:
             citations = []
@@ -78,7 +89,7 @@ async def rag_node(state: AgentState) -> dict:
             retrieval = {**retrieval, "status": "ERROR", "diagnostics": {
                 **retrieval.get("diagnostics", {}), "stage": "generation", "category": "generation_unavailable"}}
         if generated and (
-            (not generated.supported and not (generated.source_ids and len(generated.answer.strip()) > 30))
+            not generated.supported
             or not generated.answer.strip()
             or not generated.source_ids
             or not set(generated.source_ids).issubset({c["source_id"] for c in citations})
@@ -89,25 +100,45 @@ async def rag_node(state: AgentState) -> dict:
                 **retrieval.get("diagnostics", {}), "stage": "generation", "category": "unsupported_answer"}}
     else:
         citations = []
+    # Validate against exactly the evidence the customer will see. Keep distinct
+    # snippets from a shared document; deduplicate only identical evidence.
+    if generated:
+        citations = [c for c in citations if c['source_id'] in generated.source_ids]
+    final_citations, seen = [], set()
+    for citation in citations:
+        citation = {**citation, 'relevant_snippet': sanitize_pii(citation['relevant_snippet'])[0]}
+        key = (citation['source_id'], citation.get('url'), citation['relevant_snippet'])
+        if key not in seen:
+            final_citations.append(citation)
+            seen.add(key)
+    citations = final_citations
     claim_check = {'supported': True, 'conflicts': []}
     answer_claims = []
     if citations:
-        candidate = generated.answer if generated else '\n\n'.join(c['relevant_snippet'] for c in citations)
+        candidate = sanitize_pii(generated.answer)[0] if generated else '\n\n'.join(c['relevant_snippet'] for c in citations)
         fact_context = (state.get('conversation_context') or {}).get('facts', {})
         version = (fact_context.get('version') or {}).get('value') or ''
         subject = f'{state.get("vehicle_model") or ""} {version}'.strip()
         if 'bảo hành' in query.casefold() and 'pin' in query.casefold():
             subject += ' ' + ((fact_context.get('component') or {}).get('value') or ('pin cao áp' if 'pin cao áp' in query.casefold() else 'pin'))
-        answer_claims = [*(generated.claims if generated else []),
+        # Missing values are not factual claims. Numeric statements in the answer
+        # are still extracted below, so a placeholder cannot hide an invented number.
+        declared_claims = [canonical_answer_claim(c) for c in (generated.claims if generated else [])
+                           if normalized(c.value) not in {'', 'khong xac dinh', 'khong ap dung', 'khong co thong tin',
+                                                          'n/a', 'not applicable', 'unknown', 'not specified'}]
+        answer_claims = [*declared_claims,
                          *extract_numeric_claims(candidate, citations, subject, query)]
         prior = [AnswerClaim.model_validate(c) for entry in (state.get('conversation_context') or {}).get('last_answer', [])
                  for c in entry.get('claims', [])]
         claim_check = validate_answer_claims(answer_claims, citations, prior)
         if not claim_check['supported']:
             citations = []
-            reply = 'Em chưa có bằng chứng phù hợp để xác nhận số liệu cho đúng xe và điều kiện đang hỏi. Quý khách cho biết phiên bản và đời xe để đối chiếu nhé.'
+            numeric_failure = any(c['claim_key'] not in {'features', 'feature', 'procedure', 'steps', 'instruction', 'instructions'}
+                                  for c in claim_check['unsupported_claims'])
+            reply = ('Em chưa xác minh được thông tin này từ tài liệu phù hợp với yêu cầu của Quý khách. Cần đối chiếu thêm với VinFast trước khi sử dụng thông tin này.'
+                     if numeric_failure else 'Em chưa có đoạn tài liệu đủ để xác nhận tính năng hoặc các bước thao tác đang hỏi. Cần đối chiếu hướng dẫn chính thức trước khi thực hiện.')
             retrieval = {**retrieval, 'status': 'NO_SOURCE', 'diagnostics': {
-                **retrieval.get('diagnostics', {}), 'category': 'unsupported_numeric_claim', 'claim_check': claim_check}}
+                **retrieval.get('diagnostics', {}), 'category': 'unsupported_numeric_claim' if numeric_failure else 'unsupported_textual_claim', 'claim_check': claim_check}}
     if not citations:
         if retrieval.get("status") == "SUCCESS":
             retrieval = {**retrieval, "status": "NO_SOURCE", "diagnostics": {
@@ -143,11 +174,10 @@ async def rag_node(state: AgentState) -> dict:
             "final_response": reply,
             "guardrails": {**state.get("guardrails", {}), "low_confidence_escalated": True},
         }
-    if generated:
-        citations = [c for c in citations if c["source_id"] in generated.source_ids]
-    for citation in citations:
-        citation["relevant_snippet"] = sanitize_pii(citation["relevant_snippet"])[0]
-    answer = sanitize_pii(generated.answer if generated else "\n\n".join(c["relevant_snippet"] for c in citations))[0]
+    answer = candidate
+    if color_snapshot and not generated:
+        from src.services.vehicle_catalog import format_catalog_color_reply
+        answer = format_catalog_color_reply(answer, citations)
     reply = f"Theo tài liệu VinFast:\n\n{answer}"
     if (state.get('turn_understanding') or {}).get('move') == 'verify_claim':
         reply += '\nCon số được đối chiếu với nguồn đang dẫn. Cần dùng đúng phiên bản, đời xe và điều kiện đo của nguồn, tránh so sánh các số theo chuẩn khác nhau.'

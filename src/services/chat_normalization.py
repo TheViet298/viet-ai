@@ -49,6 +49,8 @@ _NEGATION_NEXT = r'(?:co|con|sac|di|chay|khoi|phanh|an|duoc|biet|hai|phai|thay|b
 
 def normalize_chat_text(text: str) -> str:
     text = unicodedata.normalize('NFC', text)
+    from src.services.chat_language import canonical_english_phrases
+    text = canonical_english_phrases(text)
     # Keep line breaks: callers use them to distinguish clauses and OCR evidence.
     text = re.sub(r'[^\S\n]+', ' ', text).strip()
     text = _ALIAS_RE.sub(lambda m: m[0] if m[0] == 'DC' else _ALIASES[m[0].casefold()], text)
@@ -60,6 +62,10 @@ def normalize_chat_text(text: str) -> str:
             text = text[:match.start()] + 'không' + text[match.end():]
     folded = _fold_for_offsets(text)
     for match in reversed(list(_PHRASE_RE.finditer(folded))):
+        # Accented fire/driving words carry meaning that accent folding loses.
+        original = text[match.start():match.end()]
+        if re.search(r'\b(?:cháy|chạy)\b', original, re.I):
+            continue
         text = text[:match.start()] + _CANONICAL[match[0]] + text[match.end():]
     return text
 

@@ -1,4 +1,5 @@
 "use client";
+import { useLocale } from "@/features/shared/context/LocaleContext";
 
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -53,6 +54,7 @@ export function ServiceMapPanel({
   suggestedCategory = "ALL",
   isMobileModal = false,
 }: ServiceMapPanelProps) {
+  const { t, language } = useLocale();
   const [filterType, setFilterType] = useState<string>("ALL");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showMorePoints, setShowMorePoints] = useState(false);
@@ -184,14 +186,13 @@ export function ServiceMapPanel({
           </div>
           <div className="min-w-0">
             <h3 className="font-bold text-[13.5px] text-slate-900 truncate">
-              Bản đồ Điểm hỗ trợ & Trạm dịch vụ
-            </h3>
+              {t("Bản đồ Điểm hỗ trợ & Trạm dịch vụ")}</h3>
             <p className="text-[11px] text-slate-500 truncate">
               {locationState.source === "BROWSER_GPS"
-                ? "📍 Đã ghi nhận vị trí của bạn (GPS)"
+                ? t("📍 Đã ghi nhận vị trí của bạn (GPS)")
                 : locationState.status === "MANUAL"
-                ? `📍 Khu vực: ${locationState.label}`
-                : "Chưa chia sẻ vị trí"}
+                ? `📍 ${t("Khu vực:")} ${locationState.label}`
+                : t("Chưa chia sẻ vị trí")}
             </p>
           </div>
         </div>
@@ -202,7 +203,7 @@ export function ServiceMapPanel({
             type="button"
             onClick={() => setIsFullscreen(!isFullscreen)}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-200/60 transition hidden sm:inline-flex"
-            title={isFullscreen ? "Thu nhỏ lại cạnh chat" : "Toàn màn hình"}
+            title={isFullscreen ? t("Thu nhỏ lại cạnh chat") : t("Toàn màn hình")}
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
@@ -211,7 +212,7 @@ export function ServiceMapPanel({
             type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
-            title="Đóng bản đồ"
+            title={t("Đóng bản đồ")}
           >
             <X className="w-4 h-4" />
           </button>
@@ -229,7 +230,7 @@ export function ServiceMapPanel({
           className="w-full h-full border-none opacity-90 filter contrast-[1.05]"
           loading="lazy"
         />}
-        {!hasRealGps && <p className="p-6 text-sm text-slate-600">Anh/chị có thể chia sẻ GPS hoặc tra cứu khu vực đã nhập trên ứng dụng VinFast.</p>}
+        {!hasRealGps && <p className="p-6 text-sm text-slate-600">{t("Anh/chị có thể chia sẻ GPS hoặc tra cứu khu vực đã nhập trên ứng dụng VinFast.")}</p>}
 
         {/* ─────────────────────────────────────────────────────────────
             LỚP GHIM TƯƠNG TÁC (INTERACTIVE CAR-WEB PINS)
@@ -252,8 +253,7 @@ export function ServiceMapPanel({
 
                 {/* Nhãn gắn trực tiếp vào ghim */}
                 <div className="mt-1 px-2 py-0.5 rounded-md bg-slate-900/85 backdrop-blur-xs text-white text-[10px] font-semibold whitespace-nowrap shadow-xs">
-                  Xe của bạn
-                </div>
+                  {t("Xe của bạn")}</div>
               </div>
             </div>
           )}
@@ -333,16 +333,13 @@ export function ServiceMapPanel({
                 <div className="flex items-center gap-1.5 min-w-0">
                   {activePoint.type === "EXPRESSWAY_RESCUE" ? (
                     <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-red-100 text-red-700 uppercase">
-                      🚨 Cứu hộ 24/7
-                    </span>
+                      {t("🚨 Cứu hộ 24/7")}</span>
                   ) : activePoint.type === "CHARGING_STATION" ? (
                     <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-blue-100 text-[#1E40AF] uppercase">
-                      ⚡ Trạm sạc Siêu Nhanh
-                    </span>
+                      {t("⚡ Trạm sạc Siêu Nhanh")}</span>
                   ) : (
                     <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-emerald-100 text-emerald-800 uppercase">
-                      🔧 Xưởng dịch vụ 3S
-                    </span>
+                      {t("🔧 Xưởng dịch vụ 3S")}</span>
                   )}
                   <span className="font-mono text-[11px] font-bold text-slate-700">
                     {activePoint.distText}
@@ -375,7 +372,7 @@ export function ServiceMapPanel({
                   className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#1E40AF] hover:underline"
                 >
                   <Navigation className="w-3.5 h-3.5" />
-                  <span>Chỉ đường Maps</span>
+                  <span>{t("Chỉ đường Maps")}</span>
                 </a>
 
                 <a
@@ -410,7 +407,7 @@ export function ServiceMapPanel({
                 : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
-            Tất cả ({enrichedPoints.length})
+            {t("Tất cả (")}{enrichedPoints.length})
           </button>
           <button
             type="button"
@@ -421,7 +418,7 @@ export function ServiceMapPanel({
                 : "bg-sky-50 text-sky-700 hover:bg-sky-100"
             }`}
           >
-            <span>⚡ Trạm sạc</span>
+            <span>{t("⚡ Trạm sạc")}</span>
           </button>
           <button
             type="button"
@@ -432,7 +429,7 @@ export function ServiceMapPanel({
                 : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
             }`}
           >
-            <span>🔧 Xưởng DV</span>
+            <span>{t("🔧 Xưởng DV")}</span>
           </button>
           <button
             type="button"
@@ -443,7 +440,7 @@ export function ServiceMapPanel({
                 : "bg-red-50 text-red-700 hover:bg-red-100"
             }`}
           >
-            <span>🚨 Cứu hộ 24/7</span>
+            <span>{t("🚨 Cứu hộ 24/7")}</span>
           </button>
         </div>
 
@@ -456,13 +453,10 @@ export function ServiceMapPanel({
                 <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <h4 className="font-bold text-[13px] text-amber-950">
-                    Chưa có điểm hỗ trợ trong khu vực của bạn
-                  </h4>
+                    {t("Chưa có điểm hỗ trợ trong khu vực của bạn")}</h4>
                   <p className="text-amber-900 leading-relaxed text-[11.5px]">
-                    Điểm gần nhất thuộc phân loại này cách vị trí của bạn{" "}
-                    <strong>{nearestPoint ? nearestPoint.distText : "> 50 km"}</strong>.
-                    Vui lòng liên hệ Tổng đài Toàn quốc để được hỗ trợ điều phối:
-                  </p>
+                    {t("Điểm gần nhất thuộc phân loại này cách vị trí của bạn")}{" "}
+                    <strong>{nearestPoint ? nearestPoint.distText : "> 50 km"}</strong>{t(". Vui lòng liên hệ Tổng đài Toàn quốc để được hỗ trợ điều phối:")}</p>
                 </div>
               </div>
 
@@ -471,7 +465,7 @@ export function ServiceMapPanel({
                 className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-[12px] shadow-2xs transition"
               >
                 <PhoneCall className="w-3.5 h-3.5" />
-                <span>Gọi Tổng đài Cứu hộ: 1900-232389 (24/7)</span>
+                <span>{t("Gọi Tổng đài Cứu hộ: 1900-232389 (24/7)")}</span>
               </a>
             </div>
           ) : nearestPoint ? (
@@ -489,20 +483,16 @@ export function ServiceMapPanel({
                   <div className="flex items-center gap-1.5 min-w-0">
                     {nearestPoint.type === "EXPRESSWAY_RESCUE" ? (
                       <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-red-100 text-red-700 uppercase">
-                        🚨 Cứu hộ 24/7
-                      </span>
+                        {t("🚨 Cứu hộ 24/7")}</span>
                     ) : nearestPoint.type === "CHARGING_STATION" ? (
                       <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-blue-100 text-[#1E40AF] uppercase">
-                        ⚡ Trạm sạc Siêu Nhanh
-                      </span>
+                        {t("⚡ Trạm sạc Siêu Nhanh")}</span>
                     ) : (
                       <span className="px-2 py-0.5 rounded-md font-bold text-[10px] bg-emerald-100 text-emerald-800 uppercase">
-                        🔧 Xưởng dịch vụ 3S
-                      </span>
+                        {t("🔧 Xưởng dịch vụ 3S")}</span>
                     )}
                     <span className="text-[10px] font-bold text-[#1E40AF] bg-white px-2 py-0.5 rounded-full border border-blue-200">
-                      Gần bạn nhất
-                    </span>
+                      {t("Gần bạn nhất")}</span>
                   </div>
 
                   <span className="font-mono text-[12px] font-bold text-[#1E40AF] shrink-0">
@@ -527,7 +517,7 @@ export function ServiceMapPanel({
                     className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-[#1E40AF] hover:underline"
                   >
                     <Navigation className="w-3.5 h-3.5" />
-                    <span>Chỉ đường Maps</span>
+                    <span>{t("Chỉ đường Maps")}</span>
                   </a>
 
                   <a
@@ -551,8 +541,8 @@ export function ServiceMapPanel({
                   >
                     <span>
                       {showMorePoints
-                        ? "Thu gọn danh sách"
-                        : `Xem thêm ${remainingPoints.length} điểm hỗ trợ khác trong hệ thống`}
+                        ? t("Thu gọn danh sách")
+                        : (language === "en" ? `Show ${remainingPoints.length} more support points` : `Xem thêm ${remainingPoints.length} điểm hỗ trợ khác trong hệ thống`)}
                     </span>
                     {showMorePoints ? (
                       <ChevronUp className="w-4 h-4 text-slate-400" />
@@ -593,8 +583,7 @@ export function ServiceMapPanel({
             </div>
           ) : (
             <div className="p-4 text-center text-slate-500 text-[12px]">
-              Chưa có dữ liệu điểm hỗ trợ được xác thực cho khu vực này. Anh/chị vui lòng tra cứu trên ứng dụng VinFast hoặc liên hệ hotline.
-            </div>
+              {t("Chưa có dữ liệu điểm hỗ trợ được xác thực cho khu vực này. Anh/chị vui lòng tra cứu trên ứng dụng VinFast hoặc liên hệ hotline.")}</div>
           )}
         </div>
 
@@ -605,8 +594,7 @@ export function ServiceMapPanel({
           <p className="flex items-start gap-1">
             <Info className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
             <span>
-              Điểm hỗ trợ gợi ý theo dữ liệu hệ thống, không phải điều phối hay theo dõi xe cứu hộ trực tiếp.
-            </span>
+              {t("Điểm hỗ trợ gợi ý theo dữ liệu hệ thống, không phải điều phối hay theo dõi xe cứu hộ trực tiếp.")}</span>
           </p>
         </div>
       </div>

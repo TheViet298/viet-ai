@@ -73,6 +73,7 @@ export function clearGuestId(): void {
  */
 export async function sendChatMessage(params: {
   requestId?: string;
+  language?: "vi" | "en";
   sessionId: string;
   message: string;
   caseId?: string | null;
@@ -98,6 +99,7 @@ export async function sendChatMessage(params: {
       session_id: params.sessionId,
       case_id: params.caseId || null,
       message: params.message,
+      language: params.language,
       attachment_ids: params.attachmentIds || [],
       client_context: params.clientContext || {},
       guest_session_id: guestId,
@@ -123,6 +125,8 @@ export async function getSessionHistory(sessionId: string): Promise<ApiResponse<
     sender: "CUSTOMER" | "AGENT" | "STAFF" | "SYSTEM";
     content: string;
     timestamp: string;
+    language?: "vi" | "en";
+    metadata?: {language?: "vi" | "en"};
     response_type?: "CLARIFICATION" | "FAQ_ANSWER" | "CASE_CREATED";
     citations?: any[];
     vehicle_cards?: VehicleCard[];

@@ -58,7 +58,8 @@ async def test_pure_greeting_still_greets(client, customer_db, message):
     response = await client.post("/api/v1/customer/chat", json={"session_id": "pure-greeting", "message": message})
     assert response.status_code == 200
     data = response.json()["data"]
-    assert "chào" in data["message"].lower()
+    assert ("hello" if message == "Hello!" else "chào") in data["message"].lower()
+    assert data['language'] == ('en' if message == 'Hello!' else 'vi')
     assert data["case_id"] is None
 
 

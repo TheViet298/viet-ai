@@ -9,25 +9,29 @@
     "source_id": "SRC-009",
     "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf3",
     "status_code": 200,
-    "verified_at": "2026-09-30"
+    "verified_at": "2026-10-16",
+    "review_scope": "Giá niêm yết section only; technical fact review dates remain in vehicle_facts.json"
   },
   {
     "source_id": "SRC-009",
     "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf5",
     "status_code": 200,
-    "verified_at": "2026-09-30"
+    "verified_at": "2026-10-16",
+    "review_scope": "Giá niêm yết section only; technical fact review dates remain in vehicle_facts.json"
   },
   {
     "source_id": "SRC-009",
     "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf6",
     "status_code": 200,
-    "verified_at": "2026-09-30"
+    "verified_at": "2026-10-16",
+    "review_scope": "Giá niêm yết section only; technical fact review dates remain in vehicle_facts.json"
   },
   {
     "source_id": "SRC-009",
     "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
     "status_code": 200,
-    "verified_at": "2026-09-30"
+    "verified_at": "2026-10-16",
+    "review_scope": "Giá niêm yết section only; technical fact review dates remain in vehicle_facts.json"
   },
   {
     "source_id": "SRC-009",
@@ -51,7 +55,8 @@
     "source_id": "SRC-009",
     "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf8",
     "status_code": 200,
-    "verified_at": "2026-10-10"
+    "verified_at": "2026-10-16",
+    "review_scope": "Giá niêm yết section only; technical fact review dates remain in vehicle_facts.json"
   },
   {
     "source_id": "SRC-009",
@@ -63,7 +68,8 @@
     "source_id": "SRC-009",
     "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf9",
     "status_code": 200,
-    "verified_at": "2026-09-30"
+    "verified_at": "2026-10-16",
+    "review_scope": "Giá niêm yết section only; technical fact review dates remain in vehicle_facts.json"
   },
   {
     "source_id": "SRC-009",

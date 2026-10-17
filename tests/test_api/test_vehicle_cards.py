@@ -3,6 +3,116 @@ import pytest
 pytest_plugins = ['tests.test_api.test_customer_chat_regressions']
 
 
+@pytest.mark.parametrize('model,variants', [('VF3', ['eco', 'plus']), ('VF5', [None]),
+    ('VF6', ['eco', 'plus']), ('VF7', ['eco', 'plus', 'plus-awd']),
+    ('VF8', ['eco', 'plus']), ('VF9', ['eco', 'plus'])])
+def test_each_model_overview_contains_all_reviewed_versions(model, variants):
+    from src.services.vehicle_catalog import select_vehicle_cards
+    assert [c.variant for c in select_vehicle_cards('Tư vấn về ' + model)] == variants
+
+
+@pytest.mark.parametrize('model', ['VF3', 'VF6', 'VF7', 'VF8', 'VF9'])
+def test_explicit_plus_never_returns_eco(model):
+    from src.services.vehicle_catalog import select_vehicle_cards
+    cards = select_vehicle_cards('Tư vấn về ' + model + ' Plus')
+    assert len(cards) == 1 and cards[0].variant == 'plus'
+
+
+def test_vf7_plus_fwd_and_awd_do_not_mix_specs_or_prices():
+    from src.services.vehicle_catalog import select_vehicle_cards
+    fwd = select_vehicle_cards('VF7 Plus')[0]
+    awd = select_vehicle_cards('VF7 Plus AWD')[0]
+    assert fwd.name == 'VinFast VF 7 Plus'
+    assert '500,5 km (NEDC)' in [s.value for s in fwd.specs]
+    assert '150 kW' in [s.value for s in fwd.specs]
+    assert fwd.price_label == 'Từ 830.000.000 VNĐ'
+    assert awd.variant == 'plus-awd'
+    assert '469 km (NEDC)' in [s.value for s in awd.specs]
+    assert '260 kW' in [s.value for s in awd.specs]
+    assert awd.price_label == 'Chưa có giá xác thực'
+
+
+def test_cross_model_comparison_uses_only_the_requested_versions():
+    from src.services.vehicle_catalog import select_vehicle_cards
+    cards = select_vehicle_cards('So sánh VF7 Plus và VF6 Eco')
+    assert [(c.model, c.variant) for c in cards] == [('VF7', 'plus'), ('VF6', 'eco')]
+    assert len(select_vehicle_cards('So sánh VF7 và VF6')) == 2
+    assert select_vehicle_cards('VF5 Plus') == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('model,count', [('VF3', 2), ('VF5', 1), ('VF6', 2), ('VF7', 3), ('VF8', 2), ('VF9', 2)])
+async def test_model_versions_are_returned_and_restored(client, customer_db, model, count):
+    session_id = 'model-versions-' + model
+    response = await client.post('/api/v1/customer/chat', json={'session_id': session_id, 'message': 'Tư vấn về ' + model})
+    assert response.status_code == 200
+    data = response.json()['data']
+    assert len(data['vehicle_cards']) == count
+    assert all(c['name'] in data['message'] for c in data['vehicle_cards'])
+    history = (await client.get(f'/api/v1/customer/sessions/{session_id}/history')).json()['data']['messages']
+    assert history[-1]['vehicle_cards'] == data['vehicle_cards']
+
+
+def test_same_model_comparison_preserves_order_and_awd_version():
+    from src.services.vehicle_catalog import select_vehicle_cards, is_generic_vehicle_comparison
+    question = 'So sánh VF7 Plus AWD và VF7 Eco'
+    assert is_generic_vehicle_comparison(question)
+    assert [c.variant for c in select_vehicle_cards(question)] == ['plus-awd', 'eco']
+
+
+@pytest.mark.parametrize('question', ['Thông số VF7 Eco AWD', 'Thông số VF6 Eco AWD',
+                                    'So sánh VF7 Plus và VF6 Eco AWD'])
+def test_unsupported_drive_configuration_is_not_split_or_partially_compared(question):
+    from src.services.vehicle_catalog import select_vehicle_cards
+    assert select_vehicle_cards(question) == []
+
+
+@pytest.mark.parametrize('model', ['VF8', 'VF9'])
+def test_awd_alias_preserves_existing_plus_version(model):
+    from src.services.vehicle_catalog import select_vehicle_cards
+    cards = select_vehicle_cards('Thông số ' + model + ' Plus AWD')
+    assert len(cards) == 1 and cards[0].variant == 'plus'
+
+
+def test_vf8_drive_labels_match_existing_versions():
+    from src.services.vehicle_catalog import select_vehicle_cards
+    assert [c.variant for c in select_vehicle_cards('Thông số VF8 Eco FWD')] == ['eco']
+    assert [c.variant for c in select_vehicle_cards('So sánh VF8 Eco FWD và VF8 Plus AWD')] == ['eco', 'plus']
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('question,model', [('Tư vấn về VF 7', 'VF7'), ('Tư vấn VF5', 'VF5'),
+    ('Giới thiệu về VF 6', 'VF6'), ('Thông tin về VF 9', 'VF9'), ('Tư vấn về VF 8', 'VF8')])
+async def test_natural_overview_after_quote_starts_new_topic(client, customer_db, question, model):
+    from src.models.db_models import ChatSession
+    await client.post('/api/v1/customer/chat', json={
+        'session_id': 'natural-overview', 'message': 'Dự toán lăn bánh VF8 Eco',
+    })
+    response = await client.post('/api/v1/customer/chat', json={
+        'session_id': 'natural-overview', 'message': question,
+    })
+    assert response.status_code == 200
+    data = response.json()['data']
+    assert data['vehicle_cards'] and all(c['model'] == model for c in data['vehicle_cards'])
+    assert 'chi-phi-lan-banh' not in data['message']
+    session = customer_db.get(ChatSession, 'natural-overview')
+    turn = session.memory_states['natural-overview']['turn_understanding']
+    assert turn['move'] == 'new_question'
+    assert turn['goal'] == 'overview'
+
+
+@pytest.mark.parametrize('question', ['Tư vấn về bảo dưỡng VF7', 'Tư vấn về VF7 bị mất phanh',
+    'Không cần tư vấn về VF7, tôi hỏi bảo hành', 'VF7 có những màu gì?', 'Tư vấn về VF7 lỗi sạc'])
+def test_natural_advice_does_not_promote_service_or_color_questions(question):
+    from src.services.vehicle_catalog import select_vehicle_cards
+    assert select_vehicle_cards(question) == []
+
+
+def test_bare_model_continues_product_browsing():
+    from src.services.vehicle_catalog import select_vehicle_cards
+    assert select_vehicle_cards('VF5', active_goal='overview')[0].model == 'VF5'
+
+
 @pytest.mark.asyncio
 async def test_vehicle_card_is_returned_and_restored(client, customer_db):
     response = await client.post('/api/v1/customer/chat', json={
@@ -26,7 +136,7 @@ def test_card_selection_does_not_turn_incident_followup_into_sales():
     assert select_vehicle_cards('bảo hành VF5 bao lâu?') == []
     assert select_vehicle_cards('VF50') == []
     assert [c.model for c in select_vehicle_cards('So sánh VF5 và VF6')] == ['VF5', 'VF6']
-    assert len(select_vehicle_cards('Tư vấn các dòng xe VinFast')) == 6
+    assert select_vehicle_cards('Tư vấn các dòng xe VinFast') == []
     assert select_vehicle_cards('Giá VF5 bao nhiêu?')[0].model == 'VF5'
     assert select_vehicle_cards('VF6 đi được bao nhiêu km?')[0].model == 'VF6'
 
@@ -168,9 +278,19 @@ def test_reviewed_scope_leaks_are_blocked(question):
 
 def test_denied_model_is_not_selected_with_affirmative_purchase():
     from src.services.vehicle_catalog import select_vehicle_cards
-    assert [card.model for card in select_vehicle_cards('Tôi không mua VF8, tư vấn mua VF6')] == ['VF6']
+    cards = select_vehicle_cards('Tôi không mua VF8, tư vấn mua VF6')
+    assert {card.model for card in cards} == {'VF6'}
+    assert [card.variant for card in cards] == ['eco', 'plus']
 
 @pytest.mark.parametrize('question', ['Tư vấn xe VF8 về cách sạc', 'Không cần thông số VF8'])
 def test_service_focus_and_direct_negation_override_general_product_words(question):
     from src.services.vehicle_catalog import select_vehicle_cards
     assert select_vehicle_cards(question) == []
+
+
+def test_estimate_chip_and_equivalent_on_road_price_have_the_same_card():
+    from src.services.vehicle_catalog import select_vehicle_cards
+    estimate = select_vehicle_cards('Dự toán lăn bánh VinFast VF8 Plus')
+    equivalent = select_vehicle_cards('Giá lăn bánh VinFast VF8 Plus bao nhiêu?')
+    assert [(c.model, c.variant) for c in estimate] == [('VF8','plus')]
+    assert estimate == equivalent

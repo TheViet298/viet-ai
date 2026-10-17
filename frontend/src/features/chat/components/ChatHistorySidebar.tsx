@@ -1,4 +1,6 @@
 "use client";
+import { useLocale } from "@/features/shared/context/LocaleContext";
+import { parseServerTimestamp } from "@/lib/utils";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -58,6 +60,7 @@ export function ChatHistorySidebar({
   refreshTrigger,
   onModalOpenChange,
 }: ChatHistorySidebarProps) {
+  const { t } = useLocale();
   const [mounted, setMounted] = useState(false);
   const [sessions, setSessions] = useState<ChatSessionItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -132,7 +135,7 @@ export function ChatHistorySidebar({
       const is404 = err?.status === 404 || String(err?.message || "").includes("404");
       if (is404) {
         isNotFoundRef.current = true;
-        setLoadError("Dịch vụ lịch sử trò chuyện chưa sẵn sàng (404 Not Found).");
+        setLoadError(t("Dịch vụ lịch sử trò chuyện chưa sẵn sàng (404 Not Found)."));
         // Tự động thử lại 1 lần sau 4s phòng trường hợp backend đang khởi động/reload
         if (!retryTimeoutRef.current) {
           retryTimeoutRef.current = setTimeout(() => {
@@ -142,7 +145,7 @@ export function ChatHistorySidebar({
           }, 4000);
         }
       } else {
-        setLoadError(err?.message || "Không thể tải danh sách cuộc trò chuyện.");
+        setLoadError(err?.message || t("Không thể tải danh sách cuộc trò chuyện."));
       }
     } finally {
       inFlightRef.current = false;
@@ -234,7 +237,7 @@ export function ChatHistorySidebar({
     };
 
     filtered.forEach((session) => {
-      const time = new Date(session.updated_at).getTime();
+      const time = parseServerTimestamp(session.updated_at).getTime();
       if (time >= todayStart) {
         groups.today.push(session);
       } else if (time >= yesterdayStart) {
@@ -271,7 +274,7 @@ export function ChatHistorySidebar({
         prev.map((s) => (s.session_id === sessionId ? { ...s, title: finalTitle } : s))
       );
     } catch (err: any) {
-      setActionError(err?.message || "Không thể đổi tên cuộc trò chuyện.");
+      setActionError(err?.message || t("Không thể đổi tên cuộc trò chuyện."));
     } finally {
       setEditingSessionId(null);
     }
@@ -293,7 +296,7 @@ export function ChatHistorySidebar({
         }
       }
     } catch (err: any) {
-      setActionError(err?.message || "Không thể xóa cuộc trò chuyện.");
+      setActionError(err?.message || t("Không thể xóa cuộc trò chuyện."));
     }
   };
 
@@ -307,7 +310,7 @@ export function ChatHistorySidebar({
       setShowClearAllConfirm(false);
       onNewChat();
     } catch (err: any) {
-      setClearAllError(err?.message || "Không thể xóa tất cả cuộc trò chuyện. Vui lòng thử lại.");
+      setClearAllError(err?.message || t("Không thể xóa tất cả cuộc trò chuyện. Vui lòng thử lại."));
     } finally {
       setIsClearingAll(false);
     }
@@ -349,7 +352,7 @@ export function ChatHistorySidebar({
                     type="button"
                     onClick={() => handleSaveTitle(session.session_id)}
                     className="p-1 rounded text-emerald-600 hover:bg-emerald-50 transition"
-                    title="Lưu"
+                    title={t("Lưu")}
                   >
                     <Check className="w-3.5 h-3.5" />
                   </button>
@@ -357,7 +360,7 @@ export function ChatHistorySidebar({
                     type="button"
                     onClick={() => setEditingSessionId(null)}
                     className="p-1 rounded text-slate-400 hover:bg-slate-100 transition"
-                    title="Hủy"
+                    title={t("Hủy")}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -401,7 +404,7 @@ export function ChatHistorySidebar({
                         ? "opacity-100"
                         : "opacity-0 group-hover:opacity-100"
                     }`}
-                    title="Tùy chọn cuộc trò chuyện"
+                    title={t("Tùy chọn cuộc trò chuyện")}
                   >
                     <MoreHorizontal className="w-3.5 h-3.5" />
                   </button>
@@ -419,7 +422,7 @@ export function ChatHistorySidebar({
                         className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-slate-700 hover:bg-slate-50 transition"
                       >
                         <Edit2 className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Đổi tên</span>
+                        <span>{t("Đổi tên")}</span>
                       </button>
                       <button
                         type="button"
@@ -427,7 +430,7 @@ export function ChatHistorySidebar({
                         className="w-full flex items-center gap-2 px-3 py-1.5 text-[12px] text-rose-600 hover:bg-rose-50 transition"
                       >
                         <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                        <span>Xóa</span>
+                        <span>{t("Xóa")}</span>
                       </button>
                     </div>
                   )}
@@ -447,13 +450,12 @@ export function ChatHistorySidebar({
       {/* 1. Header Sidebar */}
       <div className="px-3.5 py-2.5 flex items-center justify-between border-b border-slate-200/80">
         <span className="text-[12.5px] font-bold text-slate-800">
-          Lịch sử trò chuyện
-        </span>
+          {t("Lịch sử trò chuyện")}</span>
         <button
           type="button"
           onClick={isMobileDrawer ? onCloseMobileDrawer : onToggleCollapse}
           className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-200/70 transition active:scale-95"
-          title="Thu gọn sidebar"
+          title={t("Thu gọn sidebar")}
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -472,7 +474,7 @@ export function ChatHistorySidebar({
           className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[12.5px] font-semibold shadow-xs transition active:scale-98"
         >
           <Plus className="w-4 h-4 shrink-0" />
-          <span>Cuộc trò chuyện mới</span>
+          <span>{t("Cuộc trò chuyện mới")}</span>
         </button>
 
         {/* Ô tìm kiếm */}
@@ -480,7 +482,7 @@ export function ChatHistorySidebar({
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Tìm kiếm cuộc trò chuyện..."
+            placeholder={t("Tìm kiếm cuộc trò chuyện...")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-8 pr-2.5 py-1.5 text-[12px] bg-white border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 outline-none focus:border-blue-400 transition"
@@ -497,7 +499,7 @@ export function ChatHistorySidebar({
               type="button"
               onClick={() => setActionError(null)}
               className="text-rose-500 hover:text-rose-800 p-0.5 rounded shrink-0 transition"
-              title="Đóng thông báo lỗi"
+              title={t("Đóng thông báo lỗi")}
             >
               <X className="w-3 h-3" />
             </button>
@@ -506,14 +508,13 @@ export function ChatHistorySidebar({
 
         {loading && sessions.length === 0 ? (
           <div className="py-8 text-center text-[12px] text-slate-400">
-            Đang tải lịch sử...
-          </div>
+            {t("Đang tải lịch sử...")}</div>
         ) : loadError && sessions.length === 0 ? (
           <div className="py-10 text-center px-4">
             <div className="w-8 h-8 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-2.5">
               <AlertCircle className="w-4 h-4" />
             </div>
-            <p className="text-[12px] text-slate-700 font-medium mb-1">Không thể tải lịch sử</p>
+            <p className="text-[12px] text-slate-700 font-medium mb-1">{t("Không thể tải lịch sử")}</p>
             <p className="text-[11px] text-slate-400 mb-3 line-clamp-2">{loadError}</p>
             <button
               type="button"
@@ -525,19 +526,18 @@ export function ChatHistorySidebar({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 transition shadow-xs cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Thử lại</span>
+              <span>{t("Thử lại")}</span>
             </button>
           </div>
         ) : !hasAnySession ? (
           <div className="py-12 text-center text-[12px] text-slate-400 px-4">
-            Chưa có cuộc trò chuyện nào
-          </div>
+            {t("Chưa có cuộc trò chuyện nào")}</div>
         ) : (
           <>
-            {renderSessionGroup("HÔM NAY", groupedSessions.today)}
-            {renderSessionGroup("HÔM QUA", groupedSessions.yesterday)}
-            {renderSessionGroup("7 NGÀY QUA", groupedSessions.last7Days)}
-            {renderSessionGroup("CŨ HƠN", groupedSessions.older)}
+            {renderSessionGroup(t("HÔM NAY"), groupedSessions.today)}
+            {renderSessionGroup(t("HÔM QUA"), groupedSessions.yesterday)}
+            {renderSessionGroup(t("7 NGÀY QUA"), groupedSessions.last7Days)}
+            {renderSessionGroup(t("CŨ HƠN"), groupedSessions.older)}
 
             {/* Nút Xóa tất cả lịch sử */}
             <div className="pt-2 pb-1 px-1 border-t border-slate-200/60 mt-2 text-center">
@@ -548,10 +548,10 @@ export function ChatHistorySidebar({
                   setShowClearAllConfirm(true);
                 }}
                 className="inline-flex items-center justify-center gap-1.5 py-1 px-2 rounded-md text-[11px] text-slate-400 hover:text-rose-600 hover:bg-rose-50/70 transition"
-                title="Xóa tất cả các cuộc trò chuyện"
+                title={t("Xóa tất cả các cuộc trò chuyện")}
               >
                 <Trash2 className="w-3 h-3" />
-                <span>Xóa tất cả cuộc trò chuyện</span>
+                <span>{t("Xóa tất cả cuộc trò chuyện")}</span>
               </button>
             </div>
           </>
@@ -563,14 +563,13 @@ export function ChatHistorySidebar({
         <div className="p-3 border-t border-slate-200/80 bg-white/80">
           <div className="p-2.5 rounded-xl bg-blue-50/80 border border-blue-200/70 text-slate-700">
             <p className="text-[11.5px] font-medium leading-relaxed mb-2 text-slate-800">
-              Đăng nhập để lưu và xem lại lịch sử trò chuyện trên mọi thiết bị.
-            </p>
+              {t("Đăng nhập để lưu và xem lại lịch sử trò chuyện trên mọi thiết bị.")}</p>
             <Link
               href="/login"
               className="w-full inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[11.5px] font-semibold transition"
             >
               <LogIn className="w-3.5 h-3.5" />
-              <span>Đăng nhập ngay</span>
+              <span>{t("Đăng nhập ngay")}</span>
             </Link>
           </div>
         </div>
@@ -589,15 +588,13 @@ export function ChatHistorySidebar({
             onClick={(e) => e.stopPropagation()}
           >
             <h4 className="font-bold text-[14px] text-slate-900 mb-1.5">
-              Xóa tất cả cuộc trò chuyện?
-            </h4>
+              {t("Xóa tất cả cuộc trò chuyện?")}</h4>
             <p className="text-[12px] text-slate-500 mb-3.5 leading-relaxed">
-              Toàn bộ lịch sử trò chuyện của bạn sẽ bị xóa vĩnh viễn và không thể khôi phục.
-            </p>
+              {t("Toàn bộ lịch sử trò chuyện của bạn sẽ bị xóa vĩnh viễn và không thể khôi phục.")}</p>
 
             {clearAllError && (
               <div className="mb-3.5 p-2.5 rounded-lg bg-rose-50 border border-rose-200/80 text-rose-700 text-[11px] leading-snug flex items-start gap-1.5 animate-fadeIn">
-                <span className="font-semibold shrink-0">Lỗi:</span>
+                <span className="font-semibold shrink-0">{t("Lỗi:")}</span>
                 <span className="break-words">{clearAllError}</span>
               </div>
             )}
@@ -611,15 +608,14 @@ export function ChatHistorySidebar({
                 disabled={isClearingAll}
                 className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-slate-600 hover:bg-slate-100 transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Hủy
-              </button>
+                {t("Hủy")}</button>
               <button
                 type="button"
                 onClick={handleClearAll}
                 disabled={isClearingAll}
                 className="px-3.5 py-1.5 rounded-lg text-[12px] font-medium bg-rose-600 hover:bg-rose-700 text-white transition shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isClearingAll ? "Đang xóa..." : "Xác nhận xóa"}
+                {isClearingAll ? t("Đang xóa...") : t("Xác nhận xóa")}
               </button>
             </div>
           </div>

@@ -1,4 +1,6 @@
 "use client";
+import { ThemeToggle } from "@/features/shared/components/ThemeToggle";
+import { useLocale } from "@/features/shared/context/LocaleContext";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
@@ -204,6 +206,7 @@ export interface HistoricalCase {
 export const SAMPLE_CASE_HISTORY: HistoricalCase[] = [];
 
 export function StaffConsoleShell() {
+  const {t} = useLocale();
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<ConsoleTab>("queue");
 
@@ -732,7 +735,7 @@ export function StaffConsoleShell() {
     { id: "overview", label: "Tổng quan ca trực", icon: LayoutDashboard },
     { id: "history", label: "Lịch sử hồ sơ", icon: History, count: realCaseHistory.length },
     { id: "routing", label: "Bộ phận / Routing", icon: GitBranch, count: liveRoutingDepartments.reduce((acc, d) => acc + d.activeTickets, 0) },
-    { id: "knowledge", label: "Knowledge Hub", icon: BookOpen, count: knowledgeArticles.length || 7 },
+    { id: "knowledge", label: t("Cẩm nang"), icon: BookOpen, count: knowledgeArticles.length || 7 },
     { id: "profile", label: "Hồ sơ Staff", icon: User },
   ];
 
@@ -865,7 +868,7 @@ export function StaffConsoleShell() {
             )}
           </div>
 
-          <div className="flex items-center gap-3.5 text-[12px]">
+          <div className="flex items-center gap-3.5 text-[12px]"><ThemeToggle />
             <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white shadow-2xs border border-slate-200/50 text-slate-600">
               <span className={`w-2 h-2 rounded-full ${isLiveApi ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
               <span className="text-[11px] font-medium">{isLiveApi ? "Hệ thống trực tuyến" : "Chế độ mẫu"}</span>
@@ -1493,7 +1496,7 @@ export function StaffConsoleShell() {
                             </div>
                           )}
                           {reviewingHistoryCase.customerFeedbackComment && (
-                            <p className="text-[12px] text-[#065F46] italic">"{reviewingHistoryCase.customerFeedbackComment}"</p>
+                            <p className="text-[12px] text-[#065F46] italic">&quot;{reviewingHistoryCase.customerFeedbackComment}&quot;</p>
                           )}
                         </div>
                       )}
@@ -1593,7 +1596,7 @@ export function StaffConsoleShell() {
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h1 className="text-xl font-semibold text-slate-900">Knowledge Hub Nội Bộ (RAG Knowledge Sources)</h1>
+                  <h1 className="text-xl font-semibold text-slate-900">{t("Cẩm nang")} — RAG Knowledge Sources</h1>
                   <p className="text-xs text-slate-500 mt-0.5">
                     Cơ sở tri thức nguồn chính thống được kiểm chứng mà AI Agent sử dụng để trích dẫn URL cho khách hàng.
                   </p>

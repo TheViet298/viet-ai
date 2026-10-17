@@ -92,6 +92,7 @@ chroma/
 /docs/previous-commit-regression-2026-10-10.md
 /docs/knowledge-answering.md
 /scratch/
+/output/
 /eval/results/evidence-20261010/
 /eval/results/natural-conversation-20261010/
 /eval/results/topic-followup-20261010/

@@ -1,0 +1,40 @@
+{
+  "provenance": "Captured from verification-v7/live/results.json color-vf7-en; source excerpts contain no color facts.",
+  "query": "Màu sắc xe VF7 Plus. VF7 Plus có những màu gì?",
+  "citations": [
+    {
+      "fact_scope": null,
+      "claim_evidence": null,
+      "source_section": null,
+      "specs_reviewed_at": null,
+      "price_evidence": null,
+      "source_id": "SRC-009",
+      "title": "Danh mục thông số kỹ thuật & phiên bản thương mại",
+      "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+      "verified_at": "2026-10-16",
+      "status_code": 200,
+      "applicable_models": [
+        "VF7"
+      ],
+      "source_type": "official_catalog",
+      "relevant_snippet": "Thông số chi tiết VinFast VF 7 - Phiên bản VF 7 Plus AWD:\n- specs_raw: {'Kích thước': {'Dài x Rộng x Cao (mm)': '4.545 x 1.890 x 1.635,75', 'Chiều dài cơ sở': '2.840 mm', 'Mô men xoắn cực đại': '500 Nm', 'Công suất tối đa': '260 kW/hp', 'Số chỗ ngồi': '5 chỗ'}, 'Pin & Sạc': {'Quãng đường di chuyển (NEDC)*': '469 km/1 lần sạc', 'Dung lượng pin khả dụng': '70 kWh', 'Công suất sạc chậm AC tối đa': '7,2 kW', 'Công suất sạc nhanh DC tối đa': '110 kW'}}"
+    },
+    {
+      "fact_scope": null,
+      "claim_evidence": null,
+      "source_section": null,
+      "specs_reviewed_at": null,
+      "price_evidence": null,
+      "source_id": "SRC-009",
+      "title": "Danh mục thông số kỹ thuật & phiên bản thương mại",
+      "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+      "verified_at": "2026-10-16",
+      "status_code": 200,
+      "applicable_models": [
+        "VF7"
+      ],
+      "source_type": "official_catalog",
+      "relevant_snippet": "Thông số chi tiết VinFast VF 7 - Phiên bản VF 7 Plus:\n- hero: {'highlights': {'Quãng đường di chuyển (NEDC)': '500,5km/lần sạc', 'Công suất tối đa': '260kW/hp (Bản 2 cầu AWD)', 'Bảo hành': '7 năm hoặc 160.000km (Tùy điều kiện nào đến trước)'}, 'prices_vnd': [[REDACTED_NATIONAL_ID]], 'price_from_vnd': [REDACTED_NATIONAL_ID], 'price_original_vnd': None, 'highlights_norm': {'range_nedc_km': 500.5, 'power_kw': 260, 'warranty_years': 7, 'warranty_km': 160000}}"
+    }
+  ]
+}

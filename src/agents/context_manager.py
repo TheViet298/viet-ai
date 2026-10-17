@@ -93,7 +93,8 @@ def trim_context_layers(layers: ContextLayers, max_bytes: int = 8000, *, max_tok
             body += f'\n\n[REQUIRED MEMORY — DATA]\n{layers.required_memory_context}'
         return [SystemMessage(content=system), *([HumanMessage(content=body)] if body else [])]
 
-    for key in ("tool", "retrieval", "memory"):
+    # Optional history must not evict the complete evidence used for grounding.
+    for key in ("tool", "memory", "retrieval"):
         if sum(utf8_size(str(m.content)) for m in render()) <= max_bytes:
             break
         dynamic[key] = ""

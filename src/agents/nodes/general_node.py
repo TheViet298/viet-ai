@@ -15,6 +15,17 @@ class ConversationalAnswer(BaseModel):
 
 async def general_node(state: AgentState) -> dict:
     text = state.get("latest_user_message", "").casefold()
+    from src.agents.guardrails import CRITICAL_STANDALONE_RULES, HYPOTHETICAL_SAFE_GUIDANCE, evaluate_hard_safety
+    if re.search(r'\b(?:nếu|neu|giả sử|gia su|lỡ như|lo nhu)\b', text) and not evaluate_hard_safety(text)[0] and any(
+            re.search(pattern, text) for pattern in CRITICAL_STANDALONE_RULES.values()):
+        return {'response': HYPOTHETICAL_SAFE_GUIDANCE, 'final_response': HYPOTHETICAL_SAFE_GUIDANCE,
+                'response_type': 'FAQ_ANSWER', 'needs_staff_review': False,
+                'is_no_source': False, 'is_rag_query': False, 'rag_citations': [],
+                'rag_context': [], 'case_brief': None, 'suggested_replies': []}
+    from src.services.rag_service import requires_official_evidence
+    if requires_official_evidence(text, (state.get('turn_understanding') or {}).get('source_need')):
+        from src.agents.nodes.rag_node import rag_node
+        return await rag_node(state)
     if (state.get('conversation_context') or {}).get('active_goal') == 'concept':
         text = (state.get('turn_understanding') or {}).get('resolved_query', text).casefold()
     # Resolve only short conceptual references; never inherit a repair request.

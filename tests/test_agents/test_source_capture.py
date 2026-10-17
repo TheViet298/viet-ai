@@ -36,12 +36,14 @@ def test_src009_catalog_urls_verified_and_retrievable():
         "source_id": "SRC-009",
         "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf9",
         "status_code": 200,
-        "verified_at": "2026-09-30",
+        "verified_at": approved_urls["https://vinfastauto.com/vn_vi/dat-coc-xe-vf9"],
         "applicable_models": ["VF 9"],
         "distance": 0.25,
         "relevant_snippet": "Thông số chi tiết VinFast VF 9 - Phiên bản VF 9 Eco: Quãng đường 626km/lần sạc",
     }
+    assert citation['verified_at'] == '2026-10-16'  # Product price section re-reviewed.
     assert valid_citation(citation, "VF 9")
+    assert not valid_citation({**citation, 'verified_at': '2026-09-30'}, 'VF 9')
 
     rag = RAGService()
     raw = {

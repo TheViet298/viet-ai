@@ -417,6 +417,16 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         if guest_count >= 5:
             logger.warning(f"[403 FORBIDDEN] Guest session='{payload.session_id}' reached limit: guest_count={guest_count} >= 5")
             raise HTTPException(403, "Quý khách đã sử dụng hết 5 lượt chat thử nghiệm. Quý khách vui lòng đăng nhập để tiếp tục trải nghiệm ạ.")
+    if re.fullmatch(r'(?:cảm ơn|cám ơn)(?:\s+(?:bạn|em|anh|chị))?(?:[,!.\s]*(?:tôi|em|mình)?\s*(?:đã )?(?:hiểu rồi|hiểu|rõ rồi))?[!.\s]*', text, re.I):
+        reply = 'Dạ, rất vui được hỗ trợ Quý khách. Khi cần thêm thông tin, Quý khách cứ nhắn em nhé.'
+        customer_message = Message(id=str(uuid.uuid4()), session_id=payload.session_id,
+            sender_type='CUSTOMER', content=original_text,
+            msg_metadata={'user_id': user_id, 'guest_session_id': payload.guest_session_id})
+        db.add(customer_message)
+        db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='AGENT', content=reply))
+        db.info['chat_turn_customer_id'] = customer_message.id
+        return ApiResponse(data=ChatResponseData(response_type='FAQ_ANSWER', message=reply,
+                           remaining_guest_messages=remaining_guest_msgs))
     if spelling.get('needs_confirmation'):
         reply = clarification_for(text)
         customer_message = Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='CUSTOMER',
@@ -1223,9 +1233,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     ]
     if any(kw in lower_text for kw in oos_keywords):
         reply_no_source = (
-            "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách dịch vụ chính thức của VinFast "
-            "nhưng chưa có thông tin xác thực cho yêu cầu này (hoặc nội dung nằm ngoài phạm vi hỗ trợ của hệ sinh thái xe điện VinFast).\n\n"
-            "Nếu anh/chị cần hỗ trợ các vấn đề kỹ thuật, trạm sạc hay bảo hành xe VinFast, em luôn sẵn sàng hỗ trợ ạ!"
+            "Yêu cầu này nằm ngoài phạm vi hỗ trợ của trợ lý VinFast. "
+            "Em có thể hỗ trợ thông tin xe, trạm sạc, ứng dụng, bảo hành và các yêu cầu dịch vụ VinFast."
         )
         agent_msg = Message(
             id=str(uuid.uuid4()),
@@ -1253,7 +1262,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
 
     # 4. KIỂM TRA PHẢN ÁNH / KHIẾU NẠI (COMPLAINT / FEEDBACK)
     complaint_keywords = ["bức xúc", "khiếu nại", "thái độ", "trừ tiền", "hoàn tiền", "chiếm chỗ", "văng crash", "khen ngợi"]
-    is_complaint = any(kw in lower_text for kw in complaint_keywords)
+    is_complaint = classification.request_kind == 'complaint'
     if is_complaint:
         new_case_id = active_case_id or generate_case_id(db)
         case = scoped_cases(db, current_user).filter(Case.id == new_case_id).first()
@@ -1328,7 +1337,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 status=TicketStatus.STAFF_REVIEWING.value,
                 priority=case_prio,
                 message=agent_reply,
-                safe_guidance="Chuyên viên CSKH đang xử lý hồ sơ này của Quý khách.",
+                safe_guidance="Hồ sơ đã được ghi nhận và đang chờ chuyên viên CSKH xem xét.",
             ),
             error=None,
         )
@@ -1409,7 +1418,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 response_type='FAQ_ANSWER', message=reply, case_id=active_case_id,
                 remaining_guest_messages=remaining_guest_msgs,
             ), error=None)
-        if conversation.active_goal in {'quote', 'test_drive', 'maintenance', 'warranty', 'range', 'charging', 'capacity', 'concept'}:
+        if conversation.active_goal in {'quote', 'test_drive', 'maintenance', 'warranty', 'range', 'charging', 'capacity', 'concept', 'overview', 'appearance', 'application', 'charging_network', 'out_of_scope'}:
             is_technical_incident = False
 
     # --------------------------------------------------------------------------
@@ -1489,8 +1498,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     # --------------------------------------------------------------------------
     # NHÓM B: TƯ VẤN BÁN HÀNG, LÁI THỬ & GIÁ XE (SALES & SERVICES)
     # --------------------------------------------------------------------------
-    knowledge_parts = sales_parts(resolved_text, vehicle_model) if not is_technical_incident else []
-    if conversation.active_goal and conversation.active_goal not in {'quote', 'test_drive'} and turn_understanding.move != 'new_question':
+    knowledge_parts = sales_parts(resolved_text, vehicle_model, turn_understanding=turn_understanding.model_dump()) if not is_technical_incident else []
+    if conversation.active_goal and conversation.active_goal not in {'quote', 'test_drive', 'overview'} and turn_understanding.move != 'new_question':
         knowledge_parts = []
 
     # --------------------------------------------------------------------------
@@ -1647,6 +1656,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         )
         db.info['conversation_claims'] = ai_res.get('answer_claims', [])
         db.info['conversation_retrieval'] = ai_res.get('retrieval_diagnostics', {})
+        db.info['conversation_final'] = {'answer_path': ai_res.get('answer_path') or ('rag' if ai_res.get('citations') or ai_res.get('is_no_source') else 'general'),
+                                         'successful': not ai_res.get('is_no_source', False)}
         if isinstance(agent_reply, list):
             agent_reply = "".join(
                 b.get("text", "") if isinstance(b, dict) else getattr(b, "text", str(b))
@@ -1661,18 +1672,19 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             diag_cat = diag.get("category")
             diag_stage = diag.get("stage")
             if diag_cat == "context_budget_exceeded" or diag_stage == "prompt":
-                agent_reply = "Tài liệu cần thiết vượt quá giới hạn xử lý hiện tại. Em sẽ chuyển chuyên viên kiểm tra đầy đủ điều kiện."
+                agent_reply = "Em chưa đối chiếu đầy đủ tài liệu để trả lời chính xác câu hỏi này. Quý khách có thể cho biết phiên bản xe và nội dung muốn kiểm tra, hoặc liên hệ chuyên viên VinFast để được hỗ trợ nhé."
             elif (not agent_reply or "chưa hoàn tất" in agent_reply) and ((diag_stage == "generation" and diag_cat not in {"unsupported_answer", "unsupported_numeric_claim"}) or diag_cat in ("generation_unavailable", "provider_error", "circuit_open", "rate_limited")):
                 agent_reply = "Em chưa hoàn tất được việc tạo câu trả lời từ tài liệu đã tìm thấy. Quý khách vui lòng thử lại; em chưa thể xác nhận nội dung lúc này."
             elif not agent_reply or "chưa có nguồn" in agent_reply:
-                agent_reply = "Em chưa có nguồn đã xác thực cho câu hỏi này. Quý khách có thể yêu cầu chuyển chuyên viên hỗ trợ."
+                agent_reply = "Em chưa có đủ thông tin đã xác thực để trả lời chính xác câu hỏi này. Quý khách có thể cho biết thêm phiên bản xe hoặc liên hệ chuyên viên VinFast để đối chiếu nhé."
         citations = []
         if ai_res.get("citations"):
             seen_sources = set()
             for c in ai_res["citations"]:
-                if c.get("url") in seen_sources:
+                evidence_key = (c.get('source_id'), c.get('url'), c.get('relevant_snippet'))
+                if evidence_key in seen_sources:
                     continue
-                seen_sources.add(c.get("url"))
+                seen_sources.add(evidence_key)
                 citations.append(
                     Citation(
                         source_id=c.get("source_id", "SRC-KB"),
@@ -1683,6 +1695,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                         applicable_models=c.get("applicable_models", []),
                         source_type=c.get("source_type", "official_manual"),
                         relevant_snippet=c.get("relevant_snippet", ""),
+                        fact_scope=c.get('fact_scope'), claim_evidence=c.get('claim_evidence'),
+                        source_section=c.get('source_section'), specs_reviewed_at=c.get('specs_reviewed_at'),
+                        price_evidence=c.get('price_evidence'),
                     )
                 )
         service_handoff = ServiceHandoff(
@@ -1712,6 +1727,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             session_id=payload.session_id,
             sender_type=SenderType.AGENT.value,
             content=agent_reply,
+            created_at=reply_created_at,
             msg_metadata={"citations": [c.model_dump() for c in citations]},
         )
         db.add(agent_msg)
@@ -3064,6 +3080,7 @@ def get_session_chat_history(
         created_str = msg.created_at.isoformat() if msg.created_at else datetime.now(UTC).isoformat()
         items.append(
             SessionHistoryMessageItem(
+                language=meta.get('language', 'vi'),
                 id=msg.id,
                 sender=msg.sender_type,
                 content=msg.content,

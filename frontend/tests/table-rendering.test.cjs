@@ -20,6 +20,8 @@ function loadChatMessageItem() {
     exports: module.exports,
     Date,
     require: (name) => {
+      if (name === '@/lib/utils') return {parseServerTimestamp: value => new Date(value)};
+      if (name.endsWith('/LocaleContext')) return {useLocale: () => ({language: "vi", setLanguage() {}, t: text => text}), translate: text => text};
       if (name === 'react') {
         return {
           useMemo: (fn) => fn(),
