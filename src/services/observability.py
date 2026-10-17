@@ -45,6 +45,18 @@ def mask_telemetry(*, data: Any, **kwargs: Any) -> Any:
             value = re.sub(r'data:image/[^\s"\']+', '[REDACTED_IMAGE]', value)
             value = re.sub(r'(?i)(?:sk-[\w-]+|pk-lf-[\w-]+|AIza[\w-]+|Bearer\s+\S+)', '[REDACTED_KEY]', value)
             value = re.sub(r'(?i)\b(latitude|longitude|lat|lng|lon)\s*[:=]\s*[-+]?\d*\.?\d+', r'\1=[REDACTED]', value)
+
+            def _mask_vn_coord_pair(m: re.Match) -> str:
+                try:
+                    c1 = float(m.group(1))
+                    c2 = float(m.group(2))
+                    if 8.0 <= c1 <= 24.0 and 102.0 <= c2 <= 110.0:
+                        return "[COORDINATES_REDACTED]"
+                except Exception:
+                    pass
+                return m.group(0)
+
+            value = re.sub(r'(\b\d{1,2}(?:\.\d+)?)\s*,\s*(\b\d{2,3}(?:\.\d+)?)', _mask_vn_coord_pair, value)
             return sanitize_pii(value[:12000])[0]
         if value is None or isinstance(value, (int, float, bool)):
             return value

@@ -263,6 +263,7 @@ def extract_approximate_label(label: str | None) -> str | None:
     Rút gọn nhãn vị trí cho nhân viên khi precision=APPROXIMATE.
     Chỉ giữ thông tin từ cấp phường/xã/quận/huyện/tỉnh/thành phố,
     loại bỏ số nhà, tên tòa nhà hoặc chi tiết chính xác.
+    Khớp cấp hành chính theo TỪ NGUYÊN VẸN ở ĐẦU TỪNG ĐOẠN sau khi tách dấu phẩy.
     Nếu không tìm thấy cấp hành chính phù hợp, trả về None.
     """
     if not label or not label.strip():
@@ -272,20 +273,17 @@ def extract_approximate_label(label: str | None) -> str | None:
     if not parts:
         return None
 
-    ward_pattern = re.compile(
-        r"\b(phường|xã|thị trấn|quận|huyện|thị xã|thành phố|tỉnh|p\.|q\.|h\.|tx\.|tp\.)\b",
+    admin_prefix_pattern = re.compile(
+        r"^(phường|xã|thị trấn|quận|huyện|thị xã|thành phố|tỉnh|p\.|q\.|h\.|tx\.|tp\.)\b",
         re.IGNORECASE,
     )
 
     for i, part in enumerate(parts):
-        m = ward_pattern.search(part)
-        if m:
-            first_part_cleaned = part[m.start():].strip()
-            remaining_parts = [first_part_cleaned] + parts[i + 1:]
-            return ", ".join(remaining_parts)
+        if admin_prefix_pattern.match(part):
+            return ", ".join(parts[i:])
 
     major_provinces = re.compile(
-        r"\b(hà nội|hồ chí minh|đà nẵng|hải phòng|cần thơ|bình dương|đồng nai|quảng ninh|khánh hòa|lâm đồng)\b",
+        r"\b(hà nội|hồ chí minh|đà nẵng|hải phòng|cần thơ|bình dương|đồng nai|quảng ninh|khánh hòa|lâm đồng|thừa thiên huế|huế)\b",
         re.IGNORECASE,
     )
     if len(parts) >= 2 and major_provinces.search(parts[-1]):

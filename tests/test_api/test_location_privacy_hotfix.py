@@ -367,3 +367,35 @@ def test_real_langfuse_callback_masks_customer_coordinates():
     assert "105.8524" not in sanitized
     assert "latitude=[REDACTED]" in sanitized
     assert "longitude=[REDACTED]" in sanitized
+
+
+def test_extract_approximate_label_whole_word_matching():
+    """Verify that extract_approximate_label matches admin keywords at start of comma parts."""
+    from src.api.staff import extract_approximate_label
+
+    # "Số 5 Xã Đàn, Đống Đa, Hà Nội" must not reveal "Số 5"
+    res1 = extract_approximate_label("Số 5 Xã Đàn, Đống Đa, Hà Nội")
+    assert res1 is not None
+    assert "Số 5" not in res1
+    assert res1 == "Đống Đa, Hà Nội"
+
+    # "Số 97 An Dương Vương, Phường An Đông, Thành phố Huế" -> "Phường An Đông, Thành phố Huế"
+    res2 = extract_approximate_label("Số 97 An Dương Vương, Phường An Đông, Thành phố Huế")
+    assert res2 == "Phường An Đông, Thành phố Huế"
+
+
+def test_observability_does_not_redact_normal_decimal_numbers():
+    """Verify that price, latency, and confidence score are not redacted."""
+    text = "Độ trễ: 0.45s, điểm tin cậy: 0.95, chi phí bảo dưỡng: 150000.50 VND"
+    masked = mask_telemetry(data=text)
+    assert "0.45" in masked
+    assert "0.95" in masked
+    assert "150000.50" in masked
+
+    # But raw coordinates in VN bounding box (8..24, 102..110) are masked
+    coord_text = "Vị trí xe hiện tại: 21.0285, 105.8542"
+    masked_coord = mask_telemetry(data=coord_text)
+    assert "21.0285" not in masked_coord
+    assert "105.8542" not in masked_coord
+    assert "[COORDINATES_REDACTED]" in masked_coord
+
