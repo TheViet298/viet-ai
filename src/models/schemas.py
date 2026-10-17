@@ -377,7 +377,7 @@ class CaseLocationOut(BaseModel):
     case_id: str
     status: str
     source: str
-    location_label: str
+    location_label: str | None = None
     latitude: float | None = None
     longitude: float | None = None
     precision: str

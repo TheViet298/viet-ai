@@ -2004,6 +2004,24 @@ def submit_case_location(
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {payload.case_id}")
     check_case_ownership(case, current_user)
 
+    # Validate Vietnam bounding box (lat 8-24, lng 102-110); ngoài khung -> 422
+    if payload.latitude is not None or payload.longitude is not None:
+        if payload.latitude is not None and (payload.latitude < 8.0 or payload.latitude > 24.0):
+            raise HTTPException(
+                status_code=422,
+                detail="Tọa độ vĩ độ nằm ngoài lãnh thổ Việt Nam (Vĩ độ 8-24).",
+            )
+        if payload.longitude is not None and (payload.longitude < 102.0 or payload.longitude > 110.0):
+            raise HTTPException(
+                status_code=422,
+                detail="Tọa độ kinh độ nằm ngoài lãnh thổ Việt Nam (Kinh độ 102-110).",
+            )
+    if payload.status == "CONSENTED" and (payload.latitude is None or payload.longitude is None):
+        raise HTTPException(
+            status_code=422,
+            detail="Trạng thái CONSENTED yêu cầu phải cung cấp tọa độ.",
+        )
+
     # Keep only the current location for this case, and never retain coordinates
     # after the customer switches to manual entry or withdraws sharing.
     location_label = sanitize_pii(payload.location_label.strip())[0]

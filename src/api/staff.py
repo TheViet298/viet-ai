@@ -1,3 +1,4 @@
+import re
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -257,6 +258,42 @@ def get_ticket_queue(
     )
 
 
+def extract_approximate_label(label: str | None) -> str | None:
+    """
+    Rút gọn nhãn vị trí cho nhân viên khi precision=APPROXIMATE.
+    Chỉ giữ thông tin từ cấp phường/xã/quận/huyện/tỉnh/thành phố,
+    loại bỏ số nhà, tên tòa nhà hoặc chi tiết chính xác.
+    Nếu không tìm thấy cấp hành chính phù hợp, trả về None.
+    """
+    if not label or not label.strip():
+        return None
+
+    parts = [p.strip() for p in label.split(",") if p.strip()]
+    if not parts:
+        return None
+
+    ward_pattern = re.compile(
+        r"\b(phường|xã|thị trấn|quận|huyện|thị xã|thành phố|tỉnh|p\.|q\.|h\.|tx\.|tp\.)\b",
+        re.IGNORECASE,
+    )
+
+    for i, part in enumerate(parts):
+        m = ward_pattern.search(part)
+        if m:
+            first_part_cleaned = part[m.start():].strip()
+            remaining_parts = [first_part_cleaned] + parts[i + 1:]
+            return ", ".join(remaining_parts)
+
+    major_provinces = re.compile(
+        r"\b(hà nội|hồ chí minh|đà nẵng|hải phòng|cần thơ|bình dương|đồng nai|quảng ninh|khánh hòa|lâm đồng)\b",
+        re.IGNORECASE,
+    )
+    if len(parts) >= 2 and major_provinces.search(parts[-1]):
+        return ", ".join(parts[1:])
+
+    return None
+
+
 @router.get("/tickets/{case_id}", response_model=ApiResponse[TicketDetailData])
 def get_ticket_detail(
     case_id: str,
@@ -305,17 +342,56 @@ def get_ticket_detail(
     # Location Data
     loc_out: CaseLocationOut | None = None
     if case.location:
-        loc_out = CaseLocationOut(
-            case_id=case.location.case_id,
-            status=case.location.status,
-            source=case.location.source,
-            location_label=case.location.location_label,
-            latitude=case.location.latitude,
-            longitude=case.location.longitude,
-            precision=case.location.precision,
-            share_with_staff=case.location.share_with_staff,
-            created_at=to_iso(case.location.created_at),
-        )
+        if not case.location.share_with_staff:
+            loc_out = CaseLocationOut(
+                case_id=case.location.case_id,
+                status=case.location.status,
+                source=case.location.source,
+                location_label="Khách hàng không chia sẻ vị trí với nhân viên",
+                latitude=None,
+                longitude=None,
+                precision=case.location.precision,
+                share_with_staff=False,
+                created_at=to_iso(case.location.created_at),
+            )
+        elif case.location.status != "CONSENTED":
+            # Nếu status != CONSENTED (NOT_SHARED, MANUAL, UNKNOWN), tọa độ luôn là None kể cả khi DB còn tọa độ cũ
+            lbl = case.location.location_label
+            if case.location.status == "NOT_SHARED":
+                lbl = "Khách hàng không chia sẻ vị trí với nhân viên"
+            elif case.location.precision == "APPROXIMATE":
+                lbl = extract_approximate_label(lbl)
+
+            loc_out = CaseLocationOut(
+                case_id=case.location.case_id,
+                status=case.location.status,
+                source=case.location.source,
+                location_label=lbl,
+                latitude=None,
+                longitude=None,
+                precision=case.location.precision,
+                share_with_staff=case.location.share_with_staff,
+                created_at=to_iso(case.location.created_at),
+            )
+        else:
+            lat = case.location.latitude
+            lng = case.location.longitude
+            lbl = case.location.location_label
+            if case.location.precision == "APPROXIMATE":
+                lat = round(lat, 2) if lat is not None else None
+                lng = round(lng, 2) if lng is not None else None
+                lbl = extract_approximate_label(lbl)
+            loc_out = CaseLocationOut(
+                case_id=case.location.case_id,
+                status=case.location.status,
+                source=case.location.source,
+                location_label=lbl,
+                latitude=lat,
+                longitude=lng,
+                precision=case.location.precision,
+                share_with_staff=case.location.share_with_staff,
+                created_at=to_iso(case.location.created_at),
+            )
 
     # Updates Data
     updates_out: list[CaseUpdateOut] = []

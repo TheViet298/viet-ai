@@ -19,7 +19,8 @@ _identity: ContextVar[dict] = ContextVar('lf_identity', default={})
 _validation: ContextVar[dict] = ContextVar('lf_validation', default={})
 _PRIVATE = {'authorization', 'password', 'secret_key', 'public_key', 'api_key', 'token',
             'access_token', 'headers', 'image_url', 'inlinedata', 'inline_data', 'image',
-            'error', 'exception', 'stacktrace', 'captured_fields', 'memory_states', 'state'}
+            'error', 'exception', 'stacktrace', 'captured_fields', 'memory_states', 'state',
+            'latitude', 'longitude', 'location_label', 'lat', 'lng', 'lon'}
 _META = {'run_id', 'test_case_id', 'fault_injected', 'correlation_id', 'route', 'provider',
          'attempt', 'outcome', 'session_id', 'environment', 'release', 'usage_status'}
 
@@ -43,6 +44,7 @@ def mask_telemetry(*, data: Any, **kwargs: Any) -> Any:
         if isinstance(value, str):
             value = re.sub(r'data:image/[^\s"\']+', '[REDACTED_IMAGE]', value)
             value = re.sub(r'(?i)(?:sk-[\w-]+|pk-lf-[\w-]+|AIza[\w-]+|Bearer\s+\S+)', '[REDACTED_KEY]', value)
+            value = re.sub(r'(?i)\b(latitude|longitude|lat|lng|lon)\s*[:=]\s*[-+]?\d*\.?\d+', r'\1=[REDACTED]', value)
             return sanitize_pii(value[:12000])[0]
         if value is None or isinstance(value, (int, float, bool)):
             return value
