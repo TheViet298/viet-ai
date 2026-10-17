@@ -877,14 +877,11 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         )
         db.add(case_brief)
 
-        safe_guidance = (
-            EMERGENCY_SAFE_GUIDANCE
-        )
-        if is_turtle_critical:
-            safe_guidance += " Nếu xe đang trên cao tốc, chỉ di chuyển vào làn dừng khẩn cấp khi có thể thực hiện an toàn."
+        from src.agents.guardrails import build_emergency_safe_guidance
+        safe_guidance = build_emergency_safe_guidance(text, is_turtle_critical=is_turtle_critical)
         agent_reply = (
             f"Dạ VinFast đã ghi nhận tình trạng khẩn cấp của xe {vehicle_label}. "
-            f"Hệ thống đã tự động tạo hồ sơ khẩn cấp (Mã: {case.id}). Anh/chị vui lòng gọi hotline để được hỗ trợ.\n\n"
+            f"Hệ thống đã tự động tạo hồ sơ khẩn cấp (Mã: {case.id}). Quý khách vui lòng gọi hotline để được hỗ trợ.\n\n"
             f"⚠️ HƯỚNG DẪN AN TOÀN NGAY LẬP TỨC: {safe_guidance}"
         )
 
@@ -918,7 +915,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     if any(s.get("evidence_type") == "IMAGE_ROUTING" for s in attached_signals):
         if active_case and current_user:
             check_case_ownership(active_case, current_user)
-        reply = "Tôi chưa xác định chắc loại ảnh. Anh/chị vui lòng chọn loại ảnh táp-lô/trụ sạc hoặc ngoại thất xe rồi tải lại, hoặc gửi ảnh rõ hơn."
+        reply = "Dạ em chưa xác định chắc loại ảnh. Anh/chị vui lòng chọn loại ảnh táp-lô/trụ sạc hoặc ngoại thất xe rồi tải lại, hoặc gửi ảnh rõ hơn ạ."
         db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
                        sender_type=SenderType.AGENT.value, created_at=reply_created_at,
                        content=reply, msg_metadata={"response_type": "CLARIFICATION", "image_kind": "unknown"}))

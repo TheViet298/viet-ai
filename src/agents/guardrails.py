@@ -20,9 +20,46 @@ EMERGENCY_SAFE_GUIDANCE = (
     f"và gọi ngay Hotline Cứu hộ VinFast {VINFAST_HOTLINE} để được hỗ trợ khẩn cấp."
 )
 
+EMERGENCY_PARKED_CHARGING_SAFE_GUIDANCE = (
+    "Quý khách vui lòng giữ bình tĩnh, dừng phiên sạc hoặc nhấn nút ngắt khẩn cấp trên trụ sạc nếu có thể thực hiện an toàn, "
+    "tuyệt đối không chạm vào cáp sạc hoặc khu vực có khói/mùi khét, nhanh chóng rời khỏi xe ra khoảng cách an toàn (tối thiểu 15m) "
+    f"và gọi ngay Hotline Cứu hộ VinFast {VINFAST_HOTLINE} để được hỗ trợ khẩn cấp."
+)
+
 STANDARD_SAFE_GUIDANCE = (
     "Quý khách vui lòng giữ xe ở vị trí đỗ an toàn và theo dõi cập nhật trạng thái xử lý trực tiếp trên giao diện này."
 )
+
+
+def build_emergency_safe_guidance(text: str, is_turtle_critical: bool = False) -> str:
+    """Sinh hướng dẫn an toàn khẩn cấp phù hợp với ngữ cảnh xe đang đỗ/sạc hay đang di chuyển."""
+    lower = normalize_chat_text(text or "").lower()
+    unaccented = strip_accents(lower)
+    is_parked_or_charging = bool(
+        re.search(
+            r"\b(đang đỗ|đỗ tại|đang sạc|khi đang sạc|lúc đang sạc|cắm sạc|trạm sạc|trụ sạc|bãi đỗ|hầm để xe|trong hầm|"
+            r"dang do|do tai|dang sac|khi dang sac|luc dang sac|cam sac|tram sac|tru sac|bai do|ham de xe|trong ham)\b",
+            lower,
+        )
+        or re.search(
+            r"\b(dang do|do tai|dang sac|khi dang sac|luc dang sac|cam sac|tram sac|tru sac|bai do|ham de xe|trong ham)\b",
+            unaccented,
+        )
+    )
+    is_driving = bool(
+        re.search(
+            r"\b(đang chạy|đang lái|đang đi|trên cao tốc|trên đường|giữa đường|mất phanh|kẹt chân ga|nổ lốp|"
+            r"dang chay|dang lai|dang di|tren cao toc|tren duong|giua duong|mat phanh|ket chan ga|no lop)\b",
+            lower,
+        )
+    )
+    if is_parked_or_charging and not is_driving and not is_turtle_critical:
+        return EMERGENCY_PARKED_CHARGING_SAFE_GUIDANCE
+
+    guidance = EMERGENCY_SAFE_GUIDANCE
+    if is_turtle_critical:
+        guidance += " Nếu xe đang trên cao tốc, chỉ di chuyển vào làn dừng khẩn cấp khi có thể thực hiện an toàn."
+    return guidance
 
 # =====================================================================
 # Layer 1: Privacy & PII Sanitizer Guardrail

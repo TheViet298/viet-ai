@@ -1,6 +1,7 @@
 import pytest
 
 from src.agents.guardrails import (
+    build_emergency_safe_guidance,
     check_clarification_boundary,
     check_missing_fields,
     evaluate_hard_safety,
@@ -98,6 +99,18 @@ class TestHardSafetyRules:
         assert is_crit is False
         assert rule is None
         assert priority == "MEDIUM"
+
+    def test_parked_charging_emergency_guidance_tc08(self):
+        text = "Xe VF8 của tôi đang đỗ tại trạm sạc demo C, có khói và mùi khét ở khu vực pin khi đang sạc. Tôi cần làm gì ngay?"
+        guidance = build_emergency_safe_guidance(text, is_turtle_critical=False)
+        assert "tấp xe vào lề" not in guidance
+        assert "dừng phiên sạc" in guidance or "ngắt khẩn cấp" in guidance
+        assert "1900-232389" in guidance
+
+    def test_driving_emergency_guidance_keeps_pull_over(self):
+        text = "Xe VF9 đang chạy trên đường thì có mùi khét và bốc khói ở đầu xe."
+        guidance = build_emergency_safe_guidance(text, is_turtle_critical=False)
+        assert "tấp xe vào lề" in guidance
 
 
 class TestClarificationBoundary:
