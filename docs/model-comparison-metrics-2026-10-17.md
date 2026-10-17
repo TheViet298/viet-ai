@@ -158,17 +158,53 @@ Nếu usage không tách cached token thì không tự áp giá cache. Không c�
 
 Runner hiện tại có [Golden v2](../scripts/run_golden_v2_eval.py) và [live model eval](../scripts/run_live_model_eval.py), nhưng **chưa phải harness A/B đầy đủ**. Golden v2 hỗ trợ override chuẩn hóa và backend vision; cần cấu hình/runner bổ sung để đối chiếu tùy ý model agent/vision. Tài liệu này không thay cấu hình hoặc bổ sung runner.
 
-### Mẫu bảng kết quả để điền sau benchmark đối chứng
+### Bảng kết quả đã điền từ dữ liệu hiện có
 
-| Tác vụ | Model thực / version | N độc lập × lần lặp | Success % + CI95% | Safety FN / FP | P50 / P95 (s) | USD/1.000 request | USD/ca đạt | Error % | Attribution / usage coverage | Kết luận |
+Nguồn tính: run `golden-v2-live-36773c9061`, [results.json](../eval/results/golden-v2-20261017/live/results.json). Đây là **baseline quan sát được trong một lượt chạy**, chưa phải benchmark đối chứng. N là số case ID khác nhau, chưa chứng minh độc lập thống kê. `N/A` nghĩa là dữ liệu không đủ để tính hoặc không áp dụng.
+
+| Tác vụ / phạm vi | Model thực / version | N case × lần chạy | Success % + CI95% tham khảo | Safety FN / FP | P50 / P95 (s) | USD/1.000 request thực | USD/ca đạt thực | Lỗi provider / parse quan sát | Attribution / usage coverage SDK | Kết luận |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Agent | `gpt-4o-mini-2024-07-18` baseline | Chưa đo đối chứng | Chưa đo | Chưa đo | Chưa đo riêng | Chưa đủ cost | Chưa đủ cost | Chưa đo tải | Chưa đo trên tập đối chứng | Chờ benchmark |
-| Agent | `gpt-6-luna` | Chưa đo | Chưa đo | Chưa đo | Chưa đo | Chưa đo | Chưa đo | Chưa đo | Chưa đo | Chờ benchmark |
-| Agent | `gpt-6.1-sol` | Chưa đo | Chưa đo | Chưa đo | Chưa đo | Chưa đo | Chưa đo | Chưa đo | Chưa đo | Chờ benchmark |
-| Chuẩn hóa | `gemini-2.5-flash-lite` baseline cấu hình | Chưa có lượt đối chứng hợp lệ | BLOCKED ở lượt chẩn đoán | — | — | — | — | — | Thiếu generation | Xác nhận availability |
-| Chuẩn hóa | `gemini-3.5-flash-lite` | Chưa đo đối chứng | Có pilot mục 3; chưa có CI đối chứng | Chưa đo | Có pilot mục 3 | Chưa đủ cost | Chưa đủ cost | Chưa đo tải | Có ledger pilot | Chờ benchmark |
-| Vision | `gpt-6-luna` baseline | Chưa đo đối chứng ảnh thật | Có 15/16 ảnh tổng hợp | Chưa đo ảnh thật | Có pilot mục 3 | Chưa đủ cost | Chưa đủ cost | Chưa đo tải | Có ledger pilot | Chờ ảnh thật + đối chứng |
-| Vision | `gemini-3.5-flash-lite` hoặc `gpt-6.1-sol` | Chưa đo từng model | Chưa đo | Chưa đo | Chưa đo | Chưa đo | Chưa đo | Chưa đo | Chưa đo | Chạy riêng từng ứng viên |
+| Agent — 6 probe prompt, không gồm chuẩn hóa | `gpt-4o-mini-2024-07-18` | 6 × 1 | **83,33% (5/6)**; 43,65–96,99% | N/A; probe triage sai ưu tiên | **1,265 / 2,406** | N/A | N/A | **0% (0/6 lời gọi)** | **100% / 100% (6/6)** | Gọi và parse đủ 6 công đoạn; 1 probe sai nội dung |
+| Agent — pipeline safety/triage/RAG/multiturn | `gpt-4o-mini-2024-07-18` + router/hard rule/retrieval | 13 × 1 | **38,46% (5/13)**; 17,71–64,48% | **0 FN / 2 FP**, chỉ trên 3 ca nhóm safety của hàng này | **0,203 / 4,843** | N/A | N/A | **0% (0/8 lời gọi)** | **100% / 100% (8/8 lời gọi)**; 9/13 ca không yêu cầu bằng chứng model | Còn 8 ca FAIL toàn pipeline; không coi 38,46% là accuracy riêng GPT |
+| Chuẩn hóa — pipeline, loại probe trực tiếp | `gemini-3.5-flash-lite` — override eval | 4 × 1 | **100% (4/4)**; 51,01–100% | N/A; chưa có thống kê FN/FP riêng | **1,063 / 1,391** | N/A | N/A | **0% (0/4 lời gọi)** | **100% / 100% (4/4)** | Đạt 4 mẫu đã chọn; chưa chứng minh cấu hình 2.5 hoạt động |
+| Vision — ảnh tổng hợp | `gpt-6-luna` | 16 × 1 | **93,75% (15/16)**; 71,67–98,89% | N/A; lỗi symptom không tự quy thành safety FN của ứng dụng | **2,235 / 3,234** | N/A | N/A | **0% (0/16 lời gọi)** | **100% / 100% (16/16)** | 1 ca lỗi ánh xạ cảnh báo phanh; chưa đo ảnh xe thật |
+
+**Cách đọc các con số:**
+
+- Success là PASS toàn hợp đồng testcase. Tỷ lệ lỗi provider/parse là lỗi kỹ thuật trên lời gọi được ledger ghi nhận; không phải tỷ lệ FAIL nội dung hoặc error rate khi chịu tải. 0 lỗi kỹ thuật trong mẫu nhỏ không chứng minh hệ thống không lỗi.
+- P50/P95 là `duration_s` toàn testcase theo nearest-rank, gồm cả logic ứng dụng. Hàng multiturn có ca nhiều lượt; các hàng khác nhau không có workload đồng nhất, vì vậy không dùng bảng này để xếp hạng tốc độ model.
+- CI95% dùng Wilson hai phía, `z=1,959963984540054`, trên PASS/total. Đây chỉ là khoảng tham khảo nếu xem mẫu là Bernoulli độc lập; bộ ca chọn có chủ đích, nhãn chưa duyệt độc lập và có phụ thuộc giữa biến thể. Khoảng này **không phải** CI hiệu năng production hoặc chênh lệch A/B.
+- Attribution coverage tính trên lời gọi đã ghi nhận và xác nhận đúng model thực. Usage coverage ở đây chỉ yêu cầu `total_tokens > 0` trong ledger SDK; không chứng minh đủ breakdown input/output/cache/reasoning hoặc đủ hóa đơn. Cả 4 hàng có tổng 34 lời gọi; probe chuẩn hóa riêng có 1 lời gọi/215 token, PASS, 4,281s, nên tổng toàn run vẫn là 35 lời gọi.
+- Hàng pipeline có 9 ca `model_evidence_status=NOT_REQUIRED`, 4 ca `PASS`; 8 lời gọi đều ở 4 ca multiturn. Không lấy 8/8 để tuyên bố cả 13 ca đã gọi GPT. Riêng 3 ca nhóm safety có 1 ca nguy hiểm thật được phát hiện và 2 ca không nguy hiểm bị cảnh báo nhầm: FN=0, FP=2, false alarm=2/2. Đây không đại diện toàn bộ safety của run hoặc production.
+- Chưa điền chi phí thực vì Cloud thiếu generation so với SDK, còn ledger này chỉ có tổng token. Không thể phân bổ chính xác phần phí bị thiếu cho từng model/request/ca đạt.
+
+#### Chi phí ước tính để bổ sung phần giá thành
+
+Áp dụng đúng **snapshot giá ngày 17/10/2026 ở mục 5**, chưa phải usage/hóa đơn thực. Mỗi lời gọi giả định 1.000 token input không cache + 200 token output tính phí, không tool/retry/token bổ sung. Mỗi model được tính cùng lượng token; số token thực tế có thể khác.
+
+| Model | USD/lời gọi mẫu | USD/1.000 lời gọi mẫu | So với `gpt-4o-mini` trong phép tính này | Diễn giải |
+| --- | ---: | ---: | --- | --- |
+| `gemini-2.5-flash-lite` | 0,00018 | **0,18** | Thấp hơn 33,33% | Lợi thế đơn giá; vẫn phải xác nhận availability |
+| `gpt-6-luna` | 0,00020 | **0,20** | Thấp hơn 25,93% | Chưa chứng minh chi phí thực agent hoặc giá mỗi ảnh |
+| `gpt-4o-mini` | 0,00027 | **0,27** | Baseline 1,00× | Baseline đơn giá, chưa phải phí mỗi lượt hội thoại |
+| `gpt-4.1-mini` | 0,00072 | **0,72** | Cao gấp 2,67× | Đối chứng lịch sử, chưa có phép đo chất lượng P-142 |
+| `gemini-3.5-flash-lite` | 0,00080 | **0,80** | Cao gấp 2,96× | Pilot chuẩn hóa đạt nhưng chưa chứng minh hiệu quả chi phí hơn baseline |
+| `gpt-6.1-sol` | 0,00400 | **4,00** | Cao gấp 14,81× | Cần chứng minh cải thiện chất lượng tương ứng ngân sách |
+
+Không lấy phí lời gọi mẫu chia success rate của pilot để ghi thành “USD/ca đạt thực”: prompt, lượng token và số lời gọi mỗi ca không khớp. Đặc biệt, ca agent nhiều lượt có thể có nhiều generation, còn ca hard rule có thể không có generation.
+
+#### Phần đối chứng chưa có dữ liệu thực nghiệm
+
+| Tác vụ | Model yêu cầu | Tình trạng bằng chứng | Phần chưa thể điền hợp lệ |
+| --- | --- | --- | --- |
+| Agent | `gpt-6-luna` | Chưa chạy bộ agent đối chứng trong nguồn đang dùng | Success, latency, safety, error rate và chi phí thực |
+| Agent | `gpt-6.1-sol` | Chưa chạy đối chứng | Success, latency, safety, error rate và chi phí thực |
+| Chuẩn hóa | `gemini-2.5-flash-lite` | Probe cấu hình gốc BLOCKED; chưa xác nhận model thực | Accuracy và tốc độ model thành công; không đổi BLOCKED thành FAIL chất lượng |
+| Vision | `gemini-3.5-flash` | 5 ca BLOCKED; provider trả `gemini-3.6-flash` | Kết quả cho model yêu cầu; không gộp hai tên model |
+| Vision | `gemini-3.5-flash-lite` | Chưa chạy đối chứng vision | Toàn bộ metrics thực nghiệm vision |
+| Vision | `gpt-6.1-sol` | Chưa chạy đối chứng vision | Toàn bộ metrics thực nghiệm vision |
+
+Như vậy bảng đã điền được baseline chất lượng, latency, lỗi kỹ thuật và coverage; bảng giá đã có ước tính so sánh. Muốn có bảng đối chứng đầy đủ vẫn cần chạy thêm từng ứng viên trên cùng bộ ca, không thể suy ra kết quả model chưa chạy từ đơn giá hoặc mô tả nhà cung cấp.
 
 ## 7. Kết luận có thể dùng trong báo cáo
 
