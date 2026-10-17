@@ -435,12 +435,10 @@ async def test_public_support_insights(client):
     assert res.status_code == 200
     body = res.json()
     assert body["success"] is True
-    assert body["data"]["total"] >= 5
-    first_insight = body["data"]["items"][0]
-    assert "title" in first_insight
-    assert "symptom" in first_insight
-    assert "recommended_action" in first_insight
-    assert "hotline_support" in first_insight
+    # Synthetic repair recipes are withheld until claim-level source review.
+    assert body['data']['total'] == 0
+    assert body['data']['items'] == []
+
 
 
 @pytest.mark.asyncio

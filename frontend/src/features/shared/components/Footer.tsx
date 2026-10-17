@@ -4,9 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ScanLine, PhoneCall, ShieldCheck, FileCheck, BatteryCharging, Wrench, AlertTriangle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useLocale } from "../context/LocaleContext";
 import { ProductMark } from "./ProductMark";
 
 export function Footer() {
+  const { t } = useLocale();
   const pathname = usePathname();
   const { role } = useAuth();
 
@@ -36,13 +38,13 @@ export function Footer() {
         {/* Center: Policy & Quick Links */}
         <div className="flex items-center gap-4 text-slate-500 flex-wrap justify-center">
           <Link href="/chat" className="hover:text-[#1E40AF] transition">
-            Trợ lý Chat
+            {t("Trợ lý Chat")}
           </Link>
           <Link href="/track-case" className="hover:text-[#1E40AF] transition">
-            Yêu cầu của tôi
+            {t("Yêu cầu của tôi")}
           </Link>
           <Link href="/#knowledge-hub" className="hover:text-[#1E40AF] transition">
-            Cẩm nang kỹ thuật
+            {t("Cẩm nang kỹ thuật")}
           </Link>
           <a
             href="https://vinfastauto.com/vn_vi/chinh-sach-bao-mat-thong-tin"
@@ -50,13 +52,13 @@ export function Footer() {
             rel="noopener noreferrer"
             className="hover:text-[#1E40AF] transition"
           >
-            Chính sách bảo mật
+            {t("Chính sách bảo mật")}
           </a>
         </div>
 
         {/* Right: Hotline */}
         <div className="flex items-center gap-2">
-          <span className="text-slate-400 hidden md:inline">Cứu hộ khẩn cấp:</span>
+          <span className="text-slate-400 hidden md:inline">{t("Cứu hộ khẩn cấp:")}</span>
           <a
             href="tel:1900232389"
             className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 px-2.5 py-1 text-[11.5px] font-semibold transition"

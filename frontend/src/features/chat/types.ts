@@ -37,6 +37,7 @@ export interface VehicleCard {
 }
 
 export interface ChatResponseData {
+  language?: "vi" | "en";
   vehicle_comparison?: boolean;
   vehicle_cards?: VehicleCard[];
   emergency_context?: { case_id: string; incident_version: number; safety_status: string } | null;
@@ -69,6 +70,7 @@ export interface ApiResponse<T> {
 }
 
 export interface ChatMessage {
+  language?: "vi" | "en";
   vehicle_comparison?: boolean;
   vehicle_cards?: VehicleCard[];
   id: string;
@@ -194,4 +196,3 @@ export interface CustomerCaseDetailData {
     created_at: string;
   }>;
 }
-

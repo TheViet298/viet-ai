@@ -27,10 +27,12 @@ def words(text: str) -> set[str]:
 
 def select_supported_evidence(query: str, citations: list[dict]) -> list[dict]:
     """Preserve complete source lines and their conditions; never invent facts."""
-    from src.services.answer_evidence import answer_section
+    from src.services.answer_evidence import answer_section, has_color_evidence, is_color_question
     selected = []
     seen = set()
     for citation in citations:
+        if is_color_question(query) and not has_color_evidence(citation):
+            continue
         lines = citation["relevant_snippet"].splitlines()
         if not lines:
             continue
@@ -94,6 +96,8 @@ def model_applies(meta: dict, model: str | None) -> bool:
 
 def rank_candidates(query: str, rows: list[tuple]) -> list[tuple]:
     terms = words(query)
+    purpose = requested_source_type(query)
+    registry = source_registry()
     document_words = [words(row[0] or "") for row in rows]
     frequencies = Counter(term for terms_in_doc in document_words for term in terms_in_doc)
     total = max(1, len(rows))
@@ -103,23 +107,58 @@ def rank_candidates(query: str, rows: list[tuple]) -> list[tuple]:
         total_weight = sum(math.log(1 + total / max(1, frequencies[t])) for t in terms) or 1
         lexical = overlap / total_weight
         semantic = max(0, 1 - float(row[2]) / 2)
-        return (0.35 * lexical + 0.65 * semantic, -float(row[2]))
+        source_type = (row[1] or {}).get('source_type') or registry.get((row[1] or {}).get('source_id'), {}).get('source_type')
+        purpose_match = 0.2 if purpose and source_type == purpose else 0
+        return (0.35 * lexical + 0.65 * semantic + purpose_match, -float(row[2]))
     return [row for row, _ in sorted(zip(rows, document_words, strict=True), key=score, reverse=True)]
 
 
-def requested_source_type(query: str) -> str | None:
-    lower = query.lower()
+def requested_source_type(query: str, *, source_need: str | None = None) -> str | None:
+    from src.services.chat_normalization import normalize_chat_text
+    from src.services.answer_evidence import is_maintenance_schedule
+    lower = normalize_chat_text(query).lower()
+    if is_maintenance_schedule(query):
+        return 'official_manual'
+    if source_need == 'policy' and any(k in lower for k in ['phí sạc', 'giá sạc', 'biểu phí', 'trạm sạc', 'dịch vụ sạc']):
+        return 'official_service'
+    if source_need in {'catalog', 'policy', 'manual', 'guide'}:
+        return 'official_' + source_need
+    if 'bảo hành' in lower:
+        return 'official_policy'
+    if any(k in lower for k in ['ứng dụng', 'app', 'đăng nhập', 'mật khẩu', 'từ xa']):
+        return 'official_guide'
+    if re.search(r'mobile\s*service', lower):
+        return 'official_guide'
+    if any(k in lower for k in ['phí sạc', 'giá sạc', 'biểu phí', 'trạm sạc', 'dịch vụ sạc']):
+        return 'official_service'
+    if any(k in lower for k in ['ứng dụng', 'app', 'đăng nhập', 'mật khẩu', 'đặt lịch', 'từ xa']):
+        return 'official_guide'
+    if any(k in lower for k in ['adas', 'ngập nước', 'sổ tay']):
+        return 'official_manual'
     if any(k in lower for k in ["các dòng xe", "dòng xe", "các mẫu xe", "mẫu xe", "dải sản phẩm", "danh mục xe", "chi phí lăn bánh", "lăn bánh"]):
         return "official_catalog"
     if "bảo hành" in lower:
         return "official_policy"
-    if any(k in lower for k in ["dung lượng", "nedc", "quãng đường", "eco", "plus", "thông số"]):
+    if any(k in lower for k in ["dung lượng", "công suất", "nedc", "quãng đường", "eco", "plus", "thông số"]):
         return "official_catalog"
+    if re.search(r'\bmàu\b', lower):
+        return 'official_catalog'
     if any(k in lower for k in ["adas", "ngập nước", "sổ tay"]):
         return "official_manual"
     if any(k in lower for k in ["ứng dụng", "app", "đặt lịch", "từ xa"]) and not any(k in lower for k in ["trạm sạc", "sạc pin", "cứu hộ", "bảo dưỡng"]):
         return "official_guide"
     return None
+
+
+def requires_official_evidence(query: str, source_need: str | None = None) -> bool:
+    from src.services.vehicle_knowledge import is_general_vehicle_question
+    from src.services.answer_evidence import normalized
+    if source_need in {'guide', 'manual', 'policy', 'catalog'}:
+        return True
+    if not requested_source_type(query):
+        return False
+    return (not is_general_vehicle_question(query)
+            or bool(re.search(r'\b(?:app|ung dung|vinfast|vf\s*(?:[356789]|e34))\b|mobile\s*service', normalized(query))))
 
 
 def source_registry() -> dict[str, dict]:
@@ -173,7 +212,7 @@ def valid_citation(citation: dict, model: str | None = None) -> bool:
     try:
         dist = float(citation["distance"])
         max_dist = get_settings().rag_max_distance
-        if not (0 <= dist <= max_dist or (dist <= 1.05 and any(t in citation.get("relevant_snippet", "").lower() for t in ["sạc", "pin", "trạm sạc", "ứng dụng", "vinfast"]))):
+        if not 0 <= dist <= max_dist:
             return False
     except (KeyError, TypeError, ValueError):
         return False
@@ -186,19 +225,59 @@ class RAGService:
         return {"status": status, "best_distance": None, "citations": [],
                 "diagnostics": {"stage": "retrieval", "category": category, "status": status.lower(), "candidates": []}}
 
-    def retrieve(self, query: str, top_k: int = 3, vehicle_model: str | None = None) -> dict:
+    def retrieve(self, query: str, top_k: int = 3, vehicle_model: str | None = None, *, cost_subject: str | None = None, source_need: str | None = None) -> dict:
         settings = get_settings()
-        # Reviewed public catalog snapshots are data, never hardcoded runtime
-        # prices. Expired or unregistered snapshots fall back to normal retrieval.
+        # The same reviewed facts supply cards and quotes. Unknown/expired prices
+        # cannot fall back to an older differently scoped index price.
         from src.services.answer_evidence import normalized
-        if vehicle_model and re.search(r'\bgia\b', normalized(query)):
-            snapshot_path = PROJECT_ROOT / 'fixtures' / 'verified_public_prices.json'
-            if snapshot_path.is_file():
-                records = json.loads(snapshot_path.read_text(encoding='utf-8'))
-                variant = re.search(r'\b(plus|eco)\b', query, re.I)
+        if cost_subject is None:
+            from src.services.conversation_context import cost_subject_for
+            cost_subject = cost_subject_for(query)
+        technical_terms = {'range': ('quang duong', 'mot lan sac', 'di duoc', 'nedc', 'wltp'),
+                           'capacity': ('dung luong',), 'power': ('cong suat',)}
+        technical_keys = [key for key, terms in technical_terms.items() if any(term in normalized(query) for term in terms)]
+        if vehicle_model and technical_keys and requested_source_type(query, source_need=source_need) == 'official_catalog':
+            from src.services.vehicle_catalog import catalog_cards, catalog_citations, requested_variants
+            variants = requested_variants(normalized(query), vehicle_model, True)
+            cards = catalog_cards([vehicle_model])
+            if variants:
+                cards = [card for card in cards if card.variant in variants]
+            if not cards or len(cards) > top_k or (len(cards) > 1 and not variants):
+                return self.failure('NO_SOURCE', 'unresolved_catalog_scope')
+            citations = []
+            for card, citation in zip(cards, catalog_citations(cards), strict=True):
+                scope = citation['fact_scope']
+                if re.search(r'\b20\d{2}\b', query) and str(scope.get('model_year')) not in query:
+                    return self.failure('NO_SOURCE', 'unresolved_catalog_scope')
+                fields = [spec.label + ': ' + spec.value for spec in card.specs
+                          if any(any(term in normalized(spec.label) for term in technical_terms[key]) for key in technical_keys)]
+                if 'capacity' in technical_keys and card.battery_capacity:
+                    fields.append('Dung lượng pin khả dụng: ' + card.battery_capacity)
+                if not fields or len(fields) < len(technical_keys):
+                    return self.failure('NO_SOURCE', 'missing_catalog_fact')
+                snippet = '\n'.join(card.name + (' ' + scope['drivetrain'] if scope.get('drivetrain') else '')
+                                    + ': ' + field for field in fields)
+                candidate = {**citation, 'relevant_snippet': snippet, 'distance': 0.0}
+                if valid_citation(candidate, vehicle_model):
+                    citations.append(candidate)
+            if len(citations) != len(cards):
+                return self.failure('NO_SOURCE', 'unverified_catalog_fact')
+            if sum(utf8_size(c['relevant_snippet']) for c in citations) > settings.rag_context_max_bytes:
+                return self.failure('NO_SOURCE', 'context_budget_exceeded')
+            return {'status': 'SUCCESS', 'citations': citations, 'best_distance': 0.0,
+                    'diagnostics': {'stage': 'retrieval', 'category': 'verified_catalog_fact_snapshot'}}
+        if vehicle_model and cost_subject == 'vehicle_purchase':
+            from src.services.vehicle_catalog import public_price_snapshots, requested_variants
+            records = public_price_snapshots()
+            if records:
+                variants = requested_variants(normalized(query), vehicle_model, True)
                 evidence = []
                 for record in records:
-                    if record.get('model') != vehicle_model or variant and record.get('version', '').casefold() != variant[0].casefold():
+                    if record.get('model') != vehicle_model or variants and record.get('variant') not in variants:
+                        continue
+                    if record.get('price_vnd') is None:
+                        continue
+                    if re.search(r'\b20\d{2}\b', query) and str(record.get('model_year')) not in query:
                         continue
                     age = (date.today() - date.fromisoformat(record['verified_at'])).days
                     if not 0 <= age <= 7:
@@ -210,6 +289,7 @@ class RAGService:
                 if evidence:
                     return {'status': 'SUCCESS', 'citations': evidence[:top_k], 'best_distance': 0.0,
                             'diagnostics': {'stage': 'retrieval', 'category': 'verified_public_price_snapshot'}}
+                return self.failure('NO_SOURCE', 'no_current_scoped_price')
         if not Path(settings.chroma_persist_dir, "chroma.sqlite3").is_file():
             return self.failure("UNAVAILABLE", "missing_index")
         try:
@@ -218,9 +298,12 @@ class RAGService:
             if not count:
                 return self.failure("NO_SOURCE", "empty_collection")
             candidates = 20
-            source_type = requested_source_type(query)
+            source_type = requested_source_type(query, source_need=source_need)
             registry = source_registry()
-            allowed = [source_id for source_id, meta in registry.items() if meta["source_type"] == source_type] if source_type else []
+            eligible_types = {source_type}
+            if source_need == 'policy' or source_type == 'official_service':
+                eligible_types.update({'official_policy', 'official_service'})
+            allowed = [source_id for source_id, meta in registry.items() if meta["source_type"] in eligible_types] if source_type else []
             if not allowed:
                 # Source title relevance narrows service queries without benchmark IDs.
                 scores = {source_id: len(words(query) & words(meta["title"])) for source_id, meta in registry.items()}
@@ -242,7 +325,7 @@ class RAGService:
                 ) if (not allowed or meta.get("source_id") in allowed) and model_applies(meta or {}, vehicle_model)]
                 ranked = rank_candidates(query, rows)
                 # Do not lose supported candidates behind high-distance lexical hits.
-                cutoff = max(settings.rag_max_distance, 1.05) if any(t in query.lower() for t in ["sạc", "pin", "trạm sạc", "ứng dụng"]) else settings.rag_max_distance
+                cutoff = settings.rag_max_distance
                 shortlist = [row for row in ranked if row[2] <= cutoff][:candidates]
                 shortlist += [row for row in ranked if row[2] > cutoff][:max(0, candidates - len(shortlist))]
                 result = {"documents": [[r[0] for r in shortlist]], "metadatas": [[r[1] for r in shortlist]], "distances": [[r[2] for r in shortlist]], "ids": [[r[3] for r in shortlist]]}
@@ -316,7 +399,8 @@ class RAGService:
             if variant and source["source_type"] == "official_catalog" and not model_colors and variant.group().lower() not in (doc or "").lower():
                 diagnostics.append({"chunk_id": chunk_id, "reason": "variant_mismatch"})
                 continue
-            sections = select_supported_evidence(query, [{"relevant_snippet": doc or ""}])
+            sections = select_supported_evidence(query, [{**source, "catalog_scope": meta.get('catalog_scope'),
+                                                         "relevant_snippet": doc or ""}])
             if not sections:
                 reason = "procedure_goal_mismatch" if "đặt lịch" in query.casefold() and "đặt lịch" not in (doc or "").casefold() else "missing_answer_evidence"
                 diagnostics.append({"chunk_id": chunk_id, "reason": reason})
@@ -328,7 +412,9 @@ class RAGService:
             if any(term not in lower_excerpt for term in subjects) or (query and (not words(query) & words(excerpt) or len(words(excerpt)) < 6)):
                 diagnostics.append({"chunk_id": chunk_id, "reason": "missing_answer_subject"})
                 continue
-            procedure_requested = any(term in lower_query for term in ("hướng dẫn", "cách ", "làm thế nào", "như thế nào"))
+            from src.services.answer_evidence import is_maintenance_schedule
+            procedure_requested = (not is_maintenance_schedule(query)
+                                   and any(term in lower_query for term in ("hướng dẫn", "cách ", "làm thế nào", "như thế nào")))
             body = "\n".join(excerpt.splitlines()[1:]).casefold()
             if procedure_requested and "đặt lịch" in lower_query and "đặt lịch" not in excerpt.splitlines()[0].casefold():
                 diagnostics.append({"chunk_id": chunk_id, "reason": "procedure_goal_mismatch"})

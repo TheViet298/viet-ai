@@ -1,7 +1,9 @@
 "use client";
+import { useLocale } from "@/features/shared/context/LocaleContext";
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { toCustomerWarningText } from "@/features/shared/utils/customerWarningText";
 import {
   Search,
   CheckCircle2,
@@ -65,6 +67,7 @@ export interface TrackedCase {
   vehicleModel: string;
   vehicleCode: string;
   status:
+  | "New"
   | "Staff Reviewing"
   | "Needs Information"
   | "In Progress"
@@ -100,45 +103,6 @@ export interface TrackedCase {
   suggestedServicePoints?: ServicePointSeed[];
 }
 
-const SEED_SERVICE_POINTS: ServicePointSeed[] = [
-  {
-    id: "sp-01",
-    name: "Xưởng Dịch vụ VinFast Times City",
-    type: "SERVICE_WORKSHOP",
-    address: "Tầng B2, Vincom Mega Mall Times City, Hai Bà Trưng, Hà Nội",
-    distance: "1.2 km",
-    hotline: "1900-232389",
-    coords: { lat: 20.9951, lng: 105.8675 },
-  },
-  {
-    id: "sp-02",
-    name: "Xưởng Dịch vụ VinFast Trần Duy Hưng",
-    type: "SERVICE_WORKSHOP",
-    address: "Số 1 Trần Duy Hưng, Trung Hòa, Cầu Giấy, Hà Nội",
-    distance: "3.5 km",
-    hotline: "1900-232389",
-    coords: { lat: 21.0094, lng: 105.7981 },
-  },
-  {
-    id: "sp-03",
-    name: "Trạm sạc Siêu Nhanh Vincom Metropolis (250kW)",
-    type: "CHARGING_STATION",
-    address: "29 Liễu Giai, Ngọc Khánh, Ba Đình, Hà Nội",
-    distance: "2.8 km",
-    hotline: "1900-232389",
-    coords: { lat: 21.0315, lng: 105.8155 },
-  },
-  {
-    id: "sp-04",
-    name: "Đội Cứu hộ Phản ứng nhanh Cao Tốc Long Thành",
-    type: "EXPRESSWAY_RESCUE",
-    address: "Trạm điều hành nút giao Km 20, Cao tốc Long Thành - Dầu Giây",
-    distance: "4.5 km",
-    hotline: "1900-232389",
-    coords: { lat: 10.7821, lng: 106.8423 },
-  },
-];
-
 interface CuratedTopic {
   id: string;
   category: "CHARGING" | "DASHBOARD" | "WALLBOX" | "TIRE";
@@ -153,86 +117,79 @@ interface CuratedTopic {
 
 const CURATED_TOPICS: CuratedTopic[] = [
   {
-    id: "topic-01",
-    category: "CHARGING",
-    categoryLabel: "Sạc & Pin",
-    title: "Trụ sạc báo đèn đỏ hoặc lỗi bắt tay BMS (Mã CC01 / 0x41)",
-    symptoms: [
-      "Cắm súng sạc nhưng màn hình xe không đếm giờ sạc",
-      "Đèn LED trên đầu súng hoặc trụ sạc nháy đỏ liên tục",
-      "Màn hình xe báo 'Communication Timeout with Charger'",
+    "id": "topic-01",
+    "category": "CHARGING",
+    "categoryLabel": "Sạc & Pin",
+    "title": "Trụ sạc báo lỗi hoặc không bắt đầu sạc",
+    "symptoms": [
+      "Mã lỗi hoặc thông báo hiển thị trên trụ sạc",
+      "Trạng thái sạc hiển thị trên xe"
     ],
-    preparation: [
-      "Ghi nhận mã số trụ (ví dụ: P02, Trụ số 3)",
-      "Kiểm tra mức pin còn lại (% SoC) trên táp-lô",
-      "Chụp ảnh màn hình báo lỗi gửi vào Trợ lý Chat",
+    "preparation": [
+      "Cung cấp dòng xe, đời xe và mã trụ nếu có",
+      "Mô tả thông báo hoặc gửi ảnh khi có thể thực hiện an toàn"
     ],
-    suggestedPrompt: "Xe VF8 của tôi cắm sạc trụ P02 tại Vincom Metropolis báo lỗi CC01 đèn đỏ.",
-    citationTitle: "Cẩm nang hướng dẫn sạc DC VinFast - Mục 4.2 Lỗi kết nối BMS",
-    citationUrl: "https://vinfastauto.com/vn_vi/chinh-sach-va-bieu-phi-sac-pin-cong-cong",
+    "suggestedPrompt": "Xe của tôi không bắt đầu sạc. Tôi cần hỗ trợ kiểm tra thông báo trên xe và trụ sạc.",
+    "citationTitle": "Trang chính thức về sạc công cộng VinFast",
+    "citationUrl": "https://vinfastauto.com/vn_vi/chinh-sach-va-bieu-phi-sac-pin-cong-cong"
   },
   {
-    id: "topic-02",
-    category: "DASHBOARD",
-    categoryLabel: "Cảnh báo táp-lô",
-    title: "Biểu tượng Con Rùa Vàng (Turtle Warning) & Giới hạn công suất",
-    symptoms: [
-      "Xuất hiện biểu tượng con rùa màu vàng trên màn hình người lái",
-      "Xe tăng tốc chậm, tốc độ tối đa bị giới hạn dưới 40-50 km/h",
-      "Pin xe dưới 10% hoặc nhiệt độ hệ thống pin quá cao",
+    "id": "topic-02",
+    "category": "DASHBOARD",
+    "categoryLabel": "Cảnh báo táp-lô",
+    "title": "Biểu tượng Con Rùa Vàng (Turtle Warning)",
+    "symptoms": [
+      "Biểu tượng hoặc thông báo xuất hiện trên màn hình người lái",
+      "Thay đổi vận hành do người lái quan sát"
     ],
-    preparation: [
-      "Bật đèn hazard và tấp xe vào làn đường an toàn bên phải",
-      "Kiểm tra nhiệt độ động cơ/pin trên màn hình trung tâm",
-      "Không cố gắng đạp thốc ga trên đường dốc",
+    "preparation": [
+      "Cung cấp dòng xe, đời xe và nội dung cảnh báo",
+      "Tra cứu sổ tay đúng dòng xe và đời xe; liên hệ hỗ trợ nếu cần"
     ],
-    suggestedPrompt: "Xe VF5 của tôi hiện biểu tượng rùa vàng trên đường Nguyễn Trãi, pin còn dưới 10%.",
-    citationTitle: "Sổ tay an toàn vận hành xe điện VinFast - Chương 6 Đèn chỉ báo táp-lô",
-    citationUrl: "https://om.vinfastauto.com/vi_vn/detail?car=VF8&year=2026",
+    "suggestedPrompt": "Xe của tôi hiện biểu tượng rùa vàng. Tôi cần tra cứu hướng dẫn đúng dòng xe và đời xe.",
+    "citationTitle": "Chọn sổ tay sử dụng chính thức theo dòng xe",
+    "citationUrl": "https://om.vinfastauto.com/vi_vn/"
   },
   {
-    id: "topic-03",
-    category: "WALLBOX",
-    categoryLabel: "Sạc tại nhà",
-    title: "Bộ sạc treo tường 7.4kW / 11kW tự ngắt sau 1-2 tiếng sạc",
-    symptoms: [
-      "Bộ sạc gia đình đang sạc bình thường thì đèn chuyển màu vàng cam",
-      "Sờ vào thân dây sạc hoặc phích cắm thấy nóng ấm",
-      "Aptomat (CB) nhánh sạc trong tủ điện gia đình bị nhảy",
+    "id": "topic-03",
+    "category": "WALLBOX",
+    "categoryLabel": "Sạc tại nhà",
+    "title": "Bộ sạc tại nhà không hoạt động như mong đợi",
+    "symptoms": [
+      "Thông báo trên bộ sạc hoặc ứng dụng",
+      "Thời điểm sạc bị gián đoạn do người dùng ghi nhận"
     ],
-    preparation: [
-      "Kiểm tra thông gió khu vực lắp đặt bộ sạc",
-      "Không dùng chung đường điện sạc với thiết bị tiêu thụ công suất lớn",
-      "Hẹn kỹ thuật viên lưu động kiểm tra nhiệt độ dây nguồn",
+    "preparation": [
+      "Cung cấp loại bộ sạc và nội dung thông báo nếu có",
+      "Liên hệ đơn vị hỗ trợ bộ sạc để nhận hướng dẫn phù hợp"
     ],
-    suggestedPrompt: "Bộ sạc tại nhà 7.4kW sạc xe VF9 được 2 tiếng thì tự động ngắt nguồn.",
-    citationTitle: "Quy chuẩn lắp đặt và vận hành bộ sạc tại nhà VinFast Wallbox",
-    citationUrl: "https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast",
+    "suggestedPrompt": "Bộ sạc tại nhà của tôi bị gián đoạn. Tôi cần hỗ trợ theo loại bộ sạc và thông báo đang hiển thị.",
+    "citationTitle": "Hướng dẫn ứng dụng VinFast trên trang chính thức",
+    "citationUrl": "https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast"
   },
   {
-    id: "topic-04",
-    category: "TIRE",
-    categoryLabel: "Lốp xe & Khung gầm",
-    title: "Cảnh báo áp suất lốp TPMS tụt dưới mức tiêu chuẩn (2.0 bar)",
-    symptoms: [
-      "Đèn cảnh báo lốp màu vàng sáng kèm âm thanh cảnh báo khi khởi động",
-      "Màn hình xe hiển thị bánh xe màu đỏ/cam kèm chỉ số áp suất",
-      "Cảm giác tay lái bị kéo lệch nhẹ về một phía",
+    "id": "topic-04",
+    "category": "TIRE",
+    "categoryLabel": "Lốp xe & Khung gầm",
+    "title": "Cảnh báo áp suất lốp (TPMS)",
+    "symptoms": [
+      "Nội dung cảnh báo lốp hiển thị trên xe",
+      "Chỉ số áp suất đang hiển thị nếu có"
     ],
-    preparation: [
-      "Quan sát bề mặt lốp xem có dính đinh hoặc dị vật",
-      "Kiểm tra áp suất tiêu chuẩn ghi ở khung cửa ghế lái (thường là 2.3 - 2.4 bar)",
-      "Định vị xưởng dịch vụ hoặc trạm sạc có máy bơm lốp gần nhất",
+    "preparation": [
+      "Cung cấp dòng xe, đời xe và vị trí bánh xe có cảnh báo",
+      "Đối chiếu sổ tay đúng xe hoặc liên hệ xưởng dịch vụ để được hướng dẫn"
     ],
-    suggestedPrompt: "Lốp xe VF6 báo tụt áp suất còn 1.8 bar, cần tìm xưởng VinFast gần nhất.",
-    citationTitle: "Quy chuẩn bảo dưỡng lốp và cân bằng động xe điện VinFast",
-    citationUrl: "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
-  },
+    "suggestedPrompt": "Xe của tôi có cảnh báo áp suất lốp. Tôi cần hướng dẫn đúng dòng xe và hỗ trợ từ xưởng dịch vụ.",
+    "citationTitle": "Trang dịch vụ bảo dưỡng VinFast",
+    "citationUrl": "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto"
+  }
 ];
 
 const SAMPLE_CASES: Record<string, TrackedCase> = {};
 
 export default function TrackCasePage() {
+  const { t, language } = useLocale();
   const { user, role } = useAuth();
 
   // Tabs: "Yêu cầu của tôi" vs "Tình huống thường gặp"
@@ -314,21 +271,16 @@ export default function TrackCasePage() {
           ? rawModel.toUpperCase().startsWith("VF")
             ? rawModel.toUpperCase().replace(/\s+/g, "")
             : `VF${rawModel}`
-          : "Đang xác minh";
+          : t("Đang xác minh");
 
         // 2. Battery SoC & Warning light
         const rawSoc = captured.current_soc ?? captured.soc ?? null;
         const socDisplay =
           rawSoc !== null && rawSoc !== undefined
             ? `${String(rawSoc).replace(/%$/, "")}%`
-            : "Đang xác minh";
+            : t("Đang xác minh");
 
-        const warningLight =
-          captured.warning_symbol ||
-          captured.warning_light ||
-          captured.warning ||
-          captured.visual_signals ||
-          "";
+        const warningLight = toCustomerWarningText(captured);
         const rawErrorCode = captured.error_code || null;
 
         const isTurtle =
@@ -341,11 +293,11 @@ export default function TrackCasePage() {
         let summary = brief?.summary || c.summary || "";
         if (!summary || summary === "Hồ sơ sự cố tiếp nhận qua hệ thống VinFast ServiceFlow AI.") {
           if (isTurtle) {
-            summary = `${cleanModel !== "Đang xác minh" ? cleanModel + " · " : ""}Cảnh báo rùa vàng, xe giảm công suất`;
+            summary = `${cleanModel !== t("Đang xác minh") ? cleanModel + " · " : ""}Cảnh báo rùa vàng, xe giảm công suất`;
           } else if (warningLight) {
-            summary = `${cleanModel !== "Đang xác minh" ? cleanModel + " · " : ""}Cảnh báo ${warningLight}`;
+            summary = `${cleanModel !== t("Đang xác minh") ? cleanModel + " · " : ""}Cảnh báo ${warningLight}`;
           } else {
-            summary = `${cleanModel !== "Đang xác minh" ? cleanModel + " · " : ""}Hồ sơ hỗ trợ kỹ thuật`;
+            summary = `${cleanModel !== t("Đang xác minh") ? cleanModel + " · " : ""}Hồ sơ hỗ trợ kỹ thuật`;
           }
         }
 
@@ -369,7 +321,7 @@ export default function TrackCasePage() {
         const hasRealLocation = loc && loc.share_with_staff && loc.location_label;
         const locationLabel = hasRealLocation
           ? loc.location_label!
-          : "Gợi ý: Trạm sạc / Xưởng dịch vụ VinFast gần nhất";
+          : undefined;
 
         // 6. Safety Status & Incident Version
         const safetyStatus = c.safety_status || captured.safety_status || "unconfirmed";
@@ -384,7 +336,7 @@ export default function TrackCasePage() {
           id: c.id || caseId,
           vehicleModel: cleanModel,
           vehicleCode: c.vehicle_code_mock || "VF-SF-00231",
-          status: (c.status as TrackedCase["status"]) || "Staff Reviewing",
+          status: (c.status as TrackedCase["status"]) || "New",
           priority: (c.priority as TrackedCase["priority"]) || "HIGH",
           createdAt: c.created_at
             ? new Date(c.created_at).toLocaleTimeString("vi-VN", {
@@ -396,11 +348,11 @@ export default function TrackCasePage() {
             : "Hôm nay",
           issueSummary: summary,
           suggestedAction:
-            brief?.suggested_action || "Đang được xử lý bởi Cố vấn Dịch vụ.",
+            brief?.suggested_action || "",
           reviewerNotes:
             lastStaffUpdate?.customer_message ||
-            "Hồ sơ đang trong quy trình xử lý theo tiêu chuẩn xưởng.",
-          assignedTo: "Cố vấn Kỹ thuật VinFast",
+            t("Chưa có cập nhật từ chuyên viên."),
+          assignedTo: undefined,
           stationLocation: locationLabel,
           locationShared: Boolean(hasRealLocation),
           currentSoc: socDisplay,
@@ -411,9 +363,9 @@ export default function TrackCasePage() {
           safetyStatus: safetyStatus,
           incidentVersion: incidentVersion,
           chatSnippet: convSnippet.length > 0 ? convSnippet : undefined,
-          suggestedServicePoints: SEED_SERVICE_POINTS.slice(0, 2),
+          suggestedServicePoints: [],
           customerUpdate:
-            lastStaffUpdate?.status_after_update === "Resolved"
+            ["Resolved", "Closed"].includes(c.status) && lastStaffUpdate?.status_after_update === "Resolved"
               ? {
                   resolvedAt: lastStaffUpdate.created_at
                     ? new Date(lastStaffUpdate.created_at).toLocaleTimeString("vi-VN", {
@@ -423,20 +375,20 @@ export default function TrackCasePage() {
                     : undefined,
                   staffName: "Cố vấn Dịch vụ VinFast",
                   resolutionSummary:
-                    lastStaffUpdate.customer_message || "Sự cố đã được khắc phục.",
+                    lastStaffUpdate.customer_message || t("Chuyên viên đã cập nhật trạng thái xử lý. Vui lòng kiểm tra lại tình trạng xe."),
                   nextStepGuidance:
                     lastStaffUpdate.next_step ||
-                    "Anh/chị có thể an tâm tiếp tục hành trình.",
+                    t("Vui lòng xác nhận kết quả xử lý hoặc yêu cầu kiểm tra bổ sung."),
                 }
               : undefined,
         });
       } else {
-        const errMsg = typeof res?.error === "string" ? res.error : (res?.error as any)?.message || "Không tìm thấy dữ liệu hồ sơ";
+        const errMsg = typeof res?.error === "string" ? res.error : (res?.error as any)?.message || t("Không tìm thấy dữ liệu hồ sơ");
         throw new Error(errMsg);
       }
     } catch (err: any) {
       setCaseLoadError(
-        err?.message || "Không tải được chi tiết hồ sơ. Vui lòng thử lại."
+        t("Không tải được chi tiết hồ sơ. Vui lòng thử lại.")
       );
     } finally {
       setSearchLoading(false);
@@ -472,16 +424,17 @@ export default function TrackCasePage() {
     if (!currentCase) return;
     setIsConfirmingSafety(true);
     try {
-      await submitSafetyAcknowledgement(currentCase.id, {
+      const receipt = await submitSafetyAcknowledgement(currentCase.id, {
         incident_version: currentCase.incidentVersion || 1,
       });
+      if (!receipt.success || receipt.data.safety_status !== "customer_reported_safe") throw new Error("Safety not saved");
       setCurrentCase({
         ...currentCase,
         safetyStatus: "customer_reported_safe",
       });
-      setActionNotice("Đã ghi nhận vị trí an toàn của anh/chị. Đội ngũ kỹ thuật đang tiếp tục hỗ trợ.");
+      setActionNotice(t("Đã lưu xác nhận của anh/chị đang ở nơi an toàn. Trạng thái hồ sơ không thay đổi."));
     } catch (err: any) {
-      setActionNotice("Không thể xác nhận an toàn: " + (err?.message || "Lỗi kết nối"));
+      setActionNotice(t("Chưa lưu được xác nhận an toàn. Anh/chị vui lòng thử lại."));
     } finally {
       setIsConfirmingSafety(false);
     }
@@ -501,19 +454,15 @@ export default function TrackCasePage() {
     setIsSubmittingConfirm(true);
     setActionNotice(null);
     try {
-      await confirmCustomerCase(currentCase.id, {
+      const receipt = await confirmCustomerCase(currentCase.id, {
         confirmation: "RESOLVED_CONFIRMED",
       });
+      if (!receipt.success || receipt.data.status !== "Closed") throw new Error("Confirmation not saved");
       setConfirmStatus("RESOLVED_CONFIRMED");
       setCurrentCase({ ...currentCase, status: "Closed" });
-      setActionNotice("Cảm ơn anh/chị đã xác nhận! Hồ sơ đã được hoàn tất. Vui lòng dành 30 giây đánh giá chất lượng phục vụ.");
-    } catch (err: any) {
-      // Fallback nếu có lỗi mạng
-      setConfirmStatus("RESOLVED_CONFIRMED");
-      if (currentCase) {
-        setCurrentCase({ ...currentCase, status: "Closed" });
-      }
-      setActionNotice("Đã ghi nhận xác nhận của anh/chị! Vui lòng dành 30 giây đánh giá chất lượng phục vụ.");
+      setActionNotice(t("Cảm ơn anh/chị đã xác nhận! Hồ sơ đã được hoàn tất. Vui lòng dành 30 giây đánh giá chất lượng phục vụ."));
+    } catch {
+      setActionNotice(t("Chưa lưu được xác nhận. Hồ sơ chưa thay đổi; vui lòng thử lại."));
     } finally {
       setIsSubmittingConfirm(false);
     }
@@ -524,18 +473,20 @@ export default function TrackCasePage() {
     setIsSubmittingConfirm(true);
     setActionNotice(null);
     try {
-      await reopenCustomerCase(currentCase.id);
+      const receipt = await reopenCustomerCase(currentCase.id);
+      if (!receipt.success || receipt.data.status !== "Reopened") throw new Error("Reopen not saved");
       setConfirmStatus("REOPEN_REQUESTED");
       setCurrentCase({
         ...currentCase,
         status: "Reopened",
+        customerUpdate: undefined,
         reviewerNotes: reopenReason
-          ? `Khách yêu cầu mở lại: "${reopenReason}". Chuyên viên sẽ liên hệ lại ngay.`
-          : "Khách phản ánh sự cố chưa được khắc phục triệt để.",
+          ? `${t("Khách yêu cầu mở lại:")} "${reopenReason}"`
+          : t("Khách phản ánh sự cố chưa được khắc phục triệt để."),
       });
-      setActionNotice("Hồ sơ đã được chuyển lại cho Cố vấn Dịch vụ để kiểm tra bổ sung!");
+      setActionNotice(t("Hồ sơ đã được mở lại và đang chờ kiểm tra bổ sung."));
     } catch (err: any) {
-      setActionNotice("Lưu ý: " + (err?.message || "Không thể mở lại hồ sơ lúc này."));
+      setActionNotice(t("Không thể mở lại hồ sơ lúc này."));
     } finally {
       setIsSubmittingConfirm(false);
     }
@@ -552,10 +503,10 @@ export default function TrackCasePage() {
       });
       if (res?.success) {
         setFeedbackSubmitted(true);
-        setActionNotice("Cảm ơn anh/chị đã gửi đánh giá chất lượng dịch vụ!");
+        setActionNotice(t("Cảm ơn anh/chị đã gửi đánh giá chất lượng dịch vụ!"));
       }
     } catch (err: any) {
-      setActionNotice("Lưu ý: " + (err?.message || "Lỗi khi gửi đánh giá."));
+      setActionNotice(t("Lỗi khi gửi đánh giá."));
     } finally {
       setIsSubmittingFeedback(false);
     }
@@ -599,18 +550,20 @@ export default function TrackCasePage() {
 
   const getStatusLabel = (status: TrackedCase["status"]) => {
     switch (status) {
+      case "New":
+        return language === "en" ? "Awaiting review" : "Chờ tiếp nhận";
       case "Staff Reviewing":
-        return "Đang xác minh";
+        return t("Đang xác minh");
       case "Needs Information":
-        return "Cần làm rõ tin";
+        return t("Cần làm rõ tin");
       case "In Progress":
-        return "Đang xử lý";
+        return t("Đang xử lý");
       case "Reopened":
-        return "Đã mở lại";
+        return t("Đã mở lại");
       case "Resolved":
-        return "Đã xử lý xong";
+        return t("Đã xử lý xong");
       case "Closed":
-        return "Đã hoàn tất";
+        return t("Đã hoàn tất");
       default:
         return status;
     }
@@ -618,37 +571,43 @@ export default function TrackCasePage() {
 
   // Next Step Prominent Guidance Message
   const getNextStepInfo = (c: TrackedCase) => {
-    if (c.customerUpdate?.nextStepGuidance) {
+    if (["Resolved", "Closed"].includes(c.status) && c.customerUpdate?.nextStepGuidance) {
       return {
         highlight: c.customerUpdate.nextStepGuidance,
-        badge: "Chỉ dẫn từ Cố vấn",
+        badge: t("Chỉ dẫn từ Cố vấn"),
         isAlert: false,
       };
     }
     if (c.status === "Staff Reviewing") {
       return {
-        highlight: "Chuyên viên dịch vụ đang phân tích dữ liệu sự cố. Dự kiến phản hồi trong 3–5 phút.",
-        badge: "Bước tiếp theo",
+        highlight: t("Chuyên viên dịch vụ đang phân tích dữ liệu sự cố. Khi có cập nhật, thông tin sẽ hiển thị tại đây."),
+        badge: t("Bước tiếp theo"),
         isAlert: false,
       };
     }
     if (c.status === "Needs Information") {
       return {
-        highlight: "Vui lòng mở Trợ lý Chat gửi ảnh táp-lô hoặc xác nhận vị trí hỗ trợ.",
-        badge: "Cần thông tin",
+        highlight: t("Vui lòng mở Trợ lý Chat gửi ảnh táp-lô hoặc xác nhận vị trí hỗ trợ."),
+        badge: t("Cần thông tin"),
         isAlert: true,
       };
     }
     if (c.status === "In Progress") {
       return {
-        highlight: c.suggestedAction || "Kỹ thuật viên đang trong quá trình kiểm tra xử lý thực địa.",
-        badge: "Bước tiếp theo",
+        highlight: c.suggestedAction || t("Kỹ thuật viên đang trong quá trình kiểm tra xử lý thực địa."),
+        badge: t("Bước tiếp theo"),
         isAlert: false,
       };
     }
+    if (c.status === "New" || c.status === "Reopened") {
+      return {highlight: t(c.status === "New" ? t("Hồ sơ đã được ghi nhận và đang chờ tiếp nhận. Vui lòng theo dõi cập nhật tại đây.") : t("Hồ sơ đã được mở lại và đang chờ kiểm tra bổ sung.")), badge: t("Bước tiếp theo"), isAlert: false};
+    }
+    if (c.status !== "Resolved" && c.status !== "Closed") {
+      return {highlight: t("Chưa có chỉ dẫn tiếp theo được xác nhận. Vui lòng theo dõi cập nhật hồ sơ."), badge: t("Bước tiếp theo"), isAlert: false};
+    }
     return {
-      highlight: "Hồ sơ đã được xử lý hoàn tất. Chúc anh/chị vạn dặm bình an!",
-      badge: "Hoàn tất",
+      highlight: t("Hồ sơ đã được xử lý hoàn tất. Chúc anh/chị vạn dặm bình an!"),
+      badge: t("Hoàn tất"),
       isAlert: false,
     };
   };
@@ -681,15 +640,13 @@ export default function TrackCasePage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                  Yêu cầu của tôi
-                </h1>
+                  {t("Yêu cầu của tôi")}</h1>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-[#1E40AF] border border-blue-200/60">
-                  {role === "GUEST" ? "Guest" : "Thời gian thực"}
+                  {role === "GUEST" ? "Guest" : t("Thời gian thực")}
                 </span>
               </div>
               <p className="text-[12.5px] text-slate-500 mt-0.5">
-                Theo dõi tiến trình xử lý sự cố xe và hỗ trợ kỹ thuật trực tiếp từ VinFast.
-              </p>
+                {t("Theo dõi tiến trình xử lý sự cố xe và hỗ trợ kỹ thuật trực tiếp từ VinFast.")}</p>
             </div>
           </div>
 
@@ -706,7 +663,7 @@ export default function TrackCasePage() {
                   }`}
               >
                 <Clock className="w-3.5 h-3.5" />
-                <span>Hồ sơ xe</span>
+                <span>{t("Hồ sơ xe")}</span>
               </button>
 
               <button
@@ -718,7 +675,7 @@ export default function TrackCasePage() {
                   }`}
               >
                 <BookOpen className="w-3.5 h-3.5" />
-                <span>Tình huống thường gặp</span>
+                <span>{t("Tình huống thường gặp")}</span>
               </button>
             </div>
 
@@ -761,7 +718,7 @@ export default function TrackCasePage() {
                               {currentCase?.vehicleModel || "VF"} · {getStatusLabel((currentCase?.status as any) || "Staff Reviewing")} ({selectedCaseId.length > 18 ? selectedCaseId.slice(0, 15) + "..." : selectedCaseId})
                             </option>
                           ) : (
-                            <option value="">Chưa có hồ sơ xe</option>
+                            <option value="">{t("Chưa có hồ sơ xe")}</option>
                           )}
                         </>
                       )}
@@ -772,7 +729,7 @@ export default function TrackCasePage() {
                       type="button"
                       onClick={() => setIsSearchingCustom(true)}
                       className="ml-1.5 p-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-800 hover:bg-slate-50 shadow-2xs transition"
-                      title="Tìm mã hồ sơ khác"
+                      title={t("Tìm mã hồ sơ khác")}
                     >
                       <Search className="w-3.5 h-3.5" />
                     </button>
@@ -783,7 +740,7 @@ export default function TrackCasePage() {
                       type="text"
                       value={customSearchId}
                       onChange={(e) => setCustomSearchId(e.target.value)}
-                      placeholder="Mã hồ sơ (VD: CASE-001)..."
+                      placeholder={t("Mã hồ sơ (VD: CASE-001)...")}
                       className="w-40 bg-white border border-slate-300 rounded-xl px-2.5 py-1 text-[12px] font-mono font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20"
                       autoFocus
                     />
@@ -792,7 +749,7 @@ export default function TrackCasePage() {
                       disabled={searchLoading}
                       className="px-2.5 py-1 rounded-xl bg-[#1E40AF] text-white text-[12px] font-semibold hover:bg-[#1D4ED8]"
                     >
-                      {searchLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Tìm"}
+                      {searchLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : t("Tìm")}
                     </button>
                     <button
                       type="button"
@@ -838,32 +795,29 @@ export default function TrackCasePage() {
             <div className="space-y-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-[11.5px] font-semibold">
                 <Car className="w-3.5 h-3.5 text-[#1E40AF]" />
-                Chưa đăng nhập
-              </span>
+                {t("Chưa đăng nhập")}</span>
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                Đăng nhập để theo dõi hồ sơ xe
-              </h2>
+                {t("Đăng nhập để theo dõi hồ sơ xe")}</h2>
               <p className="text-[13px] text-slate-500 max-w-lg mx-auto leading-relaxed">
-                Để đảm bảo an toàn và bảo mật thông tin phương tiện, vui lòng đăng nhập tài khoản chủ xe để theo dõi tiến trình xử lý sự cố và cập nhật từ xưởng dịch vụ.
-              </p>
+                {t("Để đảm bảo an toàn và bảo mật thông tin phương tiện, vui lòng đăng nhập tài khoản chủ xe để theo dõi tiến trình xử lý sự cố và cập nhật từ xưởng dịch vụ.")}</p>
             </div>
 
             {/* 3 tính năng của Customer */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left pt-1">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-[12px] space-y-1">
                 <CheckCircle2 className="w-4 h-4 text-[#1E40AF]" />
-                <strong className="block text-slate-900 font-semibold">Tiến độ 4 bước</strong>
-                <span className="text-slate-500 text-[11.5px] leading-snug block">Cập nhật trạng thái thời gian thực từ xưởng dịch vụ</span>
+                <strong className="block text-slate-900 font-semibold">{t("Tiến độ 4 bước")}</strong>
+                <span className="text-slate-500 text-[11.5px] leading-snug block">{t("Cập nhật trạng thái thời gian thực từ xưởng dịch vụ")}</span>
               </div>
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-[12px] space-y-1">
                 <MessageSquare className="w-4 h-4 text-[#1E40AF]" />
-                <strong className="block text-slate-900 font-semibold">Chỉ dẫn kỹ thuật</strong>
-                <span className="text-slate-500 text-[11.5px] leading-snug block">Trao đổi và nhận hướng dẫn xử lý từ Cố vấn dịch vụ</span>
+                <strong className="block text-slate-900 font-semibold">{t("Chỉ dẫn kỹ thuật")}</strong>
+                <span className="text-slate-500 text-[11.5px] leading-snug block">{t("Trao đổi và nhận hướng dẫn xử lý từ Cố vấn dịch vụ")}</span>
               </div>
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-[12px] space-y-1">
                 <RotateCcw className="w-4 h-4 text-[#1E40AF]" />
-                <strong className="block text-slate-900 font-semibold">Nghiệm thu xe</strong>
-                <span className="text-slate-500 text-[11.5px] leading-snug block">Xác nhận hoàn tất hoặc mở lại hồ sơ (Reopen) khi cần</span>
+                <strong className="block text-slate-900 font-semibold">{t("Nghiệm thu xe")}</strong>
+                <span className="text-slate-500 text-[11.5px] leading-snug block">{t("Xác nhận hoàn tất hoặc mở lại hồ sơ (Reopen) khi cần")}</span>
               </div>
             </div>
 
@@ -873,7 +827,7 @@ export default function TrackCasePage() {
                 href="/login"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] px-5 py-2.5 text-[13px] font-semibold text-white shadow-2xs transition active:scale-[0.98]"
               >
-                <span>Đăng nhập tài khoản Khách hàng</span>
+                <span>{t("Đăng nhập tài khoản Khách hàng")}</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
 
@@ -883,7 +837,7 @@ export default function TrackCasePage() {
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 text-[13px] font-semibold text-slate-700 transition"
               >
                 <BookOpen className="w-4 h-4 text-slate-500" />
-                <span>Xem Tình huống thường gặp</span>
+                <span>{t("Xem Tình huống thường gặp")}</span>
               </button>
             </div>
           </div>
@@ -897,11 +851,9 @@ export default function TrackCasePage() {
             </div>
             <div className="space-y-2">
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                Chưa có hồ sơ sự cố nào
-              </h2>
+                {t("Chưa có hồ sơ sự cố nào")}</h2>
               <p className="text-[13px] text-slate-500 max-w-md mx-auto leading-relaxed">
-                Tài khoản của bạn hiện chưa ghi nhận sự cố xe nào đang xử lý. Bạn có thể trò chuyện với Trợ lý AI để yêu cầu hỗ trợ kỹ thuật hoặc tra cứu bằng mã hồ sơ cụ thể.
-              </p>
+                {t("Tài khoản của bạn hiện chưa ghi nhận sự cố xe nào đang xử lý. Bạn có thể trò chuyện với Trợ lý AI để yêu cầu hỗ trợ kỹ thuật hoặc tra cứu bằng mã hồ sơ cụ thể.")}</p>
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
               <Link
@@ -909,7 +861,7 @@ export default function TrackCasePage() {
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] px-5 py-2.5 text-[13px] font-semibold text-white shadow-2xs transition"
               >
                 <MessageSquare className="w-4 h-4" />
-                <span>Phản ánh sự cố xe với AI</span>
+                <span>{t("Phản ánh sự cố xe với AI")}</span>
               </Link>
               <button
                 type="button"
@@ -917,7 +869,7 @@ export default function TrackCasePage() {
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-slate-100 hover:bg-slate-200 px-5 py-2.5 text-[13px] font-medium text-slate-700 transition"
               >
                 <Search className="w-4 h-4" />
-                <span>Tra cứu mã hồ sơ</span>
+                <span>{t("Tra cứu mã hồ sơ")}</span>
               </button>
             </div>
           </div>
@@ -935,7 +887,7 @@ export default function TrackCasePage() {
                 <div className="bg-red-50 border border-red-200 rounded-2xl p-4 sm:p-5 text-red-900 space-y-3 animate-fadeIn">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
-                    <h3 className="font-bold text-[14px]">Không tải được chi tiết hồ sơ</h3>
+                    <h3 className="font-bold text-[14px]">{t("Không tải được chi tiết hồ sơ")}</h3>
                   </div>
                   <p className="text-[12.5px] text-red-800 leading-relaxed">
                     {caseLoadError}
@@ -946,7 +898,7 @@ export default function TrackCasePage() {
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-[12px] font-semibold transition"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Thử lại</span>
+                    <span>{t("Thử lại")}</span>
                   </button>
                 </div>
               )}
@@ -964,14 +916,12 @@ export default function TrackCasePage() {
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-[14.5px] font-bold text-amber-950">
-                          Anh/chị đã ở nơi an toàn chưa?
-                        </h3>
+                          {t("Anh/chị đã ở nơi an toàn chưa?")}</h3>
                         <span className="text-[11px] font-bold uppercase tracking-wider bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">
-                          Khẩn cấp an toàn
-                        </span>
+                          {t("Khẩn cấp an toàn")}</span>
                       </div>
                       <p className="text-[12.5px] text-amber-900/90 leading-relaxed">
-                        Phương tiện đang tạm dừng trên đường. Vui lòng bật đèn cảnh báo nguy hiểm (hazard), tấp xe vào lề phải hoặc làn dừng khẩn cấp và đứng sau dải hộ lan trước khi tiếp tục thao tác.
+                        {t("Ưu tiên tới khu vực an toàn nếu có thể và gọi hotline cứu hộ.")}
                       </p>
                     </div>
                   </div>
@@ -982,7 +932,7 @@ export default function TrackCasePage() {
                       className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-amber-300 text-amber-900 text-[12px] font-semibold hover:bg-amber-100/50 transition"
                     >
                       <PhoneCall className="w-3.5 h-3.5 text-red-600" />
-                      <span>Gọi cứu hộ 1900-232389</span>
+                      <span>{t("Gọi cứu hộ 1900-232389")}</span>
                     </a>
                     <button
                       type="button"
@@ -995,7 +945,7 @@ export default function TrackCasePage() {
                       ) : (
                         <ShieldCheck className="w-4 h-4" />
                       )}
-                      <span>Tôi đã ở vị trí an toàn</span>
+                      <span>{t("Tôi đã ở vị trí an toàn")}</span>
                     </button>
                   </div>
                 </div>
@@ -1016,7 +966,7 @@ export default function TrackCasePage() {
                           type="button"
                           onClick={() => handleCopyId(currentCase.id)}
                           className="font-mono text-slate-700 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md inline-flex items-center gap-1 transition"
-                          title="Sao chép mã hồ sơ"
+                          title={t("Sao chép mã hồ sơ")}
                         >
                           <span>{currentCase.id}</span>
                           {copiedId ? (
@@ -1050,8 +1000,7 @@ export default function TrackCasePage() {
 
                       {isCritical && (
                         <span className="rounded-full bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider animate-pulse">
-                          Cứu hộ khẩn
-                        </span>
+                          {t("Cứu hộ khẩn")}</span>
                       )}
                     </div>
                   </div>
@@ -1071,10 +1020,10 @@ export default function TrackCasePage() {
 
                     <div className="relative z-10 grid grid-cols-4 gap-1 text-center">
                       {[
-                        { step: 1, title: "Tiếp nhận", sub: "Ghi nhận ca" },
-                        { step: 2, title: "Xác minh", sub: "Làm rõ dữ kiện" },
-                        { step: 3, title: "Xử lý", sub: "Kỹ thuật / Xưởng" },
-                        { step: 4, title: "Hoàn tất", sub: "Nghiệm thu ca" },
+                        { step: 1, title: t("Tiếp nhận"), sub: t("Ghi nhận ca") },
+                        { step: 2, title: t("Xác minh"), sub: t("Làm rõ dữ kiện") },
+                        { step: 3, title: t("Xử lý"), sub: t("Kỹ thuật / Xưởng") },
+                        { step: 4, title: t("Hoàn tất"), sub: t("Nghiệm thu ca") },
                       ].map((s) => {
                         const isPassed = currentStep > s.step;
                         const isCurrent = currentStep === s.step;
@@ -1137,13 +1086,12 @@ export default function TrackCasePage() {
                 </div>
 
                 {/* 4. CUSTOMER UPDATE TỪ CỐ VẤN DỊCH VỤ (KHI CÓ KẾT QUẢ / NGHIỆM THU - ADR-005) */}
-                {currentCase.customerUpdate && (
+                {["Resolved", "Closed"].includes(currentCase.status) && currentCase.customerUpdate && (
                   <div className="p-4 sm:p-5 border-t border-slate-100 bg-emerald-50/30 space-y-3">
                     <div className="flex items-center justify-between text-[12px]">
                       <span className="font-bold text-emerald-900 flex items-center gap-1.5">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        Kết quả giải quyết từ Cố vấn Dịch vụ
-                      </span>
+                        {t("Kết quả giải quyết từ Cố vấn Dịch vụ")}</span>
                       <span className="text-[11px] text-emerald-700 font-mono">
                         {currentCase.customerUpdate.resolvedAt}
                       </span>
@@ -1154,10 +1102,10 @@ export default function TrackCasePage() {
                         {currentCase.customerUpdate.resolutionSummary}
                       </p>
                       <div className="pt-2 border-t border-slate-100 text-[12px] text-slate-600 flex items-start gap-1.5">
-                        <strong className="text-emerald-800 shrink-0">Chỉ dẫn tiếp theo:</strong>
+                        <strong className="text-emerald-800 shrink-0">{t("Chỉ dẫn tiếp theo:")}</strong>
                         <span>
-                          {currentCase.customerUpdate.nextStepGuidance?.toLowerCase().includes("khách hàng xác nhận")
-                            ? "Quý khách vui lòng kiểm tra lại tình trạng xe và chọn xác nhận bên dưới nếu sự cố đã được khắc phục hoàn toàn."
+                          {currentCase.customerUpdate.nextStepGuidance?.toLowerCase().includes(t("khách hàng xác nhận"))
+                            ? t("Quý khách vui lòng kiểm tra lại tình trạng xe và chọn xác nhận bên dưới nếu sự cố đã được khắc phục hoàn toàn.")
                             : currentCase.customerUpdate.nextStepGuidance}
                         </span>
                       </div>
@@ -1167,8 +1115,7 @@ export default function TrackCasePage() {
                     {confirmStatus === "IDLE" && currentCase.status === "Resolved" && (
                       <div className="pt-1 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-white p-3 rounded-xl border border-emerald-200">
                         <span className="text-[12px] text-slate-700 font-medium">
-                          Anh/chị đã hài lòng với kết quả xử lý của kỹ thuật viên chưa?
-                        </span>
+                          {t("Anh/chị đã hài lòng với kết quả xử lý của kỹ thuật viên chưa?")}</span>
 
                         <div className="flex items-center gap-2 shrink-0">
                           <button
@@ -1178,7 +1125,7 @@ export default function TrackCasePage() {
                             className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[12px] font-semibold transition active:scale-[0.98] disabled:opacity-50"
                           >
                             <ThumbsUp className="w-3.5 h-3.5" />
-                            <span>Đã được hỗ trợ</span>
+                            <span>{t("Đã được hỗ trợ")}</span>
                           </button>
 
                           <button
@@ -1188,7 +1135,7 @@ export default function TrackCasePage() {
                             className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-[12px] font-semibold transition active:scale-[0.98] disabled:opacity-50"
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
-                            <span>Vẫn chưa giải quyết</span>
+                            <span>{t("Vẫn chưa giải quyết")}</span>
                           </button>
                         </div>
                       </div>
@@ -1198,13 +1145,12 @@ export default function TrackCasePage() {
                     {confirmStatus === "REOPEN_REQUESTED" && currentCase.status !== "Reopened" && (
                       <div className="bg-white p-3.5 rounded-xl border border-amber-200 space-y-2 animate-fadeIn">
                         <label className="block text-[12px] font-semibold text-amber-900">
-                          Vui lòng cho biết vấn đề xe chưa khắc phục để Cố vấn kiểm tra lại:
-                        </label>
+                          {t("Vui lòng cho biết vấn đề xe chưa khắc phục để Cố vấn kiểm tra lại:")}</label>
                         <textarea
                           rows={2}
                           value={reopenReason}
                           onChange={(e) => setReopenReason(e.target.value)}
-                          placeholder="VD: Đèn cảnh báo vẫn còn sáng lại khi xe di chuyển..."
+                          placeholder={t("VD: Đèn cảnh báo vẫn còn sáng lại khi xe di chuyển...")}
                           className="w-full text-[12px] p-2.5 rounded-lg border border-amber-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
                         />
                         <div className="flex justify-end gap-2">
@@ -1213,15 +1159,14 @@ export default function TrackCasePage() {
                             onClick={() => setConfirmStatus("IDLE")}
                             className="px-3 py-1 rounded-lg text-[12px] text-slate-600 hover:bg-slate-100"
                           >
-                            Hủy
-                          </button>
+                            {t("Hủy")}</button>
                           <button
                             type="button"
                             disabled={isSubmittingConfirm}
                             onClick={handleReopenSubmit}
                             className="px-3 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[12px] font-semibold"
                           >
-                            {isSubmittingConfirm ? "Đang gửi..." : "Gửi yêu cầu kiểm tra lại"}
+                            {isSubmittingConfirm ? t("Đang gửi...") : t("Gửi yêu cầu kiểm tra lại")}
                           </button>
                         </div>
                       </div>
@@ -1235,8 +1180,7 @@ export default function TrackCasePage() {
                     <div className="flex items-center justify-between text-[12px]">
                       <span className="font-semibold text-slate-800 flex items-center gap-1.5">
                         <MessageSquare className="w-3.5 h-3.5 text-[#1E40AF]" />
-                        Cập nhật trao đổi gần nhất
-                      </span>
+                        {t("Cập nhật trao đổi gần nhất")}</span>
 
                       {currentCase.chatSnippet.length > 2 && (
                         <button
@@ -1244,7 +1188,7 @@ export default function TrackCasePage() {
                           onClick={() => setShowAllChat(!showAllChat)}
                           className="text-[11.5px] text-[#1E40AF] hover:underline font-medium inline-flex items-center gap-0.5"
                         >
-                          <span>{showAllChat ? "Thu gọn trao đổi" : `Xem toàn bộ trao đổi (${currentCase.chatSnippet.length})`}</span>
+                          <span>{showAllChat ? t("Thu gọn trao đổi") : `Xem toàn bộ trao đổi (${currentCase.chatSnippet.length})`}</span>
                           {showAllChat ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                         </button>
                       )}
@@ -1264,7 +1208,7 @@ export default function TrackCasePage() {
                                 : "bg-emerald-100 text-emerald-800"
                               }`}
                           >
-                            {msg.sender === "CUSTOMER" ? "BẠN" : msg.sender === "STAFF" ? "KTV" : "AI"}
+                            {msg.sender === "CUSTOMER" ? t("BẠN") : msg.sender === "STAFF" ? "KTV" : "AI"}
                           </span>
                           <p className="text-slate-800 flex-1 leading-relaxed">{msg.text}</p>
                           <span className="text-[10px] text-slate-400 font-mono shrink-0">{msg.time}</span>
@@ -1289,7 +1233,7 @@ export default function TrackCasePage() {
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] px-5 py-2.5 text-[13px] font-semibold text-white shadow-xs transition active:scale-[0.98]"
                   >
                     <MessageSquare className="h-4 w-4" />
-                    <span>Tiếp tục trao đổi trong Trợ lý Chat</span>
+                    <span>{t("Tiếp tục trao đổi trong Trợ lý Chat")}</span>
                   </Link>
                 </div>
 
@@ -1300,23 +1244,20 @@ export default function TrackCasePage() {
                       <div className="flex items-center gap-2">
                         <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
                         <h3 className="text-[13px] font-bold text-slate-900">
-                          Đánh giá chất lượng hỗ trợ
-                        </h3>
+                          {t("Đánh giá chất lượng hỗ trợ")}</h3>
                       </div>
                       <button
                         type="button"
                         onClick={() => setIsFeedbackDismissed(true)}
                         className="text-[11px] text-slate-400 hover:text-slate-600 transition"
                       >
-                        Đóng
-                      </button>
+                        {t("Đóng")}</button>
                     </div>
 
                     {feedbackSubmitted ? (
                       <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-2.5 text-[12.5px] font-semibold text-emerald-800 flex items-center gap-2">
                         <Check className="h-4 w-4 text-emerald-600" />
-                        Đã ghi nhận đánh giá của anh/chị. Cảm ơn anh/chị đã đóng góp ý kiến!
-                      </div>
+                        {t("Đã ghi nhận đánh giá của anh/chị. Cảm ơn anh/chị đã đóng góp ý kiến!")}</div>
                     ) : (
                       <div className="space-y-2.5">
                         <div className="flex items-center gap-1.5">
@@ -1337,12 +1278,12 @@ export default function TrackCasePage() {
                           ))}
                           <span className="ml-2 text-[12px] font-semibold text-slate-700">
                             {feedbackRating === 5
-                              ? "Rất hài lòng"
+                              ? t("Rất hài lòng")
                               : feedbackRating === 4
-                                ? "Hài lòng"
+                                ? t("Hài lòng")
                                 : feedbackRating === 3
-                                  ? "Bình thường"
-                                  : "Chưa hài lòng"}
+                                  ? t("Bình thường")
+                                  : t("Chưa hài lòng")}
                           </span>
                         </div>
 
@@ -1350,10 +1291,9 @@ export default function TrackCasePage() {
                         {feedbackRating <= 2 && (
                           <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/80 space-y-1.5">
                             <span className="text-[11px] text-amber-800 font-semibold block">
-                              Lý do chưa hài lòng (chọn nhanh):
-                            </span>
+                              {t("Lý do chưa hài lòng (chọn nhanh):")}</span>
                             <div className="flex flex-wrap gap-1.5">
-                              {["Chờ hỗ trợ lâu", "Lỗi xe chưa hết", "Hướng dẫn khó hiểu", "Thái độ chưa tốt"].map((tag) => {
+                              {[t("Chờ hỗ trợ lâu"), t("Lỗi xe chưa hết"), t("Hướng dẫn khó hiểu"), t("Thái độ chưa tốt")].map((tag) => {
                                 const isSelected = selectedFeedbackTags.includes(tag);
                                 return (
                                   <button
@@ -1382,7 +1322,7 @@ export default function TrackCasePage() {
                         <textarea
                           value={feedbackComment}
                           onChange={(e) => setFeedbackComment(e.target.value)}
-                          placeholder="Ý kiến đóng góp thêm về tốc độ và chất lượng phục vụ (tùy chọn)..."
+                          placeholder={t("Ý kiến đóng góp thêm về tốc độ và chất lượng phục vụ (tùy chọn)...")}
                           rows={2}
                           className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-[12px] text-slate-900 focus:border-[#1E40AF] focus:outline-none"
                         />
@@ -1393,15 +1333,14 @@ export default function TrackCasePage() {
                             onClick={() => setIsFeedbackDismissed(true)}
                             className="px-3 py-1.5 rounded-xl text-[12px] font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition"
                           >
-                            Để sau
-                          </button>
+                            {t("Để sau")}</button>
                           <button
                             type="button"
                             disabled={isSubmittingFeedback}
                             onClick={() => handleSubmitFeedback(currentCase.id)}
                             className="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-1.5 text-[12px] font-semibold text-white transition disabled:opacity-60"
                           >
-                            {isSubmittingFeedback ? "Đang gửi..." : "Gửi đánh giá"}
+                            {isSubmittingFeedback ? t("Đang gửi...") : t("Gửi đánh giá")}
                           </button>
                         </div>
                       </div>
@@ -1420,7 +1359,7 @@ export default function TrackCasePage() {
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                   <h3 className="text-[13.5px] font-bold text-slate-900 flex items-center gap-1.5">
                     <Car className="w-4 h-4 text-[#1E40AF]" />
-                    <span>Thông tin xe & Dữ kiện</span>
+                    <span>{t("Thông tin xe & Dữ kiện")}</span>
                   </h3>
                   <span className="text-[11px] font-mono text-slate-400">
                     {currentCase.vehicleCode}
@@ -1430,12 +1369,12 @@ export default function TrackCasePage() {
                 {/* Key-Value Pairs đặt sát nhau, không kéo ngang tạo khoảng trống */}
                 <div className="space-y-2 text-[12.5px]">
                   <div className="flex items-center justify-between py-1 border-b border-slate-50">
-                    <span className="text-slate-500">Dòng xe:</span>
+                    <span className="text-slate-500">{t("Dòng xe:")}</span>
                     <span className="font-semibold text-slate-900">{currentCase.vehicleModel}</span>
                   </div>
 
                   <div className="flex items-center justify-between py-1 border-b border-slate-50">
-                    <span className="text-slate-500">Mức pin (SoC):</span>
+                    <span className="text-slate-500">{t("Mức pin (SoC):")}</span>
                     <span
                       className={`font-semibold ${String(currentCase.currentSoc).includes("< 10%") ||
                         String(currentCase.currentSoc).includes("18%")
@@ -1443,12 +1382,12 @@ export default function TrackCasePage() {
                         : "text-slate-900"
                         }`}
                     >
-                      {currentCase.currentSoc || "Đang xác minh"}
+                      {currentCase.currentSoc || t("Đang xác minh")}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between py-1 border-b border-slate-50">
-                    <span className="text-slate-500">Cảnh báo / Hiện tượng:</span>
+                    <span className="text-slate-500">{t("Cảnh báo / Hiện tượng:")}</span>
                     {currentCase.warningSymbol ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-semibold text-[11.5px] bg-amber-50 text-amber-800 border border-amber-200">
                         <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
@@ -1460,13 +1399,13 @@ export default function TrackCasePage() {
                         {currentCase.errorCode}
                       </span>
                     ) : (
-                      <span className="text-slate-500 font-medium">Bình thường</span>
+                      <span className="text-slate-500 font-medium">{t("Bình thường")}</span>
                     )}
                   </div>
 
                   {currentCase.errorCode && currentCase.warningSymbol && (
                     <div className="flex items-center justify-between py-1 border-b border-slate-50">
-                      <span className="text-slate-500">Mã lỗi hệ thống:</span>
+                      <span className="text-slate-500">{t("Mã lỗi hệ thống:")}</span>
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-mono font-bold text-[11px] bg-red-50 text-red-700 border border-red-200">
                         <AlertCircle className="w-3 h-3 text-red-600" />
                         {currentCase.errorCode}
@@ -1476,7 +1415,7 @@ export default function TrackCasePage() {
 
                   {currentCase.chargerId && (
                     <div className="flex items-center justify-between py-1 border-b border-slate-50">
-                      <span className="text-slate-500">Trụ sạc:</span>
+                      <span className="text-slate-500">{t("Trụ sạc:")}</span>
                       <span className="font-medium text-slate-800 text-right truncate max-w-[170px]">
                         {currentCase.chargerId}
                       </span>
@@ -1487,23 +1426,23 @@ export default function TrackCasePage() {
                   {showTechDetails && (
                     <div className="pt-1.5 space-y-2 text-[12px] text-slate-600 bg-slate-50/70 p-2.5 rounded-xl border border-slate-100 animate-fadeIn">
                       <div className="flex items-center justify-between">
-                        <span>Chia sẻ GPS:</span>
+                        <span>{t("Chia sẻ GPS:")}</span>
                         <span className="font-medium">
                           {currentCase.locationConsent === "GRANTED" || currentCase.locationShared
-                            ? "Đã cấp quyền"
+                            ? t("Đã cấp quyền")
                             : currentCase.locationConsent === "MANUAL"
-                              ? "Nhập thủ công"
-                              : "Chưa bật"}
+                              ? t("Nhập thủ công")
+                              : t("Chưa bật")}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Chuyên viên phụ trách:</span>
+                        <span>{t("Chuyên viên phụ trách:")}</span>
                         <span className="font-medium text-slate-800 truncate max-w-[150px]">
-                          {currentCase.assignedTo || "Đội hỗ trợ VinFast"}
+                          {currentCase.assignedTo || t("Đội hỗ trợ VinFast")}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Thời gian tạo:</span>
+                        <span>{t("Thời gian tạo:")}</span>
                         <span className="font-mono text-slate-500">{currentCase.createdAt}</span>
                       </div>
                     </div>
@@ -1514,7 +1453,7 @@ export default function TrackCasePage() {
                     onClick={() => setShowTechDetails(!showTechDetails)}
                     className="w-full text-center text-[11.5px] text-[#1E40AF] hover:underline font-medium pt-1 block"
                   >
-                    {showTechDetails ? "Thu gọn thông số ▲" : "Xem thêm thông số phụ ▼"}
+                    {showTechDetails ? t("Thu gọn thông số ▲") : t("Xem thêm thông số phụ ▼")}
                   </button>
                 </div>
               </div>
@@ -1524,7 +1463,7 @@ export default function TrackCasePage() {
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                   <h3 className="text-[13.5px] font-bold text-slate-900 flex items-center gap-1.5">
                     <MapPin className="w-4 h-4 text-[#1E40AF]" />
-                    <span>Trạm / Điểm hỗ trợ</span>
+                    <span>{t("Trạm / Điểm hỗ trợ")}</span>
                   </h3>
                   <span
                     className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
@@ -1533,40 +1472,45 @@ export default function TrackCasePage() {
                         : "text-amber-700 bg-amber-50"
                     }`}
                   >
-                    {currentCase.locationShared ? "Đã định vị" : "Gợi ý"}
+                    {currentCase.locationShared ? t("Đã định vị") : t("Gợi ý")}
                   </span>
                 </div>
 
                 <div className="space-y-2 text-[12.5px]">
                   <div>
                     <h4 className="font-semibold text-slate-900 leading-snug">
-                      {currentCase.stationLocation || "Trạm sạc / Xưởng dịch vụ VinFast gần nhất"}
+                      {currentCase.stationLocation || t("Chưa có dữ liệu")}
                     </h4>
                     <p className="text-[11.5px] text-slate-500 mt-0.5 leading-relaxed">
                       {currentCase.locationShared
                         ? (currentCase.suggestedServicePoints?.[0]?.address ||
-                          "Vị trí đã được chia sẻ và xác minh từ thiết bị.")
+                          t("Vị trí đã được chia sẻ và xác minh từ thiết bị."))
                         : (currentCase.suggestedServicePoints?.[0]?.address ||
-                          "Chưa chia sẻ vị trí chính xác. Gợi ý trạm dịch vụ VinFast lân cận.")}
+                          t("Chưa chia sẻ vị trí chính xác. Gợi ý trạm dịch vụ VinFast lân cận."))}
                     </p>
                   </div>
 
                   <div className="pt-2 flex items-center justify-between">
-                    <span className="text-[11px] text-slate-400 font-mono">
-                      Khoảng cách: {currentCase.suggestedServicePoints?.[0]?.distance || "1.2 km"}
-                    </span>
+                    {currentCase.suggestedServicePoints?.[0]?.distance && (
+                      <span className="text-[11px] text-slate-400 font-mono">
+                        {t("Khoảng cách:")}{" "}{currentCase.suggestedServicePoints[0].distance}
+                      </span>
+                    )}
 
+                    {(currentCase.suggestedServicePoints?.[0]?.address ||
+                      (currentCase.locationShared && currentCase.stationLocation)) && (
                     <a
                       href={`https://maps.google.com/?q=${encodeURIComponent(
-                        currentCase.stationLocation || "Vincom Metropolis"
+                        currentCase.suggestedServicePoints?.[0]?.address || currentCase.stationLocation || ""
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 text-[#1E40AF] hover:bg-blue-100 text-[11.5px] font-semibold transition"
                     >
                       <Navigation className="w-3 h-3" />
-                      <span>Chỉ đường</span>
+                      <span>{t("Chỉ đường")}</span>
                     </a>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1576,13 +1520,11 @@ export default function TrackCasePage() {
                 <div className="flex items-center gap-2">
                   <PhoneCall className="w-4 h-4 text-red-600" />
                   <span className="text-[12px] font-bold text-red-900 uppercase tracking-wide">
-                    Hỗ trợ khẩn cấp 24/7
-                  </span>
+                    {t("Hỗ trợ khẩn cấp 24/7")}</span>
                 </div>
 
                 <p className="text-[12px] text-slate-600">
-                  Nếu xe gặp sự cố nguy hiểm trên đường hoặc cần cứu hộ khẩn cấp:
-                </p>
+                  {t("Nếu xe gặp sự cố nguy hiểm trên đường hoặc cần cứu hộ khẩn cấp:")}</p>
 
                 <a
                   href="tel:1900232389"
@@ -1609,24 +1551,24 @@ export default function TrackCasePage() {
                     type="text"
                     value={topicSearch}
                     onChange={(e) => setTopicSearch(e.target.value)}
-                    placeholder="Tìm theo triệu chứng, mã lỗi (VD: CC01, rùa vàng, lốp xe, sạc nhà)..."
+                    placeholder={t("Tìm theo triệu chứng, mã lỗi (VD: CC01, rùa vàng, lốp xe, sạc nhà)...")}
                     className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-[12.5px] text-slate-900 focus:outline-none focus:bg-white focus:border-[#1E40AF]"
                   />
                 </div>
 
                 <div className="text-[11.5px] text-slate-500 shrink-0">
-                  Nguồn: <strong className="text-slate-700">Tài liệu chính thức VinFast</strong>
+                  {t("Nguồn:")}<strong className="text-slate-700">{t("Tài liệu chính thức VinFast")}</strong>
                 </div>
               </div>
 
               {/* Chips Lọc Nhóm Tình Huống */}
               <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-slate-100">
                 {[
-                  { id: "ALL", label: "Tất cả" },
-                  { id: "CHARGING", label: "Sạc & Pin" },
-                  { id: "DASHBOARD", label: "Cảnh báo táp-lô" },
-                  { id: "WALLBOX", label: "Sạc tại nhà" },
-                  { id: "TIRE", label: "Lốp & Khung gầm" },
+                  { id: "ALL", label: t("Tất cả") },
+                  { id: "CHARGING", label: t("Sạc & Pin") },
+                  { id: "DASHBOARD", label: t("Cảnh báo táp-lô") },
+                  { id: "WALLBOX", label: t("Sạc tại nhà") },
+                  { id: "TIRE", label: t("Lốp & Khung gầm") },
                 ].map((c) => (
                   <button
                     key={c.id}
@@ -1661,10 +1603,10 @@ export default function TrackCasePage() {
                     >
                       <div className="flex items-center gap-2.5 flex-1 min-w-0">
                         <span className="shrink-0 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-[#1E40AF] border border-blue-200/60">
-                          {topic.categoryLabel}
+                          {t(topic.categoryLabel)}
                         </span>
                         <h3 className="text-[13.5px] font-bold text-slate-900 truncate">
-                          {topic.title}
+                          {t(topic.title)}
                         </h3>
                       </div>
 
@@ -1680,22 +1622,20 @@ export default function TrackCasePage() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[12.5px]">
                           <div className="space-y-1.5">
                             <span className="font-bold text-slate-800 block text-[12px]">
-                              Dấu hiệu nhận biết:
-                            </span>
+                              {t("Dấu hiệu nhận biết:")}</span>
                             <ul className="space-y-1 list-disc pl-4 text-slate-600">
                               {topic.symptoms.map((s, i) => (
-                                <li key={i}>{s}</li>
+                                <li key={i}>{t(s)}</li>
                               ))}
                             </ul>
                           </div>
 
                           <div className="space-y-1.5">
                             <span className="font-bold text-slate-800 block text-[12px]">
-                              Dữ kiện nên chuẩn bị:
-                            </span>
+                              {t("Dữ kiện nên chuẩn bị:")}</span>
                             <ul className="space-y-1 list-disc pl-4 text-slate-600">
                               {topic.preparation.map((p, i) => (
-                                <li key={i}>{p}</li>
+                                <li key={i}>{t(p)}</li>
                               ))}
                             </ul>
                           </div>
@@ -1709,16 +1649,16 @@ export default function TrackCasePage() {
                             className="text-[11.5px] text-[#1E40AF] hover:underline flex items-center gap-1 font-medium"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
-                            <span>{topic.citationTitle}</span>
+                            <span>{t(topic.citationTitle)}</span>
                           </a>
 
                           {/* Nút Hỏi AI chỉ xuất hiện trong phần mở ra */}
                           <Link
-                            href={`/chat?prompt=${encodeURIComponent(topic.suggestedPrompt)}`}
+                            href={`/chat?prompt=${encodeURIComponent(t(topic.suggestedPrompt))}`}
                             className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[12px] font-semibold transition shadow-2xs active:scale-[0.98]"
                           >
                             <Sparkles className="w-3.5 h-3.5" />
-                            <span>Hỏi Trợ lý Agent về tình huống này</span>
+                            <span>{t("Hỏi Trợ lý Agent về tình huống này")}</span>
                           </Link>
                         </div>
                       </div>
@@ -1729,7 +1669,7 @@ export default function TrackCasePage() {
 
               {filteredTopics.length === 0 && (
                 <div className="bg-white rounded-2xl p-8 text-center text-slate-500 border border-slate-200/80">
-                  <p className="text-[13px]">Không tìm thấy tình huống nào phù hợp với từ khóa.</p>
+                  <p className="text-[13px]">{t("Không tìm thấy tình huống nào phù hợp với từ khóa.")}</p>
                 </div>
               )}
             </div>

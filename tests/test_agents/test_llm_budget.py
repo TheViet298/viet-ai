@@ -41,7 +41,7 @@ async def test_rate_limit_opens_circuit_without_leaking_exception(enabled_llm, m
 
 
 @pytest.mark.asyncio
-async def test_turn_budget_prevents_second_foreground_call(enabled_llm, monkeypatch):
+async def test_turn_budget_caps_interpretation_and_reserves_generation(enabled_llm, monkeypatch):
     from src.services import llm
     calls = []
     parsed = TriageResult(intent="Sales/General Info", priority="LOW", confidence_score=0.9)
@@ -57,8 +57,11 @@ async def test_turn_budget_prevents_second_foreground_call(enabled_llm, monkeypa
     monkeypatch.setattr(llm, "get_llm", Fake)
     state = {"query": "VF8", "session_id": "one-call"}
     assert await structured_call(state, "triage", TriageResult) == parsed
+    assert await structured_call(state, "triage", TriageResult) == parsed
     assert await structured_call(state, "triage", TriageResult) is None
-    assert len(calls) == 1
+    assert await structured_call(state, "rag_qa", TriageResult) == parsed
+    assert await structured_call(state, "rag_qa", TriageResult) is None
+    assert len(calls) == 3
 
 
 @pytest.mark.asyncio

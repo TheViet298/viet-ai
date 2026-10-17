@@ -182,6 +182,7 @@ class ClientContext(BaseModel):
 
 
 class CustomerChatRequest(BaseModel):
+    language: Literal['vi', 'en'] | None = None
     request_id: str | None = Field(default=None, min_length=1, max_length=100)
     session_id: str = Field(default="sess_default", description="Mã phiên hội thoại (No-PII)")
     case_id: str | None = None  # e.g. CASE-20260924-001, null nếu là tin nhắn đầu tiên
@@ -202,6 +203,11 @@ class ApiResponseEnvelope(BaseModel):
 
 
 class Citation(BaseModel):
+    fact_scope: dict[str, Any] | None = None
+    claim_evidence: dict[str, Any] | None = None
+    source_section: str | None = None
+    specs_reviewed_at: str | None = None
+    price_evidence: dict[str, Any] | None = None
     source_id: str
     title: str
     url: str
@@ -247,6 +253,7 @@ class VehicleCard(BaseModel):
 
 
 class ChatResponseData(BaseModel):
+    language: Literal['vi', 'en'] = 'vi'
     vehicle_comparison: bool = False
     vehicle_cards: list[VehicleCard] = Field(default_factory=list)
     emergency_context: EmergencyContext | None = None
@@ -271,6 +278,7 @@ class ChatResponseData(BaseModel):
 
 
 class SessionHistoryMessageItem(BaseModel):
+    language: Literal['vi', 'en'] = 'vi'
     vehicle_comparison: bool = False
     vehicle_cards: list[VehicleCard] = Field(default_factory=list)
     id: str

@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale } from "@/features/shared/context/LocaleContext";
+
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -24,6 +26,7 @@ interface UserProfileModalProps {
 }
 
 export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
+  const { t } = useLocale();
   const { user, updateProfile } = useAuth();
 
   const [mounted, setMounted] = useState(false);
@@ -73,7 +76,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
   const customerIdCode = `VF-${user.id.replace(/-/g, "").slice(0, 8).toUpperCase()}`;
   const displayHeaderName =
     name.trim() ||
-    (user.name && !user.name.startsWith("CUST_MOCK") ? user.name : "Chủ xe VinFast");
+    (user.name && !user.name.startsWith("CUST_MOCK") ? user.name : t("Chủ xe VinFast"));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,7 +128,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
           onClick={onClose}
           disabled={saving}
           className="absolute top-4 right-4 z-10 p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-          aria-label="Đóng"
+          aria-label={t("Đóng")}
         >
           <X className="w-5 h-5" />
         </button>
@@ -143,12 +146,12 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                 </h2>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-[#1E40AF] border border-blue-200 text-[11px] font-semibold">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  Chủ xe xác thực
+                  {t("Chủ xe xác thực")}
                 </span>
               </div>
               <div className="flex items-center gap-3 mt-1 text-[12px] text-slate-500 font-mono">
                 <span>
-                  Mã hội viên: <strong className="text-slate-800">{customerIdCode}</strong>
+                  {t("Mã hội viên:")} <strong className="text-slate-800">{customerIdCode}</strong>
                 </span>
                 <span>•</span>
                 <span className="truncate">{user.email}</span>
@@ -173,7 +176,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
               ) : (
                 <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
               )}
-              <span>{statusMessage.text}</span>
+              <span>{t(statusMessage.text)}</span>
             </div>
           )}
 
@@ -182,7 +185,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
             <div className="space-y-1.5">
               <label className="block text-[13px] font-semibold text-slate-700 flex items-center gap-1.5">
                 <Car className="w-4 h-4 text-[#1E40AF]" />
-                Dòng xe điện đang sở hữu
+                {t("Dòng xe điện đang sở hữu")}
               </label>
               <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
                 {VINFAST_VEHICLES.map((model) => (
@@ -205,14 +208,14 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
             {/* Họ và tên */}
             <div className="space-y-1">
               <label htmlFor="profile-fullname" className="block text-[13px] font-semibold text-slate-700">
-                Họ và tên chủ xe
+                {t("Họ và tên chủ xe")}
               </label>
               <input
                 id="profile-fullname"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="VD: Nguyễn Văn Tuấn"
+                placeholder={t("VD: Nguyễn Văn Tuấn")}
                 required
                 className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-[13.5px] text-slate-900 placeholder:text-slate-400 focus:border-[#1E40AF] focus:ring-2 focus:ring-blue-100 focus:outline-none transition"
               />
@@ -225,14 +228,14 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                 className="block text-[13px] font-semibold text-slate-700 flex items-center gap-1.5"
               >
                 <Phone className="w-3.5 h-3.5 text-slate-400" />
-                Số điện thoại liên hệ nhận ca dịch vụ
+                {t("Số điện thoại liên hệ nhận ca dịch vụ")}
               </label>
               <input
                 id="profile-phone"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="VD: 0912345678"
+                placeholder={t("VD: 0912345678")}
                 className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-[13.5px] text-slate-900 placeholder:text-slate-400 focus:border-[#1E40AF] focus:ring-2 focus:ring-blue-100 focus:outline-none transition"
               />
             </div>
@@ -241,7 +244,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
             <div className="space-y-1">
               <label className="block text-[12px] font-medium text-slate-500 flex items-center gap-1.5">
                 <Mail className="w-3.5 h-3.5 text-slate-400" />
-                Tài khoản hệ thống (không đổi)
+                {t("Tài khoản hệ thống (không đổi)")}
               </label>
               <input
                 type="text"
@@ -261,7 +264,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
             disabled={saving}
             className="px-4 py-2 rounded-xl text-[13px] font-semibold text-slate-600 hover:bg-slate-100 transition"
           >
-            Hủy
+            {t("Hủy")}
           </button>
           <button
             type="submit"
@@ -272,12 +275,12 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
             {saving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Đang lưu...</span>
+                <span>{t("Đang lưu...")}</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Lưu thay đổi</span>
+                <span>{t("Lưu thay đổi")}</span>
               </>
             )}
           </button>

@@ -7,6 +7,11 @@ from contextlib import asynccontextmanager
 import httpx
 
 
+def final_response_diagnostics(*, answer_path: str, successful: bool, stages: list[dict]) -> dict:
+    return {'answer_path': answer_path, 'final_outcome': 'success' if successful else 'needs_verified_data',
+            'stage_outcomes': [{key: stage[key] for key in ('prompt', 'outcome') if key in stage} for stage in stages]}
+
+
 def failure_details(error: BaseException) -> dict:
     details = {'error_type': type(error).__name__, 'failure_kind': 'error'}
     cause = error

@@ -11,16 +11,17 @@ os.makedirs("data", exist_ok=True)
 settings = get_settings()
 db_url = settings.database_url
 
-if db_url.startswith("postgresql"):
+if db_url.startswith("postgresql://"):
     try:
         import psycopg  # noqa: F401
+        db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
     except ImportError:
         try:
             import psycopg2  # noqa: F401
             if db_url.startswith("postgresql://"):
                 db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
         except ImportError:
-            db_url = "sqlite:///./data/app.db"
+            raise RuntimeError("PostgreSQL requires an installed psycopg or psycopg2 driver; install the database dependencies.") from None
 
 is_sqlite = db_url.startswith("sqlite")
 connect_args = {"check_same_thread": False} if is_sqlite else {}

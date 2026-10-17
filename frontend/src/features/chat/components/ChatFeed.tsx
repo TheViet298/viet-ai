@@ -1,4 +1,5 @@
 "use client";
+import { useLocale } from "@/features/shared/context/LocaleContext";
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { ChatMessage } from "../types";
@@ -22,8 +23,8 @@ export function ChatFeed({
   showLocationCard,
   children,
 }: ChatFeedProps) {
+  const { t } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
   const isNearBottomRef = useRef(true);
   const lastSeenMsgCountRef = useRef(messages.length);
@@ -50,8 +51,9 @@ export function ChatFeed({
 
   // Cuộn xuống đáy một cách an toàn
   const scrollToBottom = useCallback((smooth = true) => {
-    if (!bottomRef.current) return;
-    bottomRef.current.scrollIntoView({
+    if (!containerRef.current) return;
+    containerRef.current.scrollTo({
+      top: containerRef.current.scrollHeight,
       behavior: smooth ? "smooth" : "auto",
     });
     setShowScrollBottomBtn(false);
@@ -118,10 +120,10 @@ export function ChatFeed({
 
             <div className="rounded-2xl rounded-tl-xs bg-slate-100 p-2.5 max-w-[85%] sm:max-w-[70%] space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-[11.5px] font-bold text-[#1E40AF]">Trợ lý VinFast AI</span>
+                <span className="text-[11.5px] font-bold text-[#1E40AF]">{t("Trợ lý VinFast AI")}</span>
                 <span className="text-[10.5px] text-slate-400 flex items-center gap-1 font-medium">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping inline-block" />
-                  <span>Đang xử lý</span>
+                  <span>{t("Đang xử lý")}</span>
                 </span>
               </div>
 
@@ -132,14 +134,13 @@ export function ChatFeed({
                   <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-bounce" />
                 </div>
                 <span className="text-[11.5px] text-slate-500 italic">
-                  Đang tra cứu cẩm nang kỹ thuật & đối chiếu an toàn...
-                </span>
+                  {t("Đang tra cứu cẩm nang kỹ thuật & đối chiếu an toàn...")}</span>
               </div>
             </div>
           </div>
         )}
 
-        <div ref={bottomRef} className="h-3 shrink-0" />
+        <div className="h-3 shrink-0" aria-hidden="true" />
       </div>
 
       {/* Nút nổi "↓ Tin mới" khi người dùng cuộn ngược lên trên */}
@@ -151,7 +152,7 @@ export function ChatFeed({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-900 text-white text-[11px] font-semibold shadow-md active:scale-95 transition"
           >
             <ArrowDown className="w-3 h-3" />
-            <span>Tin mới</span>
+            <span>{t("Tin mới")}</span>
           </button>
         </div>
       )}

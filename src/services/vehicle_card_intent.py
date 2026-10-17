@@ -5,12 +5,15 @@ Unknown requests conservatively retain the normal text response.
 """
 import re
 from typing import Literal
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.services.conversation_context import TurnUnderstanding
 
 from src.agents.guardrails import strip_accents
 
 CardIntent = Literal['overview', 'price', 'specifications', 'comparison', 'test_drive']
 _MODEL = r'(?:vinfast\s+)?vf\s*[356789]'
-_VARIANT = r'(?:\s+(?:(?:phien ban|ban)\s+)?(?:eco|plus))?'
+_VARIANT = r'(?:\s+(?:(?:phien ban|ban)\s+)?(?:(?:eco|plus)(?:\s+(?:awd|fwd))?|awd))?'
 _SERVICE = re.compile(
     r'bao hanh|bao duong|sua chua|thay pin|thay lop|phu tung|cuu ho|'
     r'ap suat lop|adas|\b(?:abs|bms|soc|soh|tpms)\b|ung dung|\bapp\b|tai khoan|ho so|'
@@ -28,30 +31,39 @@ def affirmative_vehicle_request(text: str) -> str:
     denied = re.compile(r'(?:khong\s+(?:(?:muon|can|co nhu cau)\s+)?|dung\s+)'
                         r'(?:tu van|mua|chon|lay|thich|gioi thieu|so sanh|dang ky|lai thu|thong so|gia|'
                         r'(?:hoi|xem)(?: ve)?\s+(?:gia|thong so|xe))')
-    return ' '.join(clause for clause in clauses if not denied.search(clause)).strip()
+    return ' '.join(' '.join(clause for clause in clauses if not denied.search(clause)).split())
 
 
 def classify_vehicle_card_intent(text: str, *, active_goal: str | None = None,
-                                 context_topic: str = '') -> CardIntent | None:
+                                 context_topic: str = '', understanding: 'TurnUnderstanding | None' = None) -> CardIntent | None:
     lower = affirmative_vehicle_request(text)
     if not lower:
         return None
+    if understanding is not None:
+        if understanding.request_kind in {'incident', 'complaint', 'oos'} or understanding.goal in {
+                'incident', 'complaint', 'out_of_scope', 'warranty', 'maintenance', 'application', 'charging_network', 'concept', 'appearance'}:
+            return None
+        if understanding.cost_subject not in {None, 'vehicle_purchase'}:
+            return None
+        active_goal = understanding.goal
     bare = bool(re.fullmatch(_MODEL + _VARIANT, lower))
     if bare:
         topic = strip_accents(context_topic.casefold()).replace('đ', 'd')
-        if active_goal not in {None, 'quote', 'test_drive', 'range', 'capacity'} or _SERVICE.search(topic):
+        if active_goal not in {None, 'overview', 'quote', 'test_drive', 'range', 'capacity'} or _SERVICE.search(topic):
             return None
         return 'overview'
 
     purchase = bool(re.search(r'(?:^|\b(?:muon|nen|dinh|du dinh|can)\s+|\btu van\s+)(?:mua|chon)\s+(?:xe\b|' + _MODEL + r')', lower))
-    overview = bool(re.search(r'tu van\s+(?:xe|mau xe)\b|gioi thieu\s+(?:xe|' + _MODEL + r')|\b(?:cac dong xe|cac mau xe|dai san pham|tong quan)\b', lower))
+    overview = is_generic_vehicle_overview(text) or bool(re.search(r'tu van\s+(?:xe|mau xe)\b|gioi thieu\s+(?:xe|' + _MODEL + r')|\b(?:cac dong xe|cac mau xe|dai san pham|tong quan)\b', lower))
     vehicle_price = bool(re.search(r'\bgia\s+(?:ban\s+(?:cua\s+)?|niem yet\s+(?:cua\s+)?|xe\s+)?' + _MODEL +
-                                   r'|^(?:xe\s+)?' + _MODEL + _VARIANT + r'\s+(?:gia|bao nhieu tien)|gia (?:ban xe|lan banh)|chi phi lan banh', lower))
+                                   r'|^(?:xe\s+)?' + _MODEL + _VARIANT + r'\s+(?:gia|bao nhieu tien)|gia (?:ban xe|lan banh)|chi phi lan banh|du toan lan banh', lower))
     # A complaint/technical question cannot be promoted by a nearby price or advice token.
     if re.search(r'khieu nai|phan anh|hoan tien', lower):
         return None
     if _SERVICE.search(lower) and not purchase:
         return None
+    if understanding is not None and understanding.goal == 'overview':
+        return 'overview'
     if vehicle_price:
         return 'price'
     if purchase or overview:
@@ -63,3 +75,30 @@ def classify_vehicle_card_intent(text: str, *, active_goal: str | None = None,
     if re.search(r'thong so|quang duong|di duoc|bao nhieu km|dung luong pin|\bkwh\b|cong suat|thoi gian sac|sac nhanh', lower):
         return 'specifications'
     return None
+
+
+def is_generic_vehicle_overview(text: str) -> bool:
+    lower = affirmative_vehicle_request(text)
+    lower = re.sub(r'^(?:xin )?chao(?: ban|em)?\s+', '', lower)
+    lower = re.sub(r'\s+(?:nhe|a)$', '', lower.strip(' .!?'))
+    lower = re.sub(r'^(?:ban )?tu van giup (?:toi|em) ', 'tu van ', lower)
+    lower = re.sub(r'^(?:toi |em )?muon tim hieu ', 'tim hieu ', lower)
+    if re.fullmatch(_MODEL + _VARIANT + r' co (?:nhung |cac )?phien ban nao', lower):
+        return True
+    if re.fullmatch(r'(?:toi |em )?(?:muon )?mua(?: xe)?\s+' + _MODEL + _VARIANT, lower):
+        return True
+    return bool(re.fullmatch(r'(?:tu van|gioi thieu|thong tin)(?: ve)?(?: xe| mau xe)?\s+'
+                             + _MODEL + _VARIANT, lower.strip(' .!?')) or re.fullmatch(
+        r'(?:(?:toi )?(?:muon )?hoi ve|cho (?:toi|em) (?:biet |xin )?thong tin(?: ve)?|tim hieu(?: ve)?|danh gia)'
+        r'(?: xe| mau xe)?\s+' + _MODEL + _VARIANT, lower.strip(' .!?')))
+
+
+def is_general_vehicle_advice(text: str) -> bool:
+    from src.services.chat_language import canonical_query
+    lower = affirmative_vehicle_request(canonical_query(text)).strip(' .!?')
+    return bool(re.fullmatch(
+        r'(?:(?:xin |chao |ban )?)(?:(?:toi|em|minh) )?(?:muon |can )?'
+        r'(?:tu van(?: chung)?(?: (?:giup|cho) (?:toi|em))?(?: ve)?(?: mua)?(?: cac)?(?: dong| mau)? xe|'
+        r'gioi thieu(?: ve)? (?:cac )?(?:dong |mau )?xe|'
+        r'(?:tim hieu|hoi)(?: ve)? (?:cac )?(?:dong |mau )?xe|cac (?:dong|mau) xe)'
+        r'(?: dien)?(?: vinfast)?(?: hien nay)?(?: nhe| a)?', lower))

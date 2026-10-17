@@ -35,7 +35,9 @@ async def test_rag_node_marks_generation_unavailable():
                         mock_settings.return_value.agent_turn_timeout_s = 10
                         mock_settings.return_value.rag_retrieval_timeout_s = 5
                         mock_settings.return_value.agent_llm_enabled = True
-                        mock_settings.return_value.agent_context_max_bytes = 4000
+                        # Reach the generation failure with the supported default
+                        # budget; a 4KB prompt now correctly stops at preflight.
+                        mock_settings.return_value.agent_context_max_bytes = 8000
                         res = await rag_node(state)
                         assert res["is_no_source"] is True
                         diag = res["retrieval_diagnostics"]

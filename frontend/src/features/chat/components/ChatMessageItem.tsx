@@ -1,4 +1,6 @@
 "use client";
+import { useLocale } from "@/features/shared/context/LocaleContext";
+import { parseServerTimestamp } from "@/lib/utils";
 import { VehicleInfoCard } from "./VehicleInfoCard";
 import { VehicleComparison } from "./VehicleComparison";
 
@@ -23,6 +25,7 @@ export function ChatMessageItem({
   showCaseBadge = false,
   onSelectReply,
 }: ChatMessageItemProps) {
+  const { t, language } = useLocale(message.language || "vi");
   const isCustomer = message.sender === "CUSTOMER";
   const hasVehicleCards = !isCustomer && Boolean(message.vehicle_cards?.length);
   const isComparison = hasVehicleCards && message.vehicle_comparison && message.vehicle_cards?.length === 2;
@@ -30,8 +33,7 @@ export function ChatMessageItem({
   // Chuẩn hóa ký tự bullet point, tách dòng nếu bị dồn và lọc emoji đầu mục
   const normalizedContent = useMemo(() => {
     if (!message.content) return "";
-    let text = message.content;
-    text = text.replace(/Thông số theo FAQ VinFast;\s*/gi, "");
+    let text = message.content.replace(/\\n/g, "\n");
 
     // 1. Xóa các mã nguồn học thuật thô lọt vào text (vd: [SRC-006], [SRC-001], [1], [2])
     text = text.replace(/\s*\[(?:SRC-[A-Za-z0-9_-]+|\d+)\]/g, "");
@@ -69,18 +71,18 @@ export function ChatMessageItem({
   }, [message.content]);
 
   return (
-    <div className={`flex flex-col ${isCustomer ? "items-end" : "items-start"} space-y-1.5`}>
+    <div lang={language} className={`flex flex-col ${isCustomer ? "items-end" : "items-start"} space-y-1.5`}>
       {/* Sender Label & Timestamp */}
       <div className="flex items-center gap-1.5 px-1 text-[11px] text-slate-400 font-medium">
-        <span>{isCustomer ? "Bạn" : "Trợ lý VinFast"}</span>
+        <span>{isCustomer ? t("Bạn") : t("Trợ lý VinFast")}</span>
         <span>·</span>
-        <span>{new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</span>
+        <span>{parseServerTimestamp(message.timestamp).toLocaleTimeString(language === "en" ? "en-US" : "vi-VN", { hour: "2-digit", minute: "2-digit" })}</span>
       </div>
 
       {hasVehicleCards && (
         <>
-          {isComparison ? <VehicleComparison cards={message.vehicle_cards!} /> : <div className="grid w-full max-w-[596px] grid-cols-1 gap-2 sm:grid-cols-2">
-            {message.vehicle_cards!.map(card => <VehicleInfoCard key={`${card.model}-${card.variant || card.name}`} card={card} />)}
+          {isComparison ? <VehicleComparison language={language} cards={message.vehicle_cards!} /> : <div className="grid w-full max-w-[596px] grid-cols-1 gap-2 sm:grid-cols-2">
+            {message.vehicle_cards!.map(card => <VehicleInfoCard language={language} key={`${card.model}-${card.variant || card.name}`} card={card} />)}
           </div>}
           {!isComparison && isLastMessage && message.suggested_replies?.length ? (
             <div className="grid w-full max-w-[596px] grid-cols-1 gap-2 py-2 sm:grid-cols-2">
@@ -251,9 +253,9 @@ export function ChatMessageItem({
         )}
 
         {/* Chỉ dẫn an toàn: gộp trực tiếp vào bong bóng dạng chữ đậm, KHÔNG TẠO HỘP VÀNG */}
-        {message.safe_guidance && (
+        {message.safe_guidance && !normalizedContent.replace(/\s+/g, " ").includes(message.safe_guidance.replace(/\s+/g, " ").trim()) && (
           <div className="mt-2 pt-1.5 border-t border-slate-200/60 text-[12px] text-amber-950 font-medium">
-            <strong>Chỉ dẫn: </strong>
+            <strong>{t("Chỉ dẫn:")}{" "}</strong>
             <span>{message.safe_guidance}</span>
           </div>
         )}
@@ -294,15 +296,14 @@ export function ChatMessageItem({
             <Check className="w-2.5 h-2.5" />
           </span>
           <span>
-            Đã tiếp nhận <strong className="font-mono text-slate-800">{message.case_id}</strong>
+            {t("Đã tiếp nhận")}{" "}<strong className="font-mono text-slate-800">{message.case_id}</strong>
           </span>
           <span>·</span>
           <Link
             href={`/track-case?case_id=${encodeURIComponent(message.case_id)}`}
             className="text-[#1E40AF] font-semibold hover:underline"
           >
-            Xem tiến trình ›
-          </Link>
+            {t("Xem tiến trình ›")}</Link>
         </div>
       )}
 

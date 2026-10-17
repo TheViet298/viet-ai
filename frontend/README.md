@@ -58,7 +58,9 @@ Giao diện người dùng cho hệ thống tiếp nhận & điều phối sự 
 
 ## ⚙️ Biến Môi Trường
 
-Mặc định frontend kết nối tới FastAPI Backend tại `http://localhost:8000`. Bạn có thể thay đổi bằng cách tạo file `.env.local`:
+Mặc định trình duyệt gọi `/api/v1` cùng origin với frontend; Next.js chuyển tiếp tới FastAPI tại `http://127.0.0.1:8000`. Có thể đặt `API_INTERNAL_URL` để đổi địa chỉ backend phía server (Docker Compose dùng `http://backend:8000`). Cấu hình này cho phép truy cập frontend từ máy khác mà không yêu cầu backend trên máy người xem.
+
+Nếu chủ ý cho trình duyệt gọi trực tiếp một API public, đặt `NEXT_PUBLIC_API_URL` trong `.env.local` trước khi build, đồng thời cấu hình CORS phía backend:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000

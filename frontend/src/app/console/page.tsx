@@ -1,10 +1,13 @@
 "use client";
 
+import { useLocale } from "@/features/shared/context/LocaleContext";
+
 import { useAuth } from "@/features/shared";
 import { StaffGuardGate, StaffConsoleShell } from "@/features/console";
 import { Loader2 } from "lucide-react";
 
 export default function ConsolePage() {
+  const { t } = useLocale();
   const { role, isReady } = useAuth();
 
   // Đang tải phiên đăng nhập từ localStorage -> Hiển thị skeleton nhẹ tránh giật lag UI
@@ -12,7 +15,7 @@ export default function ConsolePage() {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center gap-3 text-[#64748B]">
         <Loader2 className="w-6 h-6 animate-spin text-[#1E40AF]" />
-        <span className="text-[13px] font-medium">Đang xác thực cổng nghiệp vụ...</span>
+        <span className="text-[13px] font-medium">{t("Đang xác thực cổng nghiệp vụ...")}</span>
       </div>
     );
   }

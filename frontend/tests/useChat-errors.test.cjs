@@ -6,7 +6,8 @@ const vm = require('node:vm');
 const ts = require('typescript');
 
 // Exercise the hook's asynchronous transport flow without a browser or a live API.
-function harness(sendChatMessage) {
+function harness(sendChatMessage, language = "vi") {
+  let preferredLanguage = language;
   const states = [];
   const source = fs.readFileSync(path.join(__dirname, '../src/features/chat/hooks/useChat.ts'), 'utf8');
   const compiled = ts.transpileModule(source, {
@@ -17,6 +18,7 @@ function harness(sendChatMessage) {
     module, exports: module.exports, Date, Math, crypto: { randomUUID: () => 'test-request' },
     setTimeout: (callback) => callback(),
     require: (id) => {
+      if (id.endsWith('/LocaleContext')) return {useLocale: () => ({language, setLanguage: value => {preferredLanguage = value}, t: text => text}), translate: text => text};
       if (id === 'react') return {
         useState: (initial) => {
           const index = states.length;
@@ -33,7 +35,7 @@ function harness(sendChatMessage) {
       throw new Error(`Unexpected import: ${id}`);
     },
   });
-  return { hook: module.exports.useChat(), states };
+  return { hook: module.exports.useChat(), states, preferredLanguage: () => preferredLanguage };
 }
 
 for (const [name, text, transport] of [
@@ -104,4 +106,14 @@ test('chat sends no assumed vehicle and welcomes without a default model', async
   await hook.sendMessage('VF5 bảo hành bao lâu?');
   assert.equal(request.clientContext.vehicle_model, undefined);
   assert.equal(request.clientContext.vehicle_code_mock, undefined);
+});
+
+
+test('chat sends current locale and adopts the server response language', async () => {
+  let request;
+  const h = harness(async payload => {request=payload;return {success:true,data:{message:'English response',language:'en'}}}, 'vi');
+  await h.hook.sendMessage('Please answer in English');
+  assert.equal(request.language, 'vi');
+  assert.equal(h.states[0].at(-1).language, 'en');
+  assert.equal(h.preferredLanguage(), 'en');
 });

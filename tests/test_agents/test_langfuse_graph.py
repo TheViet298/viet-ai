@@ -52,7 +52,7 @@ async def test_budget_exhausted_records_outcome_without_provider(monkeypatch):
     monkeypatch.setattr(obs, '_client', capture)
     with obs.observation('root'):
         result = await structured_call({'session_id': 'budget', 'llm_budget': {
-            'attempts': 1, 'deadline': time.monotonic() + 10}}, 'memory', Reply)
+            'attempts': 3, 'deadline': time.monotonic() + 10}}, 'memory', Reply)
     assert result is None
     outcomes = [r for r in capture.records if r.fields['name'] == 'llm.outcome']
     assert outcomes[0].fields['metadata']['outcome'] == 'budget_exhausted'

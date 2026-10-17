@@ -15,8 +15,10 @@ client = TestClient(app)
 def test_customer_delete_single_and_all():
     """Kiểm tra người dùng đã đăng nhập xóa 1 session và xóa tất cả sessions."""
     db = SessionLocal()
-    user = db.query(User).filter(User.role == "CUSTOMER").first()
-    assert user is not None, "Cần có ít nhất 1 user CUSTOMER"
+    user = User(id=uuid.uuid4().hex, username='delete-fixture-' + uuid.uuid4().hex,
+                password_hash='unused', role='CUSTOMER')
+    db.add(user)
+    db.commit()
 
     token = create_token(user.id, user.role)
     headers = {"Authorization": f"Bearer {token}"}
