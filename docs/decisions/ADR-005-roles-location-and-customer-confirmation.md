@@ -6,8 +6,8 @@
 ## Quyết định
 
 * Có 3 role: `Guest`, `Customer`, `Staff`.
-* Guest được chat FAQ/tư vấn tối đa 5 lượt/phiên; phải login để tạo/theo dõi case.
-* Customer đăng ký/đăng nhập bằng SĐT + OTP demo. Không khẳng định đã xác minh chủ xe VinFast thật.
+* Guest được chat FAQ/tư vấn tối đa 5 lượt/phiên; phải login để tải ảnh và tạo/theo dõi case.
+* Customer đăng ký/đăng nhập bằng Username + Password (mật khẩu băm Argon2id, xác thực JWT Bearer Token). Không khẳng định đã xác minh chủ xe VinFast thật qua CRM.
 * Staff account seed/invite, không public register; Staff dùng public/chat ở preview mode.
 * Vị trí chỉ được lấy khi Customer chọn consent hoặc tự nhập; không đọc GPS từ ảnh/EXIF.
 * Map chỉ gợi ý điểm hỗ trợ phù hợp theo intent. P0 dùng 3–5 điểm seed, không điều phối thật.

@@ -314,7 +314,7 @@ P-142/
 │   └── test_eval/                  # Test bộ benchmark, chất lượng RAG
 ├── docs/                           # Tài liệu kỹ thuật, kiến trúc & thẩm định
 │   ├── architecture/               # Toàn bộ sơ đồ kiến trúc chuẩn hóa (SVG & Markdown)
-│   ├── decisions/                  # Kiến trúc quyết định (ADR-001 đến ADR-005)
+│   ├── decisions/                  # Kiến trúc quyết định (ADR-001 đến ADR-006)
 │   ├── product/                    # Phạm vi MVP, User Flows, Kịch bản Demo
 │   └── eval_evidences.md           # Báo cáo kiểm thử thực tế Gate 2
 ├── eval/                           # Dữ liệu benchmark & kết quả đánh giá AI
@@ -327,17 +327,22 @@ P-142/
 
 ## 8. Kết quả Thử nghiệm & Đánh giá (Evaluation Evidence)
 
-Theo quy định đánh giá của chương trình nhóm đã thực hiện:
+Theo quy định đánh giá của chương trình, nhóm đã thực hiện kiểm thử E2E trên hệ thống thực tế:
 - **Báo cáo chi tiết Gate 2:** Được ghi nhận đầy đủ tại [`docs/eval_evidences.md`](docs/eval_evidences.md).
-- **Phương pháp thực hiện:** Chạy 5 tình huống thực tế (TC01 đến TC05) qua API backend với dữ liệu thật, không mock phản hồi, kiểm tra toàn bộ luồng tạo case, hỏi làm rõ, kích hoạt an toàn và duyệt điều phối.
+- **Phương pháp thực hiện:** Chạy 10 kịch bản kiểm thử thực tế (`TC01` đến `TC10`) qua API backend với cơ sở dữ liệu thật, không mock phản hồi, kiểm tra toàn bộ luồng chào hỏi, giải thích kiến thức, tra cứu RAG, tiếp nhận khiếu nại, hỏi làm rõ tối đa 2 lượt, cập nhật ngữ cảnh, kích hoạt an toàn khẩn cấp, phân quyền RBAC và khép kín vòng đời xử lý của Staff.
 
-| Mã ca | Kịch bản kiểm tra | Intent | Kết quả thực tế | Trạng thái |
+| Mã ca | Kịch bản kiểm tra | Intent / Phạm vi | Kết quả thực tế | Trạng thái |
 | :---: | :--- | :---: | :--- | :---: |
-| **TC01** | Báo lỗi sạc trụ P01, nhân viên duyệt, khách theo dõi | `Charging/Battery` | Luồng bàn giao và cập nhật tiến độ chạy tốt; ghi nhận lỗi chuẩn hóa tên địa điểm | Cần tinh chỉnh |
-| **TC02** | Khách thiếu thông tin sau 2 lượt hỏi | `Charging/Battery` | Dừng hỏi đúng 2 lượt, tạo case `Needs Information` theo đúng ADR-002 | Cần tinh chỉnh |
-| **TC03** | Khách báo xe có mùi khét / nguy cơ bốc khói | `Service/Incident` | Kích hoạt cảnh báo khẩn cấp `CRITICAL` lập tức, gửi số Hotline cứu hộ | Cần tinh chỉnh |
-| **TC04** | Khách gửi khiếu nại thái độ dịch vụ | `Complaint/Feedback` | Tiếp nhận phản ánh, trích xuất brief và chuyển thẳng cho nhân viên | **ĐẠT (PASS)** |
-| **TC05** | Tra cứu cẩm nang bảo hành & giải thích đèn cảnh báo | `Sales/General Info` | RAG trích dẫn chính xác link tài liệu chính hãng của VinFast | **ĐẠT (PASS)** |
+| **TC01** | Giới thiệu khả năng hỗ trợ của Trợ lý AI | `Sales/General Info` | Trả lời trực tiếp các chức năng hỗ trợ kèm nút gợi ý; không tạo case thừa | **ĐẠT (PASS)** |
+| **TC02** | Giải thích ý nghĩa biểu tượng cảnh báo con rùa | `Sales/General Info` | Giải thích cơ chế giới hạn công suất (Turtle Mode), nêu rõ giới hạn kiến thức chung | **ĐẠT (PASS)** |
+| **TC03** | Tra cứu thời hạn bảo hành xe VinFast VF8 | `Sales/General Info` | Cả 3 lần gọi (cold/warm) đều trả đúng 10 năm / 200.000 km kèm trích dẫn nguồn `SRC-002` | **ĐẠT (PASS)** |
+| **TC04** | Tiếp nhận phản ánh / khiếu nại dịch vụ | `Complaint/Feedback` | Tự động tạo hồ sơ khiếu nại chuyển CSKH; không tự gán sai dòng xe khi khách chưa nêu | **ĐẠT (PASS)** |
+| **TC05** | Báo sự cố sạc đã cung cấp đủ dữ kiện ngay từ đầu | `Charging/Battery` | Bóc tách chính xác tên trạm sạc, mã trụ, mã lỗi, mức pin và tạo ngay hồ sơ `Staff Reviewing` | **ĐẠT (PASS)** |
+| **TC06** | Khách báo sự cố nhưng thiếu thông tin qua 3 lượt | `Service/Incident` | Hỏi làm rõ tối đa đúng 2 lượt; dừng hỏi và lập hồ sơ `Needs Information` ở lượt thứ 3 | **ĐẠT (PASS)** |
+| **TC07** | Khách đính chính lại dòng xe trong cùng phiên | `Charging/Battery` | Cập nhật dòng xe từ `VF8` sang `VF9` trên cùng mã hồ sơ, bảo toàn các dữ kiện trụ sạc/pin đã nhập | **ĐẠT (PASS)** |
+| **TC08** | Sự cố khói/mùi khét khẩn cấp khi xe đang đỗ sạc | `Service/Incident` | Tạo hồ sơ `CRITICAL`, bật banner khẩn cấp & hướng dẫn ngắt sạc, rời khỏi xe an toàn | **ĐẠT (PASS)** |
+| **TC09** | Kiểm tra phân quyền truy cập hồ sơ (RBAC & Ownership) | `Auth / Security` | Chủ hồ sơ đọc thành công (`200`); tài khoản Customer khác hoặc truy cập trái phép Staff Queue bị chặn (`403`) | **ĐẠT (PASS)** |
+| **TC10** | Nhân viên xử lý và khách hàng xác nhận đóng hồ sơ | `HITL Lifecycle` | Chuyển trạng thái chuẩn xác `In Progress` $\rightarrow$ `Resolved` $\rightarrow$ `Closed`, khớp toàn vẹn trên Database | **ĐẠT (PASS)** |
 
 ---
 
@@ -350,8 +355,8 @@ Theo quy định đánh giá của chương trình nhóm đã thực hiện:
 | 3 | **Architecture Diagram** | [`docs/architecture_diagram.md`](docs/architecture_diagram.md) & [`docs/architecture/`](docs/architecture/) | Hoàn thành (7 sơ đồ SVG) |
 | 4 | **AI Logs** | Ghi nhận tự động qua hooks đẩy lên hệ thống chấm | Đang hoạt động |
 | 5 | **Live URL / Deploy** | Cấu hình triển khai Web & API | Đang triển khai |
-| 6 | **Video Demo** | `presentation/video_demo.md` | Đang hoàn thiện |
-| 7 | **Pitch Deck** | `presentation/` | Đang hoàn thiện |
+| 6 | **Video Demo** | [`presentation/README.md`](presentation/README.md) | Đang hoàn thiện |
+| 7 | **Pitch Deck** | [`presentation/`](presentation/) | Đang hoàn thiện |
 | 8 | **Weekly Journal** | [`/JOURNAL.md`](JOURNAL.md) | Cập nhật định kỳ |
 | 9 | **Worklog** | [`/WORKLOG.md`](WORKLOG.md) | Cập nhật định kỳ |
 | 10 | **Evaluation Evidence** | [`docs/eval_evidences.md`](docs/eval_evidences.md) & thư mục `eval/` | Hoàn thành Gate 2 |

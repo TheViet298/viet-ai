@@ -1,8 +1,8 @@
 # Product Scope & Problem Definition (MVP)
 
 > **Người phụ trách chính:** Việt (Product Lead)  
-> **Cập nhật lần cuối:** 2026-09-24  
-> **Trạng thái:** In Review (Đã cập nhật theo kết quả khảo sát thăm dò ban đầu)
+> **Cập nhật lần cuối:** 2026-10-17  
+> **Trạng thái:** Approved (Đã đồng bộ theo bản triển khai thực tế và Auth Refactor)
 
 ---
 
@@ -61,10 +61,10 @@
 * **Case Brief Generation:** Tự động tóm tắt: *Vấn đề chính, Thông số xe (Model, Pin %), Mã lỗi/Hiện tượng, Mức độ ưu tiên, Hành động đề xuất cho Staff*.
 * **Web Support Hub & Image Triage:**
   * Web là kênh tiếp nhận duy nhất trong MVP. Có 3 role: `Guest`, `Customer`, `Staff`.
-  * Guest xem public content và chat tối đa 5 lượt/phiên để hỏi FAQ/tư vấn có citation; case cần theo dõi yêu cầu đăng nhập.
-  * Customer đăng nhập bằng SĐT + OTP demo, chat/tạo case/xem case của mình. Đây không phải xác minh chủ xe VinFast thật vì MVP không có CRM/API VinFast.
+  * Guest xem public content và chat tối đa 5 lượt/phiên để hỏi FAQ/tư vấn có citation; tải ảnh và tạo/theo dõi case yêu cầu đăng nhập.
+  * Customer đăng ký/đăng nhập bằng **Username + Password** (băm Argon2id, xác thực JWT Bearer Token), chat/tạo case/xem case của mình và tiếp quản liền mạch phiên chat Guest trước đó (`Atomic Session Claim`). Đây không phải xác minh chủ xe VinFast thật vì MVP không tích hợp CRM/API nội bộ của VinFast.
   * Staff dùng tài khoản seed/invite; xem Staff Console và có thể dùng public/chat ở chế độ preview.
-  * Customer gửi text, ảnh cảnh báo/táp-lô hoặc cả hai. Ảnh được lưu cùng case để Staff xem.
+  * Customer gửi text, ảnh cảnh báo/táp-lô hoặc ảnh ngoại thất thân vỏ. Ảnh được lưu cùng case để Staff xem.
   * Nếu bật Vision/OCR, Agent chỉ trích xuất chữ cảnh báo, mã lỗi hoặc biểu tượng/dấu hiệu phổ biến để hỏi thêm context. Đây là nhận định sơ bộ, không phải chẩn đoán kỹ thuật.
 * **Public Knowledge Hub:** Landing, FAQ, chính sách và link tài liệu VinFast công khai; không làm CMS/cập nhật tự động.
 * **Location & Service Suggestion:** Khi intent cần địa điểm, Agent hiển thị card xin consent `Dùng vị trí hiện tại / Nhập khu vực / Bỏ qua`. Sau consent hoặc user nhập vị trí, UI gợi ý điểm dịch vụ/trạm sạc/showroom phù hợp. P0 dùng 3–5 điểm seed; không điều phối hoặc cứu hộ thật.
@@ -85,7 +85,7 @@
 *  Không làm user management, cấp quyền Staff động hoặc cấu hình hệ thống kiểu Admin.
 *  Không tự lấy vị trí nền, không lấy GPS từ EXIF ảnh; chỉ lưu/chia sẻ vị trí khi Customer đồng ý hoặc tự nhập.
 *  Không tự kết luận nguyên nhân hỏng hóc từ ảnh; ảnh mờ hoặc confidence thấp phải hỏi lại/chuyển Staff Review.
-*  **Không thu thập và không lưu trữ PII thật:** Không yêu cầu họ tên, SĐT thật, CCCD, VIN hay biển số thật. MVP chỉ sử dụng `session_id`, `mock_customer_id`, `vehicle_model` (optional), `vehicle_code_mock` (optional dạng `VF-SF-xxxxx`). Tên và SĐT chỉ dùng trong seed demo nội bộ.
+*  **Bảo vệ dữ liệu định danh nhạy cảm (PII Sanitization):** Không yêu cầu CCCD/CMND, số khung (VIN) thật hay biển số thật (bộ lọc PII tự động che mờ nếu khách vô tình gõ vào khung chat). Hồ sơ tài khoản chỉ lưu thông tin liên hệ cơ bản do người dùng tự khai báo (`username`, `full_name`, `phone`, `vehicle_model`, `vehicle_code_mock` dạng `VF-SF-xxxxx`) phục vụ việc tạo và tra cứu hồ sơ hỗ trợ.
 
 ---
 
