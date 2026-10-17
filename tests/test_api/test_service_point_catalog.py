@@ -28,7 +28,7 @@ def test_canonical_catalog_metadata_and_nearby_distance():
 
 @pytest.mark.parametrize("invalid", ["verified_demo", "coordinates", "duplicate", "date"])
 def test_invalid_catalog_is_rejected(invalid):
-    data = json.loads(CATALOG_PATH.read_text())
+    data = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
     if invalid == "verified_demo":
         data["metadata"]["verification_status"] = "VERIFIED"
     elif invalid == "coordinates":
@@ -42,7 +42,7 @@ def test_invalid_catalog_is_rejected(invalid):
 
 
 def test_adapter_preserves_unverified_non_demo_metadata():
-    data = json.loads(CATALOG_PATH.read_text())
+    data = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
     data["metadata"].update(demo=False, source="Test adapter; no operational verification")
 
     class TestAdapter:
@@ -58,7 +58,7 @@ def test_adapter_preserves_unverified_non_demo_metadata():
 
 @pytest.mark.parametrize("field", ["source", "id", "name", "address"])
 def test_blank_provenance_or_identity_cannot_be_marked_verified(field):
-    data = json.loads(CATALOG_PATH.read_text())
+    data = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
     data["metadata"].update(demo=False, verification_status="VERIFIED")
     target = data["metadata"] if field == "source" else data["points"][0]
     target[field] = "   "

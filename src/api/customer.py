@@ -2104,24 +2104,19 @@ def get_case_service_points(
 ):
     """
     Lấy danh sách điểm hỗ trợ / trạm sạc / xưởng dịch vụ gợi ý theo sự cố (ADR-005).
-    P0 dùng 3-5 điểm seed demo phù hợp intent.
+    Truy vấn bảng service_points theo khoảng cách Haversine và phân loại theo intent / triage.
     """
     case = db.get(Case, case_id)
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
     check_case_ownership(case, current_user)
 
-    # Sắp xếp ưu tiên theo intent
-    # Demo fixtures are not a verified directory and cannot be recommended.
-    points = []
-    if case.intent == Intent.CHARGING_BATTERY.value:
-        points.sort(key=lambda p: 0 if p.category == "CHARGING_STATION" else 1)
-    elif case.intent == Intent.SERVICE_INCIDENT.value:
-        points.sort(key=lambda p: 0 if p.category in ("RESCUE_POST", "SERVICE_CENTER") else 1)
+    from src.services.service_point_service import build_case_service_points_response
 
+    data = build_case_service_points_response(db=db, case=case)
     return ApiResponse(
         success=True,
-        data=ServicePointsData(case_id=case.id, recommended_points=points),
+        data=data,
         error=None,
     )
 

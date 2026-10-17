@@ -48,5 +48,10 @@ def suggest_service_points(case_id: str, owner: str) -> list[dict]:
         if not center:
             return []
         lat, lng = center
-    category = "CHARGING_STATION" if case["intent"] == "Charging/Battery" else "SERVICE_WORKSHOP"
+    if case.get("intent") in ("Charging/Battery", "CHARGING_BATTERY"):
+        category = "CHARGING_STATION"
+    elif case.get("intent") in ("Sales/General Info", "SALES_INFO"):
+        category = "SHOWROOM"
+    else:
+        category = "SERVICE_WORKSHOP"
     return nearby_service_points(lat, lng, category, 50, 5)["points"]

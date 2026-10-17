@@ -388,19 +388,32 @@ class CaseLocationOut(BaseModel):
 class ServicePointItem(BaseModel):
     id: str
     name: str
-    category: Literal["CHARGING_STATION", "SERVICE_CENTER", "RESCUE_POST", "SHOWROOM", "SERVICE_WORKSHOP", "OTHER"]
+    category: str
+    category_slug: str | None = None
     address: str
     distance_km: float | None = None
     latitude: float
     longitude: float
+    phone: str | None = None
     hotline: str | None = None
+    hotline_service: str | None = None
+    booking_url: str | None = None
+    dong_son: bool = False
     operating_hours: str | None = None
     charger_types: list[str] | None = None
+    services_offered: list[str] | None = None
+    power_info: str | None = None
+    status: str | None = None
+    note: str | None = None
+    crawled_at: str | None = None
 
 
 class ServicePointsData(BaseModel):
     case_id: str
-    recommended_points: list[ServicePointItem]
+    needs_location: bool = False
+    last_updated_label: str | None = None
+    rescue_hotline: str | None = None
+    recommended_points: list[ServicePointItem] = []
 
 
 # ==============================================================================
