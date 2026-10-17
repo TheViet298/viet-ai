@@ -113,8 +113,10 @@ def user_updates(text: str) -> dict[str, str | None]:
             updates[slot] = None
     if re.search(r'(?:khong biet|chua biet|khong nho).{0,30}(?:eco|plus)', lower):
         updates['version'] = None
-    if re.search(r'den.*(?:tat|het)|da an toan|khong con.*canh bao', lower):
-        updates['reported_condition'] = 'khách báo cảnh báo đã hết/an toàn'
+    if re.search(r'den.*(?:tat|het)|khong con.*canh bao', lower):
+        updates['reported_condition'] = 'khách báo cảnh báo đã hết'
+    if re.search(r'da (?:o noi )?an toan', lower):
+        updates['reported_condition'] = 'khách báo đã ở nơi an toàn'
     return updates
 
 
@@ -143,7 +145,7 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
         ('charging_network', r'tram sac|diem sac|tru sac.*(?:dau|tim|trong)|thue pin'),
         ('quote', r'(?<!danh )\bgia\b|lan banh|tra gop|uu dai|mua.{0,60}bao nhieu tien'),
         ('test_drive', r'lai thu|chay thu|trai nghiem lai'),
-        ('maintenance', r'bao duong|dat lich dich vu|hen kiem tra dinh ky'),
+        ('maintenance', r'bao duong|dat lich dich vu|hen kiem tra dinh ky|dat (?:lich|hen).{0,20}sua (?:xe|chua)'),
         ('warranty', r'bao hanh'),
         ('range', r'quang duong|di duoc|di bao xa|chay duoc bao xa|tam hoat dong|\bkm\b.*(?:dung|hay)|mot lan sac'),
         ('charging', r'sac.*(?:bao lau|thoi gian|may phut)|bao lau.*sac|thoi gian (?:sac|nap)|sac nhanh'),

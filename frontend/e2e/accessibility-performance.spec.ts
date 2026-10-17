@@ -18,7 +18,6 @@ test('login keyboard, axe and responsive layout', async ({page}, testInfo) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(errors).toEqual([]);
   testInfo.annotations.push({type:'visual-baseline', description:'INCONCLUSIVE until human-approved baseline exists'});
-  await page.screenshot({path:testInfo.outputPath('login.png'), fullPage:true});
 });
 
 test('production Core Web Vitals acceptance', async () => {

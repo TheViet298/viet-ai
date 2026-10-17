@@ -193,3 +193,11 @@ html[data-theme="dark"] .to-slate-50 { --tw-gradient-to: var(--theme-page); }
 html[data-theme="dark"] .to-white { --tw-gradient-to: var(--theme-surface); }
 
 html[data-theme="dark"] .bg-clip-text { background-image:linear-gradient(to right,#78b6ff,#a5cfff); }
+/* Muted copy on light surfaces must remain readable at small sizes. */
+html:not([data-theme="dark"]) :is(.text-slate-400, .text-slate-500, .text-\[\#94A3B8\], .text-\[\#64748B\]):not(aside *) {
+  color: #596779;
+}
+html:not([data-theme="dark"]) :is(.placeholder\:text-slate-400, .placeholder\:text-slate-500)::placeholder {
+  color: #596779;
+  opacity: 1;
+}

@@ -203,7 +203,8 @@ async def _run_chat_turn(payload, user, db, handler):
                     data.vehicle_cards = []
                     data.suggested_replies = []
                     answer_path = 'operational'
-            await localize_response(data, language, budget, snapshot=answer_path == 'snapshot', operational=booking_progress)
+            await localize_response(data, language, budget, snapshot=answer_path == 'snapshot', operational=booking_progress,
+                                    conversation=conversation)
             agent_message = db.query(Message).filter_by(session_id=payload.session_id, sender_type='AGENT').order_by(Message.created_at.desc(), Message.id.desc()).first()
             if agent_message:
                 agent_message.content = data.message

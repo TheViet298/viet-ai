@@ -139,6 +139,42 @@ async def test_safe_place_followup_keeps_the_same_workflow_in_both_languages(cli
         results.append(tuple(second.get(k) for k in ('response_type','priority','show_emergency_banner','safety_status')))
     assert results[0] == results[1]
 
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('query,language', [
+    ('Tôi muốn đặt lịch sửa xe VF7', 'vi'),
+    ('Tôi muốn đặt lịch sửa chữa xe VF7', 'vi'),
+    ('I would like to book a repair appointment for my VF7', 'en'),
+])
+async def test_repair_booking_uses_external_service_flow(client, language_db, query, language):
+    response = await client.post('/api/v1/customer/chat', json={
+        'session_id': 'repair-booking', 'message': query, 'language': language})
+    assert response.status_code == 200
+    data = response.json()['data']
+    assert ('chưa thể đặt lịch' if language == 'vi' else 'No appointment has been booked') in data['message']
+    assert ('sửa chữa' if language == 'vi' else 'service center') in data['message']
+    assert data['case_id'] is None
+    assert not data['citations']
+
+
+@pytest.mark.asyncio
+async def test_english_safe_report_is_acknowledged_without_persisted_confirmation(client, language_db):
+    from src.models.db_models import Case
+    session = 'safe-followup-acknowledgment'
+    first = (await client.post('/api/v1/customer/chat', json={
+        'session_id': session, 'message': 'My VF8 is emitting smoke from the battery compartment',
+        'language': 'en'})).json()['data']
+    second = (await client.post('/api/v1/customer/chat', json={
+        'session_id': session, 'message': 'I am in a safe place now', 'language': 'en'})).json()['data']
+    assert 'you reported being in a safe place' in second['message']
+    assert second['message'] != first['message']
+    assert 'not yet been saved' in second['message']
+    assert second['case_id'] == first['case_id']
+    assert second['show_emergency_banner'] is True
+    assert second['priority'] == 'CRITICAL'
+    assert second['emergency_context']['safety_status'] == 'unconfirmed'
+    assert language_db.get(Case, first['case_id']).safety_status == 'unconfirmed'
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize('query,language', [('Tư vấn xe','vi'),('tu van xe','vi'),('Tôi muốn tư vấn mua xe','vi'),('Tư vấn chung về xe','vi'),('Tư vấn cho tôi về xe','vi'),('Tôi muốn tìm hiểu các mẫu xe VinFast','vi'),('Vehicle advice','en'),('Tell me about VinFast cars','en')])
 async def test_general_advice_has_two_model_branches_and_no_cards(client, language_db, query, language):

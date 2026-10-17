@@ -7,7 +7,7 @@ import {
   TicketStatus,
 } from "../types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 async function getStaffAuthHeaders(): Promise<Record<string, string>> {
   if (typeof window === "undefined") return {};

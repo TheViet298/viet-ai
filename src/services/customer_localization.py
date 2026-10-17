@@ -61,6 +61,15 @@ async def translate(text: str, target: str, budget: dict, *, many: bool = False)
             r'|\b(?:I|we|a specialist)\s+will\s+(?:call|contact|arrange|book|forward|dispatch)\b', rendered, re.I):
             return None
         replacements = {key: json.dumps(value, ensure_ascii=False)[1:-1] for key, value in tokens.items()} if many else tokens
+        if target == 'en':
+            # Edit observed wording before restoring protected source facts.
+            for original, edited in [
+                ('tabs above', 'cards above'), ('service centre', 'service center'),
+                ('I am very sorry for your inconvenient experience.', 'I’m sorry about your experience.'),
+                ('I cannot guide high-voltage battery interventions',
+                 'I cannot provide instructions for work on the high-voltage battery'),
+            ]:
+                rendered = rendered.replace(original, edited)
         return restore_literals(rendered, replacements)
     except ValueError:
         return None
@@ -107,20 +116,42 @@ def english_spec(value: str) -> str:
     return value
 
 
-async def localize_response(data, language: str, budget: dict, *, snapshot: bool = False, operational=None):
+async def localize_response(data, language: str, budget: dict, *, snapshot: bool = False, operational=None, conversation=None):
     data.language = language
-    data.message = data.message.replace('\\n', '\n')
+    data.message = data.message.replace('\\n', '\n').replace('sạccông cộng', 'sạc công cộng')
     if language != 'en':
         return
+    if data.service_handoff and data.service_handoff.app_feature_name == 'Đặt lịch dịch vụ / Tra cứu':
+        data.service_handoff.app_feature_name = 'Service booking / Information lookup'
     if data.priority == 'CRITICAL' or data.emergency_context:
         data.safe_guidance = ENGLISH_SAFETY
         receipt = f' Support case {data.case_id} has been recorded.' if data.case_id else ' Sign in to create and track a support case.'
-        data.message = ENGLISH_SAFETY + receipt + ' Please share your current location when it is safe to do so.'
+        status = {'New': 'newly received', 'Needs Information': 'awaiting additional information',
+                  'Staff Reviewing': 'awaiting staff review', 'In Progress': 'in progress',
+                  'Resolved': 'resolved', 'Closed': 'closed', 'Reopened': 'reopened'}.get(data.status)
+        if data.case_id and status:
+            receipt += f' Its current status is {status}.'
+        reported = conversation.facts.get('reported_condition') if conversation else None
+        acknowledgment = ''
+        if reported and reported.status == 'confirmed':
+            acknowledgment = {
+                'khách báo đã ở nơi an toàn': 'I have noted that you reported being in a safe place. ',
+                'khách báo cảnh báo đã hết': 'I have noted that you reported that the warning has cleared. ',
+            }.get(reported.value, 'I have noted your update about the situation. ')
+            acknowledgment += 'This does not confirm that the vehicle is safe to drive. '
+        persisted_status = data.emergency_context.safety_status if data.emergency_context else data.safety_status
+        if persisted_status == 'customer_reported_safe':
+            acknowledgment += 'Your safety confirmation has been saved; a technical assessment is still required. '
+        elif reported and reported.status == 'confirmed':
+            acknowledgment += 'Your safety confirmation has not yet been saved; please use the safety confirmation button. '
+        data.message = acknowledgment + ENGLISH_SAFETY + receipt
+        if data.request_location:
+            data.message += ' Please share your current location when it is safe to do so.'
         data.suggested_replies = []
         return
     if operational is not None:
         data.message = ('No appointment has been booked through this chat. '
-            'You can register through the VinFast app or contact a showroom/service centre to confirm availability.')
+            'You can register through the VinFast app or contact a showroom/service center to confirm availability.')
         known = operational.known_facts
         preferences = [english_spec(known[k]) for k in ('model', 'version', 'city', 'date', 'time_window') if known.get(k)]
         if preferences:

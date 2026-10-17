@@ -1,11 +1,11 @@
 "use client";
-import { Language, useLocale } from "@/features/shared/context/LocaleContext";
+import { formatVehicleValue, Language, useLocale } from "@/features/shared/context/LocaleContext";
 
 import { useState } from "react";
 import { VehicleCard } from "../types";
 
 export function VehicleInfoCard({ card, language }: { card: VehicleCard; language?: Language }) {
-  const { t } = useLocale(language);
+  const { t, language: messageLanguage } = useLocale(language);
   const [imageFailed, setImageFailed] = useState(false);
   return (
     <article aria-label={card.name} className="flex w-full max-w-[294px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800">
@@ -21,12 +21,12 @@ export function VehicleInfoCard({ card, language }: { card: VehicleCard; languag
         <dl className="grid grid-cols-2 gap-x-3 gap-y-3 py-1">
           {card.specs.map(spec => <div key={spec.label} className="min-w-0">
             <dt className="text-xs text-slate-500">{t(spec.label)}</dt>
-            <dd className="mt-1 text-sm font-medium leading-relaxed">{spec.value}</dd>
+            <dd className="mt-1 text-sm font-medium leading-relaxed">{formatVehicleValue(spec.value, messageLanguage)}</dd>
           </div>)}
         </dl>
         <div className="border-t border-slate-200 pt-2">
           <p className="text-sm text-slate-700">{t("Giá bán từ")}</p>
-          <p className="mt-1 break-words bg-gradient-to-r from-sky-600 to-blue-600 bg-clip-text text-xl font-semibold text-transparent">{card.price_label.replace(/^Từ\s+/, '')}</p>
+          <p className="mt-1 break-words bg-gradient-to-r from-sky-600 to-blue-600 bg-clip-text text-xl font-semibold text-transparent">{formatVehicleValue(card.price_label.replace(/^(?:Từ|From)\s+/, ''), messageLanguage)}</p>
         </div>
         {card.test_drive_url && <a href={card.test_drive_url} target="_blank" rel="noopener noreferrer"
           className="mt-auto flex min-h-11 items-center justify-center rounded-xl bg-gradient-to-r from-sky-700 to-blue-600 px-3 py-2.5 text-sm font-semibold text-white hover:from-sky-800 hover:to-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600">

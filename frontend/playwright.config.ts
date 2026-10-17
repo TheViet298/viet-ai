@@ -9,6 +9,6 @@ export default defineConfig({
   outputDir: '../.test-runs/playwright-artifacts',
   reporter: [['list'], ['html', { outputFolder: '../.test-runs/playwright-report', open: 'never' }]],
   use: { baseURL: process.env.QA_BASE_URL || 'http://localhost:3001',
-    trace: 'off', screenshot: 'off', video: 'off' },
+    trace: 'retain-on-failure', screenshot: 'only-on-failure', video: 'off' },
   projects: [375, 768, 1440].map(width => ({ name: `width-${width}`, use: {viewport: {width, height: 960}} })),
 });

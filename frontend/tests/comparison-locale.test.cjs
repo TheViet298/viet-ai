@@ -12,6 +12,6 @@ test('English comparison retains already translated specs and localizes legacy c
   price_label:'From 646.000.000 VNĐ',
  }));
  const html=renderToStaticMarkup(React.createElement(VehicleComparison,{cards,language:'en'}));
- for(const value of ['5 seats','485 km (NEDC)','635 km (NEDC)','59,6 kWh','87,7 kWh','31 minutes']) assert.ok(html.includes(value),value);
+ for(const value of ['5 seats','485 km (NEDC)','635 km (NEDC)','59.6 kWh','87.7 kWh','31 minutes']) assert.ok(html.includes(value),value);
  assert.doesNotMatch(html,/Data unavailable|phút/);
 });

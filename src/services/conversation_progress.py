@@ -6,6 +6,13 @@ from pydantic import BaseModel, Field
 from src.services.conversation_context import ConversationContext, TurnUnderstanding, normalized
 
 
+CASE_STATUS_VI = {
+    'New': 'Mới tiếp nhận', 'Needs Information': 'Cần bổ sung thông tin',
+    'Staff Reviewing': 'Đang chờ nhân viên xem xét', 'In Progress': 'Đang xử lý',
+    'Resolved': 'Đã giải quyết', 'Closed': 'Đã đóng', 'Reopened': 'Đã mở lại',
+}
+
+
 class ConversationProgress(BaseModel):
     state: Literal['collecting_input', 'ready_to_lookup', 'needs_verified_data',
                    'external_action_required', 'action_pending', 'action_completed', 'cancelled_intent']
@@ -85,7 +92,8 @@ def progress_reply(turn: TurnUnderstanding, context: ConversationContext, progre
     if progress.state == 'external_action_required' and turn.move in {
         'request_action', 'ask_next_step', 'ask_status', 'supply_info', 'elaborate', 'correct',
     }:
-        service = 'lái thử' if context.active_goal == 'test_drive' else 'bảo dưỡng'
+        service = ('lái thử' if context.active_goal == 'test_drive' else
+                   'sửa chữa' if any(term in normalized(context.topic) for term in ('sua xe', 'sua chua')) else 'bảo dưỡng')
         place = 'showroom' if context.active_goal == 'test_drive' else 'xưởng dịch vụ'
         opening = {
             'request_action': f'Hiện em chưa thể đặt lịch {service} trực tiếp trong chat. ',
@@ -116,7 +124,8 @@ def progress_reply(turn: TurnUnderstanding, context: ConversationContext, progre
                 'Đời xe có thể cần để chọn đúng chính sách; Quý khách cho biết năm sản xuất hoặc xem trong hồ sơ xe nhé. Chưa đủ nguồn để xác nhận quyền lợi riêng của xe.')
     if context.active_goal == 'incident' and (turn.move in {'ask_status', 'ask_next_step'}
                                               or facts.get('reported_condition') and turn.move != 'new_question'):
-        reply = (f'Hồ sơ {progress.case_id} hiện có trạng thái {(case_snapshot or {}).get("status", "chưa xác nhận")}. '
+        status_label = CASE_STATUS_VI.get((case_snapshot or {}).get('status'), 'chưa xác nhận')
+        reply = (f'Hồ sơ {progress.case_id} hiện có trạng thái {status_label}. '
                  if progress.case_id else 'Em chưa có xác nhận hồ sơ hỗ trợ đã được tạo. ')
         if summary:
             reply += f'Thông tin đã ghi nhận: {summary}. '

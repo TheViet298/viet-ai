@@ -11,6 +11,7 @@ for (const phrase of phrases) test(phrase, async ({page}) => {
   expect(data.vehicle_cards.map((card: {variant: string}) => card.variant)).toEqual(['eco', 'plus', 'plus-awd']);
   for (const card of data.vehicle_cards) {
     const image = page.getByRole('img', {name: card.name, exact:true});
+    await image.scrollIntoViewIfNeeded();
     await expect(image).toBeVisible();
     await expect.poll(() => image.evaluate(element => (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
   }

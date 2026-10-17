@@ -110,7 +110,16 @@ test('locale hydration does not overwrite saved English during the initial effec
   vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText,{
     module,exports:module.exports,document:{documentElement:{}},
     localStorage:{getItem:()=>stored,setItem:(_,value)=>{stored=value}},
-    require:id=>id==='react'?{createContext:()=>({Provider:'Provider'}),useRef:initial=>({current:initial}),useState:initial=>[initial,()=>{}],useEffect:fn=>effects.push(fn)}:require(id),
+    require:id=>{
+      if(id==='react') return {createContext:()=>({Provider:'Provider'}),useRef:initial=>({current:initial}),useState:initial=>[initial,()=>{}],useEffect:fn=>effects.push(fn)};
+      if(id.startsWith('@/features/console/')) {
+        const dictionary={exports:{}};
+        const content=fs.readFileSync(require.resolve('../src/'+id.slice(2)+'.ts'),'utf8');
+        vm.runInNewContext(ts.transpileModule(content,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{module:dictionary,exports:dictionary.exports});
+        return dictionary.exports;
+      }
+      return require(id);
+    },
   });
   module.exports.LocaleProvider({children:null});
   for(const effect of effects)effect();

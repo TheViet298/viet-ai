@@ -22,3 +22,15 @@ def test_case_status_comes_from_snapshot_not_prose():
     assert progress.case_id == 'CASE-1'
     assert progress.state != 'action_completed'
     assert progress.missing_fields == ['station_location', 'charger_id']
+
+
+def test_vietnamese_incident_reply_uses_customer_status_label():
+    from src.services.conversation_context import TurnUnderstanding
+    from src.services.conversation_progress import progress_reply
+    context = ConversationContext(active_goal='incident')
+    snapshot = {'id': 'CASE-1', 'status': 'Staff Reviewing'}
+    progress = derive_progress(context, {}, snapshot, None)
+    reply = progress_reply(TurnUnderstanding(move='ask_status', original_text='Trạng thái hồ sơ?',
+        resolved_query='Trạng thái hồ sơ?'), context, progress, snapshot)
+    assert 'Đang chờ nhân viên xem xét' in reply
+    assert 'Staff Reviewing' not in reply

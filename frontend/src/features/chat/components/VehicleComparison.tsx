@@ -1,5 +1,5 @@
 "use client";
-import { Language, useLocale } from "@/features/shared/context/LocaleContext";
+import { formatVehicleValue, Language, useLocale } from "@/features/shared/context/LocaleContext";
 
 import { useState } from "react";
 import { VehicleCard } from "../types";
@@ -23,13 +23,13 @@ export function VehicleComparison({ cards, language }: { cards: VehicleCard[]; l
   const { t, language: messageLanguage } = useLocale(language);
   if (cards.length !== 2) return null;
   const spec = (card: VehicleCard, label: string, englishLabel: string) => card.specs.find(item => item.label.startsWith(label) || item.label.startsWith(englishLabel))?.value || t("Chưa có dữ liệu");
-  const valueLabel = (value: string) => messageLanguage === "en" ? value.replace(/phút/g, "minutes").replace(/chỗ/g, "seats") : value;
+  const valueLabel = (value: string) => formatVehicleValue(messageLanguage === "en" ? value.replace(/phút/g, "minutes").replace(/chỗ/g, "seats") : value, messageLanguage);
   const rows = [
     { label: t("Số chỗ ngồi"), values: cards.map(card => spec(card, "Số chỗ ngồi", "Seats")) },
     { label: t("Quãng đường mỗi lần sạc (km)"), values: cards.map(card => spec(card, "Quãng đường", "Range")) },
     { label: t("Dung lượng pin khả dụng (kWh)"), values: cards.map(card => card.battery_capacity || t("Chưa có dữ liệu")) },
     { label: t("Thời gian sạc nhanh (10%–70%)"), values: cards.map(card => card.fast_charge_time || t("Chưa có dữ liệu")) },
-    { label: t("Giá bán từ"), values: cards.map(card => card.price_label.replace(/^Từ\s+/, "")) },
+    { label: t("Giá bán từ"), values: cards.map(card => card.price_label.replace(/^(?:Từ|From)\s+/, "")) },
   ];
   return <div className="w-full max-w-[448px] space-y-2">
     <section aria-label={t("So sánh xe")} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">

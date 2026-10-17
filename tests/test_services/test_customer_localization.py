@@ -7,6 +7,64 @@ from src.models.schemas import ChatResponseData
 
 
 @pytest.mark.asyncio
+async def test_vietnamese_presentation_repairs_glued_charging_words():
+    from src.services.customer_localization import localize_response
+    data = ChatResponseData(response_type='FAQ_ANSWER', message='Tìm trạm sạccông cộng gần nhất.')
+    await localize_response(data, 'vi', {})
+    assert data.message == 'Tìm trạm sạc công cộng gần nhất.'
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('report,expected,absent', [
+    ('Tôi đã ở nơi an toàn', 'you reported being in a safe place', 'warning has cleared'),
+    ('Đèn cảnh báo đã tắt', 'you reported that the warning has cleared', 'being in a safe place'),
+])
+async def test_emergency_acknowledges_specific_customer_report(report, expected, absent):
+    from src.services.customer_localization import localize_response
+    from src.services.conversation_context import ConversationContext, ConversationFact, user_updates
+    facts = {key: ConversationFact(value=value, source_turn=1) for key, value in user_updates(report).items()}
+    data = ChatResponseData(response_type='FAQ_ANSWER', message='Cảnh báo', priority='CRITICAL')
+    await localize_response(data, 'en', {}, conversation=ConversationContext(active_goal='incident', facts=facts))
+    assert expected in data.message
+    assert absent not in data.message
+
+
+@pytest.mark.asyncio
+async def test_emergency_status_and_handoff_are_localized_without_provider(monkeypatch):
+    from src.services import customer_localization as module
+    from src.models.schemas import EmergencyContext, ServiceHandoff
+    monkeypatch.setattr(module, 'structured_call', AsyncMock(side_effect=AssertionError('Provider unavailable')))
+    data = ChatResponseData(response_type='FAQ_ANSWER', message='Trạng thái hồ sơ',
+        case_id='CASE-1', status='Staff Reviewing', priority='CRITICAL', show_emergency_banner=True,
+        emergency_context=EmergencyContext(case_id='CASE-1', incident_version=1, safety_status='customer_reported_safe'),
+        service_handoff=ServiceHandoff(app_feature_name='Đặt lịch dịch vụ / Tra cứu', guide_url='https://vinfastauto.com/vn_vi'))
+    await module.localize_response(data, 'en', {})
+    assert 'awaiting staff review' in data.message
+    assert 'safety confirmation has been saved' in data.message
+    assert data.service_handoff.app_feature_name == 'Service booking / Information lookup'
+    assert data.case_id == 'CASE-1' and data.show_emergency_banner
+    assert 'Do not continue driving' in data.safe_guidance
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('source,translated,expected', [
+    ('Xem thông tin trong các thẻ ở trên.', 'View the information in the tabs above.', 'cards above'),
+    ('Liên hệ xưởng dịch vụ.', 'Contact a VinFast service centre.', 'service center'),
+    ('Em rất tiếc về trải nghiệm bất tiện của Quý khách.',
+     'I am very sorry for your inconvenient experience.', "I’m sorry about your experience."),
+    ('Em không thể hướng dẫn can thiệp pin cao áp.',
+     'I cannot guide high-voltage battery interventions.', 'cannot provide instructions for work on the high-voltage battery'),
+])
+async def test_customer_translation_edits_observed_english_wording(monkeypatch, source, translated, expected):
+    from src.services import customer_localization as module
+    # The provider is the external boundary; real validation and presentation run below.
+    monkeypatch.setattr(module, 'structured_call', AsyncMock(return_value=module.BatchTranslation(texts=[translated])))
+    data = ChatResponseData(response_type='FAQ_ANSWER', message=source)
+    await module.localize_response(data, 'en', {})
+    assert expected in data.message
+
+
+@pytest.mark.asyncio
 async def test_english_comparison_keeps_capacity_and_charging_metadata():
     from src.services.customer_localization import localize_response
     from src.services.knowledge_questions import comparison_cards

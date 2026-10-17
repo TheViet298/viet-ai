@@ -25,7 +25,6 @@ export function ChatFeed({
 }: ChatFeedProps) {
   const { t } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
   const isNearBottomRef = useRef(true);
   const lastSeenMsgCountRef = useRef(messages.length);
@@ -52,8 +51,9 @@ export function ChatFeed({
 
   // Cuộn xuống đáy một cách an toàn
   const scrollToBottom = useCallback((smooth = true) => {
-    if (!bottomRef.current) return;
-    bottomRef.current.scrollIntoView({
+    if (!containerRef.current) return;
+    containerRef.current.scrollTo({
+      top: containerRef.current.scrollHeight,
       behavior: smooth ? "smooth" : "auto",
     });
     setShowScrollBottomBtn(false);
@@ -140,7 +140,7 @@ export function ChatFeed({
           </div>
         )}
 
-        <div ref={bottomRef} className="h-3 shrink-0" />
+        <div className="h-3 shrink-0" aria-hidden="true" />
       </div>
 
       {/* Nút nổi "↓ Tin mới" khi người dùng cuộn ngược lên trên */}

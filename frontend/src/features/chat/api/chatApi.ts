@@ -10,7 +10,7 @@ import {
   VehicleCard,
 } from "../types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export async function getCustomerAuthHeaders(): Promise<Record<string, string>> {
   if (typeof window === "undefined") return {};

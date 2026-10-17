@@ -4,7 +4,21 @@ import re
 
 def canonical_english_phrases(text: str) -> str:
     # Denials must be expanded before affirmative symptoms; preserve clause order.
+    text = text.replace('’', "'")
+    # Keep the vehicle qualifier while interpreting the complete symptom clause.
+    qualifier = r'(?P<vehicle>[^,.;!?\n]{0,55}?)'
+    for pattern, symptom in [
+        (rf'\b(?:accelerator|gas)(?: pedal)?{qualifier}\s+(?:is|was|has become)\s+(?P<denied>not\s+)?(?:stuck|jammed)\b', 'kẹt chân ga'),
+        (rf'\b(?:tires?|tyres?){qualifier}\s+(?:has|have)(?:\s+just)?\s+(?P<denied>not\s+)?(?:burst|blown out)\b', 'nổ lốp'),
+        (rf'\bbrakes?{qualifier}\s+(?:has|have)(?:\s+just)?\s+(?P<denied>not\s+)?stopped working\b', 'mất phanh'),
+        (rf'\bbrake pedal{qualifier}\s+(?:goes?|sinks?)(?: all the way| right| straight)?\s+(?:to|down to) the floor\b', 'chân phanh sát sàn'),
+    ]:
+        text = re.sub(pattern, lambda m: m['vehicle'] + ' ' +
+                      ('không ' if m.groupdict().get('denied') else '') + symptom, text, flags=re.I)
     rules = [
+        (r"\b(?:isn't|is not|not) (?:emitting smoke|smoking) or (?:on fire|burning)\b", 'không có khói và không cháy'),
+        (r"\b(?:isn't|is not|not) (?:emitting smoke|smoking)\b", 'không có khói'),
+        (r'\b(?:there (?:are|is) )?no (?:flames?|fire)\b', 'không có lửa'),
         (r"\b(?:isn't|is not|not) smoking or (?:on fire|burning)\b", 'không có khói và không cháy'),
         (r"\b(?:isn't|is not|not) (?:on fire|burning)\b", 'không bị cháy'),
         (r"\b(?:isn't|is not|not) smoking\b|\bno smoke\b", 'không có khói'),

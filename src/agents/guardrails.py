@@ -81,6 +81,7 @@ CRITICAL_STANDALONE_RULES: dict[str, str] = {
         r"chay|chay xe|xe boc lua|boc lua|boc khoi|khoi tu (?:xe|pin)|xe.{0,15}(?:co|ra|xi) khoi|mui khet|chap dien)\b"
     ),
     "BRAKE_FAILURE": (
+        r"\b(?:chân phanh|bàn đạp phanh|pedal phanh|phanh)\b[^,.;!?\n]{0,55}?\b(?:sát sàn|chạm (?:hoàn toàn )?xuống sàn|xuống tận sàn|ngừng hoạt động)\b|"
         r"\bphanh\s+(?:VF\s*[356789]\s+)?(?:đang\s+)?không\s+ăn\b|"
         r"\bphanh\s+(?:vf\s*[356789]\s+)?(?:dang\s+)?khong\s+an\b|"
         r"\b(mất phanh|liệt phanh|phanh không ăn|không phanh được|không ăn phanh|"
@@ -88,8 +89,8 @@ CRITICAL_STANDALONE_RULES: dict[str, str] = {
         r"(hẫng|mất|kẹt)\s*(chân phanh|phanh)|"
         r"mat phanh|liet phanh|phanh khong an|khong phanh duoc|hang phanh)\b"
     ),
-    "ACCELERATOR_JAM": r"\b(kẹt chân ga|kẹt ga|dính ga|chân ga bị kẹt|ket chan ga|ket ga)\b",
-    "TIRE_BURST": r"\b(nổ lốp|rách lốp|nổ vỏ|bể bánh|no lop|rach lop|be banh)\b",
+    "ACCELERATOR_JAM": r"\b(kẹt chân ga|kẹt ga|dính ga|chân ga bị kẹt|ket chan ga|ket ga)\b|\b(?:bàn đạp ga|chân ga)\b[^,.;!?\n]{0,55}?\b(?:bị )?kẹt\b",
+    "TIRE_BURST": r"\b(nổ lốp|rách lốp|nổ vỏ|bể bánh|no lop|rach lop|be banh)\b|\blốp\b[^,.;!?\n]{0,55}?\b(?:bị )?nổ\b",
     "ACCIDENT": r"\b(tai nạn|lật xe|đâm va mạnh|va chạm mạnh|tai nan|lat xe)\b",
     "FLOODED_CABIN": r"\b(ngập nước đến sàn|nước tràn vào sàn|ngập sàn xe|ngập đến sàn|ngap nuoc den san|ngap san xe)\b",
 }
@@ -160,6 +161,12 @@ def evaluate_hard_safety(text: str) -> tuple[bool, str | None, PriorityLevel]:
 def without_negated_hazards(text: str) -> str:
     """Mask denied hazards while keeping affirmative hazards in other clauses."""
     text = normalize_chat_text(text)
+    text = re.sub(
+        r'\b(?:chân phanh|bàn đạp phanh|pedal phanh|phanh|bàn đạp ga|chân ga|lốp)\b'
+        r'(?:(?!\b(?:và|nhưng|and|but)\b)[^,.;!?\n]){0,55}?\b(?:không|chưa)\s+(?:bị\s+)?'
+        r'(?:kẹt|nổ|sát sàn|chạm (?:hoàn toàn )?xuống sàn|xuống tận sàn|ngừng hoạt động)\b',
+        '[phủ định]', text, flags=re.I,
+    )
     hazard_terms = (
         r"(?:khói|khoi(?!\s+dong)|mùi khét|mui khet|bốc khói|boc khoi|cháy xe|chay xe|cháy|chay|"
         r"chập điện|chap dien|xì khói|xi khoi|bốc lửa|boc lua|mất phanh|mat phanh|"

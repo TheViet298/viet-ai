@@ -12,7 +12,7 @@ test('vehicle card renders four labeled specs, price and a real test-drive link'
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   const module = { exports: {} };
-  vm.runInNewContext(code, { module, exports: module.exports, require: name => name.endsWith('/LocaleContext') ? {useLocale: () => ({language: "vi", setLanguage() {}, t: text => text}), translate: text => text} : require(name) });
+  vm.runInNewContext(code, { module, exports: module.exports, require: name => name.endsWith('/LocaleContext') ? {formatVehicleValue: value => value, useLocale: () => ({language: "vi", setLanguage() {}, t: text => text}), translate: text => text} : require(name) });
   const card = { model: 'VF8', variant: 'plus', name: 'VinFast VF 8 Plus',
     image_url: 'https://static-cms-prod.vinfastauto.com/vf8.webp',
     specs: ['Số chỗ ngồi', 'Quãng đường', 'Thời gian sạc', 'Công suất tối đa'].map(label => ({ label, value: 'Verified value' })),
@@ -34,7 +34,7 @@ test('comparison aligns two vehicles under shared labels and retains missing-dat
   const code = ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(code, { module, exports: module.exports, require: name => name.endsWith('/LocaleContext') ? {useLocale: () => ({language: "vi", setLanguage() {}, t: text => text}), translate: text => text} : require(name) });
+  vm.runInNewContext(code, { module, exports: module.exports, require: name => name.endsWith('/LocaleContext') ? {formatVehicleValue: value => value, useLocale: () => ({language: "vi", setLanguage() {}, t: text => text}), translate: text => text} : require(name) });
   const cards = ['VF 6 Eco', 'VF 8 Eco'].map((name, index) => ({
     model: index ? 'VF8' : 'VF6', name, image_url: 'https://static-cms-prod.vinfastauto.com/car.webp',
     specs: [{ label: 'Số chỗ ngồi', value: '5 chỗ' }, { label: 'Quãng đường', value: index ? '635 km (NEDC)' : '485 km (NEDC)' }],
