@@ -116,12 +116,12 @@ class SnapshotCatalogAdapter:
 
 
 def default_catalog_adapter() -> CatalogAdapter:
-    mode = os.environ.get("GPS_CATALOG_MODE", "snapshot")
+    mode = os.environ.get("GPS_CATALOG_MODE", "auto").strip().lower()
     if mode == "demo":
         return JsonCatalogAdapter()
-    if mode != "snapshot":
-        raise ValueError("Unsupported GPS catalog mode")
-    return SnapshotCatalogAdapter()
+    if mode in ("snapshot", "auto", "db"):
+        return SnapshotCatalogAdapter()
+    raise ValueError("Unsupported GPS catalog mode")
 
 
 def nearby_service_points(

@@ -157,7 +157,7 @@ PROVINCE_CENTERS: dict[str, tuple[float, float]] = {
     "đồng tháp": (10.4500, 105.6333),
     "dong thap": (10.4500, 105.6333),
 
-    # Bí danh các tỉnh/thành đã sáp nhập -> trỏ về tọa độ tỉnh mới
+    # Bí danh các tỉnh/thành đã sáp nhập -> trỏ về tọa độ tỉnh mới (chính xác theo Đề án sắp xếp ĐVHC 2025)
     "bình dương": (10.8231, 106.6297),  # -> TP.HCM
     "binh duong": (10.8231, 106.6297),
     "bà rịa vũng tàu": (10.8231, 106.6297),  # -> TP.HCM
@@ -165,13 +165,13 @@ PROVINCE_CENTERS: dict[str, tuple[float, float]] = {
     "bà rịa - vũng tàu": (10.8231, 106.6297),
     "vũng tàu": (10.8231, 106.6297),
     "vung tau": (10.8231, 106.6297),
-    "long an": (10.8231, 106.6297),  # -> TP.HCM
+    "long an": (11.3000, 106.1000),  # -> Tây Ninh
     "kiên giang": (10.3833, 105.4167),  # -> An Giang
     "kien giang": (10.3833, 105.4167),
     "hà giang": (21.8167, 105.2167),  # -> Tuyên Quang
     "ha giang": (21.8167, 105.2167),
-    "hà nam": (21.0285, 105.8542),  # -> Hà Nội
-    "ha nam": (21.0285, 105.8542),
+    "hà nam": (20.2500, 105.9750),  # -> Ninh Bình
+    "ha nam": (20.2500, 105.9750),
     "hải dương": (20.8449, 106.6881),  # -> Hải Phòng
     "hai duong": (20.8449, 106.6881),
     "bắc giang": (21.1861, 106.0763),  # -> Bắc Ninh
@@ -186,21 +186,23 @@ PROVINCE_CENTERS: dict[str, tuple[float, float]] = {
     "thai binh": (20.6500, 106.0500),
     "quảng bình": (16.8167, 107.1000),  # -> Quảng Trị
     "quang binh": (16.8167, 107.1000),
-    "bình định": (15.1167, 108.8000),  # -> Quảng Ngãi
-    "binh dinh": (15.1167, 108.8000),
+    "bình định": (13.9833, 108.0000),  # -> Gia Lai
+    "binh dinh": (13.9833, 108.0000),
     "quảng nam": (16.0544, 108.2022),  # -> Đà Nẵng
     "quang nam": (16.0544, 108.2022),
-    "phú yên": (12.2388, 109.1967),  # -> Khánh Hòa
-    "phu yen": (12.2388, 109.1967),
+    "phú yên": (12.6667, 108.0500),  # -> Đắk Lắk
+    "phu yen": (12.6667, 108.0500),
     "ninh thuận": (12.2388, 109.1967),  # -> Khánh Hòa
     "ninh thuan": (12.2388, 109.1967),
-    "bình thuận": (12.2388, 109.1967),  # -> Khánh Hòa
-    "binh thuan": (12.2388, 109.1967),
-    "kon tum": (13.9833, 108.0000),  # -> Gia Lai
-    "đắk nông": (12.6667, 108.0500),  # -> Đắk Lắk
-    "dak nong": (12.6667, 108.0500),
-    "bình phước": (11.3000, 106.1000),  # -> Tây Ninh
-    "binh phuoc": (11.3000, 106.1000),
+    "bình thuận": (11.9404, 108.4583),  # -> Lâm Đồng
+    "binh thuan": (11.9404, 108.4583),
+    "kon tum": (15.1167, 108.8000),  # -> Quảng Ngãi
+    "đắk nông": (11.9404, 108.4583),  # -> Lâm Đồng
+    "dak nong": (11.9404, 108.4583),
+    "đắc nông": (11.9404, 108.4583),
+    "dac nong": (11.9404, 108.4583),
+    "bình phước": (10.9574, 106.8427),  # -> Đồng Nai
+    "binh phuoc": (10.9574, 106.8427),
     "tiền giang": (10.4500, 105.6333),  # -> Đồng Tháp
     "tien giang": (10.4500, 105.6333),
     "bến tre": (10.2500, 105.9667),  # -> Vĩnh Long
@@ -365,7 +367,7 @@ def find_nearby_service_points(
             if dist <= current_radius:
                 matched.append((sp, dist))
 
-        if matched:
+        if matched and (len(matched) >= limit or current_radius == search_radii[-1]):
             if category == "workshop":
                 # Quy tắc GSM: car & car_partner xếp TRƯỚC service_gsm bất kể khoảng cách
                 car_partner = [m for m in matched if (m[0].category_slug or "") in ("service_car", "service_car_partner")]
@@ -579,29 +581,55 @@ def build_case_service_points_response(
         if not can_calculate_km and loc and loc.location_label:
             label_prov = detect_province_from_label(loc.location_label)
             if label_prov:
-                if nearby_raw:
-                    same_prov = []
-                    diff_prov = []
-                    for sp_item in nearby_raw:
-                        sp_obj = sp_item[0]
-                        sp_p = (extract_province_from_address(sp_obj.address) or "").lower()
-                        if label_prov in sp_p or sp_p in label_prov:
-                            same_prov.append(sp_item)
-                        else:
-                            diff_prov.append(sp_item)
-                    if same_prov:
-                        nearby_raw = same_prov + diff_prov
+                same_prov = []
+                diff_prov = []
+                for sp_item in nearby_raw:
+                    sp_obj = sp_item[0]
+                    sp_p = (extract_province_from_address(sp_obj.address) or "").lower()
+                    if label_prov in sp_p or sp_p in label_prov:
+                        same_prov.append(sp_item)
                     else:
-                        # Không có điểm nào cùng tỉnh
-                        is_out_of_area = True
+                        diff_prov.append(sp_item)
+
+                if same_prov:
+                    nearby_raw = same_prov + diff_prov
+                else:
+                    # Không có điểm nào cùng tỉnh -> Lấy 5 điểm gần nhất theo khoảng cách haversine từ tâm
+                    is_out_of_area = True
+                    if target_category == "workshop":
+                        all_ws = list(db.scalars(
+                            select(ServicePoint).where(
+                                ServicePoint.category == "workshop",
+                                ServicePoint.is_visible.is_(True),
+                                ServicePoint.is_car_compatible.is_(True),
+                            )
+                        ).all())
+                        scored_ws = [
+                            (sp, haversine_km(ref_lat, ref_lng, sp.latitude, sp.longitude))
+                            for sp in all_ws
+                            if sp.latitude is not None and sp.longitude is not None
+                        ]
+                        car_partner = [m for m in scored_ws if (m[0].category_slug or "") in ("service_car", "service_car_partner")]
+                        car_partner.sort(key=lambda m: (m[1], m[0].id))
+                        gsm = [m for m in scored_ws if (m[0].category_slug or "") == "service_gsm"]
+                        gsm.sort(key=lambda m: (m[1], m[0].id))
+                        others = [m for m in scored_ws if (m[0].category_slug or "") not in ("service_car", "service_car_partner", "service_gsm")]
+                        others.sort(key=lambda m: (m[1], m[0].id))
+                        res_ws = car_partner[:5]
+                        if len(res_ws) < 5:
+                            res_ws.extend(others[: 5 - len(res_ws)])
+                        if len(res_ws) < 5:
+                            res_ws.extend(gsm[: 5 - len(res_ws)])
+                        nearby_raw = res_ws
+
+                    if nearby_raw:
                         nearest_sp = nearby_raw[0][0]
                         nearest_p = extract_province_from_address(nearest_sp.address) or "tỉnh khác"
                         cat_name = "xưởng" if target_category == "workshop" else "trạm sạc" if target_category == "charging_station" else "showroom"
                         message = f"Chưa có {cat_name} trong khu vực bạn nhập; điểm gần nhất ở {nearest_p}"
-                else:
-                    is_out_of_area = True
-                    cat_name = "xưởng" if target_category == "workshop" else "trạm sạc" if target_category == "charging_station" else "showroom"
-                    message = f"Chưa có {cat_name} trong khu vực bạn nhập; không tìm thấy điểm dịch vụ lân cận"
+                    else:
+                        cat_name = "xưởng" if target_category == "workshop" else "trạm sạc" if target_category == "charging_station" else "showroom"
+                        message = f"Chưa có {cat_name} trong khu vực bạn nhập; không tìm thấy điểm dịch vụ lân cận"
 
         is_collision = is_collision_or_bodywork_case(case)
 
@@ -675,9 +703,12 @@ def search_service_points_catalog(
       áp dụng bộ lọc is_visible=True, is_car_compatible=True (nếu vehicle_type='CAR'),
       xếp xưởng service_car/service_car_partner trước service_gsm.
     """
+    import logging
     import os
-    mode = os.environ.get("GPS_CATALOG_MODE", "snapshot")
-    if db is None and mode != "db":
+    logger = logging.getLogger(__name__)
+
+    mode = os.environ.get("GPS_CATALOG_MODE", "auto").strip().lower()
+    if mode == "demo":
         from src.services.service_point_catalog import default_catalog_adapter, nearby_service_points
         return nearby_service_points(lat, lng, category, radius_km, limit, default_catalog_adapter(), vehicle_type)
 
@@ -703,6 +734,13 @@ def search_service_points_catalog(
         should_close_db = True
 
     try:
+        from sqlalchemy import func
+        count_pts = db.scalar(select(func.count()).select_from(ServicePoint)) or 0
+        if count_pts == 0:
+            logger.warning("Bảng service_points rỗng, fallback sang catalog snapshot/demo")
+            from src.services.service_point_catalog import default_catalog_adapter, nearby_service_points
+            return nearby_service_points(lat, lng, category, radius_km, limit, default_catalog_adapter(), vehicle_type)
+
         is_car = (vehicle_type == "CAR")
         nearby_raw = find_nearby_service_points(
             db=db,

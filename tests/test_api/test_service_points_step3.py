@@ -598,3 +598,144 @@ def test_rescue_hotline_unmasked_in_real_api_response(step3_db_session):
     assert resp.rescue_hotline == VINFAST_HOTLINE
     assert "****" not in resp.rescue_hotline
 
+
+def test_official_2025_province_merger_centers():
+    """
+    Item 4: Kiểm tra các mục sáp nhập chính thức theo Đề án ĐVHC 2025:
+    - Long An (-> Tây Ninh)
+    - Hà Nam (-> Ninh Bình)
+    - Bình Định (-> Gia Lai)
+    - Kon Tum (-> Quảng Ngãi)
+    - Phú Yên (-> Đắk Lắk)
+    - Bình Thuận (-> Lâm Đồng)
+    - Đắk Nông (-> Lâm Đồng)
+    - Bình Phước (-> Đồng Nai)
+    """
+    from src.services.service_point_service import PROVINCE_CENTERS, infer_coordinates_from_label
+
+    # 1. Long An -> Tây Ninh
+    assert infer_coordinates_from_label("Tỉnh Long An") == PROVINCE_CENTERS["tây ninh"]
+    # 2. Hà Nam -> Ninh Bình
+    assert infer_coordinates_from_label("Phủ Lý, Hà Nam") == PROVINCE_CENTERS["ninh bình"]
+    # 3. Bình Định -> Gia Lai
+    assert infer_coordinates_from_label("Quy Nhơn, Bình Định") == PROVINCE_CENTERS["gia lai"]
+    # 4. Kon Tum -> Quảng Ngãi
+    assert infer_coordinates_from_label("Thành phố Kon Tum") == PROVINCE_CENTERS["quảng ngãi"]
+    # 5. Phú Yên -> Đắk Lắk
+    assert infer_coordinates_from_label("Tuy Hòa, Phú Yên") == PROVINCE_CENTERS["đắk lắk"]
+    # 6. Bình Thuận -> Lâm Đồng
+    assert infer_coordinates_from_label("Phan Thiết, Bình Thuận") == PROVINCE_CENTERS["lâm đồng"]
+    # 7. Đắk Nông -> Lâm Đồng
+    assert infer_coordinates_from_label("Gia Nghĩa, Đắk Nông") == PROVINCE_CENTERS["lâm đồng"]
+    # 8. Bình Phước -> Đồng Nai
+    assert infer_coordinates_from_label("Đồng Xoài, Bình Phước") == PROVINCE_CENTERS["đồng nai"]
+
+
+def test_ninh_kieu_can_tho_fallback_returns_5_nearest_workshops(step3_db_session):
+    """
+    Item 5: Ca không GPS ở Cần Thơ (nơi không có xưởng) phải trả về đúng 5 xưởng
+    gần nhất tính theo khoảng cách haversine từ tâm (Ninh Kiều / Cần Thơ),
+    đặt is_out_of_area=True và message chỉ rõ xưởng gần nhất ở Tỉnh An Giang.
+    """
+    db = step3_db_session
+    now = utcnow()
+
+    # Thêm 6 xưởng ở các khoảng cách khác nhau
+    # 2 xưởng ở An Giang (~70-75km)
+    ws1 = ServicePoint(
+        id="ws_ag_1", source_file="service_2s", category="workshop", category_slug="service_car",
+        name="VinFast An Giang 1", address="Xã Bình An, Tỉnh An Giang", latitude=10.0, longitude=105.1,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    ws2 = ServicePoint(
+        id="ws_ag_2", source_file="service_2s", category="workshop", category_slug="service_car_partner",
+        name="VinFast An Giang 2", address="Xã Thạnh Lộc, Tỉnh An Giang", latitude=10.05, longitude=105.15,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    # 2 xưởng ở Tây Ninh / TP.HCM (~115-120km)
+    ws3 = ServicePoint(
+        id="ws_tn_1", source_file="service_2s", category="workshop", category_slug="service_car",
+        name="VinFast Tây Ninh 1", address="Đức Hòa, Tỉnh Tây Ninh", latitude=10.8, longitude=106.4,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    ws4 = ServicePoint(
+        id="ws_hcm_1", source_file="service_2s", category="workshop", category_slug="service_car",
+        name="VinFast HCM 1", address="Bình Tân, Thành phố Hồ Chí Minh", latitude=10.75, longitude=106.6,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    # 1 xưởng nữa ở TP.HCM (~125km)
+    ws5 = ServicePoint(
+        id="ws_hcm_2", source_file="service_2s", category="workshop", category_slug="service_car",
+        name="VinFast GSM 1", address="Quận 12, Thành phố Hồ Chí Minh", latitude=10.85, longitude=106.65,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    # 1 xưởng xa hơn ở Hà Nội (~1150km)
+    ws_far = ServicePoint(
+        id="ws_hn_far", source_file="service_2s", category="workshop", category_slug="service_car",
+        name="VinFast Hà Nội", address="Hà Nội", latitude=21.0285, longitude=105.8542,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    db.add_all([ws1, ws2, ws3, ws4, ws5, ws_far])
+    db.commit()
+
+    user = User(id="u_ct_test", username="u_ct_test", password_hash="dummy", role=UserRole.CUSTOMER.value)
+    db.add(user)
+    case_ct = Case(id="CASE-CANTHO-5PTS", user_id=user.id, session_id="s_ct_5", intent="Service/Incident")
+    loc_ct = CaseLocation(
+        id="loc_ct_5", case_id=case_ct.id, status="MANUAL", source="MANUAL_INPUT",
+        location_label="Quận Ninh Kiều, Cần Thơ", precision="APPROXIMATE", share_with_staff=True,
+    )
+    case_ct.location = loc_ct
+    db.add_all([case_ct, loc_ct])
+    db.commit()
+
+    resp = build_case_service_points_response(db, case_ct)
+    assert resp.is_out_of_area is True
+    assert "Chưa có xưởng trong khu vực bạn nhập; điểm gần nhất ở Tỉnh An Giang" in resp.message
+    assert len(resp.recommended_points) == 5
+    point_ids = [pt.id for pt in resp.recommended_points]
+    assert set(point_ids[:2]) == {"ws_ag_1", "ws_ag_2"}
+    assert "ws_hn_far" not in point_ids
+    for pt in resp.recommended_points:
+        assert pt.is_out_of_area is True
+        assert pt.distance_km is None
+
+
+def test_gps_catalog_mode_db_and_warning_fallback(step3_db_session, monkeypatch, caplog):
+    """
+    Item 6: GPS_CATALOG_MODE mặc định đọc database khi bảng có dữ liệu.
+    Khi bảng rỗng, ghi log cảnh báo và fallback sang snapshot.
+    """
+    import logging
+    from src.services.service_point_service import search_service_points_catalog
+
+    db = step3_db_session
+    # Mode auto với bảng rỗng -> ghi log cảnh báo fallback
+    monkeypatch.setenv("GPS_CATALOG_MODE", "auto")
+    with caplog.at_level(logging.WARNING):
+        res_empty = search_service_points_catalog(21.0285, 105.8542, limit=2, db=db)
+    assert any("Bảng service_points rỗng" in record.message for record in caplog.records)
+    assert len(res_empty["points"]) > 0
+
+    # Thêm dữ liệu vào bảng service_points
+    now = utcnow()
+    sp = ServicePoint(
+        id="cs_db_test_1", source_file="charging_stations", category="charging_station",
+        name="Trạm sạc Database Thật", address="Hà Nội", latitude=21.0285, longitude=105.8542,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    db.add(sp)
+    db.commit()
+
+    # Query lại -> đọc từ database
+    res_db = search_service_points_catalog(21.0285, 105.8542, limit=2, db=db)
+    assert res_db["points"][0]["id"] == "cs_db_test_1"
+    assert res_db["points"][0]["name"] == "Trạm sạc Database Thật"
+
