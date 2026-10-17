@@ -33,7 +33,7 @@ async def general_node(state: AgentState) -> dict:
         "general", ConversationalAnswer,
     )
     fallback = (
-        "Tôi chưa hoàn tất được phần giải thích khái niệm này do dịch vụ trả lời đang không sẵn sàng. Anh/chị vui lòng thử lại."
+        "Dạ em chưa hoàn tất được phần giải thích khái niệm này do dịch vụ trả lời đang không sẵn sàng. Anh/chị vui lòng thử lại ạ."
         if common else
         "Anh/chị muốn tìm hiểu cách sạc, nguyên lý hoạt động, tuổi thọ pin hay đang gặp vấn đề gì với pin xe ạ?"
         if any(term in text for term in ["pin", "sạc"])

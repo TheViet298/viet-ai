@@ -350,7 +350,7 @@ async def triage_node(state: AgentState) -> dict:
     flags = dict(state.get("guardrails", {}))
     flags.update(out_of_scope_detected=intent == "Out_of_Scope", sentiment_sensitive_escalated=complaint)
     reply = (
-        "Tôi hỗ trợ thông tin xe điện và dịch vụ VinFast. Quý khách vui lòng cho biết yêu cầu liên quan đến VinFast."
+        "Dạ em chuyên hỗ trợ thông tin xe điện và dịch vụ VinFast. Quý khách vui lòng cho biết yêu cầu liên quan đến VinFast ạ."
     )
     return {
         "intent": intent,
