@@ -483,9 +483,118 @@ def test_search_service_points_catalog_direct(step3_db_session):
     res = search_service_points_catalog(
         lat=21.0285, lng=105.8542, category="SERVICE_WORKSHOP", radius_km=10.0, limit=5, vehicle_type="CAR", db=db
     )
-    assert res["source"] == "VinFast Database"
-    assert res["verification_status"] == "VERIFIED"
+    assert res["source"] == "VinFast (dữ liệu thu thập)"
+    assert res["verification_status"] == "SNAPSHOT"
     assert len(res["points"]) >= 2
     # car workshop phải xếp trước GSM bất kể khoảng cách
     assert res["points"][0]["id"] == "ws_catalog_car"
+    assert res["points"][0]["province"] == "Hà Nội"
+
+
+def test_area_matching_prioritizes_same_province_and_out_of_area_warning(step3_db_session):
+    """
+    Item 3(c): Khi không có GPS:
+    - Ưu tiên điểm có địa chỉ cùng tỉnh với nhãn
+    - Nếu không có điểm nào cùng tỉnh thì trả thêm message nói rõ 'Chưa có xưởng trong khu vực bạn nhập; điểm gần nhất ở [tỉnh khác]'
+      và KHÔNG hiển thị như gợi ý bình thường (is_out_of_area=True).
+    - Mỗi điểm trả thêm trường province (từ address).
+    """
+    db = step3_db_session
+    now = utcnow()
+    user = User(id="u_area_check", username="u_area_check", password_hash="dummy", role=UserRole.CUSTOMER.value)
+    db.add(user)
+
+    # 1. Trường hợp có điểm cùng tỉnh và khác tỉnh
+    # Điểm Hà Nội (gần hơn) và điểm Bắc Ninh (xa hơn)
+    sp_hanoi = ServicePoint(
+        id="ws_hanoi_p", source_file="service_2s", category="workshop", category_slug="service_car",
+        name="VinFast Hà Nội", address="Số 1 Tràng Tiền, Thành phố Hà Nội", latitude=21.025, longitude=105.855,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    sp_bacninh = ServicePoint(
+        id="ws_bacninh_p", source_file="service_2s", category="workshop", category_slug="service_car",
+        name="VinFast Bắc Ninh", address="Đường Lý Thái Tổ, Thành phố Bắc Ninh", latitude=21.186, longitude=106.076,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    sp_angiang = ServicePoint(
+        id="ws_angiang_p", source_file="service_2s", category="workshop", category_slug="service_car",
+        name="VinFast An Giang", address="Đường Trần Hưng Đạo, Tỉnh An Giang", latitude=10.383, longitude=105.416,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    db.add_all([sp_hanoi, sp_bacninh, sp_angiang])
+    db.commit()
+
+    case_bn = Case(id="CASE-AREA-BN", user_id=user.id, session_id="s_bn", intent="Service/Incident")
+    loc_bn = CaseLocation(
+        id="loc_bn", case_id=case_bn.id, status="MANUAL", source="USER_TEXT",
+        location_label="Thành phố Bắc Ninh", precision="APPROXIMATE", share_with_staff=True
+    )
+    case_bn.location = loc_bn
+    db.add_all([case_bn, loc_bn])
+    db.commit()
+
+    resp_bn = build_case_service_points_response(db, case_bn)
+    assert len(resp_bn.recommended_points) >= 1
+    # Điểm Bắc Ninh phải được ưu tiên lên đầu vì cùng tỉnh với nhãn
+    assert resp_bn.recommended_points[0].id == "ws_bacninh_p"
+    assert resp_bn.recommended_points[0].province == "Thành phố Bắc Ninh"
+    assert resp_bn.is_out_of_area is False
+
+    # 2. Trường hợp nhãn không có điểm nào trong cùng tỉnh (ví dụ Cần Thơ không có xưởng, tìm thấy An Giang lân cận)
+    case_ct = Case(id="CASE-AREA-CT", user_id=user.id, session_id="s_ct", intent="Service/Incident")
+    loc_ct = CaseLocation(
+        id="loc_ct", case_id=case_ct.id, status="MANUAL", source="USER_TEXT",
+        location_label="Quận Ninh Kiều, Cần Thơ", precision="APPROXIMATE", share_with_staff=True
+    )
+    case_ct.location = loc_ct
+    db.add_all([case_ct, loc_ct])
+    db.commit()
+
+    resp_ct = build_case_service_points_response(db, case_ct)
+    assert resp_ct.is_out_of_area is True
+    assert "Chưa có xưởng trong khu vực bạn nhập; điểm gần nhất ở Tỉnh An Giang" in resp_ct.message
+    for pt in resp_ct.recommended_points:
+        assert pt.is_out_of_area is True
+        assert pt.province is not None
+
+
+def test_rescue_hotline_unmasked_in_real_api_response(step3_db_session):
+    """
+    Item 5: Khẳng định response thật trả rescue_hotline đúng nguyên giá trị VINFAST_HOTLINE
+    (1900-232389, không che), che 4 số chỉ được làm trong reporting script.
+    """
+    db = step3_db_session
+    user = User(id="u_rescue_val", username="u_rescue_val", password_hash="dummy", role=UserRole.CUSTOMER.value)
+    db.add(user)
+
+    case = Case(
+        id="CASE-RESCUE-UNMASKED-CHECK",
+        user_id=user.id,
+        session_id="s_rescue_val",
+        intent="Service/Incident",
+        priority="CRITICAL",
+        safety_status="DANGER",
+    )
+    loc = CaseLocation(
+        id="loc_rescue_val",
+        case_id=case.id,
+        status="MANUAL",
+        source="BROWSER_GPS",
+        location_label="Hà Nội",
+        latitude=21.0285,
+        longitude=105.8542,
+        precision="EXACT",
+        share_with_staff=True,
+    )
+    case.location = loc
+    db.add_all([case, loc])
+    db.commit()
+
+    resp = build_case_service_points_response(db, case)
+    assert resp.rescue_hotline == "1900-232389"
+    assert resp.rescue_hotline == VINFAST_HOTLINE
+    assert "****" not in resp.rescue_hotline
 

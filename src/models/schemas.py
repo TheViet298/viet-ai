@@ -391,6 +391,7 @@ class ServicePointItem(BaseModel):
     category: str
     category_slug: str | None = None
     address: str
+    province: str | None = None
     distance_km: float | None = None
     latitude: float
     longitude: float
@@ -407,12 +408,14 @@ class ServicePointItem(BaseModel):
     status: str | None = None
     note: str | None = None
     crawled_at: str | None = None
+    is_out_of_area: bool = False
 
 
 class ServicePointsData(BaseModel):
     case_id: str
     needs_location: bool = False
     no_points_nearby: bool = False
+    is_out_of_area: bool = False
     message: str | None = None
     last_updated_label: str | None = None
     rescue_hotline: str | None = None

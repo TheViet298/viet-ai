@@ -84,37 +84,169 @@ DISTRICT_CENTERS: dict[str, tuple[str, tuple[float, float]]] = {
     "vũng tàu": ("bà rịa vũng tàu", (10.3460, 107.0843)),
 }
 
-# Tọa độ trung tâm Tỉnh/Thành phố (20 tỉnh/thành phố lớn)
+# Tọa độ trung tâm Tỉnh/Thành phố (Phủ đủ 34 đơn vị hành chính hiện hành và các bí danh sáp nhập)
 PROVINCE_CENTERS: dict[str, tuple[float, float]] = {
+    # 34 Đơn vị hành chính cấp tỉnh hiện hành trong dữ liệu
+    "bắc ninh": (21.1861, 106.0763),
     "cần thơ": (10.0452, 105.7469),
     "can tho": (10.0452, 105.7469),
+    "huế": (16.4637, 107.5909),
+    "thừa thiên huế": (16.4637, 107.5909),
+    "hue": (16.4637, 107.5909),
     "hà nội": (21.0285, 105.8542),
     "ha noi": (21.0285, 105.8542),
-    "tp. hồ chí minh": (10.8231, 106.6297),
+    "hải phòng": (20.8449, 106.6881),
+    "hai phong": (20.8449, 106.6881),
     "hồ chí minh": (10.8231, 106.6297),
+    "tp. hồ chí minh": (10.8231, 106.6297),
+    "tp hồ chí minh": (10.8231, 106.6297),
     "ho chi minh": (10.8231, 106.6297),
     "sài gòn": (10.8231, 106.6297),
     "sai gon": (10.8231, 106.6297),
     "tphcm": (10.8231, 106.6297),
+    "quảng ninh": (20.9505, 107.0734),
+    "quang ninh": (20.9505, 107.0734),
     "đà nẵng": (16.0544, 108.2022),
     "da nang": (16.0544, 108.2022),
-    "hải phòng": (20.8449, 106.6881),
-    "hai phong": (20.8449, 106.6881),
-    "huế": (16.4637, 107.5909),
-    "thừa thiên huế": (16.4637, 107.5909),
-    "hue": (16.4637, 107.5909),
+    "đồng nai": (10.9574, 106.8427),
+    "dong nai": (10.9574, 106.8427),
+    "an giang": (10.3833, 105.4167),
+    "cao bằng": (22.6667, 106.2500),
+    "cà mau": (9.1768, 105.1524),
+    "ca mau": (9.1768, 105.1524),
+    "gia lai": (13.9833, 108.0000),
+    "hà tĩnh": (18.3333, 105.9000),
+    "ha tinh": (18.3333, 105.9000),
+    "hưng yên": (20.6500, 106.0500),
+    "hung yen": (20.6500, 106.0500),
+    "khánh hòa": (12.2388, 109.1967),
+    "khanh hoa": (12.2388, 109.1967),
+    "lai châu": (22.3833, 103.4500),
+    "lào cai": (22.4833, 103.9667),
+    "lao cai": (22.4833, 103.9667),
     "lâm đồng": (11.9404, 108.4583),
     "lam dong": (11.9404, 108.4583),
-    "hà giang": (22.8233, 104.9839),
-    "cà mau": (9.1768, 105.1524),
-    "đồng nai": (10.9574, 106.8427),
-    "bình dương": (11.1603, 106.6576),
-    "quảng ninh": (20.9505, 107.0734),
-    "khánh hòa": (12.2388, 109.1967),
-    "bà rịa vũng tàu": (10.3460, 107.0843),
-    "thanh hóa": (19.8067, 105.7852),
+    "lạng sơn": (21.8500, 106.7500),
+    "lang son": (21.8500, 106.7500),
     "nghệ an": (18.6734, 105.6813),
+    "nghe an": (18.6734, 105.6813),
+    "ninh bình": (20.2500, 105.9750),
+    "ninh binh": (20.2500, 105.9750),
+    "phú thọ": (21.3167, 105.4000),
+    "phu tho": (21.3167, 105.4000),
+    "quảng ngãi": (15.1167, 108.8000),
+    "quang ngai": (15.1167, 108.8000),
+    "quảng trị": (16.8167, 107.1000),
+    "quang tri": (16.8167, 107.1000),
+    "sơn la": (21.3167, 103.9000),
+    "son la": (21.3167, 103.9000),
+    "thanh hóa": (19.8067, 105.7852),
+    "thanh hoa": (19.8067, 105.7852),
+    "thái nguyên": (21.5942, 105.8481),
+    "thai nguyen": (21.5942, 105.8481),
+    "tuyên quang": (21.8167, 105.2167),
+    "tuyen quang": (21.8167, 105.2167),
+    "tây ninh": (11.3000, 106.1000),
+    "tay ninh": (11.3000, 106.1000),
+    "vĩnh long": (10.2500, 105.9667),
+    "vinh long": (10.2500, 105.9667),
+    "điện biên": (21.3833, 103.0167),
+    "dien bien": (21.3833, 103.0167),
+    "đắk lắk": (12.6667, 108.0500),
+    "dak lak": (12.6667, 108.0500),
+    "đồng tháp": (10.4500, 105.6333),
+    "dong thap": (10.4500, 105.6333),
+
+    # Bí danh các tỉnh/thành đã sáp nhập -> trỏ về tọa độ tỉnh mới
+    "bình dương": (10.8231, 106.6297),  # -> TP.HCM
+    "binh duong": (10.8231, 106.6297),
+    "bà rịa vũng tàu": (10.8231, 106.6297),  # -> TP.HCM
+    "ba ria vung tau": (10.8231, 106.6297),
+    "bà rịa - vũng tàu": (10.8231, 106.6297),
+    "vũng tàu": (10.8231, 106.6297),
+    "vung tau": (10.8231, 106.6297),
+    "long an": (10.8231, 106.6297),  # -> TP.HCM
+    "kiên giang": (10.3833, 105.4167),  # -> An Giang
+    "kien giang": (10.3833, 105.4167),
+    "hà giang": (21.8167, 105.2167),  # -> Tuyên Quang
+    "ha giang": (21.8167, 105.2167),
+    "hà nam": (21.0285, 105.8542),  # -> Hà Nội
+    "ha nam": (21.0285, 105.8542),
+    "hải dương": (20.8449, 106.6881),  # -> Hải Phòng
+    "hai duong": (20.8449, 106.6881),
+    "bắc giang": (21.1861, 106.0763),  # -> Bắc Ninh
+    "bac giang": (21.1861, 106.0763),
+    "vĩnh phúc": (21.3167, 105.4000),  # -> Phú Thọ
+    "vinh phuc": (21.3167, 105.4000),
+    "hòa bình": (21.3167, 105.4000),  # -> Phú Thọ
+    "hoa binh": (21.3167, 105.4000),
+    "nam định": (20.2500, 105.9750),  # -> Ninh Bình
+    "nam dinh": (20.2500, 105.9750),
+    "thái bình": (20.6500, 106.0500),  # -> Hưng Yên
+    "thai binh": (20.6500, 106.0500),
+    "quảng bình": (16.8167, 107.1000),  # -> Quảng Trị
+    "quang binh": (16.8167, 107.1000),
+    "bình định": (15.1167, 108.8000),  # -> Quảng Ngãi
+    "binh dinh": (15.1167, 108.8000),
+    "quảng nam": (16.0544, 108.2022),  # -> Đà Nẵng
+    "quang nam": (16.0544, 108.2022),
+    "phú yên": (12.2388, 109.1967),  # -> Khánh Hòa
+    "phu yen": (12.2388, 109.1967),
+    "ninh thuận": (12.2388, 109.1967),  # -> Khánh Hòa
+    "ninh thuan": (12.2388, 109.1967),
+    "bình thuận": (12.2388, 109.1967),  # -> Khánh Hòa
+    "binh thuan": (12.2388, 109.1967),
+    "kon tum": (13.9833, 108.0000),  # -> Gia Lai
+    "đắk nông": (12.6667, 108.0500),  # -> Đắk Lắk
+    "dak nong": (12.6667, 108.0500),
+    "bình phước": (11.3000, 106.1000),  # -> Tây Ninh
+    "binh phuoc": (11.3000, 106.1000),
+    "tiền giang": (10.4500, 105.6333),  # -> Đồng Tháp
+    "tien giang": (10.4500, 105.6333),
+    "bến tre": (10.2500, 105.9667),  # -> Vĩnh Long
+    "ben tre": (10.2500, 105.9667),
+    "trà vinh": (10.2500, 105.9667),  # -> Vĩnh Long
+    "tra vinh": (10.2500, 105.9667),
+    "hậu giang": (10.0452, 105.7469),  # -> Cần Thơ
+    "hau giang": (10.0452, 105.7469),
+    "sóc trăng": (10.0452, 105.7469),  # -> Cần Thơ
+    "soc trang": (10.0452, 105.7469),
+    "bạc liêu": (9.1768, 105.1524),  # -> Cà Mau
+    "bac lieu": (9.1768, 105.1524),
+    "yên bái": (22.4833, 103.9667),  # -> Lào Cai
+    "yen bai": (22.4833, 103.9667),
+    "bắc kạn": (21.5942, 105.8481),  # -> Thái Nguyên
+    "bac kan": (21.5942, 105.8481),
 }
+
+
+def extract_province_from_address(addr: str | None) -> str | None:
+    """Trích xuất tên tỉnh/thành phố từ cột address."""
+    if not addr or not addr.strip():
+        return None
+    import re
+    parts = [p.strip() for p in addr.split(",") if p.strip()]
+    if not parts:
+        return None
+    last = parts[-1]
+    last_clean = re.sub(r"\b(Việt Nam|Vietnam|VN)\b", "", last, flags=re.I).strip()
+    if not last_clean and len(parts) > 1:
+        last_clean = parts[-2].strip()
+    return last_clean or last
+
+
+def detect_province_from_label(label: str | None) -> str | None:
+    """Nhận diện tên tỉnh/thành phố từ nhãn người dùng nhập (chuẩn hóa về tên chung)."""
+    if not label or not label.strip():
+        return None
+    norm = label.strip().lower()
+    for district_alias, (prov, _) in DISTRICT_CENTERS.items():
+        if district_alias in norm:
+            return prov
+    for prov_alias in sorted(PROVINCE_CENTERS.keys(), key=len, reverse=True):
+        if prov_alias in norm:
+            return prov_alias
+    return None
 
 
 def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
@@ -153,10 +285,10 @@ def infer_coordinates_from_label(label: str | None) -> tuple[float, float] | Non
         if district_alias in norm:
             return coords
 
-    # 2. Fallback về tâm Tỉnh/Thành phố
-    for prov_alias, coords in PROVINCE_CENTERS.items():
+    # 2. Fallback về tâm Tỉnh/Thành phố (ưu tiên khớp cụm từ dài trước)
+    for prov_alias in sorted(PROVINCE_CENTERS.keys(), key=len, reverse=True):
         if prov_alias in norm:
-            return coords
+            return PROVINCE_CENTERS[prov_alias]
 
     # 3. Phường đơn lẻ hoặc địa danh lạ không có tỉnh -> None
     return None
@@ -348,6 +480,7 @@ def format_service_point_item(
     power_info: str | None = None,
     note: str | None = None,
     mask_phone: bool = False,
+    is_out_of_area: bool = False,
 ) -> ServicePointItem:
     phone = mask_phone_last_4(sp.phone) if mask_phone else sp.phone
     hotline_service = mask_phone_last_4(sp.hotline_service) if mask_phone else sp.hotline_service
@@ -364,6 +497,7 @@ def format_service_point_item(
         category=sp.category,
         category_slug=sp.category_slug,
         address=sp.address,
+        province=extract_province_from_address(sp.address),
         distance_km=round(distance_km, 2) if distance_km is not None else None,
         latitude=sp.latitude,
         longitude=sp.longitude,
@@ -379,6 +513,7 @@ def format_service_point_item(
         status=sp.status,
         note=final_note,
         crawled_at=sp.crawled_at.isoformat() if sp.crawled_at else None,
+        is_out_of_area=is_out_of_area,
     )
 
 
@@ -426,6 +561,8 @@ def build_case_service_points_response(
     recommended_points: list[ServicePointItem] = []
     max_crawled_at: datetime | None = None
     rescue_hotline: str | None = None
+    is_out_of_area = False
+    message = None
 
     if ref_lat is not None and ref_lng is not None:
         radius_default = DEFAULT_SEARCH_RADIUS.get(target_category, 50.0)
@@ -438,6 +575,34 @@ def build_case_service_points_response(
             limit=5,
         )
 
+        # Xử lý ưu tiên cùng tỉnh khi không có GPS
+        if not can_calculate_km and loc and loc.location_label:
+            label_prov = detect_province_from_label(loc.location_label)
+            if label_prov:
+                if nearby_raw:
+                    same_prov = []
+                    diff_prov = []
+                    for sp_item in nearby_raw:
+                        sp_obj = sp_item[0]
+                        sp_p = (extract_province_from_address(sp_obj.address) or "").lower()
+                        if label_prov in sp_p or sp_p in label_prov:
+                            same_prov.append(sp_item)
+                        else:
+                            diff_prov.append(sp_item)
+                    if same_prov:
+                        nearby_raw = same_prov + diff_prov
+                    else:
+                        # Không có điểm nào cùng tỉnh
+                        is_out_of_area = True
+                        nearest_sp = nearby_raw[0][0]
+                        nearest_p = extract_province_from_address(nearest_sp.address) or "tỉnh khác"
+                        cat_name = "xưởng" if target_category == "workshop" else "trạm sạc" if target_category == "charging_station" else "showroom"
+                        message = f"Chưa có {cat_name} trong khu vực bạn nhập; điểm gần nhất ở {nearest_p}"
+                else:
+                    is_out_of_area = True
+                    cat_name = "xưởng" if target_category == "workshop" else "trạm sạc" if target_category == "charging_station" else "showroom"
+                    message = f"Chưa có {cat_name} trong khu vực bạn nhập; không tìm thấy điểm dịch vụ lân cận"
+
         is_collision = is_collision_or_bodywork_case(case)
 
         for sp, dist in nearby_raw:
@@ -449,7 +614,10 @@ def build_case_service_points_response(
 
             power_info = "Chưa công bố công suất" if target_category == "charging_station" else None
             note = None
-            if target_category == "workshop" and is_collision and sp.dong_son:
+            if is_out_of_area:
+                item_prov = extract_province_from_address(sp.address) or "ngoại tỉnh"
+                note = f"Điểm ngoại tỉnh ({item_prov})"
+            elif target_category == "workshop" and is_collision and sp.dong_son:
                 note = "Có làm đồng sơn"
 
             item = format_service_point_item(
@@ -458,6 +626,7 @@ def build_case_service_points_response(
                 power_info=power_info,
                 note=note,
                 mask_phone=mask_phone_in_response,
+                is_out_of_area=is_out_of_area,
             )
             recommended_points.append(item)
 
@@ -471,7 +640,6 @@ def build_case_service_points_response(
 
     # Xử lý cờ vùng thưa và nhu cầu định vị
     no_points_nearby = False
-    message = None
     if can_calculate_km and len(recommended_points) == 0:
         no_points_nearby = True
         message = "Chưa có điểm dịch vụ trong 150 km quanh vị trí của bạn; vui lòng gọi hotline"
@@ -483,6 +651,7 @@ def build_case_service_points_response(
         case_id=case.id,
         needs_location=needs_location,
         no_points_nearby=no_points_nearby,
+        is_out_of_area=is_out_of_area,
         message=message,
         last_updated_label=last_updated_label,
         rescue_hotline=rescue_hotline,
@@ -507,7 +676,8 @@ def search_service_points_catalog(
       xếp xưởng service_car/service_car_partner trước service_gsm.
     """
     import os
-    if os.environ.get("GPS_CATALOG_MODE") == "demo":
+    mode = os.environ.get("GPS_CATALOG_MODE", "snapshot")
+    if db is None and mode != "db":
         from src.services.service_point_catalog import default_catalog_adapter, nearby_service_points
         return nearby_service_points(lat, lng, category, radius_km, limit, default_catalog_adapter(), vehicle_type)
 
@@ -556,14 +726,15 @@ def search_service_points_catalog(
                 "id": sp.id,
                 "name": sp.name,
                 "address": sp.address,
+                "province": extract_province_from_address(sp.address),
                 "category": cat_out,
                 "vehicle_type": vehicle_type,
                 "latitude": sp.latitude,
                 "longitude": sp.longitude,
                 "distance_km": round(dist, 3),
-                "source": "VinFast Database",
+                "source": "VinFast (dữ liệu thu thập)",
                 "updated_at": sp.crawled_at.strftime("%Y-%m-%d") if sp.crawled_at else "2026-10-15",
-                "verification_status": "VERIFIED",
+                "verification_status": "SNAPSHOT",
                 "demo": False,
                 "phone": sp.phone,
                 "hotline_service": sp.hotline_service,
@@ -576,9 +747,9 @@ def search_service_points_catalog(
 
         return {
             "points": points,
-            "source": "VinFast Database",
+            "source": "VinFast (dữ liệu thu thập)",
             "updated_at": "2026-10-15",
-            "verification_status": "VERIFIED",
+            "verification_status": "SNAPSHOT",
             "demo": False,
             "distance_method": "AIRLINE",
             "radius_km": radius_km,

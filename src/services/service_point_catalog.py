@@ -27,7 +27,7 @@ class CatalogMetadata(BaseModel):
     source: str = Field(min_length=1)
     updated_at: date | None
     imported_at: date | None = None
-    verification_status: Literal["UNVERIFIED", "VERIFIED"]
+    verification_status: Literal["UNVERIFIED", "SNAPSHOT", "VERIFIED"]
     demo: bool
 
     @model_validator(mode="after")
