@@ -1,0 +1,63 @@
+{
+  "date": "2026-10-17",
+  "scope": "selected offline regressions; no live provider calls",
+  "configured_models": {
+    "model_name": "gpt-4o-mini",
+    "normalization_model": "gemini-2.5-flash-lite",
+    "vision_provider": "openai",
+    "vision_model": "gpt-6-luna",
+    "dashboard_vision_model": "gemini-3.5-flash"
+  },
+  "test_runs": [
+    {
+      "path": ".test-runs/golden-audit-unrestricted-20261017.xml",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "1",
+        "skipped": "0",
+        "tests": "175",
+        "time": "21.525",
+        "timestamp": "2026-10-17T17:55:15.860989+07:00",
+        "hostname": "Laur"
+      }
+    },
+    {
+      "path": ".test-runs/golden-hard-audit-20261017.xml",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "159",
+        "time": "18.193",
+        "timestamp": "2026-10-17T17:56:09.789486+07:00",
+        "hostname": "Laur"
+      }
+    }
+  ],
+  "reproductions": {
+    "empty_contract": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      }
+    ],
+    "boolean_integer_confusion": [
+      {
+        "kind": "equals",
+        "field": "is_safety_trigger",
+        "expected": true,
+        "actual": 1,
+        "passed": true
+      }
+    ],
+    "wrong_model_and_phase": {
+      "status": "PASS",
+      "reasons": []
+    }
+  }
+}

@@ -102,7 +102,7 @@ async def structured_call(state: AgentState, prompt: str, schema: type[T], *, ca
     if not has_key or not settings.agent_llm_enabled:
         return None
     if normalization and 'gemini' in settings.normalization_model.lower() and not (
-            settings.google_api_key.startswith('AIza') or settings.openai_api_key and settings.openai_base_url):
+            settings.google_api_key or (settings.openai_api_key and settings.openai_base_url)):
         record_outcome(state, prompt, 'not_configured')
         return None
     budget = state.setdefault("llm_budget", new_turn_budget(time.monotonic() + settings.agent_turn_timeout_s))
@@ -180,8 +180,10 @@ async def structured_call(state: AgentState, prompt: str, schema: type[T], *, ca
                     body = re.sub(r'^```(?:json)?\s*|\s*```$', '', body.strip())
                 result = {'raw': raw_translation, 'parsed': schema.model_validate_json(body)}
             else:
+                # Triage contains an open captured_fields map, unsupported by OpenAI strict JSON schemas.
+                structured_options = {'method': 'function_calling'} if prompt == 'triage' and 'gemini' not in settings.model_name.lower() else {}
                 result = await asyncio.wait_for(
-                    (get_normalization_llm() if normalization else get_llm()).with_structured_output(schema, include_raw=True).ainvoke(
+                    (get_normalization_llm() if normalization else get_llm()).with_structured_output(schema, include_raw=True, **structured_options).ainvoke(
                         messages, **invoke_options), timeout=limit)
         raw = result.get("raw")
         usage = getattr(raw, "usage_metadata", None) or {}

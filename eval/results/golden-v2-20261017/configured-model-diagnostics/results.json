@@ -1,0 +1,171 @@
+[
+  {
+    "id": "PROBE-NORMALIZATION",
+    "category": "model_probe",
+    "kind": "probe",
+    "rationale": "Direct production prompt; not evidence that an end-to-end branch was taken.",
+    "trace_id": "5638f32598cc38ec203a170c418b8974",
+    "duration_s": 3.594,
+    "status": "BLOCKED",
+    "failed_checks": [
+      {
+        "kind": "equals",
+        "field": "needs_confirmation",
+        "expected": false,
+        "actual": null,
+        "passed": false,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "expansions.0.token",
+        "expected": "bh",
+        "actual": null,
+        "passed": false,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "expansions.0.replacement",
+        "expected": "bảo hành",
+        "actual": null,
+        "passed": false,
+        "turn": 1
+      }
+    ],
+    "evidence_errors": [
+      "model_evidence_missing:normalization:gemini-2.5-flash-lite"
+    ],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "equals",
+        "field": "needs_confirmation",
+        "expected": false,
+        "actual": null,
+        "passed": false,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "expansions.0.token",
+        "expected": "bh",
+        "actual": null,
+        "passed": false,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "expansions.0.replacement",
+        "expected": "bảo hành",
+        "actual": null,
+        "passed": false,
+        "turn": 1
+      }
+    ],
+    "output": {
+      "turns": [
+        {
+          "generation_error": "unavailable_or_unparsed"
+        }
+      ]
+    },
+    "model_calls": [
+      {
+        "phase": "normalization",
+        "call_id": "e9aee3c8e6f346e89a5accfa0ffe2140",
+        "requested_model": "gemini-2.5-flash-lite",
+        "actual_model": null,
+        "total_tokens": null,
+        "success": false,
+        "parsed": false,
+        "outcome": "provider_error",
+        "error_type": "GoogleModelNotFoundError"
+      }
+    ]
+  },
+  {
+    "id": "PROBE-TRIAGE",
+    "category": "model_probe",
+    "kind": "probe",
+    "rationale": "Direct production prompt; not evidence that an end-to-end branch was taken.",
+    "trace_id": "60b8c5caeeccf1523af86a938bc5711a",
+    "duration_s": 1.547,
+    "status": "BLOCKED",
+    "failed_checks": [
+      {
+        "kind": "equals",
+        "field": "intent",
+        "expected": "Charging/Battery",
+        "actual": null,
+        "passed": false,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "priority",
+        "expected": "HIGH",
+        "actual": null,
+        "passed": false,
+        "turn": 1
+      }
+    ],
+    "evidence_errors": [
+      "model_evidence_missing:triage:gpt-4o-mini"
+    ],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "equals",
+        "field": "intent",
+        "expected": "Charging/Battery",
+        "actual": null,
+        "passed": false,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "priority",
+        "expected": "HIGH",
+        "actual": null,
+        "passed": false,
+        "turn": 1
+      }
+    ],
+    "output": {
+      "turns": [
+        {
+          "generation_error": "unavailable_or_unparsed"
+        }
+      ]
+    },
+    "model_calls": [
+      {
+        "phase": "triage",
+        "call_id": "ea53ab434f60404c91d8634bb683c79f",
+        "requested_model": "gpt-4o-mini",
+        "actual_model": null,
+        "total_tokens": null,
+        "success": false,
+        "parsed": false,
+        "outcome": "provider_error",
+        "error_type": "OpenAIInvalidRequestError",
+        "http_status": 400,
+        "provider_type": "invalid_request_error",
+        "provider_param": "response_format"
+      }
+    ]
+  }
+]

@@ -18,8 +18,9 @@ async def test_structured_generation_records_usage_not_internal_reasoning(monkey
     parsed = TriageResult(intent="Sales/General Info", priority="LOW", confidence_score=0.9, is_faq=True)
 
     class FakeModel:
-        def with_structured_output(self, schema, include_raw):
+        def with_structured_output(self, schema, include_raw, method=None):
             assert schema is TriageResult and include_raw
+            assert method == 'function_calling'
             return self
 
         async def ainvoke(self, messages):

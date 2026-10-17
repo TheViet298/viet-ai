@@ -19,20 +19,22 @@ _client_lock = RLock()
 @lru_cache(maxsize=4)
 def _client(model: str, key: str, base_url: str, temperature: float, transport_timeout: float,
             normalization: bool = False):
-    # Sử dụng Google Gemini nếu model là gemini và key bắt đầu bằng AIza
-    if "gemini" in model.lower() and key.startswith("AIza"):
+    # Sử dụng Google Gemini nếu model là gemini và có google key
+    if "gemini" in model.lower() and key and not base_url:
         if ChatGoogleGenerativeAI is None:
             raise ImportError(
                 "Thư viện langchain-google-genai chưa được cài đặt. "
                 "Cài đặt bằng lệnh: pip install langchain-google-genai"
             )
+        kwargs = {'max_output_tokens': 256} if normalization else {}
+        if normalization and model.startswith('gemini-2.5'):
+            kwargs.update(temperature=0, thinking_budget=0)
         return ChatGoogleGenerativeAI(
             model=model,
             google_api_key=key,
-            temperature=temperature,
             max_retries=0,
             timeout=transport_timeout,
-            **({'thinking_budget': 0, 'max_output_tokens': 256} if normalization else {}),
+            **kwargs,
         )
 
     # Mặc định sử dụng OpenAI hoặc LiteLLM Gateway (openai/gpt-5.6, v.v.)
@@ -74,7 +76,7 @@ def get_llm():
 
 def get_normalization_llm():
     settings = get_settings()
-    direct_google = 'gemini' in settings.normalization_model.lower() and settings.google_api_key.startswith('AIza')
+    direct_google = 'gemini' in settings.normalization_model.lower() and bool(settings.google_api_key)
     if 'gemini' in settings.normalization_model.lower() and not direct_google and not (
             settings.openai_api_key and settings.openai_base_url):
         raise ValueError('Configure GOOGLE_API_KEY or an OpenAI-compatible Gemini gateway for NORMALIZATION_MODEL')

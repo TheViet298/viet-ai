@@ -1,0 +1,108 @@
+{
+  "run_id": "golden-v2-live-ff16f4d552",
+  "started_at": "2026-10-17T11:13:00.312019+00:00",
+  "finished_at": "2026-10-17T11:13:05.452748+00:00",
+  "mode": "live",
+  "dataset_sha256": "3caf792decf2662daa66826b98e1b3d81d566b874f0e5afecaf98d95a1d7f460",
+  "total": 2,
+  "verdicts": {
+    "BLOCKED": 2
+  },
+  "coverage": [
+    {
+      "phase": "normalization",
+      "requested_model": "gemini-2.5-flash-lite",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "conversation_turn",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "triage",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "general",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "rag_qa",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "memory",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "customer_translation",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "vision.route",
+      "requested_model": "gpt-6-luna",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "vision.dashboard",
+      "requested_model": "gpt-6-luna",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "vision.exterior",
+      "requested_model": "gpt-6-luna",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    }
+  ],
+  "all_active_model_phases_covered": false,
+  "generation_count": 2,
+  "known_tokens": 0,
+  "isolation": {
+    "database": "D:\\142.AI20K\\P-142\\.test-runs\\golden-v2\\diagnostics-20261017-01\\app.db",
+    "session_store": "D:\\142.AI20K\\P-142\\.test-runs\\golden-v2\\diagnostics-20261017-01\\app.agent.db",
+    "attachments": "D:\\142.AI20K\\P-142\\.test-runs\\golden-v2\\diagnostics-20261017-01\\data\\attachments",
+    "chroma": "D:\\142.AI20K\\P-142\\.test-runs\\golden-v2\\diagnostics-20261017-01\\chroma"
+  },
+  "label_status": "draft_policy_review",
+  "coverage_scope": "direct_production_prompt_probes_and_service_calls; see case kind; not all HTTP/UI branches",
+  "inactive_alternative": {
+    "vision_provider": "google",
+    "status": "NOT_RUN"
+  }
+}

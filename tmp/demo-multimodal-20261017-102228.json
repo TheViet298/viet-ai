@@ -1,0 +1,102 @@
+[
+  {
+    "id": "CASE-TXT-01",
+    "kind": "chat",
+    "category": "Onboarding & Giới thiệu",
+    "status_code": 200,
+    "duration_s": 4.56,
+    "trace_id": "b61de13440de56792779f3f2baac5988",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/b61de13440de56792779f3f2baac5988",
+    "detail": "Chat Response: Dạ, Quý khách! Chúc mừng Quý khách đã sở hữu xe VinFast VF8. Em rất vui được hỗ trợ Quý khách làm quen với các..."
+  },
+  {
+    "id": "CASE-TXT-02",
+    "kind": "chat",
+    "category": "Chính sách & RAG FAQ",
+    "status_code": 200,
+    "duration_s": 5.2,
+    "trace_id": "b3a72081bf695ac581479957e95466c0",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/b3a72081bf695ac581479957e95466c0",
+    "detail": "Chat Response: Em chưa xác minh được thông tin này từ tài liệu phù hợp với yêu cầu của Quý khách. Cần đối chiếu thêm với VinF..."
+  },
+  {
+    "id": "CASE-TXT-03",
+    "kind": "chat",
+    "category": "Khẩn cấp (Hard Safety)",
+    "status_code": 200,
+    "duration_s": 0.16,
+    "trace_id": "b7f46d4561b0861f23083b345bc219dd",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/b7f46d4561b0861f23083b345bc219dd",
+    "detail": "Chat Response: Quý khách vui lòng giữ bình tĩnh, tấp xe vào lề an toàn nếu có thể, bật đèn cảnh báo khẩn cấp (hazard), di chu..."
+  },
+  {
+    "id": "CASE-TXT-04",
+    "kind": "chat",
+    "category": "Khẩn cấp (Mất trợ lực phanh)",
+    "status_code": 200,
+    "duration_s": 0.16,
+    "trace_id": "6da54f4304a909524de07e5718bc7801",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/6da54f4304a909524de07e5718bc7801",
+    "detail": "Chat Response: Anh/chị vui lòng cho em biết thêm biểu tượng cảnh báo và tình trạng di chuyển của xe để em hỗ trợ xử lý nhé ạ...."
+  },
+  {
+    "id": "CASE-TXT-05",
+    "kind": "chat",
+    "category": "Sự cố sạc & Hướng dẫn",
+    "status_code": 200,
+    "duration_s": 0.17,
+    "trace_id": "c8ceed686c33ebfdc67c9ebc57c45f36",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/c8ceed686c33ebfdc67c9ebc57c45f36",
+    "detail": "Chat Response: Anh/chị vui lòng cho em biết thêm vị trí trạm sạc và mã lỗi hoặc đèn báo để em hỗ trợ xử lý nhé ạ...."
+  },
+  {
+    "id": "CASE-TXT-06",
+    "kind": "chat",
+    "category": "Dịch vụ & Vị trí trạm sạc",
+    "status_code": 200,
+    "duration_s": 1.91,
+    "trace_id": "23f7a5890f21dd36f1f16b866ac67e6f",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/23f7a5890f21dd36f1f16b866ac67e6f",
+    "detail": "Chat Response: Theo tài liệu VinFast:  Dạ, Quý khách có thể tìm thấy trạm sạc VinFast gần nhất ở khu vực Cầu Giấy, Hà Nội thô..."
+  },
+  {
+    "id": "CASE-IMG-01",
+    "kind": "upload",
+    "category": "Ảnh táp-lô: Áp suất lốp thấp",
+    "status_code": 200,
+    "duration_s": 3.36,
+    "trace_id": "111ee7c1604511b3a18b260840cad856",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/111ee7c1604511b3a18b260840cad856",
+    "detail": "OCR: 'SYNTHETIC TEST 0 km/h Tire pressure low' | Symptoms: ['low_pressure'] | Vision: OPENAI_VISION"
+  },
+  {
+    "id": "CASE-IMG-02",
+    "kind": "upload",
+    "category": "Ảnh táp-lô: Lỗi cảm biến TPMS",
+    "status_code": 200,
+    "duration_s": 3.38,
+    "trace_id": "2a8b985552803c3047d204964cac91da",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/2a8b985552803c3047d204964cac91da",
+    "detail": "OCR: 'SYNTHETIC TEST 0 km/h Tire pressure sensor fault' | Symptoms: ['sensor_fault'] | Vision: OPENAI_VISION"
+  },
+  {
+    "id": "CASE-IMG-03",
+    "kind": "upload",
+    "category": "Ảnh ngoại thất: Nhận diện xe & hư hại",
+    "status_code": 200,
+    "duration_s": 1.41,
+    "trace_id": "65c74d70026857188c3d63c6117ff370",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/65c74d70026857188c3d63c6117ff370",
+    "detail": "OCR: '' | Symptoms: [] | Vision: unknown"
+  },
+  {
+    "id": "CASE-IMG-04",
+    "kind": "upload",
+    "category": "Ảnh âm tính: Không có xe (Anti-hallucination)",
+    "status_code": 200,
+    "duration_s": 4.17,
+    "trace_id": "4b29268495e0aa79d637164da8d32c45",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/4b29268495e0aa79d637164da8d32c45",
+    "detail": "OCR: '' | Symptoms: [] | Vision: unknown"
+  }
+]

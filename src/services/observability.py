@@ -91,6 +91,21 @@ def update_observation(handle: Any, **fields: Any) -> None:
             pass
 
 
+def score_trace(name: str, value: float, *, trace_id: str | None = None,
+                data_type: str = 'NUMERIC', comment: str | None = None) -> None:
+    """Post a score to the current or given trace. Fail-open — never raises."""
+    if _client is None:
+        return
+    tid = trace_id or getattr(_root.get(), 'trace_id', None)
+    if tid is None:
+        return
+    try:
+        _client.score(trace_id=tid, name=name, value=value, data_type=data_type,
+                      comment=comment[:500] if comment else None)
+    except Exception:
+        pass
+
+
 def current_trace_id() -> str | None:
     return getattr(_root.get(), 'trace_id', None)
 
@@ -151,17 +166,24 @@ def bind_trace_attributes(*, session_id=None, user_id=None, tags=None, metadata=
 def observation(name: str, *, as_type='span', metadata=None, model=None):
     started = time.monotonic()
     ctx, handle = None, None
+    trace_ctx = None
     parent = _root.get()
     identity_token = _identity.set(dict(_identity.get()))
     merged = {**_validation.get(), **_identity.get(), **(metadata or {})}
     merged.pop('user_id', None)
     if _client is not None:
         try:
+            if parent is None:
+                # No active root trace — create one so this span is visible in Langfuse UI
+                trace_ctx = _client.start_as_current_observation(name=name, as_type='trace',
+                                                                 metadata=mask_telemetry(data=merged))
+                trace_ctx.__enter__()
             ctx = _client.start_as_current_observation(name=name, as_type=as_type,
                                                        metadata=mask_telemetry(data=merged), model=model)
             handle = ctx.__enter__()
         except Exception:
             ctx = None
+            trace_ctx = None
     root_token = _root.set(handle if parent is None else parent)
     try:
         with bind_trace_attributes():
@@ -181,6 +203,11 @@ def observation(name: str, *, as_type='span', metadata=None, model=None):
         if ctx is not None:
             try:
                 ctx.__exit__(None, None, None)
+            except Exception:
+                pass
+        if trace_ctx is not None:
+            try:
+                trace_ctx.__exit__(None, None, None)
             except Exception:
                 pass
 

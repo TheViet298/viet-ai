@@ -8,8 +8,9 @@ import pytest
 
 from eval.golden import evaluate_turn
 
-DATASET = Path(__file__).resolve().parents[2] / "eval/datasets/golden_testcases_v1.jsonl"
-CASES = [json.loads(line) for line in DATASET.read_text(encoding="utf-8").splitlines() if line.strip()] if DATASET.exists() else []
+DATASET = Path(__file__).resolve().parents[2] / "eval/datasets/golden_testcases.jsonl"
+CASES = [case for line in DATASET.read_text(encoding="utf-8").splitlines() if line.strip()
+         if (case := json.loads(line))['id'].startswith('GOLD-')] if DATASET.exists() else []
 
 
 def assert_contract(output, turn):

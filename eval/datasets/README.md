@@ -2,9 +2,13 @@
 
 ## Golden testcase cho Agent
 
+Một bộ duy nhất: [golden_testcases.jsonl](golden_testcases.jsonl), **190 ca** gồm 60 ca ban đầu, 120 ca khó, 1 ca chào hỏi tiếng Việt và 9 ca tiếng Anh, giữ nguyên ID/nội dung. [Hướng dẫn schema và cách chạy](golden_testcases.md). Không còn file golden v1/v2 riêng.
+
+[Kết quả nâng cấp và chạy offline/live ngày 17/10/2026](../results/golden-v2-20261017/report.md): regression 252 PASS; golden v2 offline 95 PASS / 9 FAIL / 16 BLOCKED; live 30 PASS / 10 FAIL. Các lỗi còn lại được giữ nguyên để xử lý.
+
 Bổ sung [10 ca gọi model thật, gồm nhận diện ảnh](live_model_cases_v1.jsonl): 6 hội thoại, 2 táp-lô và 2 ngoại thất/âm tính. [Hướng dẫn tự chạy và xem trên Langfuse](../../docs/guide/langfuse-live-model-eval.md).
 
-[golden_testcases_v1.jsonl](golden_testcases_v1.jsonl) gồm 60 ca safety, triage, RAG và hội thoại nhiều lượt. [Hướng dẫn schema và cách chạy](golden_testcases_v1.md) mô tả harness pytest offline, fixture tra cứu và giới hạn đánh giá. Nhãn đang ở trạng thái `draft_policy_review`; bộ này không thay thế master benchmark hoặc bộ nghiệm thu đã duyệt.
+Bộ golden bao gồm safety, triage, RAG, hội thoại nhiều lượt, chuẩn hóa và Vision. Nhãn đang ở trạng thái `draft_policy_review`; bộ này không thay thế master benchmark hoặc bộ nghiệm thu đã duyệt. Các báo cáo và snapshot cũ được giữ để đối chiếu.
 
 Cập nhật: 2026-09-30. Đây là dữ liệu tình huống mô phỏng phục vụ hai luồng sẽ xây dựng sau; chưa phải kết quả chạy RAG hoặc Agent.
 

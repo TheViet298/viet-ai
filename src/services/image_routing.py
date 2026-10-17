@@ -9,6 +9,7 @@ from openai import APIStatusError, APITimeoutError, AsyncOpenAI
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from src.config import get_settings
+from src.services.observability import score_trace
 from src.services.observability_usage import provider_generation
 
 
@@ -101,7 +102,11 @@ async def classify_vehicle_image(data: bytes, mime_type: str) -> dict:
                 body = "".join(p.get("text", "") for p in candidate["content"]["parts"] if not p.get("thought"))
 
             route = ImageRoute.model_validate_json(body).model_dump()
-            if route["confidence"] < settings.image_routing_min_confidence or route["image_kind"] == "unknown":
+            resolved = route["image_kind"] != "unknown" and route["confidence"] >= settings.image_routing_min_confidence
+            score_trace("routing_confidence", route["confidence"], comment=route["image_kind"])
+            score_trace("routing_resolved", 1.0 if resolved else 0.0, data_type="BOOLEAN",
+                        comment=None if resolved else "routing_uncertain")
+            if not resolved:
                 return {**route, "image_kind": "unknown", "reason": "routing_uncertain"}
             return route
     except (TimeoutError, APITimeoutError):

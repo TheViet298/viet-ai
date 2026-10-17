@@ -1,0 +1,122 @@
+[
+  {
+    "id": "M1-GEMINI-NORM-01",
+    "title": "Chuẩn hóa viết tắt sạc pin (k nhan sac, giup mik)",
+    "model": "gemini-2.5-flash-lite",
+    "duration_s": 1.2,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "total_tokens": 0,
+    "cost_usd": 0.0,
+    "cost_vnd": 0.0,
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/35b377404fc1d7ea394a84e673065d03"
+  },
+  {
+    "id": "M1-GEMINI-NORM-02",
+    "title": "Chuẩn hóa viết tắt khởi động xe (k khoi dong dc)",
+    "model": "gemini-2.5-flash-lite",
+    "duration_s": 0.78,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "total_tokens": 0,
+    "cost_usd": 0.0,
+    "cost_vnd": 0.0,
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/434b192727f0a254d8aebf9bb5579910"
+  },
+  {
+    "id": "M1-GEMINI-NORM-03",
+    "title": "Chuẩn hóa câu hỏi bảo dưỡng (ntn, bth)",
+    "model": "gemini-2.5-flash-lite",
+    "duration_s": 0.81,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "total_tokens": 0,
+    "cost_usd": 0.0,
+    "cost_vnd": 0.0,
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/50a5f437fd3010485ebcb821062ae8ab"
+  },
+  {
+    "id": "M2-GPT6LUNA-VIS-01",
+    "title": "Ảnh táp-lô: Nhận diện OCR cảnh báo áp suất lốp thấp",
+    "model": "gpt-6-luna",
+    "duration_s": 3.45,
+    "input_tokens": 1568,
+    "output_tokens": 84,
+    "total_tokens": 1727,
+    "cost_usd": 0.000236299999,
+    "cost_vnd": 6.0,
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/aabceca278c3c6d84e823eafd68929be"
+  },
+  {
+    "id": "M2-GPT6LUNA-VIS-02",
+    "title": "Ảnh táp-lô: Nhận diện lỗi cảm biến áp suất TPMS",
+    "model": "gpt-6-luna",
+    "duration_s": 3.06,
+    "input_tokens": 1568,
+    "output_tokens": 101,
+    "total_tokens": 1745,
+    "cost_usd": 0.0002453,
+    "cost_vnd": 6.23,
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/6257526840a4aad48bee84642a121a3c"
+  },
+  {
+    "id": "M2-GPT6LUNA-VIS-03",
+    "title": "Ảnh ngoại thất: Phân tích thân vỏ & nhận diện dòng xe",
+    "model": "gpt-6-luna",
+    "duration_s": 1.72,
+    "input_tokens": 1477,
+    "output_tokens": 47,
+    "total_tokens": 1555,
+    "cost_usd": 0.0001867,
+    "cost_vnd": 4.74,
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/7286c705e9e356497e46e7a0a39f40cb"
+  },
+  {
+    "id": "M2-GPT6LUNA-VIS-04",
+    "title": "Ảnh âm tính: Chống ảo giác nhận diện khi không có xe",
+    "model": "gpt-6-luna",
+    "duration_s": 2.02,
+    "input_tokens": 1477,
+    "output_tokens": 47,
+    "total_tokens": 1562,
+    "cost_usd": 0.0001902,
+    "cost_vnd": 4.83,
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/479408492525bf11aada6dd64ff6392c"
+  },
+  {
+    "id": "M3-GPT4OMINI-CHAT-01",
+    "title": "Sự cố khẩn cấp: Bốc khói khoang pin (Hard Safety)",
+    "model": "gpt-4o-mini",
+    "duration_s": 0.25,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "total_tokens": 0,
+    "cost_usd": 0.0,
+    "cost_vnd": 0.0,
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/e9b389b97c4e3009c4ebbfbb238dc727"
+  },
+  {
+    "id": "M3-GPT4OMINI-CHAT-02",
+    "title": "Tra cứu chính sách bảo hành pin VF8 (RAG FAQ)",
+    "model": "gpt-4o-mini",
+    "duration_s": 6.11,
+    "input_tokens": 107,
+    "output_tokens": 180,
+    "total_tokens": 1823,
+    "cost_usd": 0.00023925,
+    "cost_vnd": 6.08,
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/143f20a3d8a32f9dee36843d4200dfb3"
+  },
+  {
+    "id": "M3-GPT4OMINI-CHAT-03",
+    "title": "Kẹt súng sạc DC: Hướng dẫn kỹ thuật tháo chốt",
+    "model": "gpt-4o-mini",
+    "duration_s": 0.47,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "total_tokens": 0,
+    "cost_usd": 0.0,
+    "cost_vnd": 0.0,
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/857b893a467dd13cba2f61d47e1d9c55"
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "case_id": "CASE-01",
+    "title": "Làm quen & Giới thiệu xe",
+    "status_code": 200,
+    "duration_s": 6.5,
+    "trace_id": "a5b4cb7b83bc76db67c302a962bd42f6",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/a5b4cb7b83bc76db67c302a962bd42f6",
+    "reply": "Dạ, Quý khách! Chúc mừng Quý khách đã sở hữu xe VinFast VF8. Em rất vui được hỗ trợ Quý khách làm quen với các tính năng"
+  },
+  {
+    "case_id": "CASE-02",
+    "title": "Chính sách bảo hành pin VF8",
+    "status_code": 200,
+    "duration_s": 5.53,
+    "trace_id": "6d80743e6dcd56a3b0d8b864426e4049",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/6d80743e6dcd56a3b0d8b864426e4049",
+    "reply": "Em chưa xác minh được thông tin này từ tài liệu phù hợp với yêu cầu của Quý khách. Cần đối chiếu thêm với VinFast trước "
+  },
+  {
+    "case_id": "CASE-03",
+    "title": "Khẩn cấp: Bốc khói khoang pin",
+    "status_code": 200,
+    "duration_s": 0.16,
+    "trace_id": "9720870a60563ed65046e85b7bda3eb1",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/9720870a60563ed65046e85b7bda3eb1",
+    "reply": "Quý khách vui lòng giữ bình tĩnh, tấp xe vào lề an toàn nếu có thể, bật đèn cảnh báo khẩn cấp (hazard), di chuyển ra khỏ"
+  },
+  {
+    "case_id": "CASE-04",
+    "title": "Khẩn cấp: Mất phanh đột ngột",
+    "status_code": 200,
+    "duration_s": 0.19,
+    "trace_id": "596d69834c6f6d40efa52300521cbd1d",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/596d69834c6f6d40efa52300521cbd1d",
+    "reply": "Anh/chị vui lòng cho em biết thêm biểu tượng cảnh báo và tình trạng di chuyển của xe để em hỗ trợ xử lý nhé ạ."
+  },
+  {
+    "case_id": "CASE-05",
+    "title": "Trụ sạc báo đèn đỏ không nhận sạc",
+    "status_code": 200,
+    "duration_s": 0.17,
+    "trace_id": "d34899ac3dba2203d2d6eb1f0571ca66",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/d34899ac3dba2203d2d6eb1f0571ca66",
+    "reply": "Anh/chị vui lòng cho biết mình đang sử dụng dòng xe VinFast nào (ví dụ: VF3, VF5, VF8) ạ?"
+  },
+  {
+    "case_id": "CASE-06",
+    "title": "Kẹt súng sạc tại trụ",
+    "status_code": 200,
+    "duration_s": 0.2,
+    "trace_id": "610e2ea2700edc1ddc564ce119c2582c",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/610e2ea2700edc1ddc564ce119c2582c",
+    "reply": "Anh/chị vui lòng cho em biết thêm vị trí trạm sạc và mã lỗi hoặc đèn báo để em hỗ trợ xử lý nhé ạ."
+  },
+  {
+    "case_id": "CASE-07",
+    "title": "Cảnh báo rùa vàng trên cao tốc",
+    "status_code": 200,
+    "duration_s": 0.17,
+    "trace_id": "2b5ddff93299fb97a717abdcb4d38bdb",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/2b5ddff93299fb97a717abdcb4d38bdb",
+    "reply": "Quý khách vui lòng giữ bình tĩnh, tấp xe vào lề an toàn nếu có thể, bật đèn cảnh báo khẩn cấp (hazard), di chuyển ra khỏ"
+  },
+  {
+    "case_id": "CASE-08",
+    "title": "Màn hình giải trí bị treo đen",
+    "status_code": 200,
+    "duration_s": 0.2,
+    "trace_id": "391fbf481843204d0c70691f4d42f03a",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/391fbf481843204d0c70691f4d42f03a",
+    "reply": "Anh/chị vui lòng cho em biết thêm biểu tượng cảnh báo và tình trạng di chuyển của xe để em hỗ trợ xử lý nhé ạ."
+  },
+  {
+    "case_id": "CASE-09",
+    "title": "Tìm trạm sạc gần nhất",
+    "status_code": 200,
+    "duration_s": 2.69,
+    "trace_id": "172daaec819d00deff4536945afbbe35",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/172daaec819d00deff4536945afbbe35",
+    "reply": "Theo tài liệu VinFast:  Dạ, Quý khách có thể tìm trạm sạc VinFast gần nhất bằng cách sử dụng ứng dụng VinFast hoặc truy "
+  },
+  {
+    "case_id": "CASE-10",
+    "title": "Lịch bảo dưỡng định kỳ",
+    "status_code": 200,
+    "duration_s": 0.7,
+    "trace_id": "0dce55ecdf1558dbd0e15c3b0275e332",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/0dce55ecdf1558dbd0e15c3b0275e332",
+    "reply": "Em chưa tìm được tài liệu chính thức đủ để xác nhận thông tin này. Quý khách có thể liên hệ chuyên viên VinFast để đối c"
+  }
+]

@@ -1,0 +1,102 @@
+[
+  {
+    "id": "M1-GEMINI-NORM-01",
+    "model": "gemini-2.5-flash-lite",
+    "kind": "normalization",
+    "title": "Chuẩn hóa viết tắt sạc pin (k nhan sac, giup mik)",
+    "duration_s": 1.2,
+    "trace_id": "35b377404fc1d7ea394a84e673065d03",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/35b377404fc1d7ea394a84e673065d03",
+    "detail": "Gốc: 'xe mik k nhan sac o tram sac, giup mik vs' --> Chuẩn hóa: 'Xe mình không nhận sạc ở trạm sạc, giúp mình với.'"
+  },
+  {
+    "id": "M1-GEMINI-NORM-02",
+    "model": "gemini-2.5-flash-lite",
+    "kind": "normalization",
+    "title": "Chuẩn hóa viết tắt khởi động xe (k khoi dong dc)",
+    "duration_s": 0.78,
+    "trace_id": "434b192727f0a254d8aebf9bb5579910",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/434b192727f0a254d8aebf9bb5579910",
+    "detail": "Gốc: 'xe vf e34 k khoi dong dc, man hinh toi thui' --> Chuẩn hóa: 'Xe VF e34 không khởi động được, màn hình tối thui'"
+  },
+  {
+    "id": "M1-GEMINI-NORM-03",
+    "model": "gemini-2.5-flash-lite",
+    "kind": "normalization",
+    "title": "Chuẩn hóa câu hỏi bảo dưỡng (ntn, bth)",
+    "duration_s": 0.81,
+    "trace_id": "50a5f437fd3010485ebcb821062ae8ab",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/50a5f437fd3010485ebcb821062ae8ab",
+    "detail": "Gốc: 'lich bao duong xe vf5 ntn vay ad, xe van chay bth' --> Chuẩn hóa: ''lịch bảo dưỡng xe vf5 như thế nào vậy ad, xe vẫn chạy bình thường''"
+  },
+  {
+    "id": "M2-GPT6LUNA-VIS-01",
+    "model": "gpt-6-luna",
+    "kind": "vision",
+    "title": "Ảnh táp-lô: Nhận diện OCR cảnh báo áp suất lốp thấp",
+    "duration_s": 3.45,
+    "trace_id": "aabceca278c3c6d84e823eafd68929be",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/aabceca278c3c6d84e823eafd68929be",
+    "detail": "OCR: 'SYNTHETIC TEST 0 km/h Tire pressure low' | Triệu chứng: ['low_pressure'] | Loại: OPENAI_VISION"
+  },
+  {
+    "id": "M2-GPT6LUNA-VIS-02",
+    "model": "gpt-6-luna",
+    "kind": "vision",
+    "title": "Ảnh táp-lô: Nhận diện lỗi cảm biến áp suất TPMS",
+    "duration_s": 3.06,
+    "trace_id": "6257526840a4aad48bee84642a121a3c",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/6257526840a4aad48bee84642a121a3c",
+    "detail": "OCR: 'SYNTHETIC TEST 0 km/h Tire pressure sensor fault' | Triệu chứng: ['sensor_fault'] | Loại: OPENAI_VISION"
+  },
+  {
+    "id": "M2-GPT6LUNA-VIS-03",
+    "model": "gpt-6-luna",
+    "kind": "vision",
+    "title": "Ảnh ngoại thất: Phân tích thân vỏ & nhận diện dòng xe",
+    "duration_s": 1.72,
+    "trace_id": "7286c705e9e356497e46e7a0a39f40cb",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/7286c705e9e356497e46e7a0a39f40cb",
+    "detail": "OCR: '' | Triệu chứng: [] | Loại: VEHICLE_MODEL"
+  },
+  {
+    "id": "M2-GPT6LUNA-VIS-04",
+    "model": "gpt-6-luna",
+    "kind": "vision",
+    "title": "Ảnh âm tính: Chống ảo giác nhận diện khi không có xe",
+    "duration_s": 2.02,
+    "trace_id": "479408492525bf11aada6dd64ff6392c",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/479408492525bf11aada6dd64ff6392c",
+    "detail": "OCR: '' | Triệu chứng: [] | Loại: VEHICLE_MODEL"
+  },
+  {
+    "id": "M3-GPT4OMINI-CHAT-01",
+    "model": "gpt-4o-mini",
+    "kind": "chat",
+    "title": "Sự cố khẩn cấp: Bốc khói khoang pin (Hard Safety)",
+    "duration_s": 0.25,
+    "trace_id": "e9b389b97c4e3009c4ebbfbb238dc727",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/e9b389b97c4e3009c4ebbfbb238dc727",
+    "detail": "Phản hồi: Quý khách vui lòng giữ bình tĩnh, tấp xe vào lề an toàn nếu có thể, bật đèn cảnh báo khẩn cấp (hazar..."
+  },
+  {
+    "id": "M3-GPT4OMINI-CHAT-02",
+    "model": "gpt-4o-mini",
+    "kind": "chat",
+    "title": "Tra cứu chính sách bảo hành pin VF8 (RAG FAQ)",
+    "duration_s": 6.11,
+    "trace_id": "143f20a3d8a32f9dee36843d4200dfb3",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/143f20a3d8a32f9dee36843d4200dfb3",
+    "detail": "Phản hồi: Em chưa xác minh được thông tin này từ tài liệu phù hợp với yêu cầu của Quý khách. Cần đối chiếu thê..."
+  },
+  {
+    "id": "M3-GPT4OMINI-CHAT-03",
+    "model": "gpt-4o-mini",
+    "kind": "chat",
+    "title": "Kẹt súng sạc DC: Hướng dẫn kỹ thuật tháo chốt",
+    "duration_s": 0.47,
+    "trace_id": "857b893a467dd13cba2f61d47e1d9c55",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/857b893a467dd13cba2f61d47e1d9c55",
+    "detail": "Phản hồi: Anh/chị vui lòng cho em biết thêm vị trí trạm sạc và mã lỗi hoặc đèn báo để em hỗ trợ xử lý nhé ạ...."
+  }
+]

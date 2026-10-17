@@ -1,0 +1,120 @@
+{
+  "run_id": "golden-v2-offline-79bd0f794e",
+  "started_at": "2026-10-17T11:48:26.081810+00:00",
+  "finished_at": "2026-10-17T11:48:30.321823+00:00",
+  "configured_models": {
+    "model_name": "gpt-4o-mini",
+    "normalization_model": "gemini-2.5-flash-lite",
+    "vision_provider": "openai",
+    "vision_model": "gpt-6-luna",
+    "dashboard_vision_model": "gemini-3.5-flash"
+  },
+  "explicit_overrides": {},
+  "cloud_usage": null,
+  "cloud_readback": "not_requested",
+  "mode": "offline",
+  "dataset_sha256": "a789e4382cb608f2ee34c812aac6692acdfb6f0aac4c7f4bc2faed4405478890",
+  "suite_sha256": "ca95a2346ec86ca754b5dd4f431c0809153743b678cc4d80d4169d63ab55e68e",
+  "total": 10,
+  "verdicts": {
+    "PASS": 7,
+    "FAIL": 3
+  },
+  "coverage": [
+    {
+      "phase": "normalization",
+      "requested_model": "gemini-2.5-flash-lite",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "conversation_turn",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "triage",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "general",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "rag_qa",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "memory",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "customer_translation",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "vision.route",
+      "requested_model": "gpt-6-luna",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "vision.dashboard",
+      "requested_model": "gpt-6-luna",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "vision.exterior",
+      "requested_model": "gpt-6-luna",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    }
+  ],
+  "all_active_model_phases_covered": false,
+  "generation_count": 0,
+  "known_tokens": 0,
+  "isolation": {
+    "database": "D:\\142.AI20K\\P-142\\.test-runs\\golden-language-20261017\\app.db",
+    "session_store": "D:\\142.AI20K\\P-142\\.test-runs\\golden-language-20261017\\app.agent.db",
+    "attachments": "D:\\142.AI20K\\P-142\\.test-runs\\golden-language-20261017\\data\\attachments",
+    "chroma": "D:\\142.AI20K\\P-142\\.test-runs\\golden-language-20261017\\chroma"
+  },
+  "label_status": "draft_policy_review",
+  "coverage_scope": "direct_production_prompt_probes_and_service_calls; see case kind; not all HTTP/UI branches",
+  "inactive_alternative": {
+    "vision_provider": "google",
+    "status": "NOT_RUN"
+  }
+}

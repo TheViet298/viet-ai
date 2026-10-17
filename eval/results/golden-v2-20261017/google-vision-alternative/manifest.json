@@ -1,0 +1,146 @@
+{
+  "run_id": "golden-v2-live-49f6c7d554",
+  "started_at": "2026-10-17T11:17:16.102254+00:00",
+  "finished_at": "2026-10-17T11:17:52.417289+00:00",
+  "configured_models": {
+    "model_name": "gpt-4o-mini",
+    "normalization_model": "gemini-2.5-flash-lite",
+    "vision_provider": "openai",
+    "vision_model": "gpt-6-luna",
+    "dashboard_vision_model": "gemini-3.5-flash"
+  },
+  "explicit_overrides": {
+    "vision_provider": "google"
+  },
+  "cloud_usage": {
+    "trace_ids": [
+      "d6c5ef1e531a52d08f8af6deac17d23e",
+      "e52cd1fe07ddb71704f77130117dfd3c",
+      "f16309b452eb1ac921282c8dc15ab72f"
+    ],
+    "observation_ids": [
+      "1c1b08c3d2359ce7",
+      "386e1f5c08bdfb4d",
+      "4a34e18b058b9c4b",
+      "4d4af8eb97030ec9",
+      "4faa579111ebca54",
+      "75378945441ec49e",
+      "a125ab1301c7c873",
+      "a938f0dfe4ab2d4f",
+      "e21173f5c88845a7"
+    ],
+    "root_count": 3,
+    "generation_count": 3,
+    "known_input_tokens": 4367,
+    "known_output_tokens": 937,
+    "known_total_tokens": 5304,
+    "known_cost_usd": 0.0149835,
+    "missing_usage_count": 0,
+    "missing_cost_count": 0,
+    "totals_complete": true
+  },
+  "cloud_readback": "partial",
+  "mode": "live",
+  "dataset_sha256": "3ab04fdfa227b91c681070eb042f41a1c7f8c3fd44bfb5cc2ce550d00c2929ac",
+  "total": 5,
+  "verdicts": {
+    "BLOCKED": 5
+  },
+  "coverage": [
+    {
+      "phase": "normalization",
+      "requested_model": "gemini-2.5-flash-lite",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "conversation_turn",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "triage",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "general",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "rag_qa",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "memory",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "customer_translation",
+      "requested_model": "gpt-4o-mini",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "vision.route",
+      "requested_model": "gemini-3.5-flash",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "vision.dashboard",
+      "requested_model": "gemini-3.5-flash",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    },
+    {
+      "phase": "vision.exterior",
+      "requested_model": "gpt-6-luna",
+      "provider_confirmed_cases": [],
+      "correct_cases": [],
+      "actual_models": [],
+      "status": "BLOCKED"
+    }
+  ],
+  "all_active_model_phases_covered": false,
+  "generation_count": 5,
+  "known_tokens": 10662,
+  "isolation": {
+    "database": "D:\\142.AI20K\\P-142\\.test-runs\\golden-v2\\google-vision-20261017-01\\app.db",
+    "session_store": "D:\\142.AI20K\\P-142\\.test-runs\\golden-v2\\google-vision-20261017-01\\app.agent.db",
+    "attachments": "D:\\142.AI20K\\P-142\\.test-runs\\golden-v2\\google-vision-20261017-01\\data\\attachments",
+    "chroma": "D:\\142.AI20K\\P-142\\.test-runs\\golden-v2\\google-vision-20261017-01\\chroma"
+  },
+  "label_status": "draft_policy_review",
+  "coverage_scope": "direct_production_prompt_probes_and_service_calls; see case kind; not all HTTP/UI branches",
+  "inactive_alternative": {
+    "vision_provider": "openai",
+    "status": "NOT_RUN"
+  }
+}

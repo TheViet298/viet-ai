@@ -1,0 +1,92 @@
+[
+  {
+    "case_id": "CASE-01",
+    "title": "Làm quen & Giới thiệu xe",
+    "status_code": 200,
+    "duration_s": 6.39,
+    "trace_id": "cc283219d6afa74eff2d37da682d4be0",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/cc283219d6afa74eff2d37da682d4be0",
+    "reply": "Dạ, Quý khách! Chúc mừng Quý khách đã trở thành chủ sở hữu xe VinFast VF8. Em rất vui được giúp Quý khách làm quen với c"
+  },
+  {
+    "case_id": "CASE-02",
+    "title": "Chính sách bảo hành pin VF8",
+    "status_code": 200,
+    "duration_s": 7.38,
+    "trace_id": "82bf77599a6b639fc6fd8923e4094be0",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/82bf77599a6b639fc6fd8923e4094be0",
+    "reply": "Em chưa xác minh được thông tin này từ tài liệu phù hợp với yêu cầu của Quý khách. Cần đối chiếu thêm với VinFast trước "
+  },
+  {
+    "case_id": "CASE-03",
+    "title": "Khẩn cấp: Bốc khói khoang pin",
+    "status_code": 200,
+    "duration_s": 0.17,
+    "trace_id": "f8d6846e5b86c40a1f2c8eacfcd89cd4",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/f8d6846e5b86c40a1f2c8eacfcd89cd4",
+    "reply": "Quý khách vui lòng giữ bình tĩnh, tấp xe vào lề an toàn nếu có thể, bật đèn cảnh báo khẩn cấp (hazard), di chuyển ra khỏ"
+  },
+  {
+    "case_id": "CASE-04",
+    "title": "Khẩn cấp: Mất phanh đột ngột",
+    "status_code": 422,
+    "duration_s": 0.0,
+    "trace_id": "33ef6f5eff12cb637ca52eccb1254714",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/33ef6f5eff12cb637ca52eccb1254714",
+    "reply": "{\"detail\":[{\"type\":\"string_type\",\"loc\":[\"body\",\"client_context\",\"vehicle_model\"],\"msg\":\"Input should be a valid string\","
+  },
+  {
+    "case_id": "CASE-05",
+    "title": "Trụ sạc báo đèn đỏ không nhận sạc",
+    "status_code": 422,
+    "duration_s": 0.02,
+    "trace_id": "612cf5f05983fac480e5f7d477ad88c5",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/612cf5f05983fac480e5f7d477ad88c5",
+    "reply": "{\"detail\":[{\"type\":\"string_type\",\"loc\":[\"body\",\"client_context\",\"vehicle_model\"],\"msg\":\"Input should be a valid string\","
+  },
+  {
+    "case_id": "CASE-06",
+    "title": "Kẹt súng sạc tại trụ",
+    "status_code": 422,
+    "duration_s": 0.02,
+    "trace_id": "73ad988197c8ab07502ca3be06fa5965",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/73ad988197c8ab07502ca3be06fa5965",
+    "reply": "{\"detail\":[{\"type\":\"string_type\",\"loc\":[\"body\",\"client_context\",\"vehicle_model\"],\"msg\":\"Input should be a valid string\","
+  },
+  {
+    "case_id": "CASE-07",
+    "title": "Cảnh báo rùa vàng trên cao tốc",
+    "status_code": 200,
+    "duration_s": 0.25,
+    "trace_id": "29a2cbeb1e49514eb3927cdc4b36fc0c",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/29a2cbeb1e49514eb3927cdc4b36fc0c",
+    "reply": "Quý khách vui lòng giữ bình tĩnh, tấp xe vào lề an toàn nếu có thể, bật đèn cảnh báo khẩn cấp (hazard), di chuyển ra khỏ"
+  },
+  {
+    "case_id": "CASE-08",
+    "title": "Màn hình giải trí bị treo đen",
+    "status_code": 422,
+    "duration_s": 0.02,
+    "trace_id": "a9860748b39cd10e7c7ee36fe8836a9c",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/a9860748b39cd10e7c7ee36fe8836a9c",
+    "reply": "{\"detail\":[{\"type\":\"string_type\",\"loc\":[\"body\",\"client_context\",\"vehicle_model\"],\"msg\":\"Input should be a valid string\","
+  },
+  {
+    "case_id": "CASE-09",
+    "title": "Tìm trạm sạc gần nhất",
+    "status_code": 422,
+    "duration_s": 0.02,
+    "trace_id": "65d931706aa54badcfd14c4b3c7e7797",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/65d931706aa54badcfd14c4b3c7e7797",
+    "reply": "{\"detail\":[{\"type\":\"string_type\",\"loc\":[\"body\",\"client_context\",\"vehicle_model\"],\"msg\":\"Input should be a valid string\","
+  },
+  {
+    "case_id": "CASE-10",
+    "title": "Lịch bảo dưỡng định kỳ",
+    "status_code": 422,
+    "duration_s": 0.03,
+    "trace_id": "c0f0859c1c877346a140bfca28c67bbd",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/c0f0859c1c877346a140bfca28c67bbd",
+    "reply": "{\"detail\":[{\"type\":\"string_type\",\"loc\":[\"body\",\"client_context\",\"vehicle_model\"],\"msg\":\"Input should be a valid string\","
+  }
+]

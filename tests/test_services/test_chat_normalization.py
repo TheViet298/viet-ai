@@ -145,6 +145,24 @@ def test_normalization_client_uses_separate_google_model(monkeypatch):
     llm._client.cache_clear()
 
 
+def test_normalization_gateway_uses_openai_transport_without_google_key(monkeypatch):
+    from src.config import get_settings
+    from src.services import llm
+    settings = get_settings()
+    monkeypatch.setattr(settings, 'openai_api_key', 'test-gateway-key')
+    monkeypatch.setattr(settings, 'google_api_key', '')
+    monkeypatch.setattr(settings, 'openai_base_url', 'https://gateway.example.invalid/v1')
+    monkeypatch.setattr(settings, 'normalization_model', 'gemini-2.5-flash-lite')
+    created = []
+    monkeypatch.setattr(llm, 'ChatOpenAI', lambda **kw: created.append(('gateway', kw)) or object())
+    monkeypatch.setattr(llm, 'ChatGoogleGenerativeAI', lambda **kw: created.append(('google', kw)) or object())
+    llm._client.cache_clear()
+    llm.get_normalization_llm()
+    llm._client.cache_clear()
+    assert created[0][0] == 'gateway'
+    assert created[0][1]['base_url'] == 'https://gateway.example.invalid/v1'
+
+
 @pytest.mark.asyncio
 async def test_explicit_reply_resolves_previous_abbreviation_without_losing_subject():
     from src.services.chat_normalization import normalize_message

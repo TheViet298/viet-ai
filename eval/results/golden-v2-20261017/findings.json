@@ -1,0 +1,312 @@
+[
+  {
+    "id": "GOLD2-SAFETY-017",
+    "input": [
+      "Tôi đọc tin một chiếc xe cháy, xe VF8 của tôi không gặp sự cố."
+    ],
+    "runs": {
+      "offline": [
+        {
+          "kind": "equals",
+          "field": "is_safety_trigger",
+          "expected": false,
+          "actual": true,
+          "passed": false,
+          "turn": 1
+        }
+      ],
+      "live": [
+        {
+          "kind": "equals",
+          "field": "is_safety_trigger",
+          "expected": false,
+          "actual": true,
+          "passed": false,
+          "turn": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD2-SAFETY-021",
+    "input": [
+      "Xe VF8 đang chạy bình thường, chữ chạy không phải cháy."
+    ],
+    "runs": {
+      "offline": [
+        {
+          "kind": "equals",
+          "field": "is_safety_trigger",
+          "expected": false,
+          "actual": true,
+          "passed": false,
+          "turn": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD2-SAFETY-023",
+    "input": [
+      "Xe VF8 không bị kẹt chân ga và không có hiện tượng mất phanh."
+    ],
+    "runs": {
+      "offline": [
+        {
+          "kind": "equals",
+          "field": "is_safety_trigger",
+          "expected": false,
+          "actual": true,
+          "passed": false,
+          "turn": 1
+        }
+      ],
+      "live": [
+        {
+          "kind": "equals",
+          "field": "is_safety_trigger",
+          "expected": false,
+          "actual": true,
+          "passed": false,
+          "turn": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD2-TRIAGE-009",
+    "input": [
+      "Xe VF6 màn hình treo, xe vẫn đi bình thường."
+    ],
+    "runs": {
+      "offline": [
+        {
+          "kind": "equals",
+          "field": "priority",
+          "expected": "MEDIUM",
+          "actual": "LOW",
+          "passed": false,
+          "turn": 1
+        },
+        {
+          "kind": "equals",
+          "field": "needs_staff_review",
+          "expected": true,
+          "actual": false,
+          "passed": false,
+          "turn": 1
+        }
+      ],
+      "live": [
+        {
+          "kind": "equals",
+          "field": "priority",
+          "expected": "MEDIUM",
+          "actual": "LOW",
+          "passed": false,
+          "turn": 1
+        },
+        {
+          "kind": "equals",
+          "field": "needs_staff_review",
+          "expected": true,
+          "actual": false,
+          "passed": false,
+          "turn": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD2-TRIAGE-010",
+    "input": [
+      "Xe VF8 kính không lên, không có dấu hiệu nguy hiểm."
+    ],
+    "runs": {
+      "offline": [
+        {
+          "kind": "equals",
+          "field": "priority",
+          "expected": "MEDIUM",
+          "actual": "LOW",
+          "passed": false,
+          "turn": 1
+        },
+        {
+          "kind": "equals",
+          "field": "needs_staff_review",
+          "expected": true,
+          "actual": false,
+          "passed": false,
+          "turn": 1
+        }
+      ],
+      "live": [
+        {
+          "kind": "equals",
+          "field": "priority",
+          "expected": "MEDIUM",
+          "actual": "LOW",
+          "passed": false,
+          "turn": 1
+        },
+        {
+          "kind": "equals",
+          "field": "needs_staff_review",
+          "expected": true,
+          "actual": false,
+          "passed": false,
+          "turn": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD2-TRIAGE-012",
+    "input": [
+      "Tôi khiếu nại thái độ nhân viên showroom Hà Nội."
+    ],
+    "runs": {
+      "offline": [
+        {
+          "kind": "equals",
+          "field": "priority",
+          "expected": "MEDIUM",
+          "actual": "HIGH",
+          "passed": false,
+          "turn": 1
+        }
+      ],
+      "live": [
+        {
+          "kind": "equals",
+          "field": "priority",
+          "expected": "MEDIUM",
+          "actual": "HIGH",
+          "passed": false,
+          "turn": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD2-RAG-014",
+    "input": [
+      "Phí sạc xe VF5 hiện được tính như thế nào?"
+    ],
+    "runs": {
+      "offline": [
+        {
+          "kind": "equals",
+          "field": "is_no_source",
+          "expected": true,
+          "actual": false,
+          "passed": false,
+          "turn": 1
+        }
+      ],
+      "live": [
+        {
+          "kind": "equals",
+          "field": "is_no_source",
+          "expected": true,
+          "actual": false,
+          "passed": false,
+          "turn": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD2-RAG-016",
+    "input": [
+      "Phí sạc xe VF5 hiện được tính như thế nào?"
+    ],
+    "runs": {
+      "offline": [
+        {
+          "kind": "equals",
+          "field": "is_no_source",
+          "expected": true,
+          "actual": false,
+          "passed": false,
+          "turn": 1
+        }
+      ],
+      "live": [
+        {
+          "kind": "equals",
+          "field": "is_no_source",
+          "expected": true,
+          "actual": false,
+          "passed": false,
+          "turn": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD2-RAG-018",
+    "input": [
+      "Phí sạc xe VF5 hiện được tính như thế nào?"
+    ],
+    "runs": {
+      "offline": [
+        {
+          "kind": "equals",
+          "field": "is_no_source",
+          "expected": true,
+          "actual": false,
+          "passed": false,
+          "turn": 1
+        }
+      ],
+      "live": [
+        {
+          "kind": "equals",
+          "field": "is_no_source",
+          "expected": true,
+          "actual": false,
+          "passed": false,
+          "turn": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "PROBE-TRIAGE",
+    "input": [
+      "Xe VF8 không nhận sạc tại trạm, trụ P01 báo mã CC01, không có khói."
+    ],
+    "runs": {
+      "live": [
+        {
+          "kind": "equals",
+          "field": "priority",
+          "expected": "HIGH",
+          "actual": "MEDIUM",
+          "passed": false,
+          "turn": 1
+        }
+      ]
+    }
+  },
+  {
+    "id": "GOLD2-VISION-011",
+    "input": [
+      "Synthetic image: dashboard/brake_fault"
+    ],
+    "runs": {
+      "live": [
+        {
+          "kind": "contains",
+          "field": "symptom_keys_text",
+          "expected": "brake_system_fault",
+          "actual": "[]",
+          "passed": false,
+          "turn": 1
+        }
+      ]
+    }
+  }
+]

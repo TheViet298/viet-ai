@@ -20,7 +20,7 @@ if str(ROOT) not in sys.path:
 
 from eval.golden import evaluate_conversation
 
-DATASET = ROOT / "eval/datasets/golden_testcases_v1.jsonl"
+DATASET = ROOT / "eval/datasets/golden_testcases.jsonl"
 
 
 def dataset_payload(case: dict, digest: str) -> dict:
@@ -166,7 +166,9 @@ def run(output: Path, modes: list[str]):
     if "online" in modes and not (checks.get("openai_key_present") or checks.get("google_key_present")):
         raise RuntimeError("Online mode requires configured provider credentials")
     digest = hashlib.sha256(DATASET.read_bytes()).hexdigest()
-    cases = [json.loads(line) for line in DATASET.read_text(encoding="utf-8").splitlines() if line.strip()]
+    # Preserve the historical 60-case Cloud experiment using the shared dataset.
+    cases = [case for line in DATASET.read_text(encoding="utf-8").splitlines() if line.strip()
+             if (case := json.loads(line))['id'].startswith('GOLD-')]
     if len(cases) != 60 or len({c["id"] for c in cases}) != 60:
         raise ValueError("Expected 60 unique golden cases")
     isolation = isolate(output)

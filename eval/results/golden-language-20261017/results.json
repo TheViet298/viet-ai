@@ -1,0 +1,1073 @@
+[
+  {
+    "id": "LANG-GREET-001",
+    "category": "greeting",
+    "kind": "customer_chat",
+    "rationale": "Chào hỏi thuần tiếng Việt phải chào lại, không tạo hồ sơ hoặc báo nguy hiểm.",
+    "trace_id": null,
+    "fixture_sha256": null,
+    "duration_s": 2.875,
+    "status": "PASS",
+    "failed_checks": [],
+    "evidence_errors": [],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "equals",
+        "field": "language",
+        "expected": "vi",
+        "actual": "vi",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "case_id",
+        "expected": null,
+        "actual": null,
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "show_emergency_banner",
+        "expected": false,
+        "actual": false,
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "nonempty",
+        "field": "message",
+        "expected": true,
+        "actual": "Dạ chào Quý khách! Em là Trợ lý CSKH VinFast (VFServ). Rất vui được hỗ trợ Quý khách hôm nay. Quý khách có thể chọn nhanh các chủ đề bên dưới hoặc nhập câu hỏi trực tiếp ạ!",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "contains",
+        "field": "message",
+        "expected": "chào",
+        "actual": "Dạ chào Quý khách! Em là Trợ lý CSKH VinFast (VFServ). Rất vui được hỗ trợ Quý khách hôm nay. Quý khách có thể chọn nhanh các chủ đề bên dưới hoặc nhập câu hỏi trực tiếp ạ!",
+        "passed": true,
+        "turn": 1
+      }
+    ],
+    "model_requirements": [],
+    "model_evidence_status": "NOT_REQUIRED",
+    "output": {
+      "turns": [
+        {
+          "language": "vi",
+          "vehicle_comparison": false,
+          "vehicle_cards": [],
+          "emergency_context": null,
+          "safety_status": "unconfirmed",
+          "safety_acknowledged_at": null,
+          "incident_version": null,
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "Dạ chào Quý khách! Em là Trợ lý CSKH VinFast (VFServ). Rất vui được hỗ trợ Quý khách hôm nay. Quý khách có thể chọn nhanh các chủ đề bên dưới hoặc nhập câu hỏi trực tiếp ạ!",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": [
+            "Tư vấn xe",
+            "Trạm sạc & ứng dụng",
+            "Bảo hành & bảo dưỡng",
+            "Báo sự cố kỹ thuật"
+          ],
+          "citations": null,
+          "service_handoff": null,
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        }
+      ]
+    },
+    "model_calls": []
+  },
+  {
+    "id": "LANG-EN-001",
+    "category": "english",
+    "kind": "customer_chat",
+    "rationale": "Chào hỏi tiếng Anh phải nhận phản hồi tiếng Anh, không tạo hồ sơ.",
+    "trace_id": null,
+    "fixture_sha256": null,
+    "duration_s": 0.078,
+    "status": "PASS",
+    "failed_checks": [],
+    "evidence_errors": [],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "equals",
+        "field": "language",
+        "expected": "en",
+        "actual": "en",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "case_id",
+        "expected": null,
+        "actual": null,
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "show_emergency_banner",
+        "expected": false,
+        "actual": false,
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "nonempty",
+        "field": "message",
+        "expected": true,
+        "actual": "Hello! I’m the VFServ assistant. How can I help you today?",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "contains",
+        "field": "message",
+        "expected": "hello",
+        "actual": "Hello! I’m the VFServ assistant. How can I help you today?",
+        "passed": true,
+        "turn": 1
+      }
+    ],
+    "model_requirements": [],
+    "model_evidence_status": "NOT_REQUIRED",
+    "output": {
+      "turns": [
+        {
+          "language": "en",
+          "vehicle_comparison": false,
+          "vehicle_cards": [],
+          "emergency_context": null,
+          "safety_status": "unconfirmed",
+          "safety_acknowledged_at": null,
+          "incident_version": null,
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "Hello! I’m the VFServ assistant. How can I help you today?",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": [
+            "Vehicle advice",
+            "Charging stations & app",
+            "Warranty & maintenance",
+            "Report a technical issue"
+          ],
+          "citations": null,
+          "service_handoff": null,
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        }
+      ]
+    },
+    "model_calls": []
+  },
+  {
+    "id": "LANG-EN-002",
+    "category": "english",
+    "kind": "customer_chat",
+    "rationale": "Chào kèm câu hỏi chức năng phải trả lời chức năng bằng tiếng Anh.",
+    "trace_id": null,
+    "fixture_sha256": null,
+    "duration_s": 0.094,
+    "status": "PASS",
+    "failed_checks": [],
+    "evidence_errors": [],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "equals",
+        "field": "language",
+        "expected": "en",
+        "actual": "en",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "case_id",
+        "expected": null,
+        "actual": null,
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "show_emergency_banner",
+        "expected": false,
+        "actual": false,
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "nonempty",
+        "field": "message",
+        "expected": true,
+        "actual": "I can help you explore VinFast vehicles, check warranty and maintenance information, find charging and app guidance, report technical issues or complaints, and track your support cases. What would you like help with?",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "contains",
+        "field": "message",
+        "expected": "VinFast",
+        "actual": "I can help you explore VinFast vehicles, check warranty and maintenance information, find charging and app guidance, report technical issues or complaints, and track your support cases. What would you like help with?",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "contains",
+        "field": "message",
+        "expected": "warranty",
+        "actual": "I can help you explore VinFast vehicles, check warranty and maintenance information, find charging and app guidance, report technical issues or complaints, and track your support cases. What would you like help with?",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "contains",
+        "field": "message",
+        "expected": "charging",
+        "actual": "I can help you explore VinFast vehicles, check warranty and maintenance information, find charging and app guidance, report technical issues or complaints, and track your support cases. What would you like help with?",
+        "passed": true,
+        "turn": 1
+      }
+    ],
+    "model_requirements": [],
+    "model_evidence_status": "NOT_REQUIRED",
+    "output": {
+      "turns": [
+        {
+          "language": "en",
+          "vehicle_comparison": false,
+          "vehicle_cards": [],
+          "emergency_context": null,
+          "safety_status": "unconfirmed",
+          "safety_acknowledged_at": null,
+          "incident_version": null,
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "I can help you explore VinFast vehicles, check warranty and maintenance information, find charging and app guidance, report technical issues or complaints, and track your support cases. What would you like help with?",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": [
+            "Vehicle advice",
+            "Charging stations & app",
+            "Warranty & maintenance",
+            "Report a technical issue"
+          ],
+          "citations": null,
+          "service_handoff": null,
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        }
+      ]
+    },
+    "model_calls": []
+  },
+  {
+    "id": "LANG-EN-003",
+    "category": "english",
+    "kind": "customer_chat",
+    "rationale": "Lời cảm ơn tiếng Anh nhận lời đáp phù hợp bằng tiếng Anh.",
+    "trace_id": null,
+    "fixture_sha256": null,
+    "duration_s": 0.156,
+    "status": "FAIL",
+    "failed_checks": [
+      {
+        "kind": "contains",
+        "field": "message",
+        "expected": "welcome",
+        "actual": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+        "passed": false,
+        "turn": 1
+      }
+    ],
+    "evidence_errors": [],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "equals",
+        "field": "language",
+        "expected": "en",
+        "actual": "en",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "case_id",
+        "expected": null,
+        "actual": null,
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "show_emergency_banner",
+        "expected": false,
+        "actual": false,
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "nonempty",
+        "field": "message",
+        "expected": true,
+        "actual": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "contains",
+        "field": "message",
+        "expected": "welcome",
+        "actual": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+        "passed": false,
+        "turn": 1
+      }
+    ],
+    "model_requirements": [],
+    "model_evidence_status": "NOT_REQUIRED",
+    "output": {
+      "turns": [
+        {
+          "language": "en",
+          "vehicle_comparison": false,
+          "vehicle_cards": [],
+          "emergency_context": null,
+          "safety_status": "unconfirmed",
+          "safety_acknowledged_at": null,
+          "incident_version": null,
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": [],
+          "citations": [],
+          "service_handoff": {
+            "has_app_feature": true,
+            "app_feature_name": "Service booking / Information lookup",
+            "guide_url": "https://vinfastauto.com/vn_vi"
+          },
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        }
+      ]
+    },
+    "model_calls": []
+  },
+  {
+    "id": "LANG-EN-004",
+    "category": "english",
+    "kind": "customer_chat",
+    "rationale": "Báo mất phanh bằng tiếng Anh trên cao tốc phải ưu tiên khẩn cấp và giữ hotline.",
+    "trace_id": null,
+    "fixture_sha256": null,
+    "duration_s": 0.109,
+    "status": "PASS",
+    "failed_checks": [],
+    "evidence_errors": [],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "equals",
+        "field": "language",
+        "expected": "en",
+        "actual": "en",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "priority",
+        "expected": "CRITICAL",
+        "actual": "CRITICAL",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "show_emergency_banner",
+        "expected": true,
+        "actual": true,
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "nonempty",
+        "field": "message",
+        "expected": true,
+        "actual": "Your safety comes first. If you are driving, move to a safe place and stop only if you can do so safely. Keep away from the vehicle if there is smoke or fire, and keep others away. Do not touch the battery, high-voltage wiring or charging connector. Contact local emergency services if there is immediate danger, and contact VinFast roadside assistance on 1900-232389. Do not continue driving until qualified personnel have assessed the vehicle. Support case CASE-20261017-ad88b41845af414a has been recorded. Its current status is awaiting staff review. Please share your current location when it is safe to do so.",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "contains",
+        "field": "message",
+        "expected": "1900-232389",
+        "actual": "Your safety comes first. If you are driving, move to a safe place and stop only if you can do so safely. Keep away from the vehicle if there is smoke or fire, and keep others away. Do not touch the battery, high-voltage wiring or charging connector. Contact local emergency services if there is immediate danger, and contact VinFast roadside assistance on 1900-232389. Do not continue driving until qualified personnel have assessed the vehicle. Support case CASE-20261017-ad88b41845af414a has been recorded. Its current status is awaiting staff review. Please share your current location when it is safe to do so.",
+        "passed": true,
+        "turn": 1
+      }
+    ],
+    "model_requirements": [],
+    "model_evidence_status": "NOT_REQUIRED",
+    "output": {
+      "turns": [
+        {
+          "language": "en",
+          "vehicle_comparison": false,
+          "vehicle_cards": [],
+          "emergency_context": {
+            "case_id": "CASE-[REDACTED_LICENSE_PLATE]-ad88b41845af414a",
+            "incident_version": 1,
+            "safety_status": "unconfirmed",
+            "safety_acknowledged_at": null
+          },
+          "safety_status": "unconfirmed",
+          "safety_acknowledged_at": null,
+          "incident_version": 1,
+          "visual_evidence": null,
+          "response_type": "CASE_CREATED",
+          "message": "Your safety comes first. If you are driving, move to a safe place and stop only if you can do so safely. Keep away from the vehicle if there is smoke or fire, and keep others away. Do not touch the battery, high-voltage wiring or charging connector. Contact local emergency services if there is immediate danger, and contact VinFast roadside assistance on 1900-232389. Do not continue driving until qualified personnel have assessed the vehicle. Support case CASE-[REDACTED_LICENSE_PLATE]-ad88b41845af414a has been recorded. Its current status is awaiting staff review. Please share your current location when it is safe to do so.",
+          "case_id": "CASE-[REDACTED_LICENSE_PLATE]-ad88b41845af414a",
+          "status": "Staff Reviewing",
+          "priority": "CRITICAL",
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": [],
+          "citations": null,
+          "service_handoff": null,
+          "safe_guidance": "Your safety comes first. If you are driving, move to a safe place and stop only if you can do so safely. Keep away from the vehicle if there is smoke or fire, and keep others away. Do not touch the battery, high-voltage wiring or charging connector. Contact local emergency services if there is immediate danger, and contact VinFast roadside assistance on 1900-232389. Do not continue driving until qualified personnel have assessed the vehicle.",
+          "show_emergency_banner": true,
+          "request_location": true,
+          "remaining_guest_messages": null
+        }
+      ]
+    },
+    "model_calls": []
+  },
+  {
+    "id": "LANG-EN-005",
+    "category": "english",
+    "kind": "customer_chat",
+    "rationale": "Phủ định khói/cháy tiếng Anh không được kích hoạt cảnh báo khẩn cấp.",
+    "trace_id": null,
+    "fixture_sha256": null,
+    "duration_s": 0.125,
+    "status": "PASS",
+    "failed_checks": [],
+    "evidence_errors": [],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "equals",
+        "field": "language",
+        "expected": "en",
+        "actual": "en",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "show_emergency_banner",
+        "expected": false,
+        "actual": false,
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "nonempty",
+        "field": "message",
+        "expected": true,
+        "actual": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+        "passed": true,
+        "turn": 1
+      }
+    ],
+    "model_requirements": [],
+    "model_evidence_status": "NOT_REQUIRED",
+    "output": {
+      "turns": [
+        {
+          "language": "en",
+          "vehicle_comparison": false,
+          "vehicle_cards": [],
+          "emergency_context": null,
+          "safety_status": "unconfirmed",
+          "safety_acknowledged_at": null,
+          "incident_version": null,
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": [],
+          "citations": [],
+          "service_handoff": {
+            "has_app_feature": true,
+            "app_feature_name": "Service booking / Information lookup",
+            "guide_url": "https://vinfastauto.com/vn_vi"
+          },
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        }
+      ]
+    },
+    "model_calls": []
+  },
+  {
+    "id": "LANG-EN-006",
+    "category": "english",
+    "kind": "customer_chat",
+    "rationale": "Câu hỏi an toàn giả định tiếng Anh không phải sự cố hiện tại; vẫn có hướng dẫn và hotline.",
+    "trace_id": null,
+    "fixture_sha256": null,
+    "duration_s": 0.125,
+    "status": "FAIL",
+    "failed_checks": [
+      {
+        "kind": "contains",
+        "field": "message",
+        "expected": "1900-232389",
+        "actual": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+        "passed": false,
+        "turn": 1
+      }
+    ],
+    "evidence_errors": [],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "equals",
+        "field": "language",
+        "expected": "en",
+        "actual": "en",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "show_emergency_banner",
+        "expected": false,
+        "actual": false,
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "nonempty",
+        "field": "message",
+        "expected": true,
+        "actual": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "contains",
+        "field": "message",
+        "expected": "1900-232389",
+        "actual": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+        "passed": false,
+        "turn": 1
+      }
+    ],
+    "model_requirements": [],
+    "model_evidence_status": "NOT_REQUIRED",
+    "output": {
+      "turns": [
+        {
+          "language": "en",
+          "vehicle_comparison": false,
+          "vehicle_cards": [],
+          "emergency_context": null,
+          "safety_status": "unconfirmed",
+          "safety_acknowledged_at": null,
+          "incident_version": null,
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": [],
+          "citations": [],
+          "service_handoff": {
+            "has_app_feature": true,
+            "app_feature_name": "Service booking / Information lookup",
+            "guide_url": "https://vinfastauto.com/vn_vi"
+          },
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        }
+      ]
+    },
+    "model_calls": []
+  },
+  {
+    "id": "LANG-EN-007",
+    "category": "english",
+    "kind": "customer_chat",
+    "rationale": "Lỗi không nhận sạc tiếng Anh phải giữ mức HIGH theo policy và ngôn ngữ trả lời.",
+    "trace_id": null,
+    "fixture_sha256": null,
+    "duration_s": 0.141,
+    "status": "FAIL",
+    "failed_checks": [
+      {
+        "kind": "equals",
+        "field": "priority",
+        "expected": "HIGH",
+        "actual": null,
+        "passed": false,
+        "turn": 1
+      }
+    ],
+    "evidence_errors": [],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "equals",
+        "field": "language",
+        "expected": "en",
+        "actual": "en",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "priority",
+        "expected": "HIGH",
+        "actual": null,
+        "passed": false,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "show_emergency_banner",
+        "expected": false,
+        "actual": false,
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "nonempty",
+        "field": "message",
+        "expected": true,
+        "actual": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+        "passed": true,
+        "turn": 1
+      }
+    ],
+    "model_requirements": [],
+    "model_evidence_status": "NOT_REQUIRED",
+    "output": {
+      "turns": [
+        {
+          "language": "en",
+          "vehicle_comparison": false,
+          "vehicle_cards": [],
+          "emergency_context": null,
+          "safety_status": "unconfirmed",
+          "safety_acknowledged_at": null,
+          "incident_version": null,
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": [],
+          "citations": [],
+          "service_handoff": {
+            "has_app_feature": true,
+            "app_feature_name": "Service booking / Information lookup",
+            "guide_url": "https://vinfastauto.com/vn_vi"
+          },
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        }
+      ]
+    },
+    "model_calls": []
+  },
+  {
+    "id": "LANG-EN-008",
+    "category": "english",
+    "kind": "customer_chat",
+    "rationale": "Không có nguồn fixture cho câu hỏi bảo hành tiếng Anh thì không tạo citation hoặc bịa cam kết.",
+    "trace_id": null,
+    "fixture_sha256": null,
+    "duration_s": 0.14,
+    "status": "PASS",
+    "failed_checks": [],
+    "evidence_errors": [],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "equals",
+        "field": "language",
+        "expected": "en",
+        "actual": "en",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "citations",
+        "expected": [],
+        "actual": [],
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "show_emergency_banner",
+        "expected": false,
+        "actual": false,
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "nonempty",
+        "field": "message",
+        "expected": true,
+        "actual": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "not_contains",
+        "field": "message",
+        "expected": "guaranteed lifetime warranty",
+        "actual": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "not_contains",
+        "field": "message",
+        "expected": "appointment is confirmed",
+        "actual": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+        "passed": true,
+        "turn": 1
+      }
+    ],
+    "model_requirements": [],
+    "model_evidence_status": "NOT_REQUIRED",
+    "output": {
+      "turns": [
+        {
+          "language": "en",
+          "vehicle_comparison": false,
+          "vehicle_cards": [],
+          "emergency_context": null,
+          "safety_status": "unconfirmed",
+          "safety_acknowledged_at": null,
+          "incident_version": null,
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": [],
+          "citations": [],
+          "service_handoff": {
+            "has_app_feature": true,
+            "app_feature_name": "Service booking / Information lookup",
+            "guide_url": "https://vinfastauto.com/vn_vi"
+          },
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        }
+      ]
+    },
+    "model_calls": []
+  },
+  {
+    "id": "LANG-EN-009",
+    "category": "english",
+    "kind": "customer_chat",
+    "rationale": "Giữ tiếng Anh qua nhiều lượt rồi tôn trọng yêu cầu chuyển sang tiếng Việt.",
+    "trace_id": null,
+    "fixture_sha256": null,
+    "duration_s": 0.391,
+    "status": "PASS",
+    "failed_checks": [],
+    "evidence_errors": [],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 3,
+        "actual": 3,
+        "passed": true
+      },
+      {
+        "kind": "equals",
+        "field": "language",
+        "expected": "en",
+        "actual": "en",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "show_emergency_banner",
+        "expected": false,
+        "actual": false,
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "nonempty",
+        "field": "message",
+        "expected": true,
+        "actual": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "equals",
+        "field": "language",
+        "expected": "en",
+        "actual": "en",
+        "passed": true,
+        "turn": 2
+      },
+      {
+        "kind": "equals",
+        "field": "show_emergency_banner",
+        "expected": false,
+        "actual": false,
+        "passed": true,
+        "turn": 2
+      },
+      {
+        "kind": "nonempty",
+        "field": "message",
+        "expected": true,
+        "actual": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+        "passed": true,
+        "turn": 2
+      },
+      {
+        "kind": "equals",
+        "field": "language",
+        "expected": "vi",
+        "actual": "vi",
+        "passed": true,
+        "turn": 3
+      },
+      {
+        "kind": "equals",
+        "field": "show_emergency_banner",
+        "expected": false,
+        "actual": false,
+        "passed": true,
+        "turn": 3
+      },
+      {
+        "kind": "nonempty",
+        "field": "message",
+        "expected": true,
+        "actual": "Anh/chị muốn tìm hiểu điều gì về xe hoặc dịch vụ VinFast ạ?",
+        "passed": true,
+        "turn": 3
+      }
+    ],
+    "model_requirements": [],
+    "model_evidence_status": "NOT_REQUIRED",
+    "output": {
+      "turns": [
+        {
+          "language": "en",
+          "vehicle_comparison": false,
+          "vehicle_cards": [],
+          "emergency_context": null,
+          "safety_status": "unconfirmed",
+          "safety_acknowledged_at": null,
+          "incident_version": null,
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": [],
+          "citations": [],
+          "service_handoff": {
+            "has_app_feature": true,
+            "app_feature_name": "Service booking / Information lookup",
+            "guide_url": "https://vinfastauto.com/vn_vi"
+          },
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        },
+        {
+          "language": "en",
+          "vehicle_comparison": false,
+          "vehicle_cards": [],
+          "emergency_context": null,
+          "safety_status": "unconfirmed",
+          "safety_acknowledged_at": null,
+          "incident_version": null,
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": [],
+          "citations": [],
+          "service_handoff": {
+            "has_app_feature": true,
+            "app_feature_name": "Service booking / Information lookup",
+            "guide_url": "https://vinfastauto.com/vn_vi"
+          },
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        },
+        {
+          "language": "vi",
+          "vehicle_comparison": false,
+          "vehicle_cards": [],
+          "emergency_context": null,
+          "safety_status": "unconfirmed",
+          "safety_acknowledged_at": null,
+          "incident_version": null,
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "Anh/chị muốn tìm hiểu điều gì về xe hoặc dịch vụ VinFast ạ?",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": null,
+          "citations": [],
+          "service_handoff": {
+            "has_app_feature": true,
+            "app_feature_name": "Đặt lịch dịch vụ / Tra cứu",
+            "guide_url": "https://vinfastauto.com/vn_vi"
+          },
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        }
+      ]
+    },
+    "model_calls": []
+  }
+]

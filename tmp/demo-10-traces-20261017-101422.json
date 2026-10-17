@@ -1,0 +1,92 @@
+[
+  {
+    "case_id": "CASE-01",
+    "title": "Làm quen & Giới thiệu xe",
+    "status_code": 500,
+    "duration_s": 0.02,
+    "trace_id": "8edd0031c7dd72170d278b1a734bb36c",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/8edd0031c7dd72170d278b1a734bb36c",
+    "reply": "'Settings' object has no attribute 'customer_demo_token'"
+  },
+  {
+    "case_id": "CASE-02",
+    "title": "Chính sách bảo hành pin VF8",
+    "status_code": 500,
+    "duration_s": 0.0,
+    "trace_id": "53eab7a63bd21f87381b73524f3daec4",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/53eab7a63bd21f87381b73524f3daec4",
+    "reply": "'Settings' object has no attribute 'customer_demo_token'"
+  },
+  {
+    "case_id": "CASE-03",
+    "title": "Khẩn cấp: Bốc khói khoang pin",
+    "status_code": 500,
+    "duration_s": 0.0,
+    "trace_id": "6185505f0d188125e19128e2bce00c45",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/6185505f0d188125e19128e2bce00c45",
+    "reply": "'Settings' object has no attribute 'customer_demo_token'"
+  },
+  {
+    "case_id": "CASE-04",
+    "title": "Khẩn cấp: Mất phanh đột ngột",
+    "status_code": 500,
+    "duration_s": 0.0,
+    "trace_id": "ae67fece597fa83314f47667f7caab83",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/ae67fece597fa83314f47667f7caab83",
+    "reply": "'Settings' object has no attribute 'customer_demo_token'"
+  },
+  {
+    "case_id": "CASE-05",
+    "title": "Trụ sạc báo đèn đỏ không nhận sạc",
+    "status_code": 500,
+    "duration_s": 0.0,
+    "trace_id": "86cfbbadf2dc3653a2f62e4ae962e6cd",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/86cfbbadf2dc3653a2f62e4ae962e6cd",
+    "reply": "'Settings' object has no attribute 'customer_demo_token'"
+  },
+  {
+    "case_id": "CASE-06",
+    "title": "Kẹt súng sạc tại trụ",
+    "status_code": 500,
+    "duration_s": 0.0,
+    "trace_id": "18e2a670a5d49eafb2675890e3306ecd",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/18e2a670a5d49eafb2675890e3306ecd",
+    "reply": "'Settings' object has no attribute 'customer_demo_token'"
+  },
+  {
+    "case_id": "CASE-07",
+    "title": "Cảnh báo rùa vàng trên cao tốc",
+    "status_code": 500,
+    "duration_s": 0.0,
+    "trace_id": "cfa23fad22dba1c4d00defb94945aeb4",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/cfa23fad22dba1c4d00defb94945aeb4",
+    "reply": "'Settings' object has no attribute 'customer_demo_token'"
+  },
+  {
+    "case_id": "CASE-08",
+    "title": "Màn hình giải trí bị treo đen",
+    "status_code": 500,
+    "duration_s": 0.0,
+    "trace_id": "df0a876e04eebad47127f64210dab1d4",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/df0a876e04eebad47127f64210dab1d4",
+    "reply": "'Settings' object has no attribute 'customer_demo_token'"
+  },
+  {
+    "case_id": "CASE-09",
+    "title": "Tìm trạm sạc gần nhất",
+    "status_code": 500,
+    "duration_s": 0.0,
+    "trace_id": "a1a24fb9593929fd40cf3dac90950b79",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/a1a24fb9593929fd40cf3dac90950b79",
+    "reply": "'Settings' object has no attribute 'customer_demo_token'"
+  },
+  {
+    "case_id": "CASE-10",
+    "title": "Lịch bảo dưỡng định kỳ",
+    "status_code": 500,
+    "duration_s": 0.01,
+    "trace_id": "a6d017dc1e956f5d575dcdad916867a8",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/a6d017dc1e956f5d575dcdad916867a8",
+    "reply": "'Settings' object has no attribute 'customer_demo_token'"
+  }
+]

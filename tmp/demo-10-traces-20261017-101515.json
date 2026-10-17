@@ -1,0 +1,92 @@
+[
+  {
+    "case_id": "CASE-01",
+    "title": "Làm quen & Giới thiệu xe",
+    "status_code": 401,
+    "duration_s": 0.16,
+    "trace_id": "54de1d82a352f701e361a502d084f4ec",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/54de1d82a352f701e361a502d084f4ec",
+    "reply": "{\"detail\":\"Account no longer exists\"}"
+  },
+  {
+    "case_id": "CASE-02",
+    "title": "Chính sách bảo hành pin VF8",
+    "status_code": 401,
+    "duration_s": 0.02,
+    "trace_id": "1ed961b95fb9ca61af76daad477277d5",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/1ed961b95fb9ca61af76daad477277d5",
+    "reply": "{\"detail\":\"Account no longer exists\"}"
+  },
+  {
+    "case_id": "CASE-03",
+    "title": "Khẩn cấp: Bốc khói khoang pin",
+    "status_code": 401,
+    "duration_s": 0.0,
+    "trace_id": "3398a083f2abdfd0b030b4f93c2124b7",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/3398a083f2abdfd0b030b4f93c2124b7",
+    "reply": "{\"detail\":\"Account no longer exists\"}"
+  },
+  {
+    "case_id": "CASE-04",
+    "title": "Khẩn cấp: Mất phanh đột ngột",
+    "status_code": 401,
+    "duration_s": 0.0,
+    "trace_id": "12f0c94b4756ea6d7a242a70859de8e1",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/12f0c94b4756ea6d7a242a70859de8e1",
+    "reply": "{\"detail\":\"Account no longer exists\"}"
+  },
+  {
+    "case_id": "CASE-05",
+    "title": "Trụ sạc báo đèn đỏ không nhận sạc",
+    "status_code": 401,
+    "duration_s": 0.02,
+    "trace_id": "4519ee276419b1c719943670b9b96f1f",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/4519ee276419b1c719943670b9b96f1f",
+    "reply": "{\"detail\":\"Account no longer exists\"}"
+  },
+  {
+    "case_id": "CASE-06",
+    "title": "Kẹt súng sạc tại trụ",
+    "status_code": 401,
+    "duration_s": 0.02,
+    "trace_id": "bba72a62495b4bc0c3110eff7d02fab0",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/bba72a62495b4bc0c3110eff7d02fab0",
+    "reply": "{\"detail\":\"Account no longer exists\"}"
+  },
+  {
+    "case_id": "CASE-07",
+    "title": "Cảnh báo rùa vàng trên cao tốc",
+    "status_code": 401,
+    "duration_s": 0.01,
+    "trace_id": "b6e13e9ecceaa067bb080435a9385320",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/b6e13e9ecceaa067bb080435a9385320",
+    "reply": "{\"detail\":\"Account no longer exists\"}"
+  },
+  {
+    "case_id": "CASE-08",
+    "title": "Màn hình giải trí bị treo đen",
+    "status_code": 401,
+    "duration_s": 0.01,
+    "trace_id": "7ac3395bb3dbb32643a9e00e2516f882",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/7ac3395bb3dbb32643a9e00e2516f882",
+    "reply": "{\"detail\":\"Account no longer exists\"}"
+  },
+  {
+    "case_id": "CASE-09",
+    "title": "Tìm trạm sạc gần nhất",
+    "status_code": 401,
+    "duration_s": 0.02,
+    "trace_id": "0279dc6c87f423092ad89f07837ef33b",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/0279dc6c87f423092ad89f07837ef33b",
+    "reply": "{\"detail\":\"Account no longer exists\"}"
+  },
+  {
+    "case_id": "CASE-10",
+    "title": "Lịch bảo dưỡng định kỳ",
+    "status_code": 401,
+    "duration_s": 0.01,
+    "trace_id": "fd34fc95ff0b249538fd7c69b91c813b",
+    "trace_url": "https://cloud.langfuse.com/project/cmuzofl6c02a5ad0ixpvdmca1/traces/fd34fc95ff0b249538fd7c69b91c813b",
+    "reply": "{\"detail\":\"Account no longer exists\"}"
+  }
+]

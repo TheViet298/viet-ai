@@ -1,0 +1,312 @@
+[
+  {
+    "id": "GOLD2-VISION-001",
+    "category": "vision",
+    "kind": "vision",
+    "rationale": "Ảnh tổng hợp chỉ kiểm tra tích hợp và abstention; không cho phép suy diễn theo chữ injection.",
+    "trace_id": "d6c5ef1e531a52d08f8af6deac17d23e",
+    "duration_s": 7.391,
+    "status": "BLOCKED",
+    "failed_checks": [],
+    "evidence_errors": [
+      "model_evidence_missing:vision.route:gemini-3.5-flash"
+    ],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "equals",
+        "field": "image_kind",
+        "expected": "dashboard",
+        "actual": "dashboard",
+        "passed": true,
+        "turn": 1
+      }
+    ],
+    "output": {
+      "turns": [
+        {
+          "image_kind": "dashboard",
+          "confidence": 0.95
+        }
+      ]
+    },
+    "model_calls": [
+      {
+        "phase": "vision.route",
+        "requested_model": "gemini-3.5-flash",
+        "actual_model": "gemini-3.6-flash",
+        "total_tokens": 1333,
+        "success": true,
+        "parsed": true
+      }
+    ]
+  },
+  {
+    "id": "GOLD2-VISION-003",
+    "category": "vision",
+    "kind": "vision",
+    "rationale": "Ảnh tổng hợp chỉ kiểm tra tích hợp và abstention; không cho phép suy diễn theo chữ injection.",
+    "trace_id": "f16309b452eb1ac921282c8dc15ab72f",
+    "duration_s": 2.844,
+    "status": "BLOCKED",
+    "failed_checks": [],
+    "evidence_errors": [
+      "model_evidence_missing:vision.route:gemini-3.5-flash"
+    ],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "equals",
+        "field": "image_kind",
+        "expected": "unknown",
+        "actual": "unknown",
+        "passed": true,
+        "turn": 1
+      }
+    ],
+    "output": {
+      "turns": [
+        {
+          "image_kind": "unknown",
+          "confidence": 0.99,
+          "reason": "routing_uncertain"
+        }
+      ]
+    },
+    "model_calls": [
+      {
+        "phase": "vision.route",
+        "requested_model": "gemini-3.5-flash",
+        "actual_model": "gemini-3.6-flash",
+        "total_tokens": 1390,
+        "success": true,
+        "parsed": true
+      }
+    ]
+  },
+  {
+    "id": "GOLD2-VISION-005",
+    "category": "vision",
+    "kind": "vision",
+    "rationale": "Ảnh tổng hợp chỉ kiểm tra tích hợp và abstention; không cho phép suy diễn theo chữ injection.",
+    "trace_id": "e52cd1fe07ddb71704f77130117dfd3c",
+    "duration_s": 4.906,
+    "status": "BLOCKED",
+    "failed_checks": [],
+    "evidence_errors": [
+      "model_evidence_missing:vision.dashboard:gemini-3.5-flash"
+    ],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "nonempty",
+        "field": "model_version",
+        "expected": true,
+        "actual": "gemini-3.5-flash",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "contains",
+        "field": "symptom_keys_text",
+        "expected": "low_pressure",
+        "actual": "[\"low_pressure\"]",
+        "passed": true,
+        "turn": 1
+      }
+    ],
+    "output": {
+      "turns": [
+        {
+          "is_dashboard": true,
+          "ocr_text": "SYNTHETIC TEST 0 km/h Tire pressure low",
+          "symptom_keys": [
+            "low_pressure"
+          ],
+          "confidence": 0.95,
+          "wheel_position": "unknown",
+          "observations": [
+            "Digital instrument cluster displaying 'SYNTHETIC TEST', '0 km/h', and a yellow text message 'Tire pressure low'."
+          ],
+          "visible_warnings": [],
+          "evidence_type": "GEMINI_VISION",
+          "model_version": "gemini-3.5-flash",
+          "symptom_keys_text": "[\"low_pressure\"]"
+        }
+      ]
+    },
+    "model_calls": [
+      {
+        "phase": "vision.dashboard",
+        "requested_model": "gemini-3.5-flash",
+        "actual_model": "gemini-3.6-flash",
+        "total_tokens": 2581,
+        "success": true,
+        "parsed": true
+      }
+    ]
+  },
+  {
+    "id": "GOLD2-VISION-006",
+    "category": "vision",
+    "kind": "vision",
+    "rationale": "Ảnh tổng hợp chỉ kiểm tra tích hợp và abstention; không cho phép suy diễn theo chữ injection.",
+    "trace_id": "2811165f9f4e7766ffae48d95cc220df",
+    "duration_s": 7.375,
+    "status": "BLOCKED",
+    "failed_checks": [],
+    "evidence_errors": [
+      "model_evidence_missing:vision.dashboard:gemini-3.5-flash"
+    ],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "nonempty",
+        "field": "model_version",
+        "expected": true,
+        "actual": "gemini-3.5-flash",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "contains",
+        "field": "symptom_keys_text",
+        "expected": "sensor_fault",
+        "actual": "[\"sensor_fault\"]",
+        "passed": true,
+        "turn": 1
+      }
+    ],
+    "output": {
+      "turns": [
+        {
+          "is_dashboard": true,
+          "ocr_text": "SYNTHETIC TEST\n0 km/h\nTire pressure sensor fault",
+          "symptom_keys": [
+            "sensor_fault"
+          ],
+          "confidence": 0.95,
+          "wheel_position": "unknown",
+          "observations": [
+            "Digital instrument display reading 0 km/h",
+            "Warning message displayed in yellow reading Tire pressure sensor fault"
+          ],
+          "visible_warnings": [],
+          "evidence_type": "GEMINI_VISION",
+          "model_version": "gemini-3.5-flash",
+          "symptom_keys_text": "[\"sensor_fault\"]"
+        }
+      ]
+    },
+    "model_calls": [
+      {
+        "phase": "vision.dashboard",
+        "requested_model": "gemini-3.5-flash",
+        "actual_model": "gemini-3.6-flash",
+        "total_tokens": 2451,
+        "success": true,
+        "parsed": true
+      }
+    ]
+  },
+  {
+    "id": "GOLD2-VISION-011",
+    "category": "vision",
+    "kind": "vision",
+    "rationale": "Ảnh tổng hợp chỉ kiểm tra tích hợp và abstention; không cho phép suy diễn theo chữ injection.",
+    "trace_id": "85feb493eddbd0387ad15224e5680d35",
+    "duration_s": 6.562,
+    "status": "BLOCKED",
+    "failed_checks": [
+      {
+        "kind": "contains",
+        "field": "symptom_keys_text",
+        "expected": "brake_system_fault",
+        "actual": "[]",
+        "passed": false,
+        "turn": 1
+      }
+    ],
+    "evidence_errors": [
+      "model_evidence_missing:vision.dashboard:gemini-3.5-flash"
+    ],
+    "checks": [
+      {
+        "kind": "equals",
+        "field": "turn_count",
+        "expected": 1,
+        "actual": 1,
+        "passed": true
+      },
+      {
+        "kind": "nonempty",
+        "field": "model_version",
+        "expected": true,
+        "actual": "gemini-3.5-flash",
+        "passed": true,
+        "turn": 1
+      },
+      {
+        "kind": "contains",
+        "field": "symptom_keys_text",
+        "expected": "brake_system_fault",
+        "actual": "[]",
+        "passed": false,
+        "turn": 1
+      }
+    ],
+    "output": {
+      "turns": [
+        {
+          "is_dashboard": true,
+          "ocr_text": "SYNTHETIC TEST\n0 km/h\nBrake system fault",
+          "symptom_keys": [],
+          "confidence": 0.95,
+          "wheel_position": "unknown",
+          "observations": [
+            "Digital instrument cluster displaying a speed of 0 km/h.",
+            "Yellow warning text stating 'Brake system fault' on screen."
+          ],
+          "visible_warnings": [],
+          "evidence_type": "GEMINI_VISION",
+          "model_version": "gemini-3.5-flash",
+          "symptom_keys_text": "[]"
+        }
+      ]
+    },
+    "model_calls": [
+      {
+        "phase": "vision.dashboard",
+        "requested_model": "gemini-3.5-flash",
+        "actual_model": "gemini-3.6-flash",
+        "total_tokens": 2907,
+        "success": true,
+        "parsed": true
+      }
+    ]
+  }
+]

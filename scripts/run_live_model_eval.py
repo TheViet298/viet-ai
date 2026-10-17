@@ -21,10 +21,22 @@ def load_cases():
     return [json.loads(line) for line in (ROOT / 'eval/datasets/live_model_cases_v1.jsonl').read_text(encoding='utf-8').splitlines() if line.strip()]
 
 
+def expected_live_case(case, settings):
+    if case['kind'] == 'chat':
+        return {**case, 'expected_model': settings.model_name, 'expected_prompt': 'general'}
+    model = settings.vision_model if case['image_kind'] == 'exterior' or settings.vision_provider == 'openai' else settings.dashboard_vision_model
+    return {**case, 'expected_model': model, 'expected_prompt': 'vision.' + case['image_kind']}
+
+
 def evaluate_live(case, result, rows):
+    from eval.model_evidence import model_matches
     from scripts.langfuse_cloud_evidence import summarize_trace
 
     successful = [r for r in rows if r.get('type') == 'GENERATION' and r.get('level') != 'ERROR' and r.get('endTime')]
+    if case.get('expected_model'):
+        successful = [r for r in successful if model_matches(case['expected_model'], r.get('model'))]
+    if case.get('expected_prompt'):
+        successful = [r for r in successful if ((r.get('metadata') or {}).get('prompt_name') or r.get('name')) == case['expected_prompt']]
     if not successful or summarize_trace(successful)['known_total_tokens'] <= 0:
         return {'status': 'BLOCKED', 'reasons': ['successful_live_generation_with_usage_missing']}
     if result['http_status'] != 200:
@@ -32,7 +44,9 @@ def evaluate_live(case, result, rows):
     data = result['response'].get('data', result['response'])
     reasons = []
     if case['kind'] == 'chat':
-        outcomes = [(r.get('metadata') or {}).get('outcome', r.get('statusMessage')) for r in rows if r.get('name') == 'llm.outcome']
+        outcomes = [(r.get('metadata') or {}).get('outcome', r.get('statusMessage')) for r in rows
+                    if r.get('name') == 'llm.outcome' and (not case.get('expected_prompt') or
+                       (r.get('metadata') or {}).get('prompt_name') == case['expected_prompt'])]
         if not outcomes or 'parsed' not in outcomes:
             return {'status': 'BLOCKED', 'reasons': ['application_generation_not_parsed']}
         if not (data.get('response') or data.get('reply')):
@@ -167,7 +181,7 @@ async def run(output):
                 print(json.dumps({'id': case_id, 'http_status': status, 'duration_s': elapsed}), flush=True)
         await obs.flush_observability()
         rows = await collect_observations(run_id, from_time=started, expected_cases=10)
-        case_map = {c['id']: c for c in load_cases()}
+        case_map = {c['id']: expected_live_case(c, settings) for c in load_cases()}
         for result in results:
             selected = [r for r in rows if r.get('traceId') == result['trace_id']]
             result.update(evaluate_live(case_map[result['id']], result, selected))
