@@ -46,15 +46,24 @@ def record_trace_step(
         "cost": cost,
         "metadata": sanitized_snapshot({**(metadata or {}), **({'correlation_id': trace_id} if trace_id else {})}),
     }
-    get_store().record_trace(event)
+    try:
+        get_store().record_trace(event)
+    except Exception:
+        pass
     return event
 
 
 def replay_session(session_id: str) -> list[dict]:
     """Recorded playback of node inputs/outputs, without calling live LLM/tools."""
-    return get_store().replay(session_id)
+    try:
+        return get_store().replay(session_id)
+    except Exception:
+        return []
 
 
 def clear_traces() -> None:
-    with get_store().connect() as db:
-        db.execute("DELETE FROM agent_traces")
+    try:
+        with get_store().connect() as db:
+            db.execute("DELETE FROM agent_traces")
+    except Exception:
+        pass
