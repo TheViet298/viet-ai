@@ -24,7 +24,7 @@ test('Serv follows the real caret on home, preserves multiline typing and suppor
   const left=await serv.evaluate(e=>(e as HTMLElement).style.getPropertyValue('--gx'));
   await input.press('Control+End');
   await expect.poll(()=>serv.evaluate(e=>(e as HTMLElement).style.getPropertyValue('--gx'))).not.toBe(left);
-  await input.evaluate(field=>field.setSelectionRange(0,field.value.length,'backward'));
+  await input.evaluate(field=>{ if (field instanceof HTMLTextAreaElement) field.setSelectionRange(0,field.value.length,'backward'); });
   await expect.poll(()=>serv.evaluate(e=>(e as HTMLElement).style.getPropertyValue('--gx'))).toBe(left);
   await input.press('Control+End');
   await expect.poll(()=>serv.evaluate(e=>(e as HTMLElement).style.getPropertyValue('--gx'))).not.toBe(left);

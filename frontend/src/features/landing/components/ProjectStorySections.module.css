@@ -1,0 +1,318 @@
+.section { padding-block: 96px; scroll-margin-top: 100px; }
+.container { width: min(1184px, calc(100% - 96px)); margin-inline: auto; }
+.sectionLabel { color: var(--blue); font-size: 11px; font-weight: 750; letter-spacing: .09em; margin-bottom: 24px !important; }
+.section h2 { font-size: clamp(34px, 3.5vw, 51px); line-height: 1.16; font-weight: 600; }
+.section h2 em { font-style: normal; color: var(--blue); }
+.splitHeading { display: grid; grid-template-columns: 1.5fr .8fr; gap: 80px; align-items: end; }
+.splitHeading > p { color: var(--muted); font-size: 15px; line-height: 1.9; }
+.problem { background: var(--soft); }
+.problemChain { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) .58fr; gap: 28px; margin-top: 56px; }
+.actorCard { position: relative; border: 1px solid var(--line); border-radius: 24px; background: var(--paper); padding: 25px 23px 28px; }
+.actorTop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.actorTop > span:last-child { color: var(--muted); font-weight: 700; font-size: 9px; letter-spacing: .06em; }
+.iconTile { width: 45px; height: 45px; flex-shrink: 0; display: grid; place-items: center; background: var(--pale); color: var(--blue); border-radius: 13px; }
+.problemChain .actorCard h3 { font-size: 24px; font-weight: 550; margin-top: 35px; line-height: 1.35; }
+.actorLead { margin-top: 23px; padding-block: 19px; border-block: 1px solid var(--line); min-height: 112px; }
+.actorLead strong { color: var(--blue); font-size: 23px; font-weight: 650; line-height: 1.35; }
+.actorLead p { color: var(--muted); font-size: 11px; line-height: 1.7; margin-top: 8px !important; }
+.actorCard ul, .roleCard ul { list-style: none; margin: 23px 0 0; padding: 0; display: flex; flex-direction: column; gap: 15px; }
+.actorCard li, .roleCard li { display: flex; align-items: start; gap: 9px; font-size: 12px; line-height: 1.75; }
+.actorCard li svg, .roleCard li svg { color: var(--blue); flex-shrink: 0; margin-top: 3px; }
+.actorCard:nth-child(2) { background: #192536; color: #fff; border-color: #192536; }
+.actorCard:nth-child(2) .actorTop > span:last-child, .actorCard:nth-child(2) .actorLead p { color: #bdcce0; }
+.actorCard:nth-child(2) .iconTile { background: #2b3a51; color: #a8c8ff; }
+.actorCard:nth-child(2) .actorLead { border-color: #3b4a60; }
+.actorCard:nth-child(2) .actorLead strong, .actorCard:nth-child(2) li svg { color: #a8c8ff; }
+.actorCard:nth-child(3) { background: var(--pale); }
+.chainArrow { position: absolute; top: 52%; right: -25px; color: var(--blue); }
+.chainResult { background: #1e40af; color: white; border-radius: 24px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 25px 17px; text-align: center; }
+.chainResult > span { width: 62px; height: 62px; border-radius: 50%; background: white; color: #1e40af; display: grid; place-items: center; margin-bottom: 22px; }
+.problemChain .chainResult h3 { color: white; font-size: 21px; }
+.chainResult p { color: #dce7ff; font-size: 11px; line-height: 1.8; margin-top: 13px !important; }
+.problemRoots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px; }
+.problemRoots > div { background: var(--pale); border-radius: 14px; padding: 22px; }
+.problemRoots h4 { margin: 0; font-size: 13px; font-weight: 650; }
+.problemRoots p { font-size: 12px; color: var(--muted); margin-top: 8px !important; line-height: 1.8; }
+.solution { background: var(--paper); }
+.centerHeading { text-align: center; max-width: 850px; margin-inline: auto; }
+.centerHeading > p:last-child { color: var(--muted); max-width: 77ch; margin: 24px auto 0 !important; line-height: 1.85; font-size: 15px; }
+.solutionHub { width: 340px; min-height: 206px; border-radius: 100px; margin: 42px auto 0; padding: 20px 25px; background: #1e40af; color: #fff; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; }
+.servHead { display: inline-flex; width: 72px; height: 72px; align-items: center; justify-content: center; }
+.servHead svg { display: block; width: 100%; height: 100%; }
+.servHead :global(.arm), .servHead :global(.feet), .servHead :global(.ground), .servHead :global(.smile-eyes), .servHead :global(.care-eyes), .servHead :global(.wink-eyes), .servHead :global(.wide-eyes), .servHead :global(.sleepy-eyes), .servHead :global(.mouth-grin), .servHead :global(.mouth-o), .servHead :global(.mouth-flat), .servHead :global(.mouth-tiny), .servHead :global(.fx), .servHead :global(.prop) { display: none; }
+.solutionHub .servHead { background: #fff; border-radius: 50%; width: 63px; height: 63px; }
+.solutionHub > strong { font-size: 13px; margin-top: 10px; }
+.solutionHub > span:not(.servHead) { font-size: 23px; font-weight: 650; }
+.solutionHub small { font-size: 10px; color: #d5e3ff; margin-top: 8px; }
+.branchLines { height: 50px; }
+.branchLines svg { width: 100%; height: 100%; fill: none; stroke: #9fb9ea; stroke-width: 1; }
+.solutionCards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.roleCard { border-radius: 24px; padding: 30px 26px 25px; background: var(--pale); display: flex; flex-direction: column; }
+.roleTitle { display: flex; align-items: start; gap: 17px; }
+.roleTitle > div > p { font-size: 9px; color: var(--blue); font-weight: 750; letter-spacing: .045em; }
+.solutionCards .roleCard h3 { font-size: 22px; line-height: 1.4; font-weight: 550; margin-top: 8px; }
+.roleTitle .iconTile { background: var(--paper); }
+.roleIntro { margin-top: 30px !important; padding-bottom: 22px; border-bottom: 1px solid var(--line); font-size: 14px; line-height: 1.8; }
+.roleCard ul { margin-bottom: 32px; }
+.roleCard li { font-size: 13px; }
+.roleFoot { margin-top: auto; background: var(--paper); color: var(--blue); padding: 13px 10px; border-radius: 9px; text-align: center; font-size: 11px; font-weight: 650; }
+.roleCard:nth-child(2) { background: #192536; color: white; transform: translateY(-16px); }
+.roleCard:nth-child(2) .roleTitle > div > p { color: #a8c8ff; }
+.roleCard:nth-child(2) .roleIntro { border-color: #3b4a60; }
+.roleCard:nth-child(2) li svg { color: #a8c8ff; }
+.roleCard:nth-child(2) .roleFoot { background: #1e40af; color: white; }
+.roleCard:nth-child(3) { background: var(--soft); }
+.workflowBlock { display: grid; grid-template-columns: .85fr 1.2fr; gap: 18px; margin-top: 38px; }
+.workflowIntro { background: #1e40af; color: white; border-radius: 22px; padding: 32px; display: flex; flex-direction: column; align-items: start; justify-content: center; }
+.workflowBlock .workflowIntro h3 { font-size: 25px; line-height: 1.35; margin-top: 22px; }
+.workflowIntro p { font-size: 12px; color: #dce7ff; line-height: 1.8; margin-top: 15px !important; max-width: 38ch; }
+.workflowList { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.workflowList li { display: flex; align-items: center; gap: 13px; border: 1px solid var(--line); border-radius: 13px; padding: 17px 14px; font-weight: 600; font-size: 12px; }
+.workflowList li > span { color: var(--blue); font-size: 10px; font-variant-numeric: tabular-nums; }
+.principles { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 9px; margin-top: 30px; }
+.principles > span { border: 1px solid var(--line); color: var(--blue); font-size: 10px; font-weight: 650; border-radius: 22px; padding: 10px 15px; }
+.action { background: var(--pale); }
+.actionLayout { display: grid; grid-template-columns: .85fr 1.25fr; gap: 55px; align-items: center; }
+.actionLayout h2 { font-size: clamp(34px, 3.4vw, 47px); }
+.actionDescription { color: var(--muted); font-size: 14px; line-height: 1.9; margin-top: 25px !important; }
+.scenarioButtons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 29px; }
+.scenarioButtons button { display: flex; align-items: start; flex-direction: column; justify-content: center; gap: 10px; min-height: 82px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); font-size: 11px; font-weight: 650; text-align: left; }
+.scenarioButtons button:hover { border-color: var(--blue); }
+.scenarioButtons button[aria-pressed="true"] { background: #1e40af; color: white; border-color: #1e40af; }
+.actionWindow { background: var(--paper); padding: 10px 12px 18px; border-radius: 24px; box-shadow: 0 22px 45px #142b5821; }
+.windowBar { background: #192536; color: white; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 17px; }
+.windowBar > span { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.windowBar .servHead { width: 30px; height: 30px; background: #fff; border-radius: 50%; }
+.windowBar > small { font-size: 9px; color: #bdcce0; }
+.actionDiagram { display: grid; grid-template-columns: 1fr .85fr 1fr; align-items: center; gap: 10px; padding: 38px 10px 28px; position: relative; min-height: 300px; }
+.actionDiagram::before { content: ""; position: absolute; height: 1px; background: var(--line); inset-inline: 30px; top: 49%; }
+.inputCard, .outputCard { position: relative; z-index: 1; padding: 19px 15px; border: 1px solid var(--line); background: var(--paper); border-radius: 15px; min-height: 193px; }
+.inputCard > small, .outputCard > small { color: var(--blue); font-size: 9px; font-weight: 750; }
+.inputCard > p { font-size: 12px; font-weight: 600; margin-top: 15px !important; line-height: 1.8; }
+.inputCard > div { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 16px; }
+.inputCard > div > span { color: var(--blue); background: var(--pale); padding: 3px 6px; border-radius: 5px; font-size: 9px; }
+.agentCore { position: relative; z-index: 1; background: var(--pale); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 0; border-radius: 50%; aspect-ratio: 1; text-align: center; }
+.agentCore .servHead { width: 70%; height: auto; aspect-ratio: 1; }
+.agentCore > strong { color: var(--blue); font-size: 14px; line-height: 1; margin-top: -12px; }
+.agentCore > small { font-size: 6px; color: var(--muted); margin-top: 8px; max-width: 19ch; }
+.actionDiagram .outputCard h3 { font-size: 14px; margin-top: 14px; }
+.outputCard > p { font-size: 10px; line-height: 1.8; color: var(--muted); margin-top: 9px !important; }
+.outputCard > span { background: #1e40af; color: white; display: flex; justify-content: space-between; align-items: center; gap: 4px; padding: 9px 8px; border-radius: 6px; font-size: 9px; margin-top: 14px; }
+.toolsRow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.toolsRow > span { display: flex; justify-content: center; align-items: center; gap: 6px; background: var(--soft); color: var(--blue); font-size: 10px; font-weight: 600; padding: 11px 3px; border-radius: 8px; }
+.windowNote { font-size: 9px; line-height: 1.8; text-align: center; color: var(--muted); margin: 13px 6px 0 !important; }
+.journeyDetails { margin-top: 26px; }
+.reasoning { background: #192536; color: white; border-radius: 20px; padding: 30px; }
+.reasoning .sectionLabel { color: #a8c8ff; margin-bottom: 10px !important; font-size: 9px; }
+.reasoning > h3 { font-size: 22px; line-height: 1.4; }
+.reasoning > ol { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 24px 0 0; padding: 0; }
+.reasoning li { border: 1px solid #43516a; border-radius: 12px; padding: 18px; background: #243247; }
+.reasoning li small { color: #a8c8ff; font-size: 10px; }
+.reasoning li h4 { margin: 11px 0 0; font-size: 12px; line-height: 1.6; }
+.reasoning li p { margin-top: 8px !important; color: #c3d1e3; font-size: 11px; line-height: 1.8; }
+.reasoningTags { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
+.reasoningTags span { display: flex; align-items: center; gap: 4px; color: #dce7ff; background: #30415a; font-size: 9px; padding: 4px 8px; border-radius: 14px; }
+.timeline { border: 1px solid var(--line); border-radius: 20px; padding: 32px; margin-top: 36px; }
+.timeline > div { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px 40px; align-items: end; }
+.timeline .sectionLabel { grid-column: 1 / -1; font-size: 9px; margin-bottom: 0 !important; }
+.timeline > div > h3 { font-size: 23px; font-weight: 550; }
+.timeline > div > p { color: var(--muted); font-size: 12px; line-height: 1.8; }
+.timeline > ol { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; list-style: none; padding: 0; margin: 32px 0 0; }
+.timeline li { position: relative; padding: 24px 14px 0; border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+.timeline li:first-child { padding-left: 0; border-left: 0; }
+.timeline li > span { width: 8px; height: 8px; background: #849abd; border-radius: 50%; position: absolute; top: -4px; left: 14px; }
+.timeline li:first-child > span { left: 0; }
+.timeline li:nth-child(4) > span { background: #1e40af; box-shadow: 0 0 0 4px #dce7ff; }
+.timeline li small { color: var(--blue); font-size: 9px; }
+.timeline li h4 { margin: 7px 0 0; font-size: 12px; }
+.timeline li p { font-size: 10px; line-height: 1.8; color: var(--muted); margin-top: 9px !important; }
+.timeline li strong { display: block; color: var(--blue); font-size: 9px; font-weight: 600; margin-top: 12px; }
+.proof { background: #192536; color: #fff; }
+.proof .sectionLabel, .proof .splitHeading h2 em { color: #a8c8ff; }
+.proof .splitHeading > p { color: #c3d1e3; }
+.proofStats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 40px; }
+.proofStats > div { background: #29374c; padding: 25px 22px; border-radius: 16px; display: flex; flex-direction: column; align-items: start; }
+.proofStats > div:nth-child(2) { background: #1e40af; }
+.proofStats > div:nth-child(3) { background: #f5f8ff; color: #192536; }
+.proofStats > div:nth-child(4) { background: #305a74; }
+.proofStats strong { font-size: 38px; font-weight: 650; line-height: 1.1; }
+.proofStats span { font-size: 9px; font-weight: 750; margin-top: 27px; line-height: 1.7; }
+.proofStats p { font-size: 11px; color: #d2deed; line-height: 1.8; margin-top: 8px !important; }
+.proofStats > div:nth-child(3) p { color: #52617a; }
+.proofColumns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 35px; }
+.proofColumns > div { border-top: 1px solid #65748c; padding-top: 23px; }
+.proofColumns > div:nth-child(2) { border-color: #9cbcff; }
+.proofColumns > div:nth-child(3) { border-color: #70afcf; }
+.proofColumns small { font-size: 9px; color: #b9cbe3; font-weight: 700; letter-spacing: .03em; }
+.proofColumns h3 { font-size: 19px; margin-top: 13px !important; }
+.proofColumns p { font-size: 13px; line-height: 1.85; color: #c3d1e3; margin-top: 12px !important; }
+.evidenceSource { border-top: 1px solid #43516a; margin-top: 34px; }
+.evidenceSource summary { display: flex; justify-content: space-between; align-items: center; gap: 15px; cursor: pointer; list-style: none; padding-top: 20px; color: #c3d1e3; font-size: 12px; }
+.evidenceSource summary::-webkit-details-marker { display: none; }
+.evidenceSource[open] summary svg { transform: rotate(180deg); }
+.evidenceSource p { color: #c3d1e3; max-width: 100ch; font-size: 12px; line-height: 1.9; margin-top: 16px !important; }
+.development { background: var(--soft); }
+.developmentLayout { display: grid; grid-template-columns: .9fr 1.1fr; gap: 75px; align-items: center; }
+.developmentLayout h2 { font-size: clamp(32px, 3.2vw, 45px); }
+.developmentIntro { color: var(--muted); font-size: 14px; line-height: 1.85; margin-top: 24px !important; }
+.developmentLayout > div:last-child > ol { list-style: none; margin: 27px 0 0; padding: 0; }
+.developmentLayout li { display: flex; gap: 17px; border-top: 1px solid var(--line); padding-block: 23px; }
+.developmentLayout li > span { background: var(--pale); color: var(--blue); font-size: 10px; padding: 8px; border-radius: 8px; height: fit-content; }
+.developmentLayout li small { font-size: 9px; color: var(--blue); font-weight: 700; }
+.developmentLayout li h3 { font-size: 20px; margin-top: 8px; }
+.developmentLayout li p { color: var(--muted); font-size: 13px; line-height: 1.8; margin-top: 10px !important; }
+.developmentNote { display: flex; align-items: start; gap: 9px; color: var(--blue); background: var(--pale); border-radius: 9px; padding: 16px; font-size: 11px; line-height: 1.8; }
+.developmentNote svg { flex-shrink: 0; margin-top: 2px; }
+.developmentDiagram { min-height: 560px; background: var(--pale); border-radius: 28px; position: relative; isolation: isolate; }
+.developmentDiagram::before { content: ""; position: absolute; width: 1px; height: 310px; background: #98b2da; top: 100px; left: 50%; transform: rotate(-35deg); z-index: -1; }
+.ownerNode, .staffNode { position: absolute; display: flex; flex-direction: column; align-items: start; gap: 10px; padding: 23px; width: 62%; border-radius: 17px; }
+.ownerNode { top: 35px; left: 25px; background: var(--paper); color: var(--ink); }
+.ownerNode > svg { color: var(--blue); }
+.staffNode { bottom: 75px; right: 25px; background: #192536; color: white; }
+.ownerNode strong, .staffNode strong { font-size: 15px; }
+.ownerNode span, .staffNode span { font-size: 11px; }
+.ownerNode small { font-size: 9px; color: var(--blue); }
+.staffNode small { font-size: 9px; color: #a8c8ff; }
+.developmentCore { position: absolute; top: 205px; left: 50%; transform: translateX(-50%); width: 150px; height: 150px; border-radius: 50%; background: #1e40af; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 14px 28px #1e40af26; z-index: 2; }
+.developmentCore .servHead { width: 65px; height: 65px; background: white; border-radius: 50%; }
+.developmentCore strong { font-size: 15px; margin-top: 8px; }
+.developmentCore > span:last-child { font-size: 9px; color: #dce7ff; margin-top: 4px; }
+.futureNode { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); white-space: nowrap; color: var(--blue); font-size: 10px; }
+@media (max-width: 1100px) {
+  .container { width: calc(100% - 64px); }
+  .splitHeading { gap: 35px; grid-template-columns: 1.2fr 1fr; }
+  .problemChain { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .chainResult { grid-column: 1 / -1; flex-direction: row; gap: 20px; padding: 20px; }
+  .chainResult > span { margin: 0; width: 45px; height: 45px; }
+  .chainResult p { max-width: 45ch; margin-top: 0 !important; }
+  .actorCard:nth-child(3) .chainArrow { display: none; }
+  .chainArrow { right: -20px; }
+  .actorCard { padding-inline: 20px; }
+  .problemChain .actorCard h3 { font-size: 21px; }
+  .actorLead strong { font-size: 20px; }
+  .roleCard { padding: 24px 20px; }
+  .roleTitle { flex-direction: column; gap: 14px; }
+  .actionLayout { grid-template-columns: 1fr; gap: 36px; }
+  .actionLayout > div:first-child { max-width: 70ch; }
+  .scenarioButtons { max-width: 440px; }
+  .actionDiagram { grid-template-columns: 1fr 150px 1fr; gap: 25px; }
+  .inputCard, .outputCard { min-height: 200px; }
+  .inputCard > p { font-size: 15px; }
+  .actionDiagram .outputCard h3 { font-size: 18px; }
+  .outputCard > p { font-size: 13px; }
+  .reasoning > ol { grid-template-columns: repeat(2, 1fr); }
+  .developmentLayout { gap: 35px; }
+  .developmentDiagram { min-height: 570px; }
+}
+@media (max-width: 800px) {
+  .section { padding-block: 72px; }
+  .container { width: calc(100% - 48px); }
+  .splitHeading { grid-template-columns: 1fr; gap: 22px; }
+  .splitHeading > p { max-width: 70ch; }
+  .problemChain { margin-top: 35px; }
+  .actorTop { flex-direction: column; align-items: start; }
+  .actorCard { padding-inline: 15px; border-radius: 17px; }
+  .actorTop > span:last-child { font-size: 8px; min-height: 25px; }
+  .problemChain .actorCard h3 { font-size: 20px; margin-top: 20px; }
+  .actorLead { min-height: 135px; }
+  .actorLead strong { font-size: 20px; }
+  .actorCard li { font-size: 11px; gap: 6px; }
+  .problemRoots { gap: 12px; }
+  .problemRoots > div { padding: 17px; }
+  .solutionCards { gap: 12px; }
+  .roleCard { padding-inline: 17px; border-radius: 17px; }
+  .solutionCards .roleCard h3 { font-size: 19px; }
+  .roleIntro { font-size: 13px; }
+  .roleCard li { font-size: 12px; }
+  .roleFoot { font-size: 10px; }
+  .workflowBlock { grid-template-columns: 1fr; }
+  .workflowIntro { padding: 28px; }
+  .workflowBlock .workflowIntro h3 { margin-top: 17px; }
+  .timeline > div { grid-template-columns: 1fr; gap: 15px; }
+  .timeline > ol { grid-template-columns: repeat(3, 1fr); row-gap: 25px; }
+  .timeline li:nth-child(4) { border-left: 0; padding-left: 0; }
+  .timeline li:nth-child(4) > span { left: 0; }
+  .proofStats { grid-template-columns: repeat(2, 1fr); }
+  .proofColumns { gap: 20px; }
+  .developmentLayout { grid-template-columns: 1fr; gap: 38px; }
+  .developmentDiagram { min-height: 530px; max-width: 470px; width: 100%; margin-inline: auto; }
+}
+@media (max-width: 540px) {
+  .section { padding-block: 58px; scroll-margin-top: 145px; }
+  .container { width: calc(100% - 40px); }
+  .sectionLabel { margin-bottom: 18px !important; font-size: 10px; }
+  .section h2 { font-size: 35px; line-height: 1.2; }
+  .splitHeading > p, .centerHeading > p:last-child { font-size: 14px; }
+  .problemChain { grid-template-columns: 1fr; gap: 29px; }
+  .actorCard { padding: 24px; border-radius: 20px; }
+  .actorTop { flex-direction: row; align-items: center; }
+  .actorTop > span:last-child { min-height: auto; font-size: 9px; }
+  .problemChain .actorCard h3 { font-size: 25px; margin-top: 25px; }
+  .actorLead { min-height: auto; margin-top: 20px; }
+  .actorLead strong { font-size: 25px; }
+  .actorCard li { font-size: 13px; gap: 9px; }
+  .chainArrow { display: flex !important; top: auto; bottom: -26px; right: calc(50% - 10px); transform: rotate(90deg); }
+  .chainResult { grid-column: auto; padding: 25px; flex-wrap: wrap; gap: 14px; }
+  .chainResult p { flex-basis: 100%; font-size: 12px; }
+  .problemRoots { grid-template-columns: 1fr; margin-top: 25px; }
+  .problemRoots h4 { font-size: 14px; }
+  .problemRoots p { font-size: 13px; }
+  .solutionHub { width: min(100%, 300px); min-height: 200px; margin-top: 30px; }
+  .branchLines { height: 32px; }
+  .branchLines svg path { d: path("M500 0V75"); }
+  .solutionCards { grid-template-columns: 1fr; gap: 17px; }
+  .roleCard { padding: 27px 24px; border-radius: 20px; }
+  .roleTitle { flex-direction: row; gap: 15px; }
+  .solutionCards .roleCard h3 { font-size: 23px; }
+  .roleCard:nth-child(2) { transform: none; }
+  .roleIntro { margin-top: 22px !important; font-size: 14px; }
+  .roleCard li { font-size: 13px; }
+  .roleFoot { font-size: 11px; }
+  .workflowIntro { border-radius: 20px; }
+  .workflowList { grid-template-columns: 1fr; }
+  .workflowList li { min-height: 56px; padding-inline: 20px; }
+  .principles { justify-content: start; gap: 7px; }
+  .principles > span { font-size: 9px; padding: 8px 11px; }
+  .actionLayout { gap: 28px; }
+  .actionWindow { border-radius: 20px; padding-inline: 10px; }
+  .windowBar { padding-inline: 9px; gap: 6px; }
+  .windowBar > span { font-size: 11px; gap: 6px; }
+  .windowBar > small { font-size: 8px; }
+  .actionDiagram { grid-template-columns: 1fr; gap: 15px; padding: 20px 7px; }
+  .actionDiagram::before { width: 1px; height: auto; top: 35px; bottom: 35px; left: 50%; }
+  .inputCard, .outputCard { min-height: auto; padding: 20px; }
+  .inputCard > p { font-size: 14px; }
+  .inputCard > div > span { font-size: 10px; }
+  .agentCore { width: 135px; margin-inline: auto; }
+  .outputCard > span { font-size: 11px; padding: 11px; }
+  .toolsRow { grid-template-columns: repeat(2, 1fr); }
+  .toolsRow > span { font-size: 11px; }
+  .windowNote { font-size: 10px; }
+  .reasoning { padding: 24px 20px; }
+  .reasoning > h3 { font-size: 21px; }
+  .reasoning > ol { grid-template-columns: 1fr; }
+  .reasoning li h4 { font-size: 14px; }
+  .reasoning li p { font-size: 12px; }
+  .timeline { padding: 25px 20px; margin-top: 24px; }
+  .timeline > div > h3 { font-size: 23px; }
+  .timeline > ol { grid-template-columns: 1fr; gap: 0; }
+  .timeline li, .timeline li:first-child, .timeline li:nth-child(4) { padding: 0 0 27px 23px; border-top: 0; border-left: 1px solid var(--line); }
+  .timeline li > span, .timeline li:first-child > span, .timeline li:nth-child(4) > span { top: 4px; left: -4px; }
+  .timeline li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .timeline li h4 { font-size: 15px; }
+  .timeline li p { font-size: 12px; }
+  .timeline li strong { font-size: 11px; }
+  .proofStats { gap: 10px; margin-top: 28px; }
+  .proofStats > div { padding: 21px 16px; }
+  .proofStats strong { font-size: 34px; }
+  .proofStats span { font-size: 9px; margin-top: 23px; }
+  .proofStats p { font-size: 11px; }
+  .proofColumns { grid-template-columns: 1fr; gap: 24px; }
+  .proofColumns h3 { font-size: 21px; }
+  .developmentDiagram { min-height: 530px; border-radius: 22px; }
+  .ownerNode, .staffNode { width: 72%; padding: 20px; }
+  .ownerNode { left: 20px; top: 25px; }
+  .staffNode { right: 20px; bottom: 65px; }
+  .developmentCore { top: 190px; width: 140px; height: 140px; }
+  .futureNode { font-size: 9px; }
+}

@@ -12,8 +12,9 @@ export function Footer() {
   const pathname = usePathname();
   const { role } = useAuth();
 
-  // Ẩn Footer khi Staff đang ở màn /console hoặc màn đăng nhập/đăng ký
+  // Trang giới thiệu có footer riêng; giữ màn xác thực và Staff Console gọn.
   if (
+    pathname === "/project-overview" ||
     (pathname?.startsWith("/console") && role === "STAFF") ||
     pathname === "/login" ||
     pathname === "/register"

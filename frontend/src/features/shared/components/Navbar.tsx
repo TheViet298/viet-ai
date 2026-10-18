@@ -26,8 +26,8 @@ export function Navbar() {
   const { user, role, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // Khi Staff đang ở màn /console -> Ẩn Navbar Customer để nhường toàn bộ giao diện cho Staff Console Shell
-  if (pathname?.startsWith("/console") && role === "STAFF") {
+  // Trang giới thiệu có header riêng; Staff Console dùng shell riêng.
+  if (pathname === "/project-overview" || (pathname?.startsWith("/console") && role === "STAFF")) {
     return null;
   }
 
