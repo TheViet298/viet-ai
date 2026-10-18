@@ -2,58 +2,316 @@
   {
     "image_id": "img_vfe34_tpms_cluster_01",
     "vehicle_model": "UNKNOWN",
-    "source_context_model": "VinFast VF e34",
-    "model_verification_status": "unverified_image_has_fuel_gauge_and_tachometer",
     "image_type": "cluster_display_real_photo",
     "title_vi": "Ảnh cụm đồng hồ cảnh báo kiểm tra lốp sau bên phải; mẫu xe chưa xác minh",
     "source_url": "https://static-cms-prod.vinfastauto.com/ky-hieu-canh-bao-loi-ap-suat-lop-tren-vf-e34_1652457282.jpg",
     "article_reference": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
     "format": "JPG",
     "visual_elements": {
-      "symbols_detected": ["tpms_icon_amber", "car_silhouette_top_view", "rear_right_wheel_red"],
-      "text_detected": ["Kiểm tra lốp bên phải phía sau"],
+      "symbols_detected": [
+        "tpms_icon_amber",
+        "car_silhouette_top_view",
+        "rear_right_wheel_red"
+      ],
+      "text_detected": [
+        "Kiểm tra lốp bên phải phía sau"
+      ],
       "quality_assessment": "Suitable for OCR and wheel localization; no pressure reading or specific TPMS fault visible"
     },
     "associated_symptom_keys": [],
     "copyright_license_status": "vinfast_official_cms_reference_only",
-    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập.",
+    "source_context_model": "VinFast VF e34",
+    "model_verification_status": "unverified_image_has_fuel_gauge_and_tachometer"
   },
   {
     "image_id": "img_vfe34_tpms_icon_low_pressure",
     "vehicle_model": "VinFast VF e34",
     "image_type": "cluster_display_illustration",
-    "model_verification_status": "article_context_only",
     "title_vi": "Màn hình minh họa cảnh báo Tire pressure low",
     "source_url": "https://static-cms-prod.vinfastauto.com/ap-suat-lop-1_1652627856.png",
     "article_reference": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
     "format": "PNG",
     "visual_elements": {
-      "symbols_detected": ["car_silhouette_top_view", "rear_right_wheel_red"],
-      "text_detected": ["Tire pressure low", "OK to Dismiss"],
+      "symbols_detected": [
+        "car_silhouette_top_view",
+        "rear_right_wheel_red"
+      ],
+      "text_detected": [
+        "Tire pressure low",
+        "OK to Dismiss"
+      ],
       "quality_assessment": "Full display illustration; suitable for warning OCR, not an isolated TPMS icon"
     },
     "associated_symptom_keys": [
       "low_pressure"
     ],
     "copyright_license_status": "vinfast_official_cms_reference_only",
-    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập.",
+    "model_verification_status": "article_context_only"
   },
   {
     "image_id": "img_vfe34_tpms_icon_sensor_fault",
     "vehicle_model": "VinFast VF e34",
     "image_type": "cluster_display_illustration",
-    "model_verification_status": "article_context_only",
     "title_vi": "Màn hình minh họa cảnh báo Tire pressure sensor fault",
     "source_url": "https://static-cms-prod.vinfastauto.com/ap-suat-lop-5_1652627955.png",
     "article_reference": "https://vinfastauto.com/vn_vi/canh-bao-ap-suat-lop-tren-vf-e34",
     "format": "PNG",
     "visual_elements": {
-      "symbols_detected": ["car_silhouette_top_view", "front_left_wheel_red"],
-      "text_detected": ["Tire pressure sensor fault", "--kPa", "--°C", "Hold OK to Dismiss"],
+      "symbols_detected": [
+        "car_silhouette_top_view",
+        "front_left_wheel_red"
+      ],
+      "text_detected": [
+        "Tire pressure sensor fault",
+        "--kPa",
+        "--°C",
+        "Hold OK to Dismiss"
+      ],
       "quality_assessment": "Full display illustration; suitable for sensor-fault warning OCR"
     },
     "associated_symptom_keys": [
       "sensor_fault"
+    ],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập.",
+    "model_verification_status": "article_context_only"
+  },
+  {
+    "image_id": "img_vf5_cluster_display_01",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "image_type": "cluster_display_overview",
+    "title_vi": "Cụm màn hình táp-lô kỹ thuật số 7 inch hiển thị thông tin cảnh báo trên VinFast VF 5 Plus",
+    "source_url": "https://vinfastauto.com/vn_vi/y-nghia-cac-loai-den-canh-bao-tren-o-to-dien",
+    "article_reference": "https://vinfastauto.com/vn_vi/y-nghia-cac-loai-den-canh-bao-tren-o-to-dien",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "digital_speedometer",
+        "ready_indicator_green",
+        "turtle_mode_icon",
+        "battery_soc_percentage",
+        "trip_computer"
+      ],
+      "text_detected": [
+        "READY",
+        "km/h",
+        "P R N D",
+        "98% SoC",
+        "12.4V",
+        "2.3 bar"
+      ],
+      "quality_assessment": "Màn hình đa thông tin người lái 7 inch sau vô lăng xe VF 5 Plus với bố cục khu vực cảnh báo trung tâm"
+    },
+    "associated_symptom_keys": [
+      "turtle_mode_power_limited",
+      "low_battery_soc",
+      "ready_indicator_mode",
+      "master_warning_indicator"
+    ],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+  },
+  {
+    "image_id": "img_vf5_icon_turtle_mode",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng cảnh báo rùa vàng (Chế độ giới hạn công suất xe điện - Turtle Mode)",
+    "source_url": "https://vinfastauto.com/vn_vi/y-nghia-cac-loai-den-canh-bao-tren-o-to-dien",
+    "article_reference": "https://vinfastauto.com/vn_vi/y-nghia-cac-loai-den-canh-bao-tren-o-to-dien",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "turtle_mode_amber_silhouette"
+      ],
+      "text_detected": [],
+      "quality_assessment": "Biểu tượng hình con rùa màu vàng chuẩn quốc tế cho xe điện khi pin yếu hoặc quá nhiệt"
+    },
+    "associated_symptom_keys": [
+      "turtle_mode_power_limited"
+    ],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+  },
+  {
+    "image_id": "img_vf5_icon_12v_battery",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng đèn cảnh báo sự cố ắc quy 12V / bộ chuyển đổi DC-DC",
+    "source_url": "https://vinfastauto.com/vn_vi/cac-bieu-tuong-bao-loi-tren-xe-o-to",
+    "article_reference": "https://vinfastauto.com/vn_vi/cac-bieu-tuong-bao-loi-tren-xe-o-to",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "battery_12v_red_symbol"
+      ],
+      "text_detected": [
+        "+",
+        "-"
+      ],
+      "quality_assessment": "Biểu tượng bình ắc quy màu đỏ cảnh báo hệ thống sạc 12V phụ trợ không hoạt động"
+    },
+    "associated_symptom_keys": [
+      "12v_battery_fault"
+    ],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+  },
+  {
+    "image_id": "img_vf5_icon_brake_failure",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng đèn cảnh báo lỗi hệ thống phanh chính / cạn dầu phanh",
+    "source_url": "https://vinfastauto.com/vn_vi/he-thong-den-canh-bao-tren-taplo-o-to",
+    "article_reference": "https://vinfastauto.com/vn_vi/he-thong-den-canh-bao-tren-taplo-o-to",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "brake_circle_exclamation_red"
+      ],
+      "text_detected": [],
+      "quality_assessment": "Vòng tròn chấm than màu đỏ cảnh báo nguy hiểm khẩn cấp hệ thống phanh thủy lực"
+    },
+    "associated_symptom_keys": [
+      "brake_system_fault",
+      "parking_brake_engaged"
+    ],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+  },
+  {
+    "image_id": "img_vf5_icon_abs_fault",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng đèn cảnh báo lỗi hệ thống chống bó cứng phanh (ABS)",
+    "source_url": "https://vinfastauto.com/vn_vi/cac-bieu-tuong-bao-loi-tren-xe-o-to",
+    "article_reference": "https://vinfastauto.com/vn_vi/cac-bieu-tuong-bao-loi-tren-xe-o-to",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "abs_amber_circle"
+      ],
+      "text_detected": [
+        "ABS"
+      ],
+      "quality_assessment": "Ký tự ABS màu vàng trong vòng tròn cảnh báo mất tính năng chống bó cứng khi phanh"
+    },
+    "associated_symptom_keys": [
+      "abs_fault"
+    ],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+  },
+  {
+    "image_id": "img_vf5_icon_esc_warning",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng đèn cảnh báo hệ thống cân bằng điện tử ESC / kiểm soát lực kéo",
+    "source_url": "https://vinfastauto.com/vn_vi/he-thong-den-canh-bao-tren-taplo-o-to",
+    "article_reference": "https://vinfastauto.com/vn_vi/he-thong-den-canh-bao-tren-taplo-o-to",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "car_skid_amber_symbol"
+      ],
+      "text_detected": [],
+      "quality_assessment": "Xe trượt bánh kèm vệt trượt màu vàng cảnh báo ổn định điện tử ESC can thiệp hoặc lỗi"
+    },
+    "associated_symptom_keys": [
+      "esc_fault",
+      "esc_off_indicator"
+    ],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+  },
+  {
+    "image_id": "img_vf5_icon_eps_steering",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng đèn cảnh báo lỗi hệ thống trợ lực lái điện (EPS)",
+    "source_url": "https://vinfastauto.com/vn_vi/cac-bieu-tuong-bao-loi-tren-xe-o-to",
+    "article_reference": "https://vinfastauto.com/vn_vi/cac-bieu-tuong-bao-loi-tren-xe-o-to",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "steering_wheel_exclamation_amber"
+      ],
+      "text_detected": [],
+      "quality_assessment": "Vô lăng kèm dấu chấm than màu vàng biểu thị mất trợ lực lái điện, tay lái bị nặng"
+    },
+    "associated_symptom_keys": [
+      "eps_steering_fault"
+    ],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+  },
+  {
+    "image_id": "img_vf5_icon_hv_battery",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng cảnh báo lỗi hệ thống pin cao áp xe điện VinFast",
+    "source_url": "https://vinfastauto.com/vn_vi/y-nghia-cac-loai-den-canh-bao-tren-o-to-dien",
+    "article_reference": "https://vinfastauto.com/vn_vi/y-nghia-cac-loai-den-canh-bao-tren-o-to-dien",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "hv_battery_exclamation_red"
+      ],
+      "text_detected": [],
+      "quality_assessment": "Biểu tượng pin ô tô điện màu đỏ cảnh báo sự cố pack pin động lực hoặc cách điện cao áp"
+    },
+    "associated_symptom_keys": [
+      "high_voltage_battery_fault",
+      "low_battery_soc"
+    ],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+  },
+  {
+    "image_id": "img_vf5_icon_master_warning",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng đèn cảnh báo tổng thể hình tam giác (Master Warning)",
+    "source_url": "https://vinfastauto.com/vn_vi/he-thong-den-canh-bao-tren-taplo-o-to",
+    "article_reference": "https://vinfastauto.com/vn_vi/he-thong-den-canh-bao-tren-taplo-o-to",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "master_warning_triangle_amber"
+      ],
+      "text_detected": [
+        "!"
+      ],
+      "quality_assessment": "Tam giác chấm than màu vàng yêu cầu xem chi tiết thông báo trên màn hình lái"
+    },
+    "associated_symptom_keys": [
+      "master_warning_indicator"
+    ],
+    "copyright_license_status": "vinfast_official_cms_reference_only",
+    "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."
+  },
+  {
+    "image_id": "img_vf5_icon_tpms_low_pressure",
+    "vehicle_model": "VinFast VF 5 Plus",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng đèn cảnh báo áp suất lốp thấp trên màn hình VF 5 Plus",
+    "source_url": "https://vinfastauto.com/vn_vi/cac-bieu-tuong-bao-loi-tren-xe-o-to",
+    "article_reference": "https://vinfastauto.com/vn_vi/cac-bieu-tuong-bao-loi-tren-xe-o-to",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "tpms_horseshoe_exclamation_amber"
+      ],
+      "text_detected": [
+        "!"
+      ],
+      "quality_assessment": "Biểu tượng mặt cắt lốp xe hình móng ngựa kèm chấm than màu vàng"
+    },
+    "associated_symptom_keys": [
+      "low_pressure",
+      "rapid_leak",
+      "over_pressure"
     ],
     "copyright_license_status": "vinfast_official_cms_reference_only",
     "usage_policy": "Chỉ dùng để tham chiếu nghiên cứu & đối chiếu thị giác; không đóng gói bán thương mại độc lập."

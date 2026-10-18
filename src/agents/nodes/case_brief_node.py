@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from pydantic import BaseModel, Field
 
 from src.agents.cardd_evidence import evidence_for_turn, evidence_summary, missing_fields_for_state
@@ -50,7 +52,10 @@ async def case_brief_node(state: AgentState) -> dict:
     # Only the bridge can claim successful case creation after its DB transaction.
     if state.get("is_rag_query"):
         faq_note = 'Quý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.'
-        reply = state.get("response", "") + ("\n\n" + faq_note if state.get("response") else faq_note)
+        body = state.get('response', '')
+        has_contact_guidance = re.search(r'quý khách (?:có thể|vui lòng) liên hệ (?:với )?chuyên viên', body.casefold())
+        promises_handoff = re.search(r'\b(?:đã|sẽ)\s+(?:chuyển|gửi|điều phối|ghi nhận)', body.casefold())
+        reply = body if has_contact_guidance and not promises_handoff else body + ('\n\n' + faq_note if body else faq_note)
     else:
         reply = "Đã ghi nhận yêu cầu để chuyên viên dịch vụ tiếp nhận. " + STANDARD_SAFE_GUIDANCE
         if guest:

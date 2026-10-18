@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "id": "natural-smoke",
+      "domain": "safety",
+      "goal": [
+        "incident"
+      ],
+      "cards": "forbidden",
+      "emergency": true,
+      "variants": [
+        "Xe tôi đang bốc khói",
+        "Xe tôi đang bốc khói, có phải lỗi pin không?"
+      ]
+    },
+    {
+      "id": "natural-brake",
+      "domain": "safety",
+      "goal": [
+        "incident"
+      ],
+      "cards": "forbidden",
+      "emergency": true,
+      "variants": [
+        "Xe tôi đang mất phanh",
+        "Xe tôi đang mất phanh, có phải lỗi ABS không?"
+      ]
+    },
+    {
+      "id": "procedure-trim",
+      "domain": "maintenance",
+      "goal": [
+        "maintenance"
+      ],
+      "cards": "forbidden",
+      "variants": [
+        "Cách đặt lịch bảo dưỡng VF8?",
+        "Cách đặt lịch bảo dưỡng VF8 Plus?"
+      ]
+    },
+    {
+      "id": "adas-trim",
+      "domain": "general_knowledge",
+      "goal": [
+        "concept"
+      ],
+      "cards": "forbidden",
+      "variants": [
+        "Cách sử dụng ADAS VF8?",
+        "Cách sử dụng ADAS VF8 Plus?"
+      ]
+    },
+    {
+      "id": "price-disambiguation",
+      "domain": "charging_network",
+      "goal": [
+        "charging_network"
+      ],
+      "cards": "forbidden",
+      "variants": [
+        "Giá sạc VF8 là bao nhiêu?",
+        "Chi phí nạp điện cho VF8 tính thế nào?"
+      ],
+      "cost_subject": "charging"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "negated-complaint",
+      "domain": "complaint",
+      "turns": [
+        "Tôi không muốn khiếu nại, tôi chỉ muốn hỏi bảo hành VF8"
+      ],
+      "goal": [
+        "warranty"
+      ],
+      "kind": "faq",
+      "cards": "forbidden"
+    },
+    {
+      "id": "denied-failure",
+      "domain": "incident",
+      "turns": [
+        "Pin xe tôi không hỏng, tôi hỏi bảo hành VF8"
+      ],
+      "goal": [
+        "warranty"
+      ],
+      "kind": "faq",
+      "cards": "forbidden"
+    },
+    {
+      "id": "warranty-to-appearance",
+      "domain": "transition",
+      "turns": [
+        "VF8 bảo hành bao lâu?",
+        "Màu xe VF8 có những tùy chọn nào?"
+      ],
+      "goal": [
+        "appearance"
+      ],
+      "cards": "forbidden"
+    },
+    {
+      "id": "warranty-to-concept",
+      "domain": "transition",
+      "turns": [
+        "VF8 bảo hành bao lâu?",
+        "Tại sao ABS hoạt động?"
+      ],
+      "goal": [
+        "concept"
+      ],
+      "cards": "forbidden"
+    },
+    {
+      "id": "warranty-context-budget",
+      "domain": "budget",
+      "turns": [
+        "VF8 bảo hành bao lâu?",
+        "Áp dụng cho xe chạy dịch vụ không?"
+      ],
+      "goal": [
+        "warranty"
+      ],
+      "cards": "forbidden"
+    }
+  ]
+}

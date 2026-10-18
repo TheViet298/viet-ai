@@ -88,7 +88,11 @@ async def test_comparison_vf3_and_vf5_returns_only_requested_models(client, cust
     msg = data["message"]
     assert "VF 3" in msg and "VF 5" in msg
     assert "VF 8" not in msg and "VF 9" not in msg
-    assert "### So sánh thông số kỹ thuật" in msg
+    # Card comparison uses shared labeled rows; markdown heading is presentation.
+    assert data['vehicle_comparison']
+    assert {card['model'] for card in data['vehicle_cards']} == {'VF3', 'VF5'}
+    for label in ('Số chỗ', 'Quãng đường', 'Công suất', 'sạc nhanh'):
+        assert label.casefold() in msg.casefold()
 
 
 @pytest.mark.asyncio
@@ -123,16 +127,9 @@ async def test_comparison_vf3_with_vf5_returns_valid_table_and_two_citations(cli
     assert data["response_type"] == "FAQ_ANSWER"
 
     msg = data["message"]
-    # 1. Kiểm tra header bảng
-    assert "| Tiêu chí | VinFast VF 3 | VinFast VF 5 Plus |" in msg
-    # 2. Kiểm tra dòng phân cách Markdown hợp lệ
-    assert "| :--- | :--- | :--- |" in msg
-    # 3. Kiểm tra các dòng dữ liệu tiêu chí
-    assert "| **Phân khúc** |" in msg
-    assert "| **Số chỗ ngồi** |" in msg
-    assert "| **Công suất** |" in msg
-    assert "| **Quãng đường** |" in msg
-    assert "| **Sạc nhanh** |" in msg
+    assert 'VF 3 Eco' in msg and 'VF 5' in msg
+    assert '215 km (NEDC)' in msg and '326 km (NEDC)' in msg
+    assert '210 km' not in msg
 
     # 4. Kiểm tra đủ 2 nguồn citation cho cả 2 xe
     citations = data.get("citations", [])
@@ -142,6 +139,6 @@ async def test_comparison_vf3_with_vf5_returns_valid_table_and_two_citations(cli
     assert "VF5" in cit_models
 
     cit_urls = [c.get("url") for c in citations]
-    assert any("mau-xe-vf-3" in u for u in cit_urls)
-    assert any("mau-xe-vf-5-plus" in u for u in cit_urls)
+    assert any("dat-coc-xe-dien-vf3" in u for u in cit_urls)
+    assert any("dat-coc-xe-dien-vf5" in u for u in cit_urls)
 

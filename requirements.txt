@@ -17,6 +17,7 @@ langgraph>=0.2.0
 
 # Database (SQLite dùng sqlite3 có sẵn trong Python)
 sqlalchemy>=2.0.0
+filelock>=4,<5
 alembic>=1.14.0
 psycopg[binary]>=3.2.0   # SQLAlchemy 2.0 PostgreSQL v3 driver
 psycopg2-binary>=2.9.0   # PostgreSQL v2 driver dự phòng
@@ -30,4 +31,4 @@ pytest>=8.0.0
 pytest-asyncio>=0.24.0
 httpx>=0.28.0
 beautifulsoup4>=4.12,<5
-langfuse==3.15.0
+langfuse>=5.0.2,<6

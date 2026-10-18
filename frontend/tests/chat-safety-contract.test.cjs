@@ -37,6 +37,7 @@ function harness(api, context, effectsEnabled = false, simulateServer = false, s
     window: simulateServer ? undefined : browserWindow,
     localStorage: storage || { getItem: key => simulateServer ? (key === 'vf_customer_token' ? 'demo-token' : 'real') : null, setItem: () => {}, removeItem: () => { removed++; } },
     require: id => {
+      if (id.endsWith('/LocaleContext')) return {useLocale: () => ({language: "vi", setLanguage() {}, t: text => text}), translate: text => text};
       if (id === 'react') return {
         useState: initial => { const i = cursor++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial;
           return [slots[i], val => { slots[i] = typeof val === 'function' ? val(slots[i]) : val; }]; },

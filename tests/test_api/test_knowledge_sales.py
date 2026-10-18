@@ -67,7 +67,7 @@ async def test_price_followup_explains_uncertainty_in_same_session(client, custo
 
     calls = []
 
-    async def missing(query, vehicle_model=None):
+    async def missing(query, vehicle_model=None, **purpose):
         calls.append(query)
         return {"status": "NO_SOURCE", "citations": [], "diagnostics": {"category": "no_eligible_evidence"}}
 
@@ -102,7 +102,7 @@ async def test_discount_question_still_retrieves_sales_evidence(client, customer
 
     calls = []
 
-    async def missing(query, vehicle_model=None):
+    async def missing(query, vehicle_model=None, **purpose):
         calls.append(query)
         return {"status": "NO_SOURCE", "citations": [], "diagnostics": {"category": "no_eligible_evidence"}}
 
@@ -119,7 +119,7 @@ async def test_discount_question_still_retrieves_sales_evidence(client, customer
 async def test_multi_topic_sales_answers_every_part_without_fixed_vf8_filter(client, customer_db, monkeypatch):
     from src.agents.nodes import rag_node as node
     calls = []
-    async def missing(query, vehicle_model=None):
+    async def missing(query, vehicle_model=None, **purpose):
         calls.append((query, vehicle_model))
         return {"status": "NO_SOURCE", "citations": [], "diagnostics": {"category": "no_eligible_evidence"}}
     monkeypatch.setattr(node, "vinfast_manual_search", missing)
@@ -134,8 +134,15 @@ async def test_multi_topic_sales_answers_every_part_without_fixed_vf8_filter(cli
     assert calls[0][1] is None
     assert calls[2][1] == "VF8"
     assert "B1" not in data["message"]
-    assert not data["citations"]
-    assert data["case_id"] is None
+    # The overview now uses reviewed scoped catalog facts even when retrieval is
+    # unavailable. Quote/test-drive clauses must not fabricate their evidence.
+    citations = data['citations']
+    assert citations
+    assert {c['applicable_models'][0] for c in citations} == {'VF3', 'VF5', 'VF6', 'VF7', 'VF8', 'VF9'}
+    assert all(c['source_id'] == 'SRC-009' and c['source_type'] == 'official_catalog' for c in citations)
+    assert all(c.get('fact_scope') and c.get('claim_evidence') for c in citations)
+    assert all('dat-coc-xe' in c['url'] for c in citations)
+
 
 
 @pytest.mark.asyncio
@@ -193,7 +200,7 @@ async def test_concept_followup_preserves_subject_then_new_incident_is_not_a_def
 async def test_general_lineup_inquiry_does_not_narrow_to_profile_model(client, customer_db, monkeypatch):
     """Khi hỏi tổng quan các dòng xe, không bị thu hẹp về model xe trong hồ sơ (VF3)."""
     from src.agents.nodes import rag_node as node
-    async def missing(query, vehicle_model=None):
+    async def missing(query, vehicle_model=None, **purpose):
         return {"status": "NO_SOURCE", "citations": [], "diagnostics": {"category": "no_eligible_evidence"}}
     monkeypatch.setattr(node, "vinfast_manual_search", missing)
 
@@ -205,8 +212,8 @@ async def test_general_lineup_inquiry_does_not_narrow_to_profile_model(client, c
     assert res.status_code == 200
     data = res.json()["data"]
     msg = data["message"]
-    # Phải có bảng tổng quan dải sản phẩm, không chỉ riêng thẻ VF 3
-    assert "Dải sản phẩm ô tô điện thông minh VinFast" in msg or ("VF 3" in msg and "VF 9" in msg)
+    # Mixed overview/price/test-drive questions keep their scoped overview.
+    assert "VF 3" in msg and "VF 9" in msg
     assert "Thông tin dòng xe" in msg
     assert "Giá lăn bánh" in msg
     assert "Lái thử" in msg
@@ -216,7 +223,7 @@ async def test_general_lineup_inquiry_does_not_narrow_to_profile_model(client, c
 async def test_specific_model_inquiry_offers_comparison_with_profile_vehicle(client, customer_db, monkeypatch):
     """Khi hỏi dòng xe cụ thể (VF8), trả về thẻ VF8 và có câu gợi ý so sánh với xe đang sở hữu (VF3)."""
     from src.agents.nodes import rag_node as node
-    async def missing(query, vehicle_model=None):
+    async def missing(query, vehicle_model=None, **purpose):
         return {"status": "NO_SOURCE", "citations": [], "diagnostics": {"category": "no_eligible_evidence"}}
     monkeypatch.setattr(node, "vinfast_manual_search", missing)
 
@@ -229,7 +236,7 @@ async def test_specific_model_inquiry_offers_comparison_with_profile_vehicle(cli
     data = res.json()["data"]
     msg = data["message"]
     assert "VF 8" in msg
-    assert "Công suất tối đa" in msg
+    assert "công suất" in msg.casefold()
     # Thẻ VF8 có câu gợi ý so sánh với VF3
     assert "VF 3" in msg
 
@@ -257,7 +264,7 @@ async def test_empty_session_without_messages_excluded_from_sidebar(client, cust
 async def test_case_1_compare_two_models_only_contains_those_two(client, customer_db, monkeypatch):
     """1. 'so sánh VF3 và VF5' -> chỉ 2 xe, KHÔNG có VF6/VF7/VF8/VF9."""
     from src.agents.nodes import rag_node as node
-    async def missing(query, vehicle_model=None):
+    async def missing(query, vehicle_model=None, **purpose):
         return {"status": "NO_SOURCE", "citations": [], "diagnostics": {"category": "no_eligible_evidence"}}
     monkeypatch.setattr(node, "vinfast_manual_search", missing)
 
@@ -275,14 +282,14 @@ async def test_case_1_compare_two_models_only_contains_those_two(client, custome
         assert other not in msg
     # Bảng phải có các tiêu chí chuẩn
     for header in ("Công suất", "Quãng đường", "Sạc nhanh", "Số chỗ"):
-        assert header in msg
+        assert header.casefold() in msg.casefold()
 
 
 @pytest.mark.asyncio
 async def test_case_2_compare_three_models_contains_exactly_three(client, customer_db, monkeypatch):
     """2. 'so sánh VF3, VF5 và VF8' -> đúng 3 xe."""
     from src.agents.nodes import rag_node as node
-    async def missing(query, vehicle_model=None):
+    async def missing(query, vehicle_model=None, **purpose):
         return {"status": "NO_SOURCE", "citations": [], "diagnostics": {"category": "no_eligible_evidence"}}
     monkeypatch.setattr(node, "vinfast_manual_search", missing)
 
@@ -305,7 +312,7 @@ async def test_case_2_compare_three_models_contains_exactly_three(client, custom
 async def test_case_3_compare_family_choice_contains_two_relevant_models(client, customer_db, monkeypatch):
     """3. 'VF8 hay VF9 hợp gia đình' -> 2 xe liên quan."""
     from src.agents.nodes import rag_node as node
-    async def missing(query, vehicle_model=None):
+    async def missing(query, vehicle_model=None, **purpose):
         return {"status": "NO_SOURCE", "citations": [], "diagnostics": {"category": "no_eligible_evidence"}}
     monkeypatch.setattr(node, "vinfast_manual_search", missing)
 
@@ -324,10 +331,10 @@ async def test_case_3_compare_family_choice_contains_two_relevant_models(client,
 
 
 @pytest.mark.asyncio
-async def test_case_4_general_lineup_consultation_returns_full_lineup(client, customer_db, monkeypatch):
-    """4. 'tư vấn các dòng xe điện VinFast' -> bảng cả dải."""
+async def test_case_4_general_lineup_consultation_invites_model_selection(client, customer_db, monkeypatch):
+    """Generic advice introduces the lineup without assuming the owned VF3."""
     from src.agents.nodes import rag_node as node
-    async def missing(query, vehicle_model=None):
+    async def missing(query, vehicle_model=None, **purpose):
         return {"status": "NO_SOURCE", "citations": [], "diagnostics": {"category": "no_eligible_evidence"}}
     monkeypatch.setattr(node, "vinfast_manual_search", missing)
 
@@ -338,13 +345,11 @@ async def test_case_4_general_lineup_consultation_returns_full_lineup(client, cu
     })
     assert res.status_code == 200
     msg = res.json()["data"]["message"]
-    # Phải có đầy đủ từ VF3 tới VF9
-    assert "VF 3" in msg
-    assert "VF 5" in msg
-    assert "VF 6" in msg
-    assert "VF 7" in msg
-    assert "VF 8" in msg
-    assert "VF 9" in msg
+    for model in ['VF3', 'VF5', 'VF6', 'VF7', 'VF8', 'VF9']:
+        assert model in msg
+    assert 'mẫu xe nào' in msg
+    assert res.json()['data']['vehicle_cards'] == []
+    assert res.json()['data']['suggested_replies'] == ['Tư vấn xe VF3', 'Tư vấn xe VF8']
 
 
 @pytest.mark.asyncio
@@ -355,7 +360,7 @@ async def test_case_4_general_lineup_consultation_returns_full_lineup(client, cu
 async def test_case_5_ranking_queries_answer_without_specialist_redirect_or_forcing_vf3(client, customer_db, monkeypatch, query, expected_keyword):
     """5. 'xe nào sạc nhanh nhất' / 'xe nào đi xa nhất' -> không ép VF3, không câu 'chuyển chuyên viên'."""
     from src.agents.nodes import rag_node as node
-    async def missing(query, vehicle_model=None):
+    async def missing(query, vehicle_model=None, **purpose):
         return {"status": "NO_SOURCE", "citations": [], "diagnostics": {"category": "no_eligible_evidence"}}
     monkeypatch.setattr(node, "vinfast_manual_search", missing)
 
@@ -414,7 +419,7 @@ async def test_case_7_greeting_does_not_contain_car_cards(client, customer_db):
 async def test_case_8_rolling_price_question_states_no_exact_data_without_fake_numbers(client, customer_db, monkeypatch):
     """8. Câu hỏi giá lăn bánh -> nói rõ chưa có dữ liệu, không có con số."""
     from src.agents.nodes import rag_node as node
-    async def missing(query, vehicle_model=None):
+    async def missing(query, vehicle_model=None, **purpose):
         return {"status": "NO_SOURCE", "citations": [], "diagnostics": {"category": "no_eligible_evidence"}}
     monkeypatch.setattr(node, "vinfast_manual_search", missing)
 

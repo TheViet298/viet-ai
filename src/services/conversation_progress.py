@@ -6,6 +6,13 @@ from pydantic import BaseModel, Field
 from src.services.conversation_context import ConversationContext, TurnUnderstanding, normalized
 
 
+CASE_STATUS_VI = {
+    'New': 'Mới tiếp nhận', 'Needs Information': 'Cần bổ sung thông tin',
+    'Staff Reviewing': 'Đang chờ nhân viên xem xét', 'In Progress': 'Đang xử lý',
+    'Resolved': 'Đã giải quyết', 'Closed': 'Đã đóng', 'Reopened': 'Đã mở lại',
+}
+
+
 class ConversationProgress(BaseModel):
     state: Literal['collecting_input', 'ready_to_lookup', 'needs_verified_data',
                    'external_action_required', 'action_pending', 'action_completed', 'cancelled_intent']
@@ -77,7 +84,7 @@ def progress_reply(turn: TurnUnderstanding, context: ConversationContext, progre
                       'concept': 'khái niệm vừa trao đổi'}.get(context.active_goal, context.active_goal)
         return f'Em vẫn đang hỗ trợ {goal_label}' + (f' của {context.subject}' if context.subject else '') + '. Anh/chị muốn em giải thích thêm phần nào, hay hướng dẫn bước tiếp theo?'
     facts = progress.known_facts
-    summary = ', '.join(facts[k] for k in ('model', 'version', 'battery', 'city', 'area', 'time_window', 'component') if k in facts)
+    summary = ', '.join(facts[k] for k in ('model', 'version', 'battery', 'city', 'area', 'date', 'time_window', 'component') if k in facts)
     if progress.state == 'cancelled_intent':
         if turn.move == 'ask_status':
             return 'Trong chat này em chưa đặt lịch hay tạo hồ sơ đặt hẹn cho Quý khách. Ý định đặt hẹn đã dừng; nếu có lịch đặt riêng ngoài chat, Quý khách cần kiểm tra tại nơi đã đặt.'
@@ -85,7 +92,8 @@ def progress_reply(turn: TurnUnderstanding, context: ConversationContext, progre
     if progress.state == 'external_action_required' and turn.move in {
         'request_action', 'ask_next_step', 'ask_status', 'supply_info', 'elaborate', 'correct',
     }:
-        service = 'lái thử' if context.active_goal == 'test_drive' else 'bảo dưỡng'
+        service = ('lái thử' if context.active_goal == 'test_drive' else
+                   'sửa chữa' if any(term in normalized(context.topic) for term in ('sua xe', 'sua chua')) else 'bảo dưỡng')
         place = 'showroom' if context.active_goal == 'test_drive' else 'xưởng dịch vụ'
         opening = {
             'request_action': f'Hiện em chưa thể đặt lịch {service} trực tiếp trong chat. ',
@@ -96,7 +104,7 @@ def progress_reply(turn: TurnUnderstanding, context: ConversationContext, progre
         reply = opening + (f'Thông tin đang có: {summary}. ' if summary else '')
         reply += f'Quý khách có thể đăng ký qua Ứng dụng VinFast hoặc liên hệ {place} để xác nhận giờ hẹn.'
         if 'exact_date' in progress.missing_fields:
-            reply += ' Quý khách muốn hẹn vào ngày cụ thể nào? “Thứ bảy” chưa đủ để xác nhận ngày hẹn.'
+            reply += ' Quý khách muốn hẹn vào ngày, tháng, năm cụ thể nào? Em đã ghi nhận mốc thời gian tương đối ở trên; nơi đặt lịch cần xác nhận ngày hẹn chính xác.'
         elif progress.missing_fields:
             labels = {'city': 'khu vực thuận tiện', 'date': 'ngày mong muốn'}
             reply += ' Để hướng dẫn tiếp, Quý khách cho em biết ' + ' và '.join(labels[k] for k in progress.missing_fields) + ' nhé.'
@@ -116,7 +124,8 @@ def progress_reply(turn: TurnUnderstanding, context: ConversationContext, progre
                 'Đời xe có thể cần để chọn đúng chính sách; Quý khách cho biết năm sản xuất hoặc xem trong hồ sơ xe nhé. Chưa đủ nguồn để xác nhận quyền lợi riêng của xe.')
     if context.active_goal == 'incident' and (turn.move in {'ask_status', 'ask_next_step'}
                                               or facts.get('reported_condition') and turn.move != 'new_question'):
-        reply = (f'Hồ sơ {progress.case_id} hiện có trạng thái {(case_snapshot or {}).get("status", "chưa xác nhận")}. '
+        status_label = CASE_STATUS_VI.get((case_snapshot or {}).get('status'), 'chưa xác nhận')
+        reply = (f'Hồ sơ {progress.case_id} hiện có trạng thái {status_label}. '
                  if progress.case_id else 'Em chưa có xác nhận hồ sơ hỗ trợ đã được tạo. ')
         if summary:
             reply += f'Thông tin đã ghi nhận: {summary}. '

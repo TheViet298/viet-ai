@@ -1,7 +1,10 @@
 "use client";
 
+import { useLocale } from "@/features/shared/context/LocaleContext";
+
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -11,8 +14,6 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  FileCheck,
-  FileText,
   ImagePlus,
   PhoneCall,
   ScanLine,
@@ -23,8 +24,6 @@ import {
   BookOpen,
   ExternalLink,
   MessageSquare,
-  AlertTriangle,
-  Clock,
 } from "lucide-react";
 import { getPublicArticles, getCustomerCases } from "@/features/chat/api/chatApi";
 import { ArticleItem, CustomerCaseItem } from "@/features/chat/types";
@@ -172,6 +171,7 @@ const FALLBACK_ARTICLES: ArticleItem[] = [
 ];
 
 export function LandingPage() {
+  const { t, language } = useLocale();
   const router = useRouter();
   const { user, role } = useAuth();
   const [prompt, setPrompt] = useState("");
@@ -343,9 +343,9 @@ export function LandingPage() {
       badgeBg: "bg-blue-100 text-[#1E40AF]",
       ctaText: "Xem",
       ctaColor: "text-[#1E40AF]",
-      pillText: `${openCasesCount > 1 ? openCasesCount : 1} hồ sơ đang xử lý`,
+      pillText: `${openCasesCount > 1 ? openCasesCount : 1} ${t("hồ sơ đang xử lý")}`,
     };
-  }, [activeUserCase, friendlyStatus, openCasesCount]);
+  }, [activeUserCase, friendlyStatus, openCasesCount, language]);
 
   // Kiểm tra có cập nhật mới từ nhân viên kỹ thuật hay không (hiện chấm đỏ nhỏ)
   const hasStaffUpdate = useMemo(() => {
@@ -453,9 +453,9 @@ export function LandingPage() {
   const handleSubmit = (overrideQuery?: string, overrideModel?: string) => {
     const activePlaceholder = PLACEHOLDER_EXAMPLES[placeholderIndex] || "Trụ sạc báo đèn đỏ không nhận súng sạc thì xử lý sao?";
     const textToSend =
-      overrideQuery ||
+      (overrideQuery ? t(overrideQuery) : "") ||
       prompt.trim() ||
-      (imagePreview ? "Tôi gửi ảnh táp-lô cảnh báo, nhờ Trợ lý AI nhận diện sơ bộ." : activePlaceholder);
+      t(imagePreview ? "Tôi gửi ảnh táp-lô cảnh báo, nhờ Trợ lý AI nhận diện sơ bộ." : activePlaceholder);
     if (!textToSend && !imagePreview) return;
 
     try {
@@ -502,27 +502,27 @@ export function LandingPage() {
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-[12px] font-medium text-slate-700 animate-fadeIn">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>
-                Xin chào <strong className="text-slate-900">{user.name}</strong> • Chủ xe {user.vehicleModel || "VinFast EV"}
+                {t("Xin chào")} <strong className="text-slate-900">{user.name}</strong> {t("• Chủ xe")} {user.vehicleModel || "VinFast EV"}
               </span>
             </div>
           ) : (
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-[12px] font-medium text-slate-600 animate-fadeIn">
               <span className="h-2 w-2 rounded-full bg-blue-500" />
-              <span>Trợ lý Dịch vụ Khách hàng VinFast 24/7</span>
+              <span>{t("Trợ lý Dịch vụ Khách hàng VinFast 24/7")}</span>
               <span className="text-slate-300">·</span>
               <Link href="/login" className="text-[#1E40AF] font-bold hover:underline">
-                Đăng nhập chủ xe ›
+                {t("Đăng nhập chủ xe ›")}
               </Link>
             </div>
           )}
 
           {/* Heading trung tính hơn, thân thiện và bao quát cả 3 nhóm khách */}
           <h1 className="text-3xl sm:text-[38px] font-bold tracking-tight text-slate-900 leading-tight">
-            Bạn cần <span className="text-[#1E40AF]">hỗ trợ gì</span> về xe điện?
+            {t("Bạn cần")} <span className="text-[#1E40AF]">{t("hỗ trợ gì")}</span> {t("về xe điện?")}
           </h1>
 
           <p className="mx-auto max-w-xl text-[13.5px] sm:text-[14px] leading-relaxed text-slate-500">
-            Hỏi về sạc, bảo dưỡng, ứng dụng, hoặc báo sự cố xe. Có thể gửi kèm ảnh táp-lô để AI nhận diện sơ bộ.
+            {t("Hỏi về sạc, bảo dưỡng, ứng dụng, hoặc báo sự cố xe. Có thể gửi kèm ảnh táp-lô để AI nhận diện sơ bộ.")}
           </p>
 
           {/* Floating Prompt Box */}
@@ -537,17 +537,17 @@ export function LandingPage() {
                 className="mb-3 flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50/60 p-2 text-[12px] animate-fadeIn cursor-default"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <img src={imagePreview} alt="Preview" className="h-10 w-14 rounded-lg object-cover border border-blue-200 shrink-0" />
+                  <Image src={imagePreview} alt={t("Ảnh xem trước")} width={56} height={40} unoptimized className="h-10 w-14 rounded-lg object-cover border border-blue-200 shrink-0" />
                   <div className="min-w-0">
                     <p className="font-semibold text-slate-900 truncate max-w-[200px] sm:max-w-xs">{imageName}</p>
-                    <p className="text-[11px] text-[#1E40AF]">Ảnh táp-lô đã sẵn sàng để AI nhận diện sơ bộ</p>
+                    <p className="text-[11px] text-[#1E40AF]">{t("Ảnh táp-lô đã sẵn sàng để AI nhận diện sơ bộ")}</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={handleClearImage}
                   className="rounded-lg p-1 text-slate-400 hover:bg-white hover:text-red-600 transition"
-                  title="Xóa ảnh"
+                  title={t("Xóa ảnh")}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -556,6 +556,7 @@ export function LandingPage() {
 
             {/* Input textarea with rotating placeholder */}
             <textarea
+              aria-label={t("Mô tả câu hỏi hoặc sự cố xe")}
               ref={textareaRef}
               rows={2}
               value={prompt}
@@ -568,7 +569,7 @@ export function LandingPage() {
                   handleSubmit();
                 }
               }}
-              placeholder={PLACEHOLDER_EXAMPLES[placeholderIndex]}
+              placeholder={t(PLACEHOLDER_EXAMPLES[placeholderIndex])}
               className="w-full resize-none border-0 border-none bg-transparent p-1 text-[13px] sm:text-[14px] text-slate-900 placeholder-slate-400 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 shadow-none leading-relaxed transition-all"
             />
 
@@ -581,11 +582,12 @@ export function LandingPage() {
                 {/* Upload Image button */}
                 <label
                   className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-[12px] font-medium text-slate-700 hover:bg-white hover:border-[#1E40AF] transition shadow-2xs"
-                  title="Tải ảnh"
+                  title={t("Tải ảnh")}
                 >
                   <ImagePlus className="h-4 w-4 text-[#1E40AF]" />
-                  <span className="hidden sm:inline">Tải ảnh</span>
+                  <span className="hidden sm:inline">{t("Tải ảnh")}</span>
                   <input
+                    aria-label={t("Tải ảnh")}
                     type="file"
                     accept="image/*"
                     onChange={handleImageSelect}
@@ -600,7 +602,7 @@ export function LandingPage() {
                 onClick={() => handleSubmit()}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] px-4 py-2 text-[12.5px] font-semibold text-white shadow-2xs transition active:scale-[0.98]"
               >
-                <span>Hỏi trợ lý</span>
+                <span>{t("Hỏi trợ lý")}</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -610,7 +612,7 @@ export function LandingPage() {
           <div className="text-left max-w-2xl mx-auto pt-1">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
               <Sparkles className="h-3.5 w-3.5 text-[#1E40AF]" />
-              <span>Gợi ý theo nhu cầu:</span>
+              <span>{t("Gợi ý theo nhu cầu:")}</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {QUICK_PROMPTS.map((qp, idx) => (
@@ -621,7 +623,7 @@ export function LandingPage() {
                   className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/90 bg-white px-3 py-1.5 text-[11.5px] font-medium text-slate-700 shadow-2xs hover:border-blue-300 hover:bg-blue-50/70 hover:text-[#1E40AF] transition active:scale-[0.98]"
                 >
                   <span className="text-[12px] opacity-80">{qp.icon}</span>
-                  <span>{qp.label}</span>
+                  <span>{t(qp.label)}</span>
                 </button>
               ))}
             </div>
@@ -629,16 +631,16 @@ export function LandingPage() {
 
           {/* Hotline khẩn cấp ngay dưới Hero */}
           <div className="pt-2 text-[12px] text-slate-500 flex items-center justify-center gap-2 flex-wrap">
-            <span>Khẩn cấp trên đường?</span>
+            <span>{t("Khẩn cấp trên đường?")}</span>
             <a
               href="tel:1900232389"
               className="inline-flex items-center gap-1 font-bold text-red-600 hover:text-red-700 hover:underline"
             >
               <PhoneCall className="w-3.5 h-3.5" />
-              <span>Gọi Cứu hộ 24/7: 1900-232389</span>
+              <span>{t("Gọi Cứu hộ 24/7: 1900-232389")}</span>
             </a>
             <span className="text-slate-300">•</span>
-            <span className="text-slate-400">Hỗ trợ toàn bộ dòng xe điện VinFast</span>
+            <span className="text-slate-400">{t("Hỗ trợ toàn bộ dòng xe điện VinFast")}</span>
           </div>
 
           {/* Gợi ý cuộn xuống (Tự ẩn khi cuộn) */}
@@ -650,7 +652,7 @@ export function LandingPage() {
               href="#issue-categories"
               className="inline-flex flex-col items-center text-[11px] font-medium text-slate-400 hover:text-[#1E40AF] transition"
             >
-              <span>Cuộn để khám phá</span>
+              <span>{t("Cuộn để khám phá")}</span>
               <ChevronDown className="w-4 h-4 animate-bounce mt-1" />
             </a>
           </div>
@@ -666,13 +668,13 @@ export function LandingPage() {
           {/* Header nhóm */}
           <div className="text-center max-w-xl mx-auto space-y-1.5 reveal">
             <span className="inline-block px-2.5 py-0.5 rounded-full bg-blue-50 text-[#1E40AF] text-[11px] font-bold uppercase tracking-wider">
-              Khởi đầu nhanh
+              {t("Khởi đầu nhanh")}
             </span>
             <h2 className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900">
-              Chủ đề hỗ trợ thường gặp
+              {t("Chủ đề hỗ trợ thường gặp")}
             </h2>
             <p className="text-[13px] text-slate-500">
-              Chọn nhanh tình huống xe của bạn để chuyển thẳng vào câu hỏi trong Trợ lý Chat.
+              {t("Chọn nhanh tình huống xe của bạn để chuyển thẳng vào câu hỏi trong Trợ lý Chat.")}
             </p>
           </div>
 
@@ -694,10 +696,10 @@ export function LandingPage() {
                     </div>
                     <div className="min-w-0">
                       <h3 className="text-[13.5px] font-bold text-slate-900 group-hover:text-[#1E40AF] transition truncate">
-                        {cat.title}
+                        {t(cat.title)}
                       </h3>
                       <p className="text-[11.5px] text-slate-500 truncate mt-0.5">
-                        {cat.desc}
+                        {t(cat.desc)}
                       </p>
                     </div>
                   </div>
@@ -722,13 +724,13 @@ export function LandingPage() {
             <div className="lg:col-span-6 space-y-5 reveal">
               <div>
                 <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#1E40AF] text-[11px] font-bold uppercase tracking-wider">
-                  Minh bạch & Chuẩn hóa
+                  {t("Minh bạch & Chuẩn hóa")}
                 </span>
                 <h2 className="mt-2 text-2xl sm:text-[28px] font-bold tracking-tight text-slate-900 leading-tight">
-                  Tiếp nhận & Xử lý trong 4 bước
+                  {t("Tiếp nhận & Xử lý trong 4 bước")}
                 </h2>
                 <p className="mt-1.5 text-[13px] text-slate-500 leading-relaxed">
-                  Mỗi sự cố kỹ thuật đều có quy trình đối soát cẩm nang chính hãng và sự phê duyệt của chuyên viên xưởng VinFast.
+                  {t("Mỗi sự cố kỹ thuật đều có quy trình đối soát cẩm nang chính hãng và sự phê duyệt của chuyên viên xưởng VinFast.")}
                 </p>
               </div>
 
@@ -745,8 +747,8 @@ export function LandingPage() {
                       {s.num}
                     </span>
                     <div className="text-[12.5px]">
-                      <strong className="text-slate-900 font-bold block">{s.title}</strong>
-                      <span className="text-slate-500 text-[12px]">{s.desc}</span>
+                      <strong className="text-slate-900 font-bold block">{t(s.title)}</strong>
+                      <span className="text-slate-500 text-[12px]">{t(s.desc)}</span>
                     </div>
                   </div>
                 ))}
@@ -757,7 +759,7 @@ export function LandingPage() {
                   href="/chat"
                   className="inline-flex items-center gap-2 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] px-5 py-2.5 text-[13px] font-semibold text-white shadow-2xs transition active:scale-[0.98]"
                 >
-                  <span>Bắt đầu gửi yêu cầu</span>
+                  <span>{t("Bắt đầu gửi yêu cầu")}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -769,10 +771,10 @@ export function LandingPage() {
                 {/* Badge góc */}
                 <div className="flex items-center justify-between text-[11.5px] mb-4">
                   <span className="font-bold text-[#1E40AF] flex items-center gap-1">
-                    <ScanLine className="w-3.5 h-3.5" /> Mô phỏng hồ sơ thực tế
+                    <ScanLine className="w-3.5 h-3.5" /> {t("Mô phỏng hồ sơ thực tế")}
                   </span>
                   <span className="text-emerald-700 bg-emerald-100/70 font-semibold px-2 py-0.2 rounded-full text-[10.5px]">
-                    Cập nhật thời gian thực
+                    {t("Cập nhật thời gian thực")}
                   </span>
                 </div>
 
@@ -785,24 +787,24 @@ export function LandingPage() {
                         CASE-20260924-001
                       </span>
                       <h4 className="text-[14px] font-bold text-slate-900 mt-1.5 leading-snug">
-                        Lỗi sạc trụ P02 không vào điện DC (Mã CC01)
+                        {t("Lỗi sạc trụ P02 không vào điện DC (Mã CC01)")}
                       </h4>
                       <p className="text-[11.5px] text-slate-400 mt-0.5 flex items-center gap-1">
                         <Car className="w-3.5 h-3.5 text-[#1E40AF]" />
-                        <span>VinFast VF8 Plus · Pin 18%</span>
+                        <span>{t("VinFast VF8 Plus · Pin 18%")}</span>
                       </p>
                     </div>
 
                     <span className="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-[#1E40AF] border border-blue-200">
-                      Đang xử lý
+                      {t("Đang xử lý")}
                     </span>
                   </div>
 
                   {/* Stepper 4 bước thu nhỏ */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-[11px] text-slate-500 font-semibold">
-                      <span>Tiến trình xử lý kỹ thuật</span>
-                      <span className="text-[#1E40AF]">Bước 3/4</span>
+                      <span>{t("Tiến trình xử lý kỹ thuật")}</span>
+                      <span className="text-[#1E40AF]">{t("Bước 3/4")}</span>
                     </div>
 
                     <div className="grid grid-cols-4 gap-1.5 pt-1 text-center">
@@ -824,7 +826,7 @@ export function LandingPage() {
                             {st.done ? "✓" : st.step}
                           </div>
                           <span className={`text-[10px] mt-1 ${st.current ? "font-bold text-[#1E40AF]" : "text-slate-500"}`}>
-                            {st.title}
+                            {t(st.title)}
                           </span>
                         </div>
                       ))}
@@ -835,16 +837,16 @@ export function LandingPage() {
                   <div className="p-3 rounded-xl bg-blue-50/90 border border-blue-200 text-[12px] text-blue-950 flex items-start gap-2">
                     <Sparkles className="w-4 h-4 text-[#1E40AF] shrink-0 mt-0.5" />
                     <div>
-                      <strong className="block text-[11px] uppercase tracking-wide text-[#1E40AF]">Bước tiếp theo:</strong>
-                      <span className="font-medium">Kỹ thuật viên trạm đang kiểm tra trụ P02. Dự kiến phản hồi trong ít phút.</span>
+                      <strong className="block text-[11px] uppercase tracking-wide text-[#1E40AF]">{t("Bước tiếp theo:")}</strong>
+                      <span className="font-medium">{t("Kỹ thuật viên trạm đang kiểm tra trụ P02. Dự kiến phản hồi trong ít phút.")}</span>
                     </div>
                   </div>
 
                   {/* Cập nhật trao đổi */}
                   <div className="pt-1 text-[11.5px] text-slate-600 flex items-center justify-between">
-                    <span className="text-slate-400 font-mono">15:35 · KTV trạm: Đang ping kiểm tra module trụ...</span>
+                    <span className="text-slate-400 font-mono">{t("15:35 · KTV trạm: Đang ping kiểm tra module trụ...")}</span>
                     <Link href="/track-case" className="text-[#1E40AF] font-bold hover:underline">
-                      Tra cứu →
+                      {t("Tra cứu →")}
                     </Link>
                   </div>
                 </div>
@@ -861,10 +863,10 @@ export function LandingPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="text-center max-w-xl mx-auto space-y-1.5 reveal">
             <span className="inline-block px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold uppercase tracking-wider">
-              Hỗ trợ đúng lúc
+              {t("Hỗ trợ đúng lúc")}
             </span>
             <h2 className="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900">
-              Chọn cách hỗ trợ phù hợp với bạn
+              {t("Chọn cách hỗ trợ phù hợp với bạn")}
             </h2>
           </div>
 
@@ -874,15 +876,15 @@ export function LandingPage() {
               <div className="space-y-3 relative z-10">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-600/30 text-red-300 border border-red-500/30 text-[11px] font-bold uppercase tracking-wider">
                   <PhoneCall className="w-3 h-3 text-red-400" />
-                  Cứu hộ khẩn cấp 24/7
+                  {t("Cứu hộ khẩn cấp 24/7")}
                 </span>
 
                 <h3 className="text-xl sm:text-[22px] font-bold text-white leading-snug">
-                  Xe chết máy hoặc gặp sự cố trên cao tốc?
+                  {t("Xe chết máy hoặc gặp sự cố trên cao tốc?")}
                 </h3>
 
                 <p className="text-[13px] text-slate-300 leading-relaxed">
-                  Đội cứu hộ phản ứng nhanh VinFast túc trực 24/7 toàn quốc. Hãy bật ngay đèn khẩn cấp hazard, tấp vào lề an toàn và đứng sau rào hộ lan.
+                  {t("Đội cứu hộ phản ứng nhanh VinFast túc trực 24/7 toàn quốc. Hãy bật ngay đèn khẩn cấp hazard, tấp vào lề an toàn và đứng sau rào hộ lan.")}
                 </p>
               </div>
 
@@ -892,10 +894,10 @@ export function LandingPage() {
                   className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-[13px] shadow-sm transition active:scale-[0.98]"
                 >
                   <PhoneCall className="w-4 h-4" />
-                  <span>Gọi Hotline Cứu hộ: 1900-232389</span>
+                  <span>{t("Gọi Hotline Cứu hộ: 1900-232389")}</span>
                 </a>
                 <p className="text-[11px] text-slate-400 mt-2">
-                  Miễn phí cuộc gọi • Điều phối cẩu kéo và sạc pin lưu động tức thời
+                  {t("Miễn phí cuộc gọi • Điều phối cẩu kéo và sạc pin lưu động tức thời")}
                 </p>
               </div>
             </div>
@@ -905,15 +907,15 @@ export function LandingPage() {
               <div className="space-y-3 relative z-10">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-blue-100 border border-white/20 text-[11px] font-bold uppercase tracking-wider">
                   <Sparkles className="w-3 h-3 text-white" />
-                  Trợ lý Kỹ thuật AI
+                  {t("Trợ lý Kỹ thuật AI")}
                 </span>
 
                 <h3 className="text-xl sm:text-[22px] font-bold text-white leading-snug">
-                  Cần tra cứu cẩm nang, đèn táp-lô hoặc lịch bảo dưỡng?
+                  {t("Cần tra cứu cẩm nang, đèn táp-lô hoặc lịch bảo dưỡng?")}
                 </h3>
 
                 <p className="text-[13px] text-blue-100 leading-relaxed">
-                  Giải đáp chi tiết về biểu tượng lạ trên màn hình, cách xử lý trụ sạc không vào điện, định mức bảo dưỡng 12.000km đối chiếu từ tài liệu chính hãng.
+                  {t("Giải đáp chi tiết về biểu tượng lạ trên màn hình, cách xử lý trụ sạc không vào điện, định mức bảo dưỡng 12.000km đối chiếu từ tài liệu chính hãng.")}
                 </p>
               </div>
 
@@ -923,11 +925,11 @@ export function LandingPage() {
                   className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-5 py-3 rounded-xl bg-white hover:bg-blue-50 text-[#1E40AF] font-bold text-[13px] shadow-sm transition active:scale-[0.98]"
                 >
                   <MessageSquare className="w-4 h-4" />
-                  <span>Chat với Trợ lý AI ngay</span>
+                  <span>{t("Chat với Trợ lý AI ngay")}</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <p className="text-[11px] text-blue-200 mt-2">
-                  Hỗ trợ tra cứu thông tin kỹ thuật &amp; chính sách 24/7
+                  {t("Hỗ trợ tra cứu thông tin kỹ thuật & chính sách 24/7")}
                 </p>
               </div>
             </div>
@@ -943,13 +945,13 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 reveal">
             <div>
               <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#1E40AF] text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 w-fit">
-                <BookOpen className="h-3.5 w-3.5" /> Nguồn chính thức VinFast
+                <BookOpen className="h-3.5 w-3.5" /> {t("Nguồn chính thức VinFast")}
               </span>
               <h2 className="mt-2 text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900">
-                Cẩm nang kỹ thuật & Chính sách đã kiểm chứng
+                {t("Cẩm nang kỹ thuật & Chính sách đã kiểm chứng")}
               </h2>
               <p className="mt-1 text-[13px] text-slate-500">
-                Tài liệu chính thức được AI đối soát khi phản hồi và hỗ trợ chẩn đoán cho khách hàng.
+                {t("Tài liệu chính thức được AI đối soát khi phản hồi và hỗ trợ chẩn đoán cho khách hàng.")}
               </p>
             </div>
 
@@ -972,7 +974,7 @@ export function LandingPage() {
                       : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
                     }`}
                 >
-                  {c.label}
+                  {t(c.label)}
                 </button>
               ))}
             </div>
@@ -989,19 +991,19 @@ export function LandingPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-[#1E40AF] border border-blue-200/60">
-                      {art.category}
+                      {t(art.category)}
                     </span>
                     <span className="font-mono text-[11px] text-slate-400">
-                      Kiểm chứng: {art.verified_at}
+                      {t("Kiểm chứng:")} {art.verified_at}
                     </span>
                   </div>
 
                   <h3 className="text-[14.5px] font-bold text-slate-900 group-hover:text-[#1E40AF] transition leading-snug">
-                    {art.title}
+                    {t(art.title)}
                   </h3>
 
                   <p className="text-[12.5px] leading-relaxed text-slate-500">
-                    {art.summary}
+                    {t(art.summary)}
                   </p>
                 </div>
 
@@ -1013,15 +1015,15 @@ export function LandingPage() {
                     className="inline-flex items-center gap-1 font-semibold text-slate-500 hover:text-[#1E40AF] transition"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
-                    <span>Xem tài liệu gốc</span>
+                    <span>{t("Xem tài liệu gốc")}</span>
                   </a>
 
                   <button
                     type="button"
-                    onClick={() => handleSubmit(`Cho tôi hỏi về: ${art.title}`)}
+                    onClick={() => handleSubmit(`${t("Cho tôi hỏi về:")} ${t(art.title)}`)}
                     className="inline-flex items-center gap-1 text-[11.5px] font-bold text-[#1E40AF] hover:underline"
                   >
-                    <span>Hỏi AI về mục này</span>
+                    <span>{t("Hỏi AI về mục này")}</span>
                     <ArrowRight className="h-3 w-3" />
                   </button>
                 </div>
@@ -1040,30 +1042,30 @@ export function LandingPage() {
             <div className="reveal space-y-1">
               <div className="flex items-center justify-center md:justify-start gap-2 text-slate-900 font-bold text-[14px]">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>Bảo mật dữ liệu riêng tư</span>
+                <span>{t("Bảo mật dữ liệu riêng tư")}</span>
               </div>
               <p className="text-[12px] text-slate-500 leading-relaxed">
-                Tự động mã hóa thông tin cá nhân. Chỉ lưu trữ các dữ kiện kỹ thuật xe phục vụ chẩn đoán.
+                {t("Tự động mã hóa thông tin cá nhân. Chỉ lưu trữ các dữ kiện kỹ thuật xe phục vụ chẩn đoán.")}
               </p>
             </div>
 
             <div className="reveal space-y-1" style={{ transitionDelay: "80ms" }}>
               <div className="flex items-center justify-center md:justify-start gap-2 text-slate-900 font-bold text-[14px]">
                 <CheckCircle2 className="w-4 h-4 text-[#1E40AF]" />
-                <span>Tài liệu kiểm chứng 100%</span>
+                <span>{t("Tài liệu kiểm chứng 100%")}</span>
               </div>
               <p className="text-[12px] text-slate-500 leading-relaxed">
-                Mọi chỉ dẫn kỹ thuật đều trích xuất trực tiếp từ cẩm nang an toàn và vận hành VinFast chính hãng.
+                {t("Mọi chỉ dẫn kỹ thuật đều trích xuất trực tiếp từ cẩm nang an toàn và vận hành VinFast chính hãng.")}
               </p>
             </div>
 
             <div className="reveal space-y-1" style={{ transitionDelay: "160ms" }}>
               <div className="flex items-center justify-center md:justify-start gap-2 text-slate-900 font-bold text-[14px]">
                 <Wrench className="w-4 h-4 text-[#1E40AF]" />
-                <span>Kỹ thuật viên đồng hành</span>
+                <span>{t("Kỹ thuật viên đồng hành")}</span>
               </div>
               <p className="text-[12px] text-slate-500 leading-relaxed">
-                Mọi sự cố xe đều được Cố vấn Dịch vụ xem xét, phê duyệt phương án trước khi điều phối xưởng.
+                {t("Mọi sự cố xe đều được Cố vấn Dịch vụ xem xét, phê duyệt phương án trước khi điều phối xưởng.")}
               </p>
             </div>
           </div>
@@ -1077,10 +1079,10 @@ export function LandingPage() {
         <div className="mx-auto max-w-5xl rounded-3xl bg-slate-950 text-white p-8 sm:p-12 text-center space-y-5 shadow-lg relative overflow-hidden reveal">
           <div className="space-y-2 relative z-10">
             <h2 className="text-2xl sm:text-[30px] font-bold tracking-tight text-white leading-tight">
-              Sẵn sàng đồng hành cùng bạn trên mọi nẻo đường
+              {t("Sẵn sàng đồng hành cùng bạn trên mọi nẻo đường")}
             </h2>
             <p className="mx-auto max-w-lg text-[13.5px] text-slate-300 leading-relaxed">
-              Trợ lý VFServ AI túc trực 24/7 để tiếp nhận, hỗ trợ và kết nối kỹ thuật viên giải quyết sự cố tức thời.
+              {t("Trợ lý VFServ AI túc trực 24/7 để tiếp nhận, hỗ trợ và kết nối kỹ thuật viên giải quyết sự cố tức thời.")}
             </p>
           </div>
 
@@ -1090,7 +1092,7 @@ export function LandingPage() {
               className="inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] px-6 py-3 text-[13px] font-bold text-white shadow-sm transition active:scale-[0.98]"
             >
               <MessageSquare className="w-4 h-4" />
-              <span>Bắt đầu trò chuyện với AI</span>
+              <span>{t("Bắt đầu trò chuyện với AI")}</span>
             </Link>
 
             <a
@@ -1098,7 +1100,7 @@ export function LandingPage() {
               className="inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl border border-slate-700 bg-white/5 hover:bg-white/10 px-6 py-3 text-[13px] font-semibold text-white transition"
             >
               <PhoneCall className="w-4 h-4 text-red-400" />
-              <span>Gọi Cứu hộ 24/7: 1900-232389</span>
+              <span>{t("Gọi Cứu hộ 24/7: 1900-232389")}</span>
             </a>
           </div>
         </div>
@@ -1113,7 +1115,7 @@ export function LandingPage() {
         <>
           {/* Màn hình lớn (Desktop / Tablet >= sm): Bong bóng góc dưới phải */}
           <aside
-            aria-label="Thông báo hồ sơ đang xử lý"
+            aria-label={t("Thông báo hồ sơ đang xử lý")}
             className={`hidden sm:block fixed bottom-6 right-6 z-40 transition-all duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none ${isBubbleMounted
                 ? "opacity-100 translate-y-0 translate-x-0"
                 : "opacity-0 translate-y-4 translate-x-2 pointer-events-none"
@@ -1125,7 +1127,7 @@ export function LandingPage() {
                 <Link
                   href="/track-case"
                   className="block text-left pr-6 cursor-pointer focus:outline-none"
-                  title="Bấm để xem chi tiết tiến trình hồ sơ"
+                  title={t("Bấm để xem chi tiết tiến trình hồ sơ")}
                 >
                   {/* Dòng 1: ● Badge trạng thái · Phụ đề hướng dẫn */}
                   <div className="flex items-center gap-1.5 min-w-0">
@@ -1134,11 +1136,11 @@ export function LandingPage() {
                       <span className={`relative inline-flex rounded-full h-2 w-2 ${bubbleConfig.dotBg}`} />
                     </span>
                     <span className="text-[12px] font-bold text-slate-900 shrink-0">
-                      {bubbleConfig.badgeText}
+                      {t(bubbleConfig.badgeText)}
                     </span>
                     <span className="text-slate-300">·</span>
                     <span className={`text-[11.5px] truncate ${bubbleConfig.ctaColor}`}>
-                      {bubbleConfig.subtitle}
+                      {t(bubbleConfig.subtitle)}
                     </span>
                   </div>
 
@@ -1148,7 +1150,7 @@ export function LandingPage() {
                       {activeUserCase.summary || activeUserCase.id}
                     </p>
                     <span className={`inline-flex items-center gap-0.5 text-[11.5px] font-bold shrink-0 group-hover:translate-x-0.5 transition ${bubbleConfig.ctaColor}`}>
-                      <span>{bubbleConfig.ctaText}</span>
+                      <span>{t(bubbleConfig.ctaText)}</span>
                       <ChevronRight className="h-3 w-3" />
                     </span>
                   </div>
@@ -1163,8 +1165,8 @@ export function LandingPage() {
                     handleCollapseBubble();
                   }}
                   className="absolute top-2.5 right-2.5 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
-                  title="Thu gọn về dạng viên thuốc"
-                  aria-label="Thu gọn"
+                  title={t("Thu gọn về dạng viên thuốc")}
+                  aria-label={t("Thu gọn")}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -1176,7 +1178,7 @@ export function LandingPage() {
                 onClick={handleExpandBubble}
                 onMouseEnter={handleExpandBubble}
                 className={`group relative flex items-center gap-2 rounded-full border px-3.5 py-2 shadow-lg backdrop-blur-md hover:shadow-xl transition-all ${bubbleConfig.pillClass}`}
-                title="Rê chuột hoặc bấm để xem chi tiết hồ sơ"
+                title={t("Rê chuột hoặc bấm để xem chi tiết hồ sơ")}
               >
                 {/* Ping chấm màu theo trạng thái */}
                 <span className="relative flex h-2 w-2 shrink-0">
@@ -1188,12 +1190,12 @@ export function LandingPage() {
                 {(hasStaffUpdate || bubbleConfig.type === "NEEDS_INFO") && (
                   <span
                     className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white animate-pulse"
-                    title={bubbleConfig.type === "NEEDS_INFO" ? "Cần bổ sung thông tin" : "Có phản hồi mới từ kỹ thuật viên"}
+                    title={t(bubbleConfig.type === "NEEDS_INFO" ? "Cần bổ sung thông tin" : "Có phản hồi mới từ kỹ thuật viên")}
                   />
                 )}
 
                 <span className="text-[12px] font-bold">
-                  {bubbleConfig.pillText}
+                  {t(bubbleConfig.pillText)}
                 </span>
 
                 {openCasesCount > 1 && bubbleConfig.type === "IN_PROGRESS" && (
@@ -1209,7 +1211,7 @@ export function LandingPage() {
 
           {/* Màn hình hẹp (< sm / Mobile): Thanh mỏng cố định phía dưới, không dùng thẻ nổi che màn hình */}
           <aside
-            aria-label="Hồ sơ đang xử lý trên di động"
+            aria-label={t("Hồ sơ đang xử lý trên di động")}
             className={`sm:hidden fixed bottom-0 left-0 right-0 z-40 border-t px-3.5 py-2 backdrop-blur-md shadow-[0_-4px_16px_rgba(0,0,0,0.06)] transition-all duration-300 ease-out motion-reduce:transition-none motion-reduce:transform-none ${bubbleConfig.mobileClass} ${isBubbleMounted
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-full pointer-events-none"
@@ -1229,7 +1231,7 @@ export function LandingPage() {
                 )}
                 <div className="min-w-0">
                   <p className="text-[11.5px] font-bold text-slate-900 truncate">
-                    {bubbleConfig.badgeText} · {bubbleConfig.subtitle}
+                    {t(bubbleConfig.badgeText)} · {t(bubbleConfig.subtitle)}
                   </p>
                   <p className="text-[10.5px] text-slate-500 truncate">
                     {activeUserCase.summary || activeUserCase.id}
@@ -1238,7 +1240,7 @@ export function LandingPage() {
               </div>
 
               <div className={`flex items-center gap-0.5 text-[11.5px] font-bold shrink-0 ${bubbleConfig.ctaColor}`}>
-                <span>{bubbleConfig.ctaText}</span>
+                <span>{t(bubbleConfig.ctaText)}</span>
                 <ChevronRight className="h-3.5 w-3.5" />
               </div>
             </Link>

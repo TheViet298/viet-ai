@@ -1,9 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { TicketItem, TicketPriority, TicketStatus } from "../types";
 export type { TicketItem, TicketPriority, TicketStatus };
 import { getTicketQueue } from "../api/consoleApi";
+
+const PRIORITY_WEIGHT: Record<TicketPriority, number> = {
+  CRITICAL: 4,
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+};
 
 export const INITIAL_TICKETS: TicketItem[] = [
   {
@@ -101,16 +108,19 @@ export const INITIAL_TICKETS: TicketItem[] = [
 export type SortOption = "NEWEST" | "PRIORITY_DESC" | "CONFIDENCE_DESC";
 
 export function useTickets() {
-  const [tickets, setTickets] = useState<TicketItem[]>(INITIAL_TICKETS);
+  const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortBy, setSortBy] = useState<SortOption>("NEWEST");
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isLiveApi, setIsLiveApi] = useState<boolean>(false);
 
+  const requestId = useRef(0);
+
   const fetchTickets = useCallback(async () => {
+    const currentRequest = ++requestId.current;
     setLoading(true);
     setError(null);
     try {
@@ -118,49 +128,26 @@ export function useTickets() {
         status: statusFilter !== "ALL" ? statusFilter : undefined,
         priority: priorityFilter !== "ALL" ? priorityFilter : undefined,
       });
-      if (res && res.success && res.data?.items) {
-        setTickets(res.data.items);
-        setIsLiveApi(true);
+      if (currentRequest !== requestId.current) return;
+      if (!res?.success || !Array.isArray(res.data?.items)) {
+        throw new Error("Invalid queue response");
       }
+      setTickets(res.data.items);
+      setIsLiveApi(true);
     } catch {
-      // Fallback to initial state if backend is not reachable
+      if (currentRequest !== requestId.current) return;
+      setTickets([]);
       setIsLiveApi(false);
+      setError("Không thể tải hàng đợi. Vui lòng thử lại.");
     } finally {
-      setLoading(false);
+      if (currentRequest === requestId.current) setLoading(false);
     }
   }, [statusFilter, priorityFilter]);
 
   useEffect(() => {
-    let isMounted = true;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await getTicketQueue({
-          status: statusFilter !== "ALL" ? statusFilter : undefined,
-          priority: priorityFilter !== "ALL" ? priorityFilter : undefined,
-        });
-        if (isMounted && res && res.success && res.data?.items) {
-          setTickets(res.data.items);
-          setIsLiveApi(true);
-        }
-      } catch {
-        if (isMounted) setIsLiveApi(false);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-    load();
-    return () => {
-      isMounted = false;
-    };
-  }, [statusFilter, priorityFilter]);
-
-  const priorityWeight: Record<TicketPriority, number> = {
-    CRITICAL: 4,
-    HIGH: 3,
-    MEDIUM: 2,
-    LOW: 1,
-  };
+    void fetchTickets();
+    return () => { requestId.current += 1; };
+  }, [fetchTickets]);
 
   const filteredTickets = useMemo(() => {
     return tickets
@@ -189,7 +176,7 @@ export function useTickets() {
       })
       .sort((a, b) => {
         if (sortBy === "PRIORITY_DESC") {
-          return (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
+          return (PRIORITY_WEIGHT[b.priority] || 0) - (PRIORITY_WEIGHT[a.priority] || 0);
         }
         if (sortBy === "CONFIDENCE_DESC") {
           return b.confidence_score - a.confidence_score;

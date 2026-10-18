@@ -8,19 +8,35 @@ from src.config import get_settings
 # Tạo thư mục data/ nếu chưa có để SQLite tạo được file .db
 os.makedirs("data", exist_ok=True)
 
-settings = get_settings()
-db_url = settings.database_url
+def normalize_database_url(url: str | None = None) -> str:
+    """Chuẩn hóa URL PostgreSQL sang driver psycopg/psycopg2 tương thích SQLAlchemy 2.0."""
+    if url is None:
+        url = get_settings().database_url
+    if not url:
+        return "sqlite:///./data/app.db"
 
-if db_url.startswith("postgresql"):
-    try:
-        import psycopg  # noqa: F401
-    except ImportError:
+    # Hỗ trợ URL postgres:// cũ sang postgresql://
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://"):]
+
+    if url.startswith("postgresql://"):
         try:
-            import psycopg2  # noqa: F401
-            if db_url.startswith("postgresql://"):
-                db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+            import psycopg  # noqa: F401
+            url = url.replace("postgresql://", "postgresql+psycopg://", 1)
         except ImportError:
-            db_url = "sqlite:///./data/app.db"
+            try:
+                import psycopg2  # noqa: F401
+                if url.startswith("postgresql://"):
+                    url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+            except ImportError:
+                raise RuntimeError(
+                    "PostgreSQL requires an installed psycopg or psycopg2 driver; install the database dependencies."
+                ) from None
+    return url
+
+
+settings = get_settings()
+db_url = normalize_database_url(settings.database_url)
 
 is_sqlite = db_url.startswith("sqlite")
 connect_args = {"check_same_thread": False} if is_sqlite else {}

@@ -1,6 +1,27 @@
 from src.services.rag_service import RAGService, source_registry
 
 
+def test_structured_catalog_facts_keep_variant_and_units():
+    from src.services.answer_evidence import AnswerClaim, validate_answer_claims
+    doc = "Thông số chi tiết VinFast VF 7 - Phiên bản VF 7 Eco:\n- hero: " + repr({
+        'highlights': {'Quãng đường di chuyển (NEDC)': '440km/lần sạc', 'Công suất tối đa': '130kW/hp',
+                       'Bảo hành': '7 năm hoặc 160.000km (Tùy điều kiện nào đến trước)'},
+        'price_from_vnd': 703000000})
+    citation = {'source_id': 'SRC-009', 'source_type': 'official_catalog', 'relevant_snippet': doc}
+    claims = [AnswerClaim(claim_key=k, value=v, unit=u, subject='VF7 Eco', conditions=c, source_ids=['SRC-009'])
+              for k, v, u, c in [('range', '440', 'km', ['NEDC']), ('power', '130', 'kW', []),
+                                 ('warranty', '7', 'năm', []), ('price', '703000000', 'VNĐ', ['từ'])]]
+    assert validate_answer_claims(claims, [citation], [])['supported']
+    wrong = claims[0].model_copy(update={'subject': 'VF7 Plus'})
+    assert not validate_answer_claims([wrong], [citation], [])['supported']
+
+
+def test_warranty_condition_does_not_invent_price_from_qualifier():
+    from src.services.answer_evidence import extract_numeric_claims
+    claims = extract_numeric_claims('VF7 Eco: Bảo hành 7 năm tùy điều kiện nào đến trước.', [{'source_id': 'SRC-009'}])
+    assert 'từ' not in claims[0].conditions
+
+
 def retrieve(text, query, source_id="SRC-002"):
     meta = {**source_registry()[source_id], "source_id": source_id, "applicable_models": "ALL"}
     rows = {"documents": [[text]], "metadatas": [[meta]], "distances": [[0.2]], "ids": [["evidence"]]}

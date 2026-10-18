@@ -1,0 +1,117 @@
+{
+  "mode": "offline deterministic; bounded regression examples, not production accuracy",
+  "cases": 18,
+  "correct": 18,
+  "positive": 6,
+  "negative": 12,
+  "results": [
+    {
+      "message": "Tìm trạm sạc gần đây",
+      "expected": "CHARGING_STATION",
+      "actual": "CHARGING_STATION",
+      "correct": true
+    },
+    {
+      "message": "tim tru sac gan day",
+      "expected": "CHARGING_STATION",
+      "actual": "CHARGING_STATION",
+      "correct": true
+    },
+    {
+      "message": "Quanh đây có chỗ sạc không?",
+      "expected": "CHARGING_STATION",
+      "actual": "CHARGING_STATION",
+      "correct": true
+    },
+    {
+      "message": "showroom ở Huế",
+      "expected": "SHOWROOM",
+      "actual": "SHOWROOM",
+      "correct": true
+    },
+    {
+      "message": "chỉ đường tới đại lý gần nhất",
+      "expected": "SHOWROOM",
+      "actual": "SHOWROOM",
+      "correct": true
+    },
+    {
+      "message": "tìm chỗ sửa xe gần tôi",
+      "expected": "SERVICE_WORKSHOP",
+      "actual": "SERVICE_WORKSHOP",
+      "correct": true
+    },
+    {
+      "message": "sạc bao lâu",
+      "expected": null,
+      "actual": null,
+      "correct": true
+    },
+    {
+      "message": "trạm sạc là gì",
+      "expected": null,
+      "actual": null,
+      "correct": true
+    },
+    {
+      "message": "hướng dẫn sạc tại trạm sạc",
+      "expected": null,
+      "actual": null,
+      "correct": true
+    },
+    {
+      "message": "tìm hiểu trạm sạc",
+      "expected": null,
+      "actual": null,
+      "correct": true
+    },
+    {
+      "message": "không tìm trạm sạc nữa",
+      "expected": null,
+      "actual": null,
+      "correct": true
+    },
+    {
+      "message": "không muốn tìm showroom",
+      "expected": null,
+      "actual": null,
+      "correct": true
+    },
+    {
+      "message": "Trạm sạc VinFast tính phí thế nào?",
+      "expected": null,
+      "actual": null,
+      "correct": true
+    },
+    {
+      "message": "Trạm sạc gần tôi bị hỏng",
+      "expected": null,
+      "actual": null,
+      "correct": true
+    },
+    {
+      "message": "Trạm sạc quanh đây không hoạt động",
+      "expected": null,
+      "actual": null,
+      "correct": true
+    },
+    {
+      "message": "giá sạc tại trạm sạc",
+      "expected": null,
+      "actual": null,
+      "correct": true
+    },
+    {
+      "message": "tìm nhà hàng gần đây",
+      "expected": null,
+      "actual": null,
+      "correct": true
+    },
+    {
+      "message": "xin chào",
+      "expected": null,
+      "actual": null,
+      "correct": true
+    }
+  ]
+}

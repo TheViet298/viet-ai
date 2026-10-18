@@ -28,8 +28,11 @@ env/
 .DS_Store
 Thumbs.db
 
-# Data (never commit large data)
-data/
+# Data (never commit large data, except small verified catalog snapshots)
+data/*
+!data/verified/
+data/verified/*
+!data/verified/*.json
 *.db
 *.sqlite3
 
@@ -92,6 +95,11 @@ chroma/
 /docs/previous-commit-regression-2026-10-10.md
 /docs/knowledge-answering.md
 /scratch/
+/output/
 /eval/results/evidence-20261010/
 /eval/results/natural-conversation-20261010/
 /eval/results/topic-followup-20261010/
+
+.ai-log/*.lock
+.ai-log/*.pid
+frontend/.next-e2e/

@@ -1,0 +1,172 @@
+[
+  {
+    "image_id": "img_vf6_cluster_display_01",
+    "vehicle_model": "VinFast VF 6",
+    "image_type": "cluster_display_overview",
+    "title_vi": "Giao diện màn hình trung tâm 12.9 inch và HUD hiển thị cảnh báo trên VF 6",
+    "source_url": "https://vucar.vn/tin-tuc/y-nghia-64-den-canh-bao-tren-tap-lo-xe-o-to",
+    "article_reference": "https://vucar.vn/tin-tuc/y-nghia-64-den-canh-bao-tren-tap-lo-xe-o-to",
+    "format": "JPG",
+    "visual_elements": {
+      "symbols_detected": [
+        "digital_speedometer",
+        "ready_indicator_green",
+        "battery_soc_percentage",
+        "gear_selector"
+      ],
+      "text_detected": [
+        "READY",
+        "km/h",
+        "P R N D",
+        "%"
+      ],
+      "quality_assessment": "VF 6 không có màn hình sau vô lăng, mọi cảnh báo được tích hợp lên màn hình giải trí trung tâm 12.9 inch và màn hình kính lái HUD."
+    },
+    "associated_symptom_keys": [
+      "ready_indicator_mode",
+      "low_battery_soc",
+      "master_warning_indicator"
+    ],
+    "copyright_license_status": "educational_fair_use",
+    "usage_policy": "Sử dụng cho mục đích nghiên cứu nhận diện giao diện HMI."
+  },
+  {
+    "image_id": "img_vf6_icon_turtle_mode",
+    "vehicle_model": "VinFast VF 6",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng cảnh báo rùa vàng (Giới hạn công suất)",
+    "source_url": "https://bulbtek.vn/tin-tuc/cac-ky-hieu-den-canh-bao-tren-tap-lo-o-to",
+    "article_reference": "https://bulbtek.vn/tin-tuc/cac-ky-hieu-den-canh-bao-tren-tap-lo-o-to",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "turtle_mode_amber_silhouette"
+      ],
+      "text_detected": [],
+      "quality_assessment": "Biểu tượng rùa vàng trên màn hình trung tâm cảnh báo xe giới hạn công suất do pin yếu hoặc quá nhiệt."
+    },
+    "associated_symptom_keys": [
+      "turtle_mode_power_limited"
+    ],
+    "copyright_license_status": "educational_fair_use",
+    "usage_policy": "Sử dụng cho mục đích nghiên cứu nhận diện giao diện."
+  },
+  {
+    "image_id": "img_vf6_icon_12v_battery",
+    "vehicle_model": "VinFast VF 6",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng đèn cảnh báo ắc quy 12V",
+    "source_url": "https://www.bridgestone.com.vn/vi/thong-tin-huu-ich/kien-thuc-lop-xe/y-nghia-cac-den-canh-bao-tren-tap-lo-o-to",
+    "article_reference": "https://www.bridgestone.com.vn/vi/thong-tin-huu-ich/kien-thuc-lop-xe/y-nghia-cac-den-canh-bao-tren-tap-lo-o-to",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "battery_12v_red_symbol"
+      ],
+      "text_detected": [
+        "+",
+        "-"
+      ],
+      "quality_assessment": "Báo hiệu hệ thống sạc 12V gặp sự cố, cần kiểm tra ắc quy phụ trợ."
+    },
+    "associated_symptom_keys": [
+      "12v_battery_fault"
+    ],
+    "copyright_license_status": "educational_fair_use",
+    "usage_policy": "Sử dụng cho mục đích nghiên cứu nhận diện giao diện."
+  },
+  {
+    "image_id": "img_vf6_icon_brake_failure",
+    "vehicle_model": "VinFast VF 6",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng cảnh báo lỗi hệ thống phanh",
+    "source_url": "https://vucar.vn/tin-tuc/y-nghia-64-den-canh-bao-tren-tap-lo-xe-o-to",
+    "article_reference": "https://vucar.vn/tin-tuc/y-nghia-64-den-canh-bao-tren-tap-lo-xe-o-to",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "brake_circle_exclamation_red"
+      ],
+      "text_detected": [],
+      "quality_assessment": "Hiển thị màu đỏ khẩn cấp cảnh báo mất phanh, má phanh mòn hoặc dầu phanh cạn."
+    },
+    "associated_symptom_keys": [
+      "brake_system_fault",
+      "parking_brake_engaged"
+    ],
+    "copyright_license_status": "educational_fair_use",
+    "usage_policy": "Sử dụng cho mục đích nghiên cứu nhận diện giao diện."
+  },
+  {
+    "image_id": "img_vf6_icon_abs_fault",
+    "vehicle_model": "VinFast VF 6",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng cảnh báo lỗi hệ thống chống bó cứng phanh (ABS)",
+    "source_url": "https://www.bridgestone.com.vn/vi/thong-tin-huu-ich/kien-thuc-lop-xe/y-nghia-cac-den-canh-bao-tren-tap-lo-o-to",
+    "article_reference": "https://www.bridgestone.com.vn/vi/thong-tin-huu-ich/kien-thuc-lop-xe/y-nghia-cac-den-canh-bao-tren-tap-lo-o-to",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "abs_amber_circle"
+      ],
+      "text_detected": [
+        "ABS"
+      ],
+      "quality_assessment": "Cảnh báo lỗi ABS màu vàng, tính năng an toàn ABS đang bị vô hiệu hóa."
+    },
+    "associated_symptom_keys": [
+      "abs_fault"
+    ],
+    "copyright_license_status": "educational_fair_use",
+    "usage_policy": "Sử dụng cho mục đích nghiên cứu nhận diện giao diện."
+  },
+  {
+    "image_id": "img_vf6_icon_master_warning",
+    "vehicle_model": "VinFast VF 6",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng cảnh báo tổng (Master Warning)",
+    "source_url": "https://bulbtek.vn/tin-tuc/cac-ky-hieu-den-canh-bao-tren-tap-lo-o-to",
+    "article_reference": "https://bulbtek.vn/tin-tuc/cac-ky-hieu-den-canh-bao-tren-tap-lo-o-to",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "master_warning_triangle_amber",
+        "master_warning_triangle_red"
+      ],
+      "text_detected": [
+        "!"
+      ],
+      "quality_assessment": "Tam giác cảnh báo yêu cầu người lái chú ý kiểm tra thông báo phụ đi kèm trên màn hình trung tâm."
+    },
+    "associated_symptom_keys": [
+      "master_warning_indicator"
+    ],
+    "copyright_license_status": "educational_fair_use",
+    "usage_policy": "Sử dụng cho mục đích nghiên cứu nhận diện giao diện."
+  },
+  {
+    "image_id": "img_vf6_icon_tpms_low_pressure",
+    "vehicle_model": "VinFast VF 6",
+    "image_type": "symbol_icon_crop",
+    "title_vi": "Biểu tượng cảnh báo áp suất lốp thấp",
+    "source_url": "https://www.bridgestone.com.vn/vi/thong-tin-huu-ich/kien-thuc-lop-xe/y-nghia-cac-den-canh-bao-tren-tap-lo-o-to",
+    "article_reference": "https://www.bridgestone.com.vn/vi/thong-tin-huu-ich/kien-thuc-lop-xe/y-nghia-cac-den-canh-bao-tren-tap-lo-o-to",
+    "format": "PNG",
+    "visual_elements": {
+      "symbols_detected": [
+        "tpms_horseshoe_exclamation_amber"
+      ],
+      "text_detected": [
+        "!"
+      ],
+      "quality_assessment": "Báo hiệu lốp xe non hơi. VF 6 sử dụng Direct TPMS nên thường đi kèm thông số áp suất cụ thể trên màn hình."
+    },
+    "associated_symptom_keys": [
+      "low_pressure",
+      "rapid_leak"
+    ],
+    "copyright_license_status": "educational_fair_use",
+    "usage_policy": "Sử dụng cho mục đích nghiên cứu nhận diện giao diện."
+  }
+]
+

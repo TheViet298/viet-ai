@@ -1,279 +1,230 @@
 #!/usr/bin/env python3
-"""
-OpenAI Codex CLI / Desktop log scanner — extracts user prompts from
-local Codex session rollout files into .ai-log/session.jsonl.
+"""Capture this repository's saved Codex activity; never export reasoning/system context.
 
-Source of truth:
-    ~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl
+Native hooks are the primary path. --auto is an idempotent pre-push recovery
+path. --watch --submit also covers an already running session whose hook
+definitions have not been reloaded/reviewed yet.
 """
 import argparse
 import json
 import os
-import re
-import subprocess
 import sys
-from datetime import datetime, timezone, timedelta
+import subprocess
+import time
+from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
 
-# Fix Windows console encoding so VN diacritics in prompts print cleanly.
-if sys.platform == "win32":
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
-
-VN_TZ = timezone(timedelta(hours=7))
-
-IGNORED_PROMPT_PREFIXES = (
-    "<",
-    ">>>",
-    "[",
-    "{",
-    "The active permission profile",
-    "Reviewed Codex session",
-    "Host notice:",
-    "The following is the Codex agent",
-    "The Codex agent has requested",
-    "Assess the exact planned action",
-    "Planned action JSON:",
-    "Some conversation entries were omitted.",
-    "Retained source order",
-)
+from ai_log_store import append_entries, entry_id, locked, log_dir, repo_root
 
 
-def git(cmd: str, cwd: Path | None = None) -> str:
-    try:
-        return subprocess.check_output(
-            cmd.split(), shell=False, text=True, stderr=subprocess.DEVNULL,
-            cwd=cwd,
-        ).strip()
-    except Exception:
-        return ""
+def text_content(content):
+    if isinstance(content, str):
+        return content
+    return '\n'.join(part.get('text', '') for part in content or []
+                     if isinstance(part, dict) and part.get('type') in {'input_text', 'output_text', 'text'})
 
 
-def repo_context(cwd: Path | None = None) -> tuple[str, str, str, str]:
-    root = cwd or Path.cwd()
-    repo = git("git remote get-url origin", cwd).rstrip("/").split("/")[-1]
-    if repo.endswith(".git"):
-        repo = repo[:-4]
-    return (
-        repo or root.name,
-        git("git rev-parse --abbrev-ref HEAD", cwd),
-        git("git rev-parse --short HEAD", cwd),
-        git("git config user.email", cwd)
-        or os.environ.get("USERNAME", os.environ.get("USER", "unknown")),
-    )
+def read_records(path):
+    with path.open(encoding='utf-8') as stream:
+        for number, line in enumerate(stream, 1):
+            try:
+                value = json.loads(line)
+            except ValueError:
+                # A running Codex process may not have completed its last line.
+                # It remains in the source transcript and is retried next time.
+                continue
+            if isinstance(value, dict):
+                yield number, value
 
 
-def _normalize(p: str) -> str:
-    if not p:
-        return ""
-    return p.strip().lower().replace("/", "\\").rstrip("\\")
+def _url_key(url):
+    return str(url or '').removesuffix('.git').rstrip('/').replace('git@github.com:', 'https://github.com/').casefold()
 
 
-def _session_matches_repo(cwds: set[str], repo_root_n: str) -> bool:
-    if not repo_root_n or not cwds:
-        return False
-    for cwd in cwds:
-        if cwd == repo_root_n:
-            return True
-        if cwd.startswith(repo_root_n + "\\"):
-            return True
-        if repo_root_n.startswith(cwd + "\\"):
-            return True
-        # Also include Downloads/New folder if user operated project copies there
-        if "downloads\\new folder" in cwd:
-            return True
-    return False
-
-
-def get_logged_entry_ids(log_dir: Path) -> set[str]:
-    logged: set[str] = set()
-    files_to_check = []
-    live_file = log_dir / "session.jsonl"
-    if live_file.exists():
-        files_to_check.append(live_file)
-    archive_dir = log_dir / "archive"
-    if archive_dir.exists():
-        files_to_check.extend(archive_dir.glob("*.jsonl"))
-
-    for f in files_to_check:
+def in_scope(meta, root, origin):
+    cwd = meta.get('cwd')
+    if cwd:
         try:
-            with open(f, encoding="utf-8-sig") as fp:
-                for line in fp:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    try:
-                        entry = json.loads(line)
-                        eid = entry.get("entry_id")
-                        if eid:
-                            logged.add(eid)
-                    except json.JSONDecodeError:
-                        continue
-        except OSError:
+            if Path(cwd).resolve().is_relative_to(root):
+                return True
+        except (OSError, ValueError):
             pass
-    return logged
+    remote = (meta.get('git') or {}).get('repository_url')
+    return bool(remote and origin and _url_key(remote) == _url_key(origin))
 
 
-def parse_session_file(session_file: Path, repo_root_n: str, no_repo_filter: bool):
-    """Parse one rollout-*.jsonl session file, returning (cwds, model, list of prompt dicts)."""
-    try:
-        with open(session_file, "r", encoding="utf-8", errors="ignore") as f:
-            lines = [json.loads(line) for line in f if line.strip()]
-    except Exception:
-        return set(), "", []
-
-    cwds: set[str] = set()
-    model = ""
-    session_id = session_file.stem
-    if session_id.startswith("rollout-"):
-        parts = session_id.split("-", 4)
-        if len(parts) >= 5:
-            session_id = parts[4]
-
-    for d in lines:
-        payload = d.get("payload", {})
-        if d.get("type") == "turn_context":
-            cwd = payload.get("cwd")
-            if cwd:
-                cwds.add(_normalize(cwd))
-            if not model:
-                model = payload.get("model", "")
-        elif payload.get("role") == "user":
-            for item in payload.get("content", []):
-                t = item.get("text", "")
-                if "<cwd>" in t:
-                    m = re.search(r"<cwd>(.*?)</cwd>", t)
-                    if m:
-                        cwds.add(_normalize(m.group(1)))
-
-    if not no_repo_filter and not _session_matches_repo(cwds, repo_root_n):
-        return cwds, model, []
-
-    if not model:
-        model = "gpt-6.1-sol"
-
-    prompts = []
-    for d in lines:
-        payload = d.get("payload", {})
-        if payload.get("role") == "user":
-            for item in payload.get("content", []):
-                if item.get("type") == "input_text":
-                    text = item.get("text", "").strip()
-                    if not text or any(text.startswith(pref) for pref in IGNORED_PROMPT_PREFIXES):
+def transcript_entries(path, root, context):
+    records = list(read_records(path))
+    if not records:
+        return []
+    meta = next((r.get('payload', {}) for _, r in records if r.get('type') == 'session_meta'), {})
+    if not in_scope(meta, root, context.get('origin', '')):
+        return []
+    session = meta.get('id') or meta.get('session_id') or path.stem
+    git_meta = meta.get('git') or {}
+    models, directories = {}, {}
+    for _, r in records:
+        if r.get('type') == 'turn_context':
+            d = r.get('payload', {})
+            models[d.get('turn_id', '')] = d.get('model', '')
+            directories[d.get('turn_id', '')] = d.get('cwd')
+    # Newer transcripts duplicate public messages in item_completed or event_msg.
+    # response_item is authoritative when available for the same turn/text.
+    primary = set()
+    for _, r in records:
+        d = r.get('payload', {})
+        if r.get('type') == 'response_item' and d.get('type') == 'message':
+            md = d.get('internal_chat_message_metadata_passthrough') or {}
+            primary.add((d.get('role'), md.get('turn_id', ''), text_content(d.get('content'))))
+    result, current_turn, current_model = [], '', ''
+    for number, r in records:
+        d = r.get('payload', {})
+        if not isinstance(d, dict):
+            continue
+        if r.get('type') == 'turn_context':
+            current_turn = d.get('turn_id', current_turn)
+            current_model = d.get('model', current_model)
+            continue
+        if r.get('type') == 'event_msg' and d.get('type') == 'task_started':
+            current_turn = d.get('turn_id', current_turn)
+            continue
+        md = d.get('internal_chat_message_metadata_passthrough') or {}
+        turn = md.get('turn_id') or d.get('turn_id') or current_turn
+        cwd = directories.get(turn)
+        # Do not export a later turn that explicitly moved to an unrelated repo.
+        if cwd and not in_scope({'cwd': cwd}, root, ''):
+            # A different worktree of the same repository is still in scope.
+            # An explicit turn in another repository is not.
+            try:
+                turn_root = repo_root(cwd)
+                if _url_key(repo_context(turn_root)['origin']) != _url_key(context['origin']):
+                    continue
+            except (OSError, ValueError, subprocess.CalledProcessError):
+                continue
+        row = {
+            'ts': r.get('timestamp') or meta.get('timestamp') or datetime.now(timezone.utc).isoformat(),
+            'tool': 'codex', 'session_id': session, 'turn_id': turn,
+            'model': models.get(turn) or current_model,
+            'repo': context['repo'], 'student': context['student'],
+            'branch': git_meta.get('branch', context['branch']),
+            'commit': git_meta.get('commit_hash', context['commit'])[:7],
+            'git_context_source': 'session_start', 'capture_method': 'transcript',
+            'transcript_path': str(path),
+        }
+        identifier = d.get('id') or d.get('call_id') or f'{number}:{r.get("timestamp", "")}'
+        if r.get('type') == 'response_item':
+            kind = d.get('type')
+            if kind == 'message':
+                text = text_content(d.get('content'))
+                if not text or d.get('channel') == 'analysis' or d.get('phase') == 'analysis':
+                    continue
+                if d.get('role') == 'user':
+                    if text.lstrip().startswith('<environment_context>'):
                         continue
-                    ts = d.get("timestamp")
-                    ordinal = d.get("ordinal", 0)
-                    prompts.append({
-                        "session_id": session_id,
-                        "ordinal": ordinal,
-                        "timestamp": ts,
-                        "prompt": text,
-                        "model": model,
-                    })
+                    row.update(event='UserPrompt', prompt=text)
+                else:
+                    continue
+            else:
+                continue
+        elif r.get('type') == 'event_msg':
+            kind = d.get('type')
+            if kind == 'user_message':
+                text = d.get('message', '')
+                if not text or ('user', turn, text) in primary:
+                    continue
+                if text.lstrip().startswith('<environment_context>'):
+                    continue
+                row.update(event='UserPrompt', prompt=text)
+            else:
+                continue
+        else:
+            continue
+        row['entry_id'] = entry_id(session, row['event'], identifier)
+        result.append(row)
+    return result
 
-    return cwds, model, prompts
 
-
-def build_entry(item: dict, repo: str, branch: str, commit: str, student: str) -> dict:
-    ts = item["timestamp"] or ""
-    if ts.endswith("Z"):
+def repo_context(root):
+    import subprocess
+    def git(*args):
         try:
-            ts = (
-                datetime.fromisoformat(ts.replace("Z", "+00:00"))
-                .astimezone(VN_TZ)
-                .isoformat()
-            )
-        except ValueError:
-            pass
-    if not ts:
-        ts = datetime.now(VN_TZ).isoformat()
+            return subprocess.check_output(['git', '-C', str(root), *args], text=True, stderr=subprocess.DEVNULL).strip()
+        except subprocess.CalledProcessError:
+            return ''
+    return {'origin': git('remote', 'get-url', 'origin'), 'repo': root.name,
+            'student': git('config', 'user.email'), 'branch': git('branch', '--show-current'),
+            'commit': git('rev-parse', '--short', 'HEAD')}
 
-    return {
-        "ts": ts,
-        "tool": "codex",
-        "event": "UserPrompt",
-        "entry_id": f"codex-{item['session_id']}-{item['ordinal']:05d}",
-        "session_id": item["session_id"],
-        "model": item["model"],
-        "repo": repo,
-        "branch": branch,
-        "commit": commit,
-        "student": student,
-        "prompt": item["prompt"],
-        "response_summary": "",
-    }
+
+def capture(root, paths=None, dry_run=False):
+    context = repo_context(root)
+    if not context['origin']:
+        raise ValueError('No repository origin; refusing unscoped transcript capture')
+    if paths is None:
+        home = Path(os.environ.get('CODEX_HOME', Path.home() / '.codex'))
+        paths = sorted({p for folder in ['sessions', 'archived_sessions']
+                        for p in (home / folder).rglob('*.jsonl')})
+    entries = []
+    matched = 0
+    for path in paths:
+        # Filter on the header before reading another project's conversation.
+        first = next(read_records(path), None)
+        if not first or first[1].get('type') != 'session_meta':
+            continue
+        if not in_scope(first[1].get('payload', {}), root, context['origin']):
+            continue
+        matched += 1
+        entries.extend(transcript_entries(path, root, context))
+    if dry_run:
+        print(json.dumps({'scoped_sessions': matched, 'events': dict(Counter(e['event'] for e in entries)),
+                          'total_records': len(entries)}))
+        return 0
+    count = append_entries(log_dir(root), entries)
+    if count:
+        print(f'[codex-log] Captured {count} new activity records from {matched} repo-scoped sessions.', file=sys.stderr)
+    return count
+
+
+def watch(root, interval, submit):
+    directory = log_dir(root)
+    try:
+        with locked(directory, '.watch.lock', blocking=False):
+            (directory / 'codex-watch.pid').write_text(str(os.getpid()), encoding='ascii')
+            print('[codex-log] Background capture started for ' + str(root), file=sys.stderr, flush=True)
+            last_submit = 0
+            while True:
+                try:
+                    capture(root)
+                    if submit and time.monotonic() - last_submit >= 15:
+                        subprocess.run([sys.executable, str(Path(__file__).with_name('log_antigravity.py')),
+                                        '--auto'], cwd=root, stdout=subprocess.DEVNULL,
+                                       stderr=subprocess.DEVNULL, timeout=30, check=False)
+                        from submit_log import submit_all
+                        submit_all()
+                        last_submit = time.monotonic()
+                except (OSError, ValueError) as error:
+                    print(f'[codex-log] Capture retry required: {type(error).__name__}', file=sys.stderr, flush=True)
+                time.sleep(interval)
+    except (BlockingIOError, PermissionError):
+        print('[codex-log] A repository capture watcher is already running.', file=sys.stderr)
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Extract user prompts from OpenAI Codex CLI/Desktop sessions into .ai-log/session.jsonl."
-    )
-    parser.add_argument("--auto", action="store_true",
-                        help="Default mode: scan recent sessions.")
-    parser.add_argument("--hours", type=int, default=72,
-                        help="Window in hours when scanning (default: 72).")
-    parser.add_argument("--all", action="store_true",
-                        help="Ignore time cutoff; scan all sessions.")
-    parser.add_argument("--no-repo-filter", action="store_true",
-                        help="Don't filter sessions by current repo.")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Show what would be logged without writing.")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--auto', action='store_true', help='Recover all saved activity for this repository')
+    parser.add_argument('--transcript', type=Path)
+    parser.add_argument('--dry-run', action='store_true', help='Print counts only; never print conversations')
+    parser.add_argument('--watch', action='store_true', help='Continue capturing while this process runs')
+    parser.add_argument('--submit', action='store_true', help='Submit pending logs periodically in watch mode')
+    parser.add_argument('--interval', type=float, default=3)
     args = parser.parse_args()
-
-    codex_home = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))
-    sessions_dir = codex_home / "sessions"
-    if not sessions_dir.exists():
-        print(f"[codex-log] No Codex sessions directory found at {sessions_dir}.", file=sys.stderr)
-        sys.exit(0)
-
-    log_dir = Path(os.environ.get("AI_LOG_DIR", ".ai-log"))
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / "session.jsonl"
-    logged_ids = get_logged_entry_ids(log_dir)
-
-    cutoff = None
-    if not args.all:
-        cutoff = datetime.now(timezone.utc) - timedelta(hours=args.hours)
-
-    repo_root_n = "" if args.no_repo_filter else _normalize(str(Path.cwd()))
-    repo, branch, commit, student = repo_context()
-
-    new_entries = []
-    for session_file in sorted(sessions_dir.glob("**/*.jsonl")):
-        if cutoff:
-            mtime = datetime.fromtimestamp(session_file.stat().st_mtime, tz=timezone.utc)
-            if mtime < cutoff:
-                continue
-
-        cwds, model, prompts = parse_session_file(session_file, repo_root_n, args.no_repo_filter)
-        for p in prompts:
-            entry = build_entry(p, repo, branch, commit, student)
-            if entry["entry_id"] in logged_ids:
-                continue
-            new_entries.append(entry)
-            logged_ids.add(entry["entry_id"])
-
-    if not new_entries:
-        scope = "all" if args.all else f"{args.hours}h"
-        print(f"[codex-log] No new prompts (window={scope}).", file=sys.stderr)
-        sys.exit(0)
-
-    if args.dry_run:
-        print(f"\n[codex-log] DRY RUN — would log {len(new_entries)} entries:\n")
-        for e in new_entries:
-            preview = e["prompt"].replace("\n", " ")[:100]
-            print(f"  [{e['ts'][:19]}] {preview}")
-        sys.exit(0)
-
-    with open(log_file, "a", encoding="utf-8") as f:
-        for e in new_entries:
-            f.write(json.dumps(e, ensure_ascii=False) + "\n")
-
-    print(f"[codex-log] Logged {len(new_entries)} prompt(s) from Codex.", file=sys.stderr)
+    root = repo_root()
+    if args.watch:
+        watch(root, max(1, args.interval), args.submit)
+    else:
+        capture(root, [args.transcript] if args.transcript else None, args.dry_run)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

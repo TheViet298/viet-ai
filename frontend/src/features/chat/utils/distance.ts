@@ -1,6 +1,6 @@
 /**
  * Tiện ích tính toán khoảng cách thực tế theo tọa độ địa lý (Công thức Haversine chuẩn)
- * Tuân thủ ADR-005: Tính toán chính xác từ tọa độ thiết bị khách hàng đến các điểm hỗ trợ.
+ * Lựa chọn thiết kế hệ thống: Tính toán chính xác từ tọa độ thiết bị khách hàng đến các điểm hỗ trợ.
  */
 
 export interface Coordinates {
@@ -30,7 +30,7 @@ export function calculateHaversineDistanceKm(
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0, 1 - a)));
   return EARTH_RADIUS_KM * c;
 }
 
@@ -55,3 +55,29 @@ export function formatDistanceKm(distanceKm: number): string {
  * Nếu điểm gần nhất cách xa hơn ngưỡng này, thông báo cho khách gọi Hotline 1900-232389 thay vì gán nhãn "gần nhất".
  */
 export const MAX_SUPPORT_RADIUS_KM = 50;
+
+/**
+ * Tạo URL chỉ đường mở trực tiếp ứng dụng bản đồ bên ngoài (Google Maps / Apple Maps / Web).
+ * Khi có tọa độ origin (GPS), truyền chính xác origin và destination để mở chế độ lái xe (driving).
+ * Khi không có origin, fallback tìm kiếm theo địa chỉ đích.
+ */
+export function getDirectionsUrl(
+  destination: { lat: number; lng: number; address: string },
+  origin?: Coordinates
+): string {
+  const valid = (coord: Coordinates) => Number.isFinite(coord.lat) && Number.isFinite(coord.lng) && Math.abs(coord.lat) <= 90 && Math.abs(coord.lng) <= 180;
+  if (!valid(destination) || (origin && !valid(origin))) throw new Error("Tọa độ chỉ đường không hợp lệ");
+  const query = new URLSearchParams({ api: "1", destination: `${destination.lat},${destination.lng}`, travelmode: "driving" });
+  if (origin) query.set("origin", `${origin.lat},${origin.lng}`);
+  return `https://www.google.com/maps/dir/?${query}`;
+}
+
+/**
+ * Tạo URL chỉ đường mã nguồn mở OpenStreetMap Directions (FOSSGIS OSRM Car).
+ */
+export function getOsmDirectionsUrl(
+  destination: Coordinates,
+  origin: Coordinates
+): string {
+  return `https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${origin.lat}%2C${origin.lng}%3B${destination.lat}%2C${destination.lng}`;
+}

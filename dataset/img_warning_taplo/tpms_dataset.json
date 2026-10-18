@@ -15,7 +15,12 @@
     "visual_clues": {
       "icon_description": "Biểu tượng mặt cắt lốp xe kèm dấu chấm than ở giữa sáng màu vàng hổ phách, kèm đồ họa xe với bánh xe tương ứng chuyển sang màu vàng hoặc đỏ rực.",
       "display_location": "Màn hình người lái 7 inch (Cluster Display) và thông báo dạng pop-up trên màn hình giải trí trung tâm 10 inch.",
-      "text_ocr_patterns": ["Rò rỉ áp suất", "Áp suất giảm nhanh", "TPMS Warning", "Tire Leakage"]
+      "text_ocr_patterns": [
+        "Rò rỉ áp suất",
+        "Áp suất giảm nhanh",
+        "TPMS Warning",
+        "Tire Leakage"
+      ]
     },
     "immediate_actions": [
       "Bình tĩnh giữ chắc vô lăng, nhả nhẹ bàn đạp ga, không phanh gấp hay đánh lái đột ngột.",
@@ -54,7 +59,11 @@
     "visual_clues": {
       "icon_description": "Biểu tượng hình vành móng ngựa có gai lốp và dấu chấm than bên trong sáng màu vàng hổ phách sáng liên tục.",
       "display_location": "Góc trên bảng đồng hồ 7 inch và hiển thị giá trị áp suất bar/psi màu vàng tại vị trí lốp tương ứng.",
-      "text_ocr_patterns": ["Áp suất thấp", "Low Pressure", "Kiểm tra lốp"]
+      "text_ocr_patterns": [
+        "Áp suất thấp",
+        "Low Pressure",
+        "Kiểm tra lốp"
+      ]
     },
     "immediate_actions": [
       "Duy trì tốc độ vừa phải, quan sát cảm giác lái xem xe có bị nhao lái về một bên hay không.",
@@ -93,7 +102,11 @@
     "visual_clues": {
       "icon_description": "Biểu tượng đèn TPMS vàng sáng kèm giá trị số áp suất tại bánh xe trên màn hình hiển thị màu vàng cam (ví dụ > 2.8 - 3.0 bar).",
       "display_location": "Bảng đồng hồ táp-lô và thông báo trên màn hình điều khiển trung tâm.",
-      "text_ocr_patterns": ["Áp suất quá cao", "High Pressure", "Áp suất cao"]
+      "text_ocr_patterns": [
+        "Áp suất quá cao",
+        "High Pressure",
+        "Áp suất cao"
+      ]
     },
     "immediate_actions": [
       "Giảm tốc độ vận hành, hạn chế phanh gấp hoặc chở quá tải.",
@@ -132,7 +145,12 @@
     "visual_clues": {
       "icon_description": "Biểu tượng cảnh báo nhiệt độ kèm thông số nhiệt độ (°C) hiển thị màu vàng cam tại bánh xe bị quá nhiệt trên giao diện màn hình.",
       "display_location": "Màn hình đa thông tin người lái và thông báo pop-up trung tâm.",
-      "text_ocr_patterns": ["Nhiệt độ lốp cao", "High Temp", "Nhiệt độ vượt ngưỡng", "°C"]
+      "text_ocr_patterns": [
+        "Nhiệt độ lốp cao",
+        "High Temp",
+        "Nhiệt độ vượt ngưỡng",
+        "°C"
+      ]
     },
     "immediate_actions": [
       "Chủ động giảm tốc độ hành trình, tìm trạm dừng nghỉ hoặc lề đường an toàn có bóng râm.",
@@ -171,7 +189,13 @@
     "visual_clues": {
       "icon_description": "Đèn TPMS màu vàng nhấp nháy trong khoảng 1 phút khi bật xe, sau đó chuyển sang sáng liên tục; trên màn hình hiển thị gạch ngang '--' hoặc icon cảm biến bị gạch chéo tại vị trí bánh xe lỗi.",
       "display_location": "Bảng đồng hồ táp-lô và màn hình trung tâm.",
-      "text_ocr_patterns": ["Lỗi cảm biến", "Mất tín hiệu", "Sensor Error", "-- bar", "-- psi"]
+      "text_ocr_patterns": [
+        "Lỗi cảm biến",
+        "Mất tín hiệu",
+        "Sensor Error",
+        "-- bar",
+        "-- psi"
+      ]
     },
     "immediate_actions": [
       "Xe vẫn có thể tiếp tục di chuyển an toàn nhưng không được chủ quan vì hệ thống đang mù áp suất tại bánh xe này.",
@@ -209,7 +233,11 @@
     "visual_clues": {
       "icon_description": "Biểu tượng pin yếu hoặc thông báo chữ hiển thị trong danh mục cài đặt thông tin lốp của màn hình trung tâm.",
       "display_location": "Màn hình giải trí trung tâm trong mục Cài đặt xe / Áp suất lốp.",
-      "text_ocr_patterns": ["Pin cảm biến yếu", "Pin thấp", "Low Sensor Battery"]
+      "text_ocr_patterns": [
+        "Pin cảm biến yếu",
+        "Pin thấp",
+        "Low Sensor Battery"
+      ]
     },
     "immediate_actions": [
       "Không ảnh hưởng tức thì đến an toàn chuyến đi hiện tại.",
@@ -246,7 +274,12 @@
     "visual_clues": {
       "icon_description": "Đèn cảnh báo TPMS nhấp nháy liên tục 1 phút rồi sáng giữ nguyên; màn hình trung tâm hiện pop-up cảnh báo lỗi toàn bộ hệ thống theo dõi áp suất lốp.",
       "display_location": "Bảng đồng hồ táp-lô và thông báo hệ thống trung tâm.",
-      "text_ocr_patterns": ["Kiểm tra TPMS", "Lỗi hệ thống", "TPMS System Failure", "Check TPMS"]
+      "text_ocr_patterns": [
+        "Kiểm tra TPMS",
+        "Lỗi hệ thống",
+        "TPMS System Failure",
+        "Check TPMS"
+      ]
     },
     "immediate_actions": [
       "Thử tắt máy, khóa xe, đợi khoảng 3 phút rồi khởi động lại xe xem hệ thống có tự phục hồi không.",
@@ -284,7 +317,12 @@
     "visual_clues": {
       "icon_description": "Biểu tượng đèn TPMS vàng trên góc màn hình trung tâm 15.6 inch và màn hình HUD kính lái; đồ họa xe hiển thị bánh xe đỏ kèm cảnh báo âm thanh bíp dồn dập.",
       "display_location": "Màn hình trung tâm 15.6 inch và màn hình hiển thị kính lái HUD.",
-      "text_ocr_patterns": ["Tire Leak", "Áp suất giảm nhanh", "Rò rỉ áp suất lốp", "TPMS"]
+      "text_ocr_patterns": [
+        "Tire Leak",
+        "Áp suất giảm nhanh",
+        "Rò rỉ áp suất lốp",
+        "TPMS"
+      ]
     },
     "immediate_actions": [
       "Giữ vững tay lái hai tay, nhả chân ga từ từ, không đạp mạnh phanh.",
@@ -323,7 +361,11 @@
     "visual_clues": {
       "icon_description": "Biểu tượng TPMS vàng hổ phách hiển thị trên thanh trạng thái phía trên màn hình trung tâm 15.6 inch và thông số bar của bánh xe chuyển màu vàng.",
       "display_location": "Thanh trạng thái và widget Trạng thái xe trên màn hình 15.6 inch.",
-      "text_ocr_patterns": ["Áp suất thấp", "Low Pressure", "Kiểm tra lốp xe"]
+      "text_ocr_patterns": [
+        "Áp suất thấp",
+        "Low Pressure",
+        "Kiểm tra lốp xe"
+      ]
     },
     "immediate_actions": [
       "Kiểm tra trị số áp suất từng bánh trên widget màn hình trung tâm.",
@@ -361,7 +403,11 @@
     "visual_clues": {
       "icon_description": "Biểu tượng TPMS vàng trên thanh trạng thái và thông số lốp hiển thị màu cam/vàng (> 3.2 bar).",
       "display_location": "Màn hình trung tâm 15.6 inch.",
-      "text_ocr_patterns": ["Áp suất quá cao", "High Pressure", "Vượt ngưỡng an toàn"]
+      "text_ocr_patterns": [
+        "Áp suất quá cao",
+        "High Pressure",
+        "Vượt ngưỡng an toàn"
+      ]
     },
     "immediate_actions": [
       "Giảm tốc độ, tránh phóng nhanh vượt ẩu trên đường gồ ghề.",
@@ -399,7 +445,11 @@
     "visual_clues": {
       "icon_description": "Biểu tượng cảnh báo nhiệt độ lốp trên màn hình trung tâm kèm số đo nhiệt độ từng bánh xe màu cam đỏ.",
       "display_location": "Tab Trạng thái lốp trên màn hình 15.6 inch.",
-      "text_ocr_patterns": ["Nhiệt độ lốp cao", "Overheat", "°C"]
+      "text_ocr_patterns": [
+        "Nhiệt độ lốp cao",
+        "Overheat",
+        "°C"
+      ]
     },
     "immediate_actions": [
       "Giảm tốc độ xe và dừng tại trạm dừng chân an toàn.",
@@ -437,7 +487,12 @@
     "visual_clues": {
       "icon_description": "Đèn TPMS vàng trên thanh trạng thái nhấp nháy 1 phút rồi sáng đứng; bánh xe trên màn hình hiển thị dấu chấm hỏi (?) hoặc nét gạch (--).",
       "display_location": "Thanh trạng thái và widget lốp trên màn hình 15.6 inch.",
-      "text_ocr_patterns": ["Lỗi cảm biến", "Không nhận diện", "Sensor Fault", "--"]
+      "text_ocr_patterns": [
+        "Lỗi cảm biến",
+        "Không nhận diện",
+        "Sensor Fault",
+        "--"
+      ]
     },
     "immediate_actions": [
       "Kiểm tra lốp bằng mắt thường và thiết bị đo áp suất cầm tay.",
@@ -474,7 +529,11 @@
     "visual_clues": {
       "icon_description": "Thông báo chữ trong trung tâm thông báo (Notification Center) của màn hình điều khiển 15.6 inch.",
       "display_location": "Trung tâm thông báo màn hình trung tâm 15.6 inch.",
-      "text_ocr_patterns": ["Pin cảm biến yếu", "Pin yếu", "Sensor Battery Low"]
+      "text_ocr_patterns": [
+        "Pin cảm biến yếu",
+        "Pin yếu",
+        "Sensor Battery Low"
+      ]
     },
     "immediate_actions": [
       "Không ảnh hưởng tức thì đến an toàn lái xe.",
@@ -511,7 +570,11 @@
     "visual_clues": {
       "icon_description": "Đèn TPMS vàng trên thanh trạng thái nhấp nháy 60 giây rồi sáng liên tục, kèm popup thông báo hệ thống trên màn hình 15.6 inch.",
       "display_location": "Màn hình trung tâm 15.6 inch và màn hình HUD.",
-      "text_ocr_patterns": ["Lỗi hệ thống TPMS", "Không khả dụng", "TPMS Error"]
+      "text_ocr_patterns": [
+        "Lỗi hệ thống TPMS",
+        "Không khả dụng",
+        "TPMS Error"
+      ]
     },
     "immediate_actions": [
       "Thử khởi động lại hệ thống màn hình trung tâm (soft reset màn hình) hoặc tắt nguồn xe trong vài phút.",
@@ -548,7 +611,11 @@
     "visual_clues": {
       "icon_description": "Đèn TPMS màu vàng sáng liên tục trên màn hình công-tơ-mét 7 inch và hình minh họa xe nháy cảnh báo bánh xe mất áp suất.",
       "display_location": "Bảng đồng hồ thông tin lái 7 inch sau vô lăng.",
-      "text_ocr_patterns": ["Rò rỉ lốp", "Áp suất giảm nhanh", "TPMS"]
+      "text_ocr_patterns": [
+        "Rò rỉ lốp",
+        "Áp suất giảm nhanh",
+        "TPMS"
+      ]
     },
     "immediate_actions": [
       "Giữ chắc vô lăng, từ từ buông chân ga, không phanh gấp.",
@@ -586,7 +653,11 @@
     "visual_clues": {
       "icon_description": "Đèn biểu tượng vành lốp xe kèm dấu chấm than màu vàng sáng liên tục trên cụm đồng hồ 7 inch.",
       "display_location": "Bảng đồng hồ thông tin lái 7 inch sau vô lăng.",
-      "text_ocr_patterns": ["Áp suất thấp", "Low Pressure", "TPMS"]
+      "text_ocr_patterns": [
+        "Áp suất thấp",
+        "Low Pressure",
+        "TPMS"
+      ]
     },
     "immediate_actions": [
       "Duy trì tốc độ ổn định, không phanh gấp hay ôm cua gấp.",
@@ -624,7 +695,10 @@
     "visual_clues": {
       "icon_description": "Đèn TPMS sáng kèm thông số áp suất trên màn hình chuyển màu vàng cam.",
       "display_location": "Bảng đồng hồ 7 inch.",
-      "text_ocr_patterns": ["Áp suất quá cao", "High Pressure"]
+      "text_ocr_patterns": [
+        "Áp suất quá cao",
+        "High Pressure"
+      ]
     },
     "immediate_actions": [
       "Giảm tốc độ, tránh đi qua đoạn đường xấu gồ ghề.",
@@ -661,7 +735,11 @@
     "visual_clues": {
       "icon_description": "Biểu tượng cảnh báo nhiệt độ lốp kèm thông số °C chuyển màu vàng trên màn hình thông tin lái.",
       "display_location": "Bảng đồng hồ 7 inch.",
-      "text_ocr_patterns": ["Nhiệt độ lốp cao", "Overheat", "°C"]
+      "text_ocr_patterns": [
+        "Nhiệt độ lốp cao",
+        "Overheat",
+        "°C"
+      ]
     },
     "immediate_actions": [
       "Giảm tốc độ, tìm chỗ đỗ râm mát dừng xe nghỉ ngơi 30-40 phút.",
@@ -699,7 +777,11 @@
     "visual_clues": {
       "icon_description": "Đèn TPMS nháy vàng 1 phút rồi sáng liên tục; trị số áp suất tại bánh xe hiển thị dấu gạch ngang (--).",
       "display_location": "Bảng đồng hồ 7 inch.",
-      "text_ocr_patterns": ["Lỗi cảm biến", "Mất tín hiệu", "--"]
+      "text_ocr_patterns": [
+        "Lỗi cảm biến",
+        "Mất tín hiệu",
+        "--"
+      ]
     },
     "immediate_actions": [
       "Kiểm tra lốp bằng mắt thường để đảm bảo không bị xẹp.",
@@ -736,7 +818,10 @@
     "visual_clues": {
       "icon_description": "Thông báo chữ hiển thị trên màn hình lái 7 inch trong mục menu thông tin xe.",
       "display_location": "Bảng đồng hồ 7 inch.",
-      "text_ocr_patterns": ["Pin cảm biến thấp", "Pin yếu"]
+      "text_ocr_patterns": [
+        "Pin cảm biến thấp",
+        "Pin yếu"
+      ]
     },
     "immediate_actions": [
       "Không ảnh hưởng khẩn cấp đến an toàn.",
@@ -773,7 +858,11 @@
     "visual_clues": {
       "icon_description": "Đèn TPMS nhấp nháy 1 phút rồi sáng giữ nguyên trên màn hình công-tơ-mét 7 inch.",
       "display_location": "Bảng đồng hồ 7 inch.",
-      "text_ocr_patterns": ["Kiểm tra TPMS", "Lỗi TPMS", "Check TPMS"]
+      "text_ocr_patterns": [
+        "Kiểm tra TPMS",
+        "Lỗi TPMS",
+        "Check TPMS"
+      ]
     },
     "immediate_actions": [
       "Thử tắt xe khóa cửa trong 3 phút rồi khởi động lại.",

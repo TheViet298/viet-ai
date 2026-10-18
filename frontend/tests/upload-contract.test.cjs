@@ -11,7 +11,7 @@ function load(relative, overrides = {}) {
   }).outputText;
   const module = { exports: {} };
   const scope = { module, exports: module.exports, process: { env: {} }, window: {},
-    localStorage: { getItem: () => null }, FormData, ...overrides };
+    localStorage: { getItem: () => null }, FormData, AbortSignal, ...overrides };
   vm.runInNewContext(code, scope);
   return module.exports;
 }

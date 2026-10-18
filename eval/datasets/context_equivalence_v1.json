@@ -1,0 +1,617 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "id": "overview",
+      "domain": "product",
+      "goal": [
+        "overview"
+      ],
+      "cards": "required",
+      "variants": [
+        "Tư vấn về VF7",
+        "tư vấn vf7",
+        "tư vấn xe vf7",
+        "tu van vf7",
+        "tôi muốn hỏi về vf7",
+        "toi muon hoi ve vf7",
+        "Cho tôi thông tin về VF7",
+        "Tôi muốn tìm hiểu VF7",
+        "Bạn tư vấn giúp tôi về VF7 nhé",
+        "VF7 có những phiên bản nào?",
+        "Tôi muốn mua VF7"
+      ]
+    },
+    {
+      "id": "quote",
+      "domain": "price",
+      "goal": [
+        "quote"
+      ],
+      "variants": [
+        "Giá lăn bánh VF8 Plus ở Hà Nội bao nhiêu?",
+        "gia lan banh vf8 plus o ha noi bao nhieu",
+        "VF8 Plus giá bao nhiêu?",
+        "Tôi muốn biết giá niêm yết VF8 Plus",
+        "Cho tôi xin báo giá VF8 Plus",
+        "Mua VF8 Plus ở Hà Nội cần tổng bao nhiêu tiền?"
+      ]
+    },
+    {
+      "id": "test-drive",
+      "domain": "test_drive",
+      "goal": [
+        "test_drive"
+      ],
+      "variants": [
+        "Tôi muốn đăng ký lái thử VF8",
+        "toi muon dang ky lai thu vf8",
+        "Đặt lịch lái thử VF8 giúp tôi",
+        "Tôi muốn trải nghiệm lái VF8",
+        "Tôi có thể chạy thử VF8 ở đâu?",
+        "Làm thế nào để đăng ký lái thử VF8?"
+      ]
+    },
+    {
+      "id": "warranty-duration",
+      "domain": "warranty",
+      "goal": [
+        "warranty"
+      ],
+      "cards": "forbidden",
+      "variants": [
+        "VF8 được bảo hành bao lâu?",
+        "vf8 duoc bao hanh bao lau",
+        "Thời hạn bảo hành VF8 là bao nhiêu?",
+        "Tôi muốn hỏi về bảo hành VF8",
+        "Bảo hành của VF8 kéo dài mấy năm?",
+        "Bạn giải thích giúp chính sách bảo hành VF8"
+      ]
+    },
+    {
+      "id": "warranty-battery",
+      "domain": "warranty",
+      "goal": [
+        "warranty"
+      ],
+      "cards": "forbidden",
+      "variants": [
+        "Pin cao áp VF8 bảo hành bao lâu?",
+        "pin cao ap vf8 bao hanh bao lau",
+        "Tôi hỏi chính sách bảo hành pin VF8",
+        "VF8 dùng dịch vụ có được bảo hành pin không?",
+        "Nếu pin VF8 bị hỏng thì có được bảo hành không?"
+      ]
+    },
+    {
+      "id": "maintenance",
+      "domain": "maintenance",
+      "goal": [
+        "maintenance"
+      ],
+      "cards": "forbidden",
+      "variants": [
+        "VF8 bao lâu cần bảo dưỡng?",
+        "vf8 bao lau can bao duong",
+        "Khi nào tôi phải đưa VF8 đi bảo dưỡng?",
+        "Mốc bảo dưỡng định kỳ VF8 là gì?",
+        "Tôi muốn hỏi lịch bảo dưỡng của VF8",
+        "Xe VF8 chạy 12000 km cần bảo dưỡng gì?"
+      ]
+    },
+    {
+      "id": "maintenance-booking",
+      "domain": "maintenance",
+      "goal": [
+        "maintenance"
+      ],
+      "cards": "forbidden",
+      "variants": [
+        "Tôi muốn đặt lịch bảo dưỡng VF8",
+        "toi muon dat lich bao duong vf8",
+        "Đặt hẹn bảo dưỡng VF8 giúp tôi",
+        "Tôi muốn hẹn kiểm tra định kỳ VF8",
+        "Có thể đăng ký bảo dưỡng VF8 ở đâu?"
+      ]
+    },
+    {
+      "id": "charging-time",
+      "domain": "charging",
+      "goal": [
+        "charging"
+      ],
+      "variants": [
+        "VF8 sạc nhanh mất bao lâu?",
+        "vf8 sac nhanh mat bao lau",
+        "Thời gian sạc đầy VF8 là bao nhiêu?",
+        "Bao lâu sạc đầy VF8?",
+        "Sạc VF8 từ 10% đến 70% mất mấy phút?",
+        "Tôi muốn hỏi thời gian nạp đầy pin VF8"
+      ]
+    },
+    {
+      "id": "range",
+      "domain": "range",
+      "goal": [
+        "range"
+      ],
+      "variants": [
+        "VF8 đi được bao nhiêu km một lần sạc?",
+        "vf8 di duoc bao nhieu km mot lan sac",
+        "VF8 chạy được bao xa khi sạc đầy?",
+        "Sạc đầy VF8 thì đi được bao xa?",
+        "Quãng đường di chuyển VF8 là bao nhiêu?",
+        "Tầm hoạt động của VF8 bao nhiêu km?"
+      ]
+    },
+    {
+      "id": "capacity",
+      "domain": "battery",
+      "goal": [
+        "capacity"
+      ],
+      "variants": [
+        "Dung lượng pin VF8 là bao nhiêu?",
+        "dung luong pin vf8 la bao nhieu",
+        "Pin VF8 bao nhiêu kWh?",
+        "VF8 chứa được bao nhiêu điện trong pin?",
+        "Tôi muốn hỏi sức chứa pin VF8"
+      ]
+    },
+    {
+      "id": "colors",
+      "domain": "appearance",
+      "goal": [
+        "appearance"
+      ],
+      "cards": "forbidden",
+      "variants": [
+        "VF8 Plus có những màu gì?",
+        "vf8 plus co nhung mau gi",
+        "VF8 Plus có màu trắng không?",
+        "Màu ngoại thất VF8 Plus gồm những màu nào?",
+        "Tôi muốn hỏi các tùy chọn màu VF8 Plus",
+        "VF8 có màu nội thất gì?"
+      ]
+    },
+    {
+      "id": "app-login",
+      "domain": "application",
+      "goal": [
+        null,
+        "application"
+      ],
+      "cards": "forbidden",
+      "variants": [
+        "Làm thế nào để đăng nhập ứng dụng VinFast?",
+        "lam the nao de dang nhap ung dung vinfast",
+        "Hướng dẫn đăng nhập app VinFast",
+        "Tôi muốn hỏi cách vào tài khoản VinFast",
+        "Tôi quên mật khẩu ứng dụng VinFast thì làm sao?"
+      ]
+    },
+    {
+      "id": "charging-station",
+      "domain": "charging_network",
+      "goal": [
+        null,
+        "charging_network"
+      ],
+      "cards": "forbidden",
+      "variants": [
+        "Tìm trạm sạc VinFast ở đâu?",
+        "tim tram sac vinfast o dau",
+        "Làm thế nào tra cứu trạm sạc gần tôi?",
+        "Tôi muốn hỏi cách tìm điểm sạc VinFast",
+        "Xem trụ sạc còn trống ở đâu?"
+      ]
+    },
+    {
+      "id": "charging-cost",
+      "domain": "charging_network",
+      "goal": [
+        "charging_network"
+      ],
+      "cards": "forbidden",
+      "variants": [
+        "Giá sạc VF8 là bao nhiêu?",
+        "gia sac vf8 la bao nhieu",
+        "Sạc pin VF8 mất bao nhiêu tiền?",
+        "Chi phí nạp điện cho VF8 tính thế nào?",
+        "Tôi muốn hỏi tiền sạc xe VF8"
+      ],
+      "cost_subject": "charging"
+    },
+    {
+      "id": "concept",
+      "domain": "general_knowledge",
+      "goal": [
+        "concept",
+        null
+      ],
+      "cards": "forbidden",
+      "variants": [
+        "SOH là gì?",
+        "soh la gi",
+        "Giải thích SOH giúp tôi",
+        "SOC khác SOH thế nào?",
+        "Hệ thống ABS là gì?",
+        "Cảm biến áp suất lốp dùng để làm gì?"
+      ]
+    },
+    {
+      "id": "charge-incident",
+      "domain": "incident",
+      "goal": [
+        "incident"
+      ],
+      "cards": "forbidden",
+      "kind": "incident",
+      "variants": [
+        "Xe VF8 của tôi không sạc được",
+        "xe vf8 cua toi khong sac duoc",
+        "VF8 đang cắm sạc nhưng không vào điện",
+        "Tại sao xe VF8 của tôi không nhận sạc?",
+        "Trụ sạc báo CC01, xe VF8 không sạc được"
+      ]
+    },
+    {
+      "id": "brake-emergency",
+      "domain": "safety",
+      "goal": [
+        "incident"
+      ],
+      "cards": "forbidden",
+      "emergency": true,
+      "variants": [
+        "Xe VF8 của tôi đang mất phanh",
+        "xe vf8 cua toi dang mat phanh",
+        "Phanh VF8 không ăn",
+        "phanh ko an",
+        "Xe tôi đang mất phanh có phải không?",
+        "Xe đang mất phanh có đúng không?",
+        "Tôi đang lái xe mất phanh, giải thích giúp tôi"
+      ]
+    },
+    {
+      "id": "smoke-emergency",
+      "domain": "safety",
+      "goal": [
+        "incident"
+      ],
+      "cards": "forbidden",
+      "emergency": true,
+      "variants": [
+        "Xe VF8 đang bốc khói",
+        "xe vf8 dang boc khoi",
+        "Xe tôi bốc khói và có mùi khét",
+        "Xe tôi đang bốc khói có phải không?",
+        "Xe đang cháy có đúng không?"
+      ]
+    },
+    {
+      "id": "hypothetical-hazard",
+      "domain": "safety_negation",
+      "goal": [
+        null,
+        "incident"
+      ],
+      "cards": "forbidden",
+      "emergency": false,
+      "variants": [
+        "Nếu VF8 mất phanh thì cần làm gì?",
+        "neu vf8 mat phanh thi can lam gi",
+        "Hôm qua xe có khói nhưng hiện đã hết, tôi muốn hỏi nguyên nhân",
+        "Xe tôi không bị mất phanh, tôi chỉ hỏi nghĩa ABS",
+        "Xe không bốc khói, tôi hỏi cách bảo dưỡng"
+      ],
+      "expectations": {
+        "3": {
+          "goal": [
+            "concept"
+          ]
+        },
+        "4": {
+          "goal": [
+            "maintenance"
+          ]
+        }
+      }
+    },
+    {
+      "id": "complaint",
+      "domain": "complaint",
+      "goal": [
+        null,
+        "complaint",
+        "incident"
+      ],
+      "cards": "forbidden",
+      "variants": [
+        "Tôi muốn khiếu nại chất lượng dịch vụ",
+        "toi muon khieu nai chat luong dich vu",
+        "Tôi muốn phản ánh việc sửa xe VF8",
+        "Tôi không hài lòng và cần khiếu nại về showroom",
+        "Tôi yêu cầu hoàn tiền dịch vụ sửa chữa VF8"
+      ]
+    },
+    {
+      "id": "out-of-scope",
+      "domain": "scope",
+      "goal": [
+        null,
+        "out_of_scope"
+      ],
+      "cards": "forbidden",
+      "variants": [
+        "Thời tiết Hà Nội hôm nay thế nào?",
+        "Hướng dẫn nấu phở",
+        "Tư vấn mua xe Tesla",
+        "Giúp tôi làm bài tập toán"
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "quote-to-app",
+      "domain": "transition",
+      "turns": [
+        "Giá lăn bánh VF8 Plus?",
+        "Hướng dẫn đăng nhập ứng dụng VinFast"
+      ],
+      "goal": [
+        null,
+        "application"
+      ],
+      "cards": "forbidden",
+      "forbid_quote": true
+    },
+    {
+      "id": "quote-to-warranty",
+      "domain": "transition",
+      "turns": [
+        "Giá lăn bánh VF8 Plus?",
+        "Tôi muốn hỏi bảo hành VF7"
+      ],
+      "goal": [
+        "warranty"
+      ],
+      "cards": "forbidden",
+      "forbid_quote": true
+    },
+    {
+      "id": "quote-to-overview",
+      "domain": "transition",
+      "turns": [
+        "Giá lăn bánh VF8 Plus?",
+        "tôi muốn hỏi về vf7"
+      ],
+      "goal": [
+        "overview"
+      ],
+      "cards": "required",
+      "forbid_quote": true
+    },
+    {
+      "id": "quote-supply",
+      "domain": "memory",
+      "turns": [
+        "Giá lăn bánh VF8?",
+        "VF8 Plus mua kèm pin ở Hà Nội"
+      ],
+      "goal": [
+        "quote"
+      ],
+      "facts": {
+        "version": "Plus",
+        "city": "Hà Nội",
+        "battery": "mua kèm pin"
+      }
+    },
+    {
+      "id": "model-switch-warranty",
+      "domain": "memory",
+      "turns": [
+        "Bảo hành VF8 bao lâu?",
+        "Còn VF5 thì sao?"
+      ],
+      "goal": [
+        "warranty"
+      ],
+      "subject": "VF5",
+      "cards": "forbidden"
+    },
+    {
+      "id": "component-correction",
+      "domain": "memory",
+      "turns": [
+        "Bảo hành pin VF8 bao lâu?",
+        "Pin cao áp, không phải ắc quy 12V"
+      ],
+      "goal": [
+        "warranty"
+      ],
+      "facts": {
+        "component": "pin cao áp"
+      },
+      "cards": "forbidden"
+    },
+    {
+      "id": "range-claim-challenge",
+      "domain": "evidence",
+      "turns": [
+        "VF8 đi được bao nhiêu km?",
+        "500 hay 450 km đúng?"
+      ],
+      "goal": [
+        "range"
+      ],
+      "move": "verify_claim"
+    },
+    {
+      "id": "unknown-version",
+      "domain": "memory",
+      "turns": [
+        "Dung lượng pin VF8?",
+        "Tôi không biết xe Eco hay Plus",
+        "Tôi đã nói không biết phiên bản rồi, còn tư vấn được không?"
+      ],
+      "goal": [
+        "capacity"
+      ],
+      "unknown_facts": [
+        "version"
+      ]
+    },
+    {
+      "id": "drive-cancel",
+      "domain": "action",
+      "turns": [
+        "Tôi muốn đặt lái thử VF8",
+        "Thôi không đặt nữa",
+        "Tôi đã đặt được chưa?"
+      ],
+      "goal": [
+        "test_drive"
+      ],
+      "cards": "forbidden",
+      "no_completed_action": true
+    },
+    {
+      "id": "maintenance-status",
+      "domain": "action",
+      "turns": [
+        "Tôi muốn đặt lịch bảo dưỡng VF8",
+        "Tôi ở Hà Nội, chiều thứ bảy",
+        "Đã đặt lịch cho tôi chưa?"
+      ],
+      "goal": [
+        "maintenance"
+      ],
+      "cards": "forbidden",
+      "no_completed_action": true
+    },
+    {
+      "id": "drive-to-charging",
+      "domain": "transition",
+      "turns": [
+        "Tôi muốn đặt lái thử VF8",
+        "VF8 sạc nhanh mất bao lâu?"
+      ],
+      "goal": [
+        "charging"
+      ]
+    },
+    {
+      "id": "maintenance-to-app",
+      "domain": "transition",
+      "turns": [
+        "Tôi muốn đặt lịch bảo dưỡng VF8",
+        "Tôi muốn hỏi cách đổi mật khẩu ứng dụng VinFast"
+      ],
+      "goal": [
+        null,
+        "application"
+      ],
+      "cards": "forbidden"
+    },
+    {
+      "id": "new-emergency-after-info",
+      "domain": "safety",
+      "turns": [
+        "Bảo hành VF8 bao lâu?",
+        "Xe tôi đang mất phanh"
+      ],
+      "goal": [
+        "incident"
+      ],
+      "cards": "forbidden",
+      "emergency": true
+    },
+    {
+      "id": "reported-safe",
+      "domain": "safety",
+      "turns": [
+        "Xe VF8 của tôi đang bốc khói",
+        "Tôi đã dừng xe ở nơi an toàn, không còn khói"
+      ],
+      "cards": "forbidden",
+      "no_completed_action": true
+    },
+    {
+      "id": "incident-code-correction",
+      "domain": "memory",
+      "turns": [
+        "VF8 không sạc được, trụ báo CC01",
+        "Không phải CC01, tôi nói CC02"
+      ],
+      "goal": [
+        "incident"
+      ],
+      "cards": "forbidden",
+      "facts": {
+        "error_code": "CC02"
+      }
+    },
+    {
+      "id": "negation-new-hazard",
+      "domain": "safety",
+      "turns": [
+        "Xe tôi không bốc khói nhưng phanh đang không ăn"
+      ],
+      "goal": [
+        "incident"
+      ],
+      "emergency": true,
+      "cards": "forbidden"
+    },
+    {
+      "id": "mixed-actual-hypothesis",
+      "domain": "safety",
+      "turns": [
+        "Nếu pin hỏng thì sao, nhưng hiện xe tôi đang bốc khói"
+      ],
+      "goal": [
+        "incident"
+      ],
+      "emergency": true,
+      "cards": "forbidden"
+    },
+    {
+      "id": "ambiguous-shorthand",
+      "domain": "normalization",
+      "turns": [
+        "bh pin VF8",
+        "bảo hành"
+      ],
+      "goal": [
+        "warranty"
+      ],
+      "subject": "VF8",
+      "cards": "forbidden"
+    },
+    {
+      "id": "no-fabricated-date",
+      "domain": "action",
+      "turns": [
+        "Tôi muốn lái thử VF8 tại Hà Nội thứ bảy",
+        "Có thể đặt giúp tôi luôn không?"
+      ],
+      "goal": [
+        "test_drive"
+      ],
+      "no_completed_action": true
+    },
+    {
+      "id": "greeting-plus-intent",
+      "domain": "normalization",
+      "turns": [
+        "Xin chào, tôi muốn hỏi về VF7"
+      ],
+      "goal": [
+        "overview"
+      ],
+      "cards": "required"
+    }
+  ]
+}

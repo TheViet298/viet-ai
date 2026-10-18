@@ -19,6 +19,7 @@ class ConversationFact(BaseModel):
 
 
 class ConversationContext(BaseModel):
+    preferred_language: Literal['vi', 'en'] = 'vi'
     schema_version: int = 1
     active_goal: str | None = None
     topic: str = ''
@@ -34,6 +35,9 @@ class TurnUnderstanding(BaseModel):
     goal: str | None = None
     topic: str = ''
     subject: str | None = None
+    request_kind: Literal['faq', 'incident', 'complaint', 'oos', 'uncertain'] = 'uncertain'
+    cost_subject: Literal['vehicle_purchase', 'charging', 'battery_rental', 'maintenance', 'repair'] | None = None
+    source_need: Literal['catalog', 'policy', 'manual', 'guide'] | None = None
     updates: dict[str, str | None] = Field(default_factory=dict)
     retracted_fields: list[str] = Field(default_factory=list)
     needs_confirmation: bool = False
@@ -81,6 +85,9 @@ def user_updates(text: str) -> dict[str, str | None]:
     time_window = re.search(r'\b(?:sáng|chiều|tối|sang|chieu|toi)\s+(?:thứ bảy|chủ nhật|thu bay|chu nhat|\d{1,2}h)', text, re.I)
     if time_window:
         updates['time_window'] = time_window[0]
+    relative_time = re.search(r'\b(sang|chieu|toi)\s+(?:ngay\s+)?mai\b', lower)
+    if relative_time:
+        updates['time_window'] = {'sang': 'sáng', 'chieu': 'chiều', 'toi': 'tối'}[relative_time[1]]
     if 'pin cao ap' in lower:
         updates['component'] = 'pin cao áp'
     elif re.search(r'ac quy|pin 12\s*v', lower):
@@ -88,8 +95,9 @@ def user_updates(text: str) -> dict[str, str | None]:
     soc = re.search(r'(?:pin (?:con|o)|soc)\s*(\d{1,3})\s*%', lower)
     if soc and 0 <= int(soc[1]) <= 100:
         updates['soc'] = soc[1] + '%'
-    error = re.search(r'\b(?:cc\d{2}|e\d{3}|p\d{4}|bms_\d{3})\b', lower)
-    if error and not re.search(r'khong phai|khong con', lower):
+    from src.services.chat_classification import without_denied_reports
+    error = re.search(r'\b(?:cc\d{2}|e\d{3}|p\d{4}|bms_\d{3})\b', normalized(without_denied_reports(text)))
+    if error:
         updates['error_code'] = error[0].upper()
     year = re.search(r'(?:doi|nam san xuat|xe nam)\s*(20\d{2})', lower)
     if year:
@@ -97,15 +105,30 @@ def user_updates(text: str) -> dict[str, str | None]:
     date = re.search(r'\b\d{1,2}/\d{1,2}(?:/\d{4})?\b|thu bay|chu nhat|ngay mai|hom nay', lower)
     if date:
         updates['date'] = date[0]
+    elif relative_time:
+        updates['date'] = 'ngay mai'
     for slot, pattern in {'version': 'phien ban', 'city': 'tinh|thanh|noi dang ky',
                           'battery': 'pin', 'year': 'doi xe|nam san xuat'}.items():
         if re.search(r'(?:khong biet|chua biet|khong nho).{0,25}(?:' + pattern + ')', lower):
             updates[slot] = None
     if re.search(r'(?:khong biet|chua biet|khong nho).{0,30}(?:eco|plus)', lower):
         updates['version'] = None
-    if re.search(r'den.*(?:tat|het)|da an toan|khong con.*canh bao', lower):
-        updates['reported_condition'] = 'khách báo cảnh báo đã hết/an toàn'
+    if re.search(r'den.*(?:tat|het)|khong con.*canh bao', lower):
+        updates['reported_condition'] = 'khách báo cảnh báo đã hết'
+    if re.search(r'da (?:o noi )?an toan', lower):
+        updates['reported_condition'] = 'khách báo đã ở nơi an toàn'
     return updates
+
+
+def cost_subject_for(text: str) -> str | None:
+    lower = normalized(text)
+    return next((cost for cost, pattern in [
+        ('battery_rental', r'thue pin'),
+        ('maintenance', r'\b(?:gia|phi|tien)\b.{0,20}bao duong|bao duong.{0,35}\b(?:gia|phi|tien|chi phi)\b'),
+        ('repair', r'\b(?:gia|phi|tien)\b.{0,20}(?:sua|thay|phu tung)|(?:sua chua|thay pin|thay lop|phu tung).{0,35}\b(?:gia|phi|tien|chi phi)\b'),
+        ('charging', r'\b(?:gia|phi|tien|chi phi)\b.{0,25}(?:sac|nap dien)|(?:sac|nap dien).{0,35}\b(?:gia|phi|tien|chi phi|tinh phi)\b'),
+        ('vehicle_purchase', r'(?<!danh )\bgia\b|lan banh|tra gop|uu dai|mua.{0,60}bao nhieu tien'),
+    ] if re.search(pattern, lower)), None)
 
 
 async def understand_turn(text: str, context: ConversationContext, recent_turns: list[dict], budget: dict) -> TurnUnderstanding:
@@ -116,17 +139,31 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
     updates = user_updates(text)
     goal = context.active_goal
     topic = context.topic
+    cost_subject = cost_subject_for(text)
     explicit_goal = next((g for g, pattern in [
-        ('quote', r'\bgia\b|lan banh|tra gop|uu dai'),
-        ('test_drive', r'lai thu|chay thu'),
-        ('maintenance', r'bao duong|dat lich dich vu'),
+        ('application', r'ung dung|\bapp\b|dang nhap|mat khau'),
+        ('charging_network', r'tram sac|diem sac|tru sac.*(?:dau|tim|trong)|thue pin'),
+        ('quote', r'(?<!danh )\bgia\b|lan banh|tra gop|uu dai|mua.{0,60}bao nhieu tien'),
+        ('test_drive', r'lai thu|chay thu|trai nghiem lai'),
+        ('maintenance', r'bao duong|dat lich dich vu|hen kiem tra dinh ky|dat (?:lich|hen).{0,20}sua (?:xe|chua)'),
         ('warranty', r'bao hanh'),
-        ('range', r'quang duong|di duoc|\bkm\b.*(?:dung|hay)|mot lan sac'),
-        ('charging', r'sac.*(?:bao lau|thoi gian)|sac nhanh'),
-        ('capacity', r'dung luong pin|\bkwh\b'),
-        ('appearance', r'\bmau\s+(?:gi|nao|sac|ngoai that|noi that)\b|\bco mau\b|bang mau|tuy chon mau'),
+        ('range', r'quang duong|di duoc|di bao xa|chay duoc bao xa|tam hoat dong|\bkm\b.*(?:dung|hay)|mot lan sac'),
+        ('charging', r'sac.*(?:bao lau|thoi gian|may phut)|bao lau.*sac|thoi gian (?:sac|nap)|sac nhanh'),
+        ('capacity', r'dung luong pin|suc chua|chua duoc.*dien|\bkwh\b'),
+        ('appearance', r'\bmau\s+(?:xe|gi|nao|sac|ngoai that|noi that)\b|\bco mau\b|bang mau|tuy chon mau'),
         ('concept', r'\b(?:soh|soc|bms|abs|adas)\b'),
     ] if re.search(pattern, lower)), None)
+    if cost_subject in {'charging', 'battery_rental'}:
+        explicit_goal = 'charging_network'
+    elif cost_subject in {'repair', 'maintenance'}:
+        explicit_goal = 'maintenance'
+    if classification.request_kind == 'complaint':
+        explicit_goal = 'complaint'
+    if re.search(r'thoi tiet|nau pho|bai tap toan|tesla|hyundai', lower):
+        explicit_goal = 'out_of_scope'
+    from src.services.vehicle_card_intent import is_generic_vehicle_overview, is_general_vehicle_advice
+    if is_general_vehicle_advice(text) or (not explicit_goal and is_generic_vehicle_overview(text)):
+        explicit_goal = 'overview'
     move: Move = 'new_question'
     ambiguous_reference = False
     actual_failure = classification.request_kind == 'incident'
@@ -137,7 +174,11 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
     elif re.search(r'\d+.*hay.*\d+|\d+.*\d+.*(?:nao dung|nao chinh xac)|so nao dung|con so.*dung|co chac|chinh xac khong', lower) and not classification.is_critical and not actual_failure:
         move, goal = 'verify_claim', context.active_goal
     elif move != 'new_incident':
-        if re.search(r'(?:thoi|khong).*dat|huy.*(?:lich|y dinh)|khong muon.*nua', lower):
+        if (classification.temporal_context in {'hypothetical', 'resolved_past'}
+                and context.active_goal != 'incident' and not explicit_goal
+                and (updates.get('model') or re.search(r'\b(?:phanh|khoi|chay|loi|hong)\b', lower))):
+            move, goal, topic = 'new_question', None, ''
+        elif re.search(r'(?:thoi|khong).*dat|huy.*(?:lich|y dinh)|khong muon.*nua', lower):
             move = 'cancel_intent'
         elif re.search(r'can lam gi|buoc tiep|lam gi tiep|gio.*lam sao|tiep theo', lower):
             move = 'ask_next_step'
@@ -145,11 +186,15 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
             move = 'ask_status'
         elif re.search(r'dat.*(?:luon|ngay|duoc)|(?:tao|dat|dang ky).*giup|muon dat', lower):
             move = 'request_action'
-        elif re.search(r'\b(?:sao|vi sao|tai sao)\b|giai thich|cach tinh|vi du|cu the hon', lower):
+        elif explicit_goal == 'concept' and context.active_goal == 'concept' and re.match(r'^(?:no|cai do|he thong do)\b', lower):
+            move = 'elaborate'
+        elif context.active_goal == 'warranty' and re.search(r'ap dung cho|chay dich vu|su dung kinh doanh', lower) and not explicit_goal:
             move = 'elaborate'
         elif explicit_goal and explicit_goal != context.active_goal:
             # A named model/trim in a new question is not a quote slot answer.
             move = 'new_question'
+        elif re.search(r'\b(?:sao|vi sao|tai sao)\b|giai thich|cach tinh|vi du|cu the hon', lower):
+            move = 'elaborate'
         elif updates and goal:
             if re.search(r'\b(?:nhu the nao|nhu nao|la dong|la xe gi|la xe nhu the nao)\b', lower):
                 move = 'new_question'
@@ -181,20 +226,32 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
     query = text
     if goal and move != 'new_incident':
         prefix = {'quote': 'Giá niêm yết và dự toán lăn bánh', 'test_drive': 'Đăng ký lái thử',
-                  'maintenance': 'Đặt lịch bảo dưỡng', 'warranty': 'Bảo hành',
+                  'maintenance': 'Bảo dưỡng', 'warranty': 'Bảo hành',
                   'range': 'Quãng đường một lần sạc', 'charging': 'Thời gian sạc',
                   'capacity': 'Dung lượng pin',
                   'appearance': 'Màu sắc xe',
-                  'concept': context.topic or topic}.get(goal, '')
-        facts = {k: v.value for k, v in context.facts.items() if v.status == 'confirmed'}
+                  'concept': context.topic if move != 'new_question' and context.active_goal == 'concept' else topic,
+                  'application': 'Hướng dẫn ứng dụng VinFast',
+                  'charging_network': 'Chi phí sạc' if cost_subject == 'charging' else 'Thuê pin' if cost_subject == 'battery_rental' else 'Mạng lưới trạm sạc'}.get(goal, '')
+        facts = {k: v.value for k, v in context.facts.items()
+                 if v.status == 'confirmed' and goal == context.active_goal and subject == context.subject}
         facts.update(updates)
         details = ' '.join(str(facts[k]) for k in ('version', 'battery', 'city', 'component', 'year') if facts.get(k))
         query = f'{prefix} {subject or ""} {details}. {text}'[:1000]
+        if goal == 'concept':
+            query = (f'{context.topic}. {text}' if move != 'new_question' and context.active_goal == 'concept' else text)[:1000]
     retracted = []
     denied_code = re.search(r'(?:khong con|khong phai|het).*?\b(cc\d{2}|e\d{3}|p\d{4}|bms_\d{3})\b', lower)
     if denied_code and context.facts.get('error_code') and context.facts['error_code'].value == denied_code[1].upper():
         retracted.append('error_code')
+    source_need = ('guide' if goal == 'application' or re.search(r'huong dan|cach (?:dat|su dung|tim)', lower)
+                   else 'policy' if goal in {'warranty', 'charging_network'} or cost_subject in {'maintenance', 'repair'}
+                   else 'manual' if goal in {'charging', 'incident'} or re.search(r'adas|canh bao', lower) and updates.get('model')
+                   else 'catalog' if goal in {'overview', 'range', 'capacity', 'quote', 'test_drive', 'appearance'} else None)
+    if goal == 'maintenance' and cost_subject not in {'maintenance', 'repair'}:
+        source_need = 'guide' if re.search(r'dat lich|dat hen|dang ky|hen kiem tra', lower) else 'manual'
     return TurnUnderstanding(move=move, goal=goal, topic=topic, subject=subject, updates=updates, retracted_fields=retracted,
+                             request_kind=classification.request_kind, cost_subject=cost_subject, source_need=source_need,
                              original_text=original_text, resolved_query=query,
                              needs_confirmation=ambiguous_reference or bool(goal and not explicit_goal and move == 'new_question'))
 

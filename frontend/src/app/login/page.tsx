@@ -1,6 +1,7 @@
 "use client";
+import { useLocale } from "@/features/shared/context/LocaleContext";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -18,6 +19,7 @@ import {
 import { useAuth, ProductMark, UserRole } from "@/features/shared";
 
 export default function LoginPage() {
+  const { t } = useLocale();
   const router = useRouter();
   const { login, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<"CUSTOMER" | "STAFF">("CUSTOMER");
@@ -43,8 +45,8 @@ export default function LoginPage() {
     } catch (error) {
       setErrorMessage(
         error instanceof Error
-          ? error.message
-          : "Không thể đăng nhập bằng tài khoản Demo. Vui lòng kiểm tra lại backend/database."
+          ? t("Không thể đăng nhập. Vui lòng thử lại.")
+          : t("Không thể đăng nhập bằng tài khoản Demo. Vui lòng kiểm tra lại backend/database.")
       );
     } finally {
       setDemoLoadingRole(null);
@@ -54,7 +56,7 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim() || !password) {
-      setErrorMessage("Vui lòng nhập tên đăng nhập và mật khẩu.");
+      setErrorMessage(t("Vui lòng nhập tên đăng nhập và mật khẩu."));
       return;
     }
 
@@ -68,7 +70,7 @@ export default function LoginPage() {
       }
       goToRoleHome(authenticated.role);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Không thể đăng nhập. Vui lòng thử lại.");
+      setErrorMessage(t("Không thể đăng nhập. Vui lòng thử lại."));
     } finally {
       setSubmitting(false);
     }
@@ -82,7 +84,7 @@ export default function LoginPage() {
         className="absolute top-5 left-5 sm:top-6 sm:left-6 inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-500 hover:text-slate-900 bg-white/90 hover:bg-white border border-slate-200/90 hover:border-slate-300 px-3.5 py-1.5 rounded-full shadow-2xs transition-all duration-200 hover:-translate-x-0.5 group z-10"
       >
         <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 transition-colors" />
-        <span>Về trang chủ</span>
+        <span>{t("Về trang chủ")}</span>
       </Link>
 
       <div className="w-full max-w-md">
@@ -99,11 +101,9 @@ export default function LoginPage() {
               </span>
             </Link>
             <h1 className="mt-3 text-[20px] font-bold text-[#0F172A]">
-              Đăng nhập hệ thống
-            </h1>
+              {t("Đăng nhập hệ thống")}</h1>
             <p className="mt-1 text-[13px] text-[#64748B]">
-              Chọn vai trò phù hợp để bắt đầu phiên tiếp nhận hoặc điều phối
-            </p>
+              {t("Chọn vai trò phù hợp để bắt đầu phiên tiếp nhận hoặc điều phối")}</p>
           </div>
 
           {/* Role Tab Selector - pill buttons */}
@@ -120,7 +120,7 @@ export default function LoginPage() {
                 }`}
             >
               <User className="h-3.5 w-3.5" />
-              <span>Khách hàng</span>
+              <span>{t("Khách hàng")}</span>
             </button>
 
             <button
@@ -135,7 +135,7 @@ export default function LoginPage() {
                 }`}
             >
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Kỹ thuật viên (Staff)</span>
+              <span>{t("Kỹ thuật viên (Staff)")}</span>
             </button>
           </div>
 
@@ -144,7 +144,7 @@ export default function LoginPage() {
             <div className="flex items-center justify-between mb-2.5">
               <div className="flex items-center gap-1.5 text-[12px] font-bold text-amber-900">
                 <Sparkles className="h-4 w-4 text-amber-600 shrink-0" />
-                <span>Trải nghiệm nhanh Demo Giám khảo</span>
+                <span>{t("Trải nghiệm nhanh Demo Giám khảo")}</span>
               </div>
               <span className="text-[10px] font-semibold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full uppercase tracking-wider">
                 1-Click
@@ -165,11 +165,9 @@ export default function LoginPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="text-[11.5px] font-bold text-slate-800 group-hover:text-purple-900 truncate">
-                      Vào vai Staff Demo
-                    </div>
+                      {t("Vào vai Staff Demo")}</div>
                     <div className="text-[10px] text-slate-500 truncate">
-                      Console điều phối 9 ca
-                    </div>
+                      {t("Console điều phối 9 ca")}</div>
                   </div>
                 </div>
                 {demoLoadingRole === "STAFF" ? (
@@ -192,11 +190,9 @@ export default function LoginPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="text-[11.5px] font-bold text-slate-800 group-hover:text-blue-900 truncate">
-                      Vào vai Khách Demo
-                    </div>
+                      {t("Vào vai Khách Demo")}</div>
                     <div className="text-[10px] text-slate-500 truncate">
-                      Chat & Tra cứu hồ sơ
-                    </div>
+                      {t("Chat & Tra cứu hồ sơ")}</div>
                   </div>
                 </div>
                 {demoLoadingRole === "CUSTOMER" ? (
@@ -214,13 +210,12 @@ export default function LoginPage() {
               <div className="w-full border-t border-slate-200"></div>
             </div>
             <span className="relative bg-white px-2.5 text-[10.5px] font-semibold text-slate-400 uppercase tracking-wider">
-              Hoặc đăng nhập thủ công
-            </span>
+              {t("Hoặc đăng nhập thủ công")}</span>
           </div>
 
           {/* Error notice */}
           {errorMessage && (
-            <div className="mt-3 mb-1 flex items-center gap-2 rounded-xl bg-[#FEF2F2] p-2.5 text-[12px] text-[#DC2626] border border-[#DC2626]/20">
+            <div id="login-error" role="alert" className="mt-3 mb-1 flex items-center gap-2 rounded-xl bg-[#FEF2F2] p-2.5 text-[12px] text-[#DC2626] border border-[#DC2626]/20">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
@@ -229,8 +224,8 @@ export default function LoginPage() {
           {/* Form */}
           <form onSubmit={handleLogin} className="mt-4 space-y-3.5">
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B] mb-1">
-                {activeTab === "STAFF" ? "Tài khoản Staff nội bộ" : "Số điện thoại / Tên đăng nhập"}
+              <label htmlFor="login-identifier" className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B] mb-1">
+                {activeTab === "STAFF" ? t("Tài khoản Staff nội bộ") : t("Số điện thoại / Tên đăng nhập")}
               </label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#64748B]">
@@ -238,6 +233,9 @@ export default function LoginPage() {
                 </div>
                 <input
                   type="text"
+                  id="login-identifier"
+                  aria-describedby={errorMessage ? "login-error" : undefined}
+                  aria-invalid={!!errorMessage}
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   className="w-full rounded-[10px] border border-[#E2E8F0] bg-white py-2 pl-9 pr-3 text-[13px] text-[#0F172A] placeholder-[#94A3B8] focus:border-[#1E40AF] focus:outline-none"
@@ -245,33 +243,36 @@ export default function LoginPage() {
                   placeholder={
                     activeTab === "STAFF"
                       ? "staff_service"
-                      : "Nhập số điện thoại hoặc usernam"
+                      : t("Nhập số điện thoại hoặc usernam")
                   }
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B] mb-1">
-                Mật khẩu
-              </label>
+              <label htmlFor="login-password" className="block text-[11px] font-semibold uppercase tracking-wider text-[#64748B] mb-1">
+                {t("Mật khẩu")}</label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-[#64748B]">
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
+                  id="login-password"
+                  autoComplete="current-password"
+                  aria-describedby={errorMessage ? "login-error" : undefined}
+                  aria-invalid={!!errorMessage}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full rounded-[10px] border border-[#E2E8F0] bg-white py-2 pl-9 pr-10 text-[13px] text-[#0F172A] placeholder-[#64748B] focus:border-[#1E40AF] focus:outline-none"
-                  placeholder="Nhập mật khẩu"
+                  placeholder={t("Nhập mật khẩu")}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
                   className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#64748B] hover:text-[#0F172A] transition-colors focus:outline-none"
-                  title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                  tabIndex={-1}
+                  title={showPassword ? t("Ẩn mật khẩu") : t("Hiện mật khẩu")}
+                  aria-label={showPassword ? t("Ẩn mật khẩu") : t("Hiện mật khẩu")}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -287,7 +288,7 @@ export default function LoginPage() {
               disabled={submitting}
               className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-[10px] bg-[#1E40AF] hover:bg-[#1E3A8A] py-2 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition"
             >
-              <span>{submitting ? "Đang xác thực…" : "Đăng nhập"}</span>
+              <span>{submitting ? t("Đang xác thực…") : t("Đăng nhập")}</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </form>
@@ -296,23 +297,20 @@ export default function LoginPage() {
           <div className="mt-5 border-t border-[#E2E8F0] pt-3 text-center text-[12px] text-[#64748B]">
             {activeTab === "CUSTOMER" ? (
               <p>
-                Chưa có tài khoản?{" "}
+                {t("Chưa có tài khoản?")}{" "}
                 <Link href="/register" className="font-semibold text-[#1E40AF] hover:underline">
-                  Đăng ký khách hàng mới
-                </Link>
+                  {t("Đăng ký khách hàng mới")}</Link>
               </p>
             ) : (
               <p className="text-[11px] text-[#64748B]">
-                Tài khoản Staff do quản trị viên nội bộ cấp. Không mở đăng ký công khai.
-              </p>
+                {t("Tài khoản Staff do quản trị viên nội bộ cấp. Không mở đăng ký công khai.")}</p>
             )}
           </div>
         </div>
 
         {/* Safe notice */}
         <div className="mt-3 text-center text-[11px] text-[#64748B]">
-          Chế độ No-PII Safe Mode • Không lưu thông tin CCCD hay tài khoản ngân hàng.
-        </div>
+          {t("Chế độ No-PII Safe Mode • Không lưu thông tin CCCD hay tài khoản ngân hàng.")}</div>
       </div>
     </div>
   );

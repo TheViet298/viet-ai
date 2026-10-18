@@ -1,9 +1,10 @@
 "use client";
+import { ThemeToggle } from "@/features/shared/components/ThemeToggle";
+import { useLocale } from "@/features/shared/context/LocaleContext";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
-  ScanLine,
   LayoutDashboard,
   Inbox,
   History,
@@ -14,19 +15,11 @@ import {
   LogOut,
   RefreshCw,
   Search,
-  Filter,
   CheckCircle2,
-  Clock,
   Flame,
-  AlertCircle,
-  Car,
-  ChevronRight,
   ExternalLink,
-  MessageSquare,
-  ShieldCheck,
   MapPin,
   Sparkles,
-  ArrowRight,
   X,
   Star,
   Check,
@@ -38,12 +31,19 @@ import {
 } from "lucide-react";
 import { useAuth, ProductMark } from "@/features/shared";
 import { useTickets } from "../hooks/useTickets";
-import { TicketItem, TicketStatus, VIETNAMESE_STATUS_MAP, VIETNAMESE_PRIORITY_MAP } from "../types";
+import { TicketItem, TicketStatus, VIETNAMESE_STATUS_MAP } from "../types";
 import { TicketDetailPanel } from "./TicketDetailPanel";
 import { sendChatMessage, getPublicArticles } from "@/features/chat/api/chatApi";
 import { ArticleItem } from "@/features/chat/types";
 
 import { cleanTicketHeadline } from "./TicketDetailPanel";
+
+const PRIORITY_WEIGHT: Record<string, number> = {
+  CRITICAL: 4,
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+};
 
 export type ConsoleTab =
   | "queue"
@@ -55,35 +55,28 @@ export type ConsoleTab =
   | "profile";
 
 // Helper tính thời gian chờ tương đối: "chờ 12 phút", "chờ 2 giờ", "chờ 3 ngày"
-export function getRelativeWaitTime(dateStr?: string): string {
-  if (!dateStr) return "chờ --";
+export function getRelativeWaitTime(dateStr?: string, language = "vi"): string {
+  if (!dateStr) return language === "en" ? "waiting --" : "chờ --";
   try {
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return "chờ --";
+    if (isNaN(d.getTime())) return language === "en" ? "waiting --" : "chờ --";
     const now = new Date();
     const diffMs = now.getTime() - d.getTime();
-    if (diffMs < 0) return "vừa xong";
+    if (diffMs < 0) return language === "en" ? "just now" : "vừa xong";
     const diffMins = Math.floor(diffMs / (1000 * 60));
-    if (diffMins < 1) return "vừa xong";
-    if (diffMins < 60) return `chờ ${diffMins} phút`;
+    if (diffMins < 1) return language === "en" ? "just now" : "vừa xong";
+    if (diffMins < 60) return language === "en" ? `waiting ${diffMins} min` : `chờ ${diffMins} phút`;
     const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `chờ ${diffHours} giờ`;
+    if (diffHours < 24) return language === "en" ? `waiting ${diffHours} h` : `chờ ${diffHours} giờ`;
     const diffDays = Math.floor(diffHours / 24);
-    return `chờ ${diffDays} ngày`;
+    return language === "en" ? `waiting ${diffDays} d` : `chờ ${diffDays} ngày`;
   } catch {
-    return "chờ --";
+    return language === "en" ? "waiting --" : "chờ --";
   }
 }
 
-// Rút gọn mã case: CASE-20261004-001 -> 001
-function getShortTicketId(id: string): string {
-  const match = id.match(/(\d{3,4})$/);
-  if (match) return match[1];
-  return id.replace(/^CASE-/i, "");
-}
-
 // Lấy tiêu đề sự cố thật từ tóm tắt AI hoặc fallback theo intent/xe
-function getTicketDisplayTitle(ticket: TicketItem): string {
+function getTicketDisplayTitle(ticket: TicketItem, language = "vi"): string {
   if (
     ticket.issue_summary &&
     ticket.issue_summary.trim() &&
@@ -92,35 +85,35 @@ function getTicketDisplayTitle(ticket: TicketItem): string {
     return ticket.issue_summary;
   }
   if (ticket.error_code_short) {
-    return `Sự cố lỗi ${ticket.error_code_short} trên xe ${ticket.vehicle_model}`;
+    return language === "en" ? `Fault ${ticket.error_code_short} on ${ticket.vehicle_model}` : `Sự cố lỗi ${ticket.error_code_short} trên xe ${ticket.vehicle_model}`;
   }
   if (ticket.intent === "Charging/Battery") {
-    return `Sự cố trạm sạc & pin xe ${ticket.vehicle_model}`;
+    return language === "en" ? `Charging station & battery issue on ${ticket.vehicle_model}` : `Sự cố trạm sạc & pin xe ${ticket.vehicle_model}`;
   }
   if (ticket.intent === "Service/Incident") {
-    return `Cảnh báo kỹ thuật vận hành xe ${ticket.vehicle_model}`;
+    return language === "en" ? `Technical warning on ${ticket.vehicle_model}` : `Cảnh báo kỹ thuật vận hành xe ${ticket.vehicle_model}`;
   }
   if (ticket.intent.includes("Complaint")) {
-    return `Phản ánh dịch vụ khách hàng xe ${ticket.vehicle_model}`;
+    return language === "en" ? `Customer service feedback for ${ticket.vehicle_model}` : `Phản ánh dịch vụ khách hàng xe ${ticket.vehicle_model}`;
   }
-  return `Yêu cầu hỗ trợ kỹ thuật xe ${ticket.vehicle_model}`;
+  return language === "en" ? `Technical support request for ${ticket.vehicle_model}` : `Yêu cầu hỗ trợ kỹ thuật xe ${ticket.vehicle_model}`;
 }
 
 // Headline ngắn gọn 1 dòng cho Card Queue
-function getShortHeadline(ticket: TicketItem): string {
-  const title = getTicketDisplayTitle(ticket);
+function getShortHeadline(ticket: TicketItem, language = "vi"): string {
+  const title = getTicketDisplayTitle(ticket, language);
   const cleaned = cleanTicketHeadline(title);
   if (/rùa|turtle/i.test(cleaned)) {
-    return "Rùa vàng, giảm công suất";
+    return language === "en" ? "Turtle warning, reduced power" : "Rùa vàng, giảm công suất";
   }
   if (/CC01/i.test(cleaned)) {
-    return "Lỗi handshake sạc DC CC01";
+    return language === "en" ? "DC charging handshake fault CC01" : "Lỗi handshake sạc DC CC01";
   }
   if (/áp suất lốp|TPMS/i.test(cleaned)) {
-    return "Cảnh báo áp suất lốp TPMS";
+    return language === "en" ? "TPMS tire pressure warning" : "Cảnh báo áp suất lốp TPMS";
   }
   if (/bộ sạc tại nhà|wallbox/i.test(cleaned)) {
-    return "Sạc Wallbox tự ngắt sau 2h";
+    return language === "en" ? "Wallbox charging stops after 2 hours" : "Sạc Wallbox tự ngắt sau 2h";
   }
   return cleaned;
 }
@@ -204,6 +197,7 @@ export interface HistoricalCase {
 export const SAMPLE_CASE_HISTORY: HistoricalCase[] = [];
 
 export function StaffConsoleShell() {
+  const {t, language} = useLocale();
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<ConsoleTab>("queue");
 
@@ -214,13 +208,10 @@ export function StaffConsoleShell() {
   const {
     tickets,
     filteredTickets,
-    statusFilter,
-    setStatusFilter,
-    priorityFilter,
-    setPriorityFilter,
     searchQuery,
     setSearchQuery,
     loading,
+    error,
     refreshTickets,
     stats,
     isLiveApi,
@@ -358,8 +349,8 @@ export function StaffConsoleShell() {
     }));
     handleSelectTicket(undoToast.ticketId);
     setRoutingConfirmedNotice(
-      `Đã hoàn tác: Ca ${undoToast.ticketId} trở về trạng thái ${
-        VIETNAMESE_STATUS_MAP[undoToast.prevStatus] || undoToast.prevStatus
+      `${t("Đã hoàn tác: Ca")} ${undoToast.ticketId} ${t("trở về trạng thái")} ${
+        language === "en" ? undoToast.prevStatus : VIETNAMESE_STATUS_MAP[undoToast.prevStatus] || undoToast.prevStatus
       }`
     );
     setUndoToast(null);
@@ -386,7 +377,7 @@ export function StaffConsoleShell() {
     return allTicketsWithLocalStatus.filter(
       (t) => t.status !== "Resolved" && t.status !== "Closed"
     ).length;
-  }, [allTicketsWithLocalStatus]);
+  }, [allTicketsWithLocalStatus, language, t]);
 
   // Thống kê số lượng theo từng tab lọc trong Hàng đợi
   const queueStats = useMemo(() => {
@@ -403,14 +394,6 @@ export function StaffConsoleShell() {
       inProgress: unclosed.filter((t) => t.status === "In Progress").length,
     };
   }, [allTicketsWithLocalStatus]);
-
-  // Trọng số ưu tiên
-  const priorityWeight: Record<string, number> = {
-    CRITICAL: 4,
-    HIGH: 3,
-    MEDIUM: 2,
-    LOW: 1,
-  };
 
   // Lọc và sắp xếp hàng đợi xử lý: Ưu tiên trước, sau đó tới thời gian chờ
   const activeQueueTickets = useMemo(() => {
@@ -438,8 +421,8 @@ export function StaffConsoleShell() {
       })
       .sort((a, b) => {
         // Sắp xếp mặc định: Mức ưu tiên (CRITICAL > HIGH > MEDIUM > LOW)
-        const weightA = priorityWeight[a.priority] || 1;
-        const weightB = priorityWeight[b.priority] || 1;
+        const weightA = PRIORITY_WEIGHT[a.priority] || 1;
+        const weightB = PRIORITY_WEIGHT[b.priority] || 1;
         if (weightB !== weightA) {
           return weightB - weightA;
         }
@@ -504,10 +487,10 @@ export function StaffConsoleShell() {
     const total = allTicketsWithLocalStatus.length;
     if (total === 0) {
       return [
-        { label: "Sạc & Pin (Charging/Battery)", key: "charging", count: 0, percent: 0, color: "bg-[#1E40AF]" },
-        { label: "Kỹ thuật & Cảnh báo táp-lô (Service/Incident)", key: "service", count: 0, percent: 0, color: "bg-[#D97706]" },
-        { label: "Khiếu nại & Phản hồi (Complaint)", key: "complaint", count: 0, percent: 0, color: "bg-[#7E22CE]" },
-        { label: "Tư vấn xe & Bán hàng (Sales/FAQ)", key: "sales", count: 0, percent: 0, color: "bg-[#059669]" },
+        { label: t("Sạc & Pin (Charging/Battery)"), key: "charging", count: 0, percent: 0, color: "bg-[#1E40AF]" },
+        { label: t("Kỹ thuật & Cảnh báo táp-lô (Service/Incident)"), key: "service", count: 0, percent: 0, color: "bg-[#D97706]" },
+        { label: t("Khiếu nại & Phản hồi (Complaint)"), key: "complaint", count: 0, percent: 0, color: "bg-[#7E22CE]" },
+        { label: t("Tư vấn xe & Bán hàng (Sales/FAQ)"), key: "sales", count: 0, percent: 0, color: "bg-[#059669]" },
       ];
     }
 
@@ -531,28 +514,28 @@ export function StaffConsoleShell() {
 
     return [
       {
-        label: "Sạc & Pin (Charging/Battery)",
+        label: t("Sạc & Pin (Charging/Battery)"),
         key: "charging",
         count: chargingCount,
         percent: Math.round((chargingCount / total) * 100),
         color: "bg-[#1E40AF]",
       },
       {
-        label: "Kỹ thuật & Cảnh báo táp-lô (Service/Incident)",
+        label: t("Kỹ thuật & Cảnh báo táp-lô (Service/Incident)"),
         key: "service",
         count: serviceCount,
         percent: Math.round((serviceCount / total) * 100),
         color: "bg-[#D97706]",
       },
       {
-        label: "Khiếu nại & Phản hồi (Complaint)",
+        label: t("Khiếu nại & Phản hồi (Complaint)"),
         key: "complaint",
         count: complaintCount,
         percent: Math.round((complaintCount / total) * 100),
         color: "bg-[#7E22CE]",
       },
       {
-        label: "Tư vấn xe & Bán hàng (Sales/FAQ)",
+        label: t("Tư vấn xe & Bán hàng (Sales/FAQ)"),
         key: "sales",
         count: salesCount,
         percent: Math.round((salesCount / total) * 100),
@@ -604,26 +587,26 @@ export function StaffConsoleShell() {
   // Dynamic Case History: Live resolved/closed cases from DB + sample archive
   const realCaseHistory = useMemo(() => {
     const fromDb = allTicketsWithLocalStatus
-      .filter((t) => t.status === "Resolved" || t.status === "Closed" || t.status === "Reopened")
-      .map((t) => {
+      .filter((ticket) => ticket.status === "Resolved" || ticket.status === "Closed" || ticket.status === "Reopened")
+      .map((ticket) => {
         let routed = "Service Center";
-        const it = (t.intent || "").toLowerCase();
+        const it = (ticket.intent || "").toLowerCase();
         if (it.includes("charging") || it.includes("battery") || it.includes("sạc") || it.includes("pin")) {
           routed = "Charging Operations";
         } else if (it.includes("complaint") || it.includes("feedback") || it.includes("khiếu nại")) {
           routed = "Customer Care";
         } else if (it.includes("sales") || it.includes("bán hàng")) {
           routed = "Sales Advisor";
-        } else if (t.priority === "CRITICAL") {
+        } else if (ticket.priority === "CRITICAL") {
           routed = "Emergency Support Demo";
         }
 
-        let formattedTime = "Hôm nay";
+        let formattedTime = t("Hôm nay");
         try {
-          if (t.created_at) {
-            const dt = new Date(t.created_at);
+          if (ticket.created_at) {
+            const dt = new Date(ticket.created_at);
             if (!isNaN(dt.getTime())) {
-              formattedTime = dt.toLocaleString("vi-VN", {
+              formattedTime = dt.toLocaleString(language === "en" ? "en-US" : "vi-VN", {
                 day: "2-digit",
                 month: "2-digit",
                 year: "numeric",
@@ -636,30 +619,30 @@ export function StaffConsoleShell() {
           // Ignore format error
         }
 
-        const isAuto = Boolean(t.is_auto_closed);
+        const isAuto = Boolean(ticket.is_auto_closed);
         return {
-          id: t.id,
-          intent: t.intent,
-          status: (t.status === "Resolved" || t.status === "Closed" || t.status === "Reopened" ? t.status : "Resolved") as "Resolved" | "Closed" | "Reopened",
+          id: ticket.id,
+          intent: ticket.intent,
+          status: (ticket.status === "Resolved" || ticket.status === "Closed" || ticket.status === "Reopened" ? ticket.status : "Resolved") as "Resolved" | "Closed" | "Reopened",
           routedTo: routed,
-          customerConfirmed: Boolean(t.customer_feedback_score) || (t.status === "Closed" && !isAuto),
+          customerConfirmed: Boolean(ticket.customer_feedback_score) || (ticket.status === "Closed" && !isAuto),
           isAutoClosed: isAuto,
           resolvedAt: formattedTime,
-          staffName: user?.name || "Kỹ thuật viên VinFast",
-          vehicleModel: t.vehicle_model || "VinFast",
-          vehicleCode: t.vehicle_code_mock || t.vehicle_model,
-          briefSummary: t.issue_summary || getTicketDisplayTitle(t),
-          hasLocationConsent: Boolean(t.has_location_consent),
-          locationName: t.has_location_consent ? "Tọa độ GPS đã xác thực" : undefined,
-          customerFeedbackScore: t.customer_feedback_score ?? undefined,
-          customerFeedbackComment: t.customer_feedback_comment ?? undefined,
-          customerFeedbackTags: t.customer_feedback_tags || [],
-          staffUpdateNotes: t.suggested_action || "Đã kiểm tra kỹ thuật và hoàn tất xử lý theo quy chuẩn VinFast.",
+          staffName: user?.name || t("Kỹ thuật viên VinFast"),
+          vehicleModel: ticket.vehicle_model || "VinFast",
+          vehicleCode: ticket.vehicle_code_mock || ticket.vehicle_model,
+          briefSummary: ticket.issue_summary || getTicketDisplayTitle(ticket, language),
+          hasLocationConsent: Boolean(ticket.has_location_consent),
+          locationName: ticket.has_location_consent ? t("Tọa độ GPS đã xác thực") : undefined,
+          customerFeedbackScore: ticket.customer_feedback_score ?? undefined,
+          customerFeedbackComment: ticket.customer_feedback_comment ?? undefined,
+          customerFeedbackTags: ticket.customer_feedback_tags || [],
+          staffUpdateNotes: ticket.suggested_action || t("Đã kiểm tra kỹ thuật và hoàn tất xử lý theo quy chuẩn VinFast."),
         } as HistoricalCase;
       });
 
     return fromDb;
-  }, [allTicketsWithLocalStatus, user?.name]);
+  }, [allTicketsWithLocalStatus, user?.name, language, t]);
 
   // Filtered History list
   const filteredHistory = realCaseHistory.filter((item) => {
@@ -693,6 +676,7 @@ export function StaffConsoleShell() {
       const res = await sendChatMessage({
         sessionId: previewSessionId.current,
         message: userMsg,
+        language,
       });
       if (res && res.data) {
         setPreviewMessages((prev) => [
@@ -710,7 +694,7 @@ export function StaffConsoleShell() {
           ...prev,
           {
             sender: "bot",
-            text: "Dạ hệ thống AI phản hồi chậm, vui lòng thử lại.",
+            text: t("Dạ hệ thống AI phản hồi chậm, vui lòng thử lại."),
           },
         ]);
       }
@@ -719,7 +703,7 @@ export function StaffConsoleShell() {
         ...prev,
         {
           sender: "bot",
-          text: `[Lỗi kết nối AI]: ${err?.message || "Không thể gọi Chat API"}. Vui lòng đảm bảo backend đang chạy tại port 8000.`,
+          text: `[${t("Lỗi kết nối AI")}]: ${err?.message || t("Không thể gọi Chat API")}. ${t("Vui lòng đảm bảo backend đang chạy tại port 8000.")}`,
         },
       ]);
     } finally {
@@ -728,12 +712,12 @@ export function StaffConsoleShell() {
   };
 
   const NAV_ITEMS = [
-    { id: "queue", label: "Hàng đợi xử lý", icon: Inbox, count: totalActiveQueueCount },
-    { id: "overview", label: "Tổng quan ca trực", icon: LayoutDashboard },
-    { id: "history", label: "Lịch sử hồ sơ", icon: History, count: realCaseHistory.length },
-    { id: "routing", label: "Bộ phận / Routing", icon: GitBranch, count: liveRoutingDepartments.reduce((acc, d) => acc + d.activeTickets, 0) },
-    { id: "knowledge", label: "Knowledge Hub", icon: BookOpen, count: knowledgeArticles.length || 7 },
-    { id: "profile", label: "Hồ sơ Staff", icon: User },
+    { id: "queue", label: t("Hàng đợi xử lý"), icon: Inbox, count: totalActiveQueueCount },
+    { id: "overview", label: t("Tổng quan ca trực"), icon: LayoutDashboard },
+    { id: "history", label: t("Lịch sử hồ sơ"), icon: History, count: realCaseHistory.length },
+    { id: "routing", label: t("Bộ phận / Routing"), icon: GitBranch, count: liveRoutingDepartments.reduce((acc, d) => acc + d.activeTickets, 0) },
+    { id: "knowledge", label: t("Cẩm nang"), icon: BookOpen, count: knowledgeArticles.length || 7 },
+    { id: "profile", label: t("Hồ sơ Staff"), icon: User },
   ];
 
   const currentTabItem = NAV_ITEMS.find((t) => t.id === activeTab) || NAV_ITEMS[0];
@@ -769,7 +753,7 @@ export function StaffConsoleShell() {
             type="button"
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition shrink-0"
-            title={isSidebarCollapsed ? "Mở rộng sidebar (w-64)" : "Thu gọn sidebar (w-16)"}
+            title={isSidebarCollapsed ? t("Mở rộng sidebar (w-64)") : t("Thu gọn sidebar (w-16)")}
           >
             {isSidebarCollapsed ? (
               <PanelLeftOpen className="w-4 h-4" />
@@ -825,11 +809,9 @@ export function StaffConsoleShell() {
               {!isSidebarCollapsed && (
                 <div className="min-w-0 flex-1 truncate">
                   <div className="text-[12px] font-semibold text-white truncate">
-                    {user?.name || "Cố vấn Dịch vụ VinFast"}
+                    {user?.name || t("Cố vấn Dịch vụ VinFast")}
                   </div>
-                  <div className="text-[10px] text-slate-400 font-mono truncate">
-                    Cố vấn KTV Bậc 4
-                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono truncate">{t("Cố vấn KTV Bậc 4")}</div>
                 </div>
               )}
             </div>
@@ -839,7 +821,7 @@ export function StaffConsoleShell() {
                 type="button"
                 onClick={logout}
                 className="p-1.5 text-slate-400 hover:text-[#EF4444] hover:bg-slate-800 rounded-lg transition"
-                title="Đăng xuất tài khoản Staff"
+                title={t("Đăng xuất tài khoản Staff")}
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -855,7 +837,7 @@ export function StaffConsoleShell() {
         {/* Sticky Featherlight Topbar h-12 with Backdrop Blur */}
         <header className="sticky top-0 z-30 h-12 px-6 flex items-center justify-between bg-[#F8FAFC]/85 backdrop-blur-md border-b border-slate-200/60 shrink-0">
           <div className="flex items-center gap-2 text-[12px] text-slate-500">
-            <span className="text-slate-400 font-medium">Bàn Điều Phối</span>
+            <span className="text-slate-400 font-medium">{t("Bàn Điều Phối")}</span>
             <span>/</span>
             <span className="font-semibold text-slate-900">{currentTabItem.label}</span>
             {user?.isDemo && (
@@ -865,13 +847,12 @@ export function StaffConsoleShell() {
             )}
           </div>
 
-          <div className="flex items-center gap-3.5 text-[12px]">
+          <div className="flex items-center gap-3.5 text-[12px]"><ThemeToggle />
             <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white shadow-2xs border border-slate-200/50 text-slate-600">
               <span className={`w-2 h-2 rounded-full ${isLiveApi ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
-              <span className="text-[11px] font-medium">{isLiveApi ? "Hệ thống trực tuyến" : "Chế độ mẫu"}</span>
+              <span className="text-[11px] font-medium">{loading ? t("Đang tải hàng đợi…") : isLiveApi ? t("Hệ thống trực tuyến") : t("Không thể tải hàng đợi")}</span>
             </div>
-            <span className="hidden md:inline text-[11px] text-slate-500">
-              Cơ sở: <strong className="text-slate-800 font-medium">VinFast Times City</strong>
+            <span className="hidden md:inline text-[11px] text-slate-500">{t("Cơ sở:")}<strong className="text-slate-800 font-medium">VinFast Times City</strong>
             </span>
             <button
               type="button"
@@ -900,7 +881,7 @@ export function StaffConsoleShell() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Tìm mã case, xe, lỗi..."
+                    placeholder={t("Tìm mã case, xe, lỗi...")}
                     className="w-full text-[12px] pl-8 pr-7 py-1.5 rounded-xl bg-white shadow-2xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20"
                   />
                   {searchQuery && (
@@ -918,11 +899,11 @@ export function StaffConsoleShell() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex items-center gap-1 bg-slate-200/50 p-1 rounded-xl text-[11px] font-medium">
                     {[
-                      { id: "ALL", label: `Tất cả (${queueStats.all})` },
-                      { id: "CRITICAL", label: `🔥 Khẩn cấp (${queueStats.critical})` },
-                      { id: "Staff Reviewing", label: `Chờ duyệt (${queueStats.reviewing})` },
-                      { id: "Needs Information", label: `Cần thêm tin (${queueStats.needsInfo})` },
-                      { id: "In Progress", label: `Đang xử lý (${queueStats.inProgress})` },
+                      { id: "ALL", label: `${t("Tất cả")} (${queueStats.all})` },
+                      { id: "CRITICAL", label: `${t("🔥 Khẩn cấp")} (${queueStats.critical})` },
+                      { id: "Staff Reviewing", label: `${t("Chờ duyệt")} (${queueStats.reviewing})` },
+                      { id: "Needs Information", label: `${t("Cần thêm tin")} (${queueStats.needsInfo})` },
+                      { id: "In Progress", label: `${t("Đang xử lý")} (${queueStats.inProgress})` },
                     ].map((pill) => (
                       <button
                         key={pill.id}
@@ -943,6 +924,7 @@ export function StaffConsoleShell() {
                     type="button"
                     onClick={() => refreshTickets()}
                     disabled={loading}
+                    aria-label={t("Làm mới")}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-[12px] font-medium shadow-2xs transition"
                   >
                     <RefreshCw
@@ -950,7 +932,7 @@ export function StaffConsoleShell() {
                         loading ? "animate-spin text-[#1E40AF]" : ""
                       }`}
                     />
-                    <span className="hidden sm:inline">Làm mới</span>
+                    <span className="hidden sm:inline">{t("Làm mới")}</span>
                   </button>
                 </div>
               </div>
@@ -960,14 +942,12 @@ export function StaffConsoleShell() {
                 <div className="p-3 bg-slate-900 text-white rounded-xl text-[13px] font-medium flex items-center justify-between shadow-lg animate-in fade-in">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>
-                      Đã cập nhật hồ sơ{" "}
+                    <span>{t("Đã cập nhật hồ sơ")}
                       <strong className="font-mono text-emerald-300">
                         {undoToast.ticketId}
-                      </strong>{" "}
-                      sang{" "}
+                      </strong>{" "}{t("sang")}
                       <strong>
-                        {VIETNAMESE_STATUS_MAP[undoToast.newStatus] || undoToast.newStatus}
+                        {language === "en" ? undoToast.newStatus : VIETNAMESE_STATUS_MAP[undoToast.newStatus] || undoToast.newStatus}
                       </strong>
                     </span>
                   </div>
@@ -975,9 +955,7 @@ export function StaffConsoleShell() {
                     type="button"
                     onClick={handleUndo}
                     className="px-3 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white font-semibold text-[12px] transition active:scale-[0.98]"
-                  >
-                    Hoàn tác
-                  </button>
+                  >{t("Hoàn tác")}</button>
                 </div>
               )}
 
@@ -994,27 +972,33 @@ export function StaffConsoleShell() {
                 {/* CỘT TRÁI (5 Cols / 40%): Danh sách Card trắng nổi, KHÔNG bọc viền xám thừa */}
                 <div className="lg:col-span-5 flex flex-col space-y-2.5">
                   <div className="flex items-center justify-between text-[11px] px-1 text-slate-500 font-medium">
-                    <span>
-                      Hồ sơ trong hàng đợi:{" "}
+                    <span>{t("Hồ sơ trong hàng đợi:")}
                       <strong className="text-slate-900">{activeQueueTickets.length}</strong>
                     </span>
-                    <span className="text-slate-400">Dùng phím ↑ ↓ (hoặc J/K) để duyệt</span>
+                    <span className="text-slate-400">{t("Dùng phím ↑ ↓ (hoặc J/K) để duyệt")}</span>
                   </div>
 
                   <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] overflow-hidden divide-y divide-slate-100 h-[calc(100vh-140px)] overflow-y-auto scrollbar-thin">
-                    {activeQueueTickets.length === 0 ? (
+                    {loading ? (
+                      <p role="status" className="p-8 text-center text-sm text-slate-600">{t("Đang tải hàng đợi…")}</p>
+                    ) : error ? (
+                      <div role="alert" className="p-8 text-center text-sm text-red-700 space-y-3">
+                        <p>{t(error)}</p>
+                        <button type="button" onClick={refreshTickets} className="rounded-xl px-3 py-2 bg-white border border-slate-200 text-slate-900">{t("Thử lại")}</button>
+                      </div>
+                    ) : activeQueueTickets.length === 0 ? (
                       <div className="p-8 text-center text-slate-500 space-y-3">
                         <Inbox className="w-8 h-8 mx-auto text-slate-300" />
                         <div>
                           <p className="text-[13px] font-semibold text-slate-900">
                             {searchQuery.trim()
-                              ? `Không tìm thấy ca "${searchQuery.trim()}" trong hàng đợi`
-                              : "Hàng đợi xử lý hiện đang trống"}
+                              ? `${t("Không tìm thấy ca")} "${searchQuery.trim()}" ${t("trong hàng đợi")}`
+                              : t("Hàng đợi xử lý hiện đang trống")}
                           </p>
                           <p className="text-[12px] text-slate-500 mt-1 max-w-xs mx-auto">
                             {searchQuery.trim()
-                              ? "Hồ sơ này có thể đã được KTV giải quyết (Resolved) hoặc đã đóng (Closed)."
-                              : "Hiện không có hồ sơ nào cần xử lý với bộ lọc hiện tại."}
+                              ? t("Hồ sơ này có thể đã được KTV giải quyết (Resolved) hoặc đã đóng (Closed).")
+                              : t("Hiện không có hồ sơ nào cần xử lý với bộ lọc hiện tại.")}
                           </p>
                         </div>
                         {searchQuery.trim() && (
@@ -1028,15 +1012,13 @@ export function StaffConsoleShell() {
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[12px] font-semibold transition shadow-xs"
                             >
                               <Search className="w-3.5 h-3.5" />
-                              <span>Tìm trong Lịch sử hồ sơ</span>
+                              <span>{t("Tìm trong Lịch sử hồ sơ")}</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => setSearchQuery("")}
                               className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[12px] font-medium transition"
-                            >
-                              Xóa từ khóa
-                            </button>
+                            >{t("Xóa từ khóa")}</button>
                           </div>
                         )}
                       </div>
@@ -1047,8 +1029,8 @@ export function StaffConsoleShell() {
                         const isHigh = ticket.priority === "HIGH";
                         const isMedium = ticket.priority === "MEDIUM";
 
-                        const headline = getShortHeadline(ticket);
-                        const waitTime = getRelativeWaitTime(ticket.created_at);
+                        const headline = getShortHeadline(ticket, language);
+                        const waitTime = getRelativeWaitTime(ticket.created_at, language);
                         const isSafetyConfirmed =
                           ticket.safety_status === "safe" ||
                           ticket.safety_status === "customer_reported_safe" ||
@@ -1110,36 +1092,24 @@ export function StaffConsoleShell() {
                             <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                               {/* Chip Mở lại ca (Reopened) */}
                               {ticket.status === "Reopened" && (
-                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-bold text-purple-700 bg-purple-100 border border-purple-300">
-                                  ↺ Mở lại ca
-                                </span>
+                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-bold text-purple-700 bg-purple-100 border border-purple-300">{t("↺ Mở lại ca")}</span>
                               )}
 
                               {/* Chip Ưu tiên */}
                               {isCritical ? (
-                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-bold text-red-600 bg-red-50">
-                                  Khẩn cấp
-                                </span>
+                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-bold text-red-600 bg-red-50">{t("Khẩn cấp")}</span>
                               ) : isHigh ? (
-                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-semibold text-amber-700 bg-amber-50">
-                                  Ưu tiên cao
-                                </span>
+                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-semibold text-amber-700 bg-amber-50">{t("Ưu tiên cao")}</span>
                               ) : isMedium ? (
-                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-medium text-blue-700 bg-blue-50">
-                                  Trung bình
-                                </span>
+                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-medium text-blue-700 bg-blue-50">{t("Trung bình")}</span>
                               ) : (
-                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-medium text-slate-600 bg-slate-100">
-                                  Thấp
-                                </span>
+                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-medium text-slate-600 bg-slate-100">{t("Thấp")}</span>
                               )}
 
                               {/* Chip Thiếu thông tin */}
                               {(ticket.missing_info_flag ||
                                 ticket.status === "Needs Information") && (
-                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-semibold text-amber-800 bg-amber-100/80">
-                                  Thiếu thông tin
-                                </span>
+                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-semibold text-amber-800 bg-amber-100/80">{t("Thiếu thông tin")}</span>
                               )}
 
                               {/* Chip GPS */}
@@ -1151,9 +1121,7 @@ export function StaffConsoleShell() {
 
                               {/* Chip Khách đã an toàn */}
                               {isSafetyConfirmed && (
-                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-semibold text-emerald-700 bg-emerald-50">
-                                  ✓ Đã an toàn
-                                </span>
+                                <span className="px-1.5 py-0.5 rounded text-[10.5px] font-semibold text-emerald-700 bg-emerald-50">{t("✓ Đã an toàn")}</span>
                               )}
                             </div>
                           </div>
@@ -1165,7 +1133,7 @@ export function StaffConsoleShell() {
 
                 {/* CỘT PHẢI (7 Cols / 60%): TicketDetailPanel Chi Tiết & Triage */}
                 <div className="lg:col-span-7">
-                  {currentActiveTicket ? (
+                  {!loading && !error && currentActiveTicket ? (
                     <TicketDetailPanel
                       ticket={currentActiveTicket}
                       onActionComplete={(msg) => {
@@ -1179,10 +1147,8 @@ export function StaffConsoleShell() {
                   ) : (
                     <div className="bg-white rounded-2xl p-12 text-center text-slate-500 h-[calc(100vh-140px)] flex flex-col items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
                       <Inbox className="w-10 h-10 text-slate-300 mb-2" />
-                      <p className="text-[14px] font-semibold text-slate-900">Chưa chọn hồ sơ nào</p>
-                      <p className="text-[12px] mt-1 text-slate-500">
-                        Chọn một hồ sơ từ danh sách bên trái để xem Case Brief và điều phối.
-                      </p>
+                      <p className="text-[14px] font-semibold text-slate-900">{t("Chưa chọn hồ sơ nào")}</p>
+                      <p className="text-[12px] mt-1 text-slate-500">{t("Chọn một hồ sơ từ danh sách bên trái để xem Case Brief và điều phối.")}</p>
                     </div>
                   )}
                 </div>
@@ -1196,36 +1162,35 @@ export function StaffConsoleShell() {
           {activeTab === "overview" && (
             <div className="space-y-6">
               <div>
-                <h1 className="text-xl font-semibold text-slate-900">Tổng Quan Ca Trực (Dashboard Summary)</h1>
-                <p className="text-xs text-slate-500 mt-0.5">Số liệu thống kê hồ sơ sự cố tiếp nhận trong ngày hôm nay.</p>
+                <h1 className="text-xl font-semibold text-slate-900">{t("Tổng Quan Ca Trực (Dashboard Summary)")}</h1>
+                <p className="text-xs text-slate-500 mt-0.5">{t("Số liệu thống kê hồ sơ sự cố tiếp nhận trong ngày hôm nay.")}</p>
               </div>
 
               {/* KPI 4 Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Tổng ca trực</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{t("Tổng ca trực")}</span>
                   <div className="text-2xl font-bold text-slate-900 mt-2">{stats.total}</div>
-                  <div className="text-[11px] text-slate-400 mt-1">Đã đồng bộ thời gian thực</div>
+                  <div className="text-[11px] text-slate-400 mt-1">{t("Đã đồng bộ thời gian thực")}</div>
                 </div>
 
                 <div className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] bg-[#FEF2F2]/40">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-[#DC2626] flex items-center gap-1">
-                    <Flame className="w-3.5 h-3.5 text-[#DC2626]" /> Ca khẩn cấp (Critical)
-                  </span>
+                    <Flame className="w-3.5 h-3.5 text-[#DC2626]" />{t("Ca khẩn cấp (Critical)")}</span>
                   <div className="text-2xl font-bold text-[#DC2626] mt-2">{stats.critical}</div>
-                  <div className="text-[11px] text-[#DC2626] mt-1">Ưu tiên cứu hộ cao tốc</div>
+                  <div className="text-[11px] text-[#DC2626] mt-1">{t("Ưu tiên cứu hộ cao tốc")}</div>
                 </div>
 
                 <div className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] bg-[#FFFBEB]/40">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#D97706]">Chờ duyệt (Reviewing)</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#D97706]">{t("Chờ duyệt (Reviewing)")}</span>
                   <div className="text-2xl font-bold text-[#D97706] mt-2">{stats.reviewing}</div>
-                  <div className="text-[11px] text-[#D97706] mt-1">Cần chuyên viên xác nhận</div>
+                  <div className="text-[11px] text-[#D97706] mt-1">{t("Cần chuyên viên xác nhận")}</div>
                 </div>
 
                 <div className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] bg-[#ECFDF5]/40">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#059669]">Đã giải quyết (Resolved)</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#059669]">{t("Đã giải quyết (Resolved)")}</span>
                   <div className="text-2xl font-bold text-[#059669] mt-2">{stats.resolved}</div>
-                  <div className="text-[11px] text-[#059669] mt-1">Hoàn thành ca hôm nay</div>
+                  <div className="text-[11px] text-[#059669] mt-1">{t("Hoàn thành ca hôm nay")}</div>
                 </div>
               </div>
 
@@ -1233,15 +1198,15 @@ export function StaffConsoleShell() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.05)] space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-[14px] font-semibold text-slate-900">Phân bố theo Nhóm Sự Cố (Intent)</h3>
-                    <span className="text-[11px] font-mono text-slate-400">Thời gian thực</span>
+                    <h3 className="text-[14px] font-semibold text-slate-900">{t("Phân bố theo Nhóm Sự Cố (Intent)")}</h3>
+                    <span className="text-[11px] font-mono text-slate-400">{t("Thời gian thực")}</span>
                   </div>
                   <div className="space-y-3 text-[13px]">
                     {intentDistribution.map((item) => (
                       <div key={item.key}>
                         <div className="flex justify-between font-medium">
                           <span>{item.label}</span>
-                          <span className="font-mono text-slate-700">{item.count} hồ sơ ({item.percent}%)</span>
+                          <span className="font-mono text-slate-700">{item.count}{" "}{t("hồ sơ (")}{item.percent}%)</span>
                         </div>
                         <div className="w-full h-2 rounded-full bg-slate-100 mt-1 overflow-hidden">
                           <div
@@ -1255,12 +1220,12 @@ export function StaffConsoleShell() {
                 </div>
 
                 <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.05)] space-y-3">
-                  <h3 className="text-[14px] font-semibold text-slate-900">Nguyên tắc Bàn Giao Ca Trực</h3>
+                  <h3 className="text-[14px] font-semibold text-slate-900">{t("Nguyên tắc Bàn Giao Ca Trực")}</h3>
                   <ul className="text-[13px] text-slate-600 space-y-2 list-disc pl-4 leading-relaxed">
-                    <li>Không để tồn đọng ca <strong>CRITICAL</strong> qua ca trực mà không có kỹ thuật viên tiếp nhận.</li>
-                    <li>Mọi ca <strong>Resolved</strong> phải kèm thông báo Customer Update rõ ràng cho chủ xe.</li>
-                    <li>Nếu khách bấm <strong>Vẫn chưa giải quyết</strong>, ticket tự động quay lại Queue với cờ <code>Reopened</code>.</li>
-                    <li>Hồ sơ sau 24h khách không phản hồi sẽ tự động chuyển sang <code>Closed</code>.</li>
+                    <li>{t("Không để tồn đọng ca")}{" "}<strong>CRITICAL</strong>{" "}{t("qua ca trực mà không có kỹ thuật viên tiếp nhận.")}</li>
+                    <li>{t("Mọi ca")}{" "}<strong>Resolved</strong>{" "}{t("phải kèm thông báo Customer Update rõ ràng cho chủ xe.")}</li>
+                    <li>{t("Nếu khách bấm")}{" "}<strong>{t("Vẫn chưa giải quyết")}</strong>{t(", ticket tự động quay lại Queue với cờ")}{" "}<code>Reopened</code>.</li>
+                    <li>{t("Hồ sơ sau 24h khách không phản hồi sẽ tự động chuyển sang")}{" "}<code>Closed</code>.</li>
                   </ul>
                 </div>
               </div>
@@ -1273,10 +1238,8 @@ export function StaffConsoleShell() {
           {activeTab === "history" && (
             <div className="space-y-4">
               <div>
-                <h1 className="text-xl font-semibold text-slate-900">Lịch Sử Hồ Sơ Sự Cố (Case History & Audit)</h1>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Tra cứu các hồ sơ đã giải quyết, đóng hoặc mở lại; phục vụ bàn giao ca trực và kiểm tra chất lượng AI.
-                </p>
+                <h1 className="text-xl font-semibold text-slate-900">{t("Lịch Sử Hồ Sơ Sự Cố (Case History & Audit)")}</h1>
+                <p className="text-xs text-slate-500 mt-0.5">{t("Tra cứu các hồ sơ đã giải quyết, đóng hoặc mở lại; phục vụ bàn giao ca trực và kiểm tra chất lượng AI.")}</p>
               </div>
 
               {/* Filter Bar with Quick Search and Styled Pills */}
@@ -1289,7 +1252,7 @@ export function StaffConsoleShell() {
                       type="text"
                       value={historySearchQuery}
                       onChange={(e) => setHistorySearchQuery(e.target.value)}
-                      placeholder="Tìm nhanh mã case (ví dụ CASE-...), dòng xe, sự cố, KTV..."
+                      placeholder={t("Tìm nhanh mã case (ví dụ CASE-...), dòng xe, sự cố, KTV...")}
                       className="w-full text-[12px] pl-9 pr-8 py-2 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 focus:bg-white transition"
                     />
                     {historySearchQuery && (
@@ -1302,15 +1265,13 @@ export function StaffConsoleShell() {
                       </button>
                     )}
                   </div>
-                  <div className="text-[12px] text-slate-500 font-medium">
-                    Tìm thấy <strong className="text-slate-900">{filteredHistory.length}</strong> hồ sơ
-                  </div>
+                  <div className="text-[12px] text-slate-500 font-medium">{t("Tìm thấy")}{" "}<strong className="text-slate-900">{filteredHistory.length}</strong>{t("hồ sơ")}</div>
                 </div>
 
                 {/* Filter Pills Row */}
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-slate-100">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[12px] font-semibold text-slate-500">Trạng thái:</span>
+                    <span className="text-[12px] font-semibold text-slate-500">{t("Trạng thái:")}</span>
                     <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-medium">
                       {["ALL", "Resolved", "Closed", "Reopened"].map((st) => (
                         <button
@@ -1322,21 +1283,21 @@ export function StaffConsoleShell() {
                             : "text-slate-600 hover:text-slate-900"
                             }`}
                         >
-                          {st === "ALL" ? "Tất cả" : st}
+                          {st === "ALL" ? t("Tất cả") : st}
                         </button>
                       ))}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[12px] font-semibold text-slate-500">Ý định:</span>
+                    <span className="text-[12px] font-semibold text-slate-500">{t("Ý định:")}</span>
                     <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-[11px] font-medium">
                       {[
-                        { id: "ALL", label: "Tất cả" },
-                        { id: "Charging/Battery", label: "Sạc & Pin" },
-                        { id: "Service/Incident", label: "Kỹ thuật" },
-                        { id: "Complaint/Feedback", label: "Khiếu nại" },
-                        { id: "Sales/General Info", label: "Bán hàng" },
+                        { id: "ALL", label: t("Tất cả") },
+                        { id: "Charging/Battery", label: t("Sạc & Pin") },
+                        { id: "Service/Incident", label: t("Kỹ thuật") },
+                        { id: "Complaint/Feedback", label: t("Khiếu nại") },
+                        { id: "Sales/General Info", label: t("Bán hàng") },
                       ].map((it) => (
                         <button
                           key={it.id}
@@ -1361,21 +1322,19 @@ export function StaffConsoleShell() {
                   <table className="w-full text-left text-[13px]">
                     <thead className="bg-slate-50 border-b border-slate-100 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       <tr>
-                        <th className="py-3 px-4">Mã Case</th>
-                        <th className="py-3 px-4">Phân loại & Xe</th>
-                        <th className="py-3 px-4">Trạng thái</th>
-                        <th className="py-3 px-4">Đã Route</th>
-                        <th className="py-3 px-4">Khách xác nhận</th>
-                        <th className="py-3 px-4">Thời điểm</th>
-                        <th className="py-3 px-4 text-right">Thao tác</th>
+                        <th className="py-3 px-4">{t("Mã Case")}</th>
+                        <th className="py-3 px-4">{t("Phân loại & Xe")}</th>
+                        <th className="py-3 px-4">{t("Trạng thái")}</th>
+                        <th className="py-3 px-4">{t("Đã Route")}</th>
+                        <th className="py-3 px-4">{t("Khách xác nhận")}</th>
+                        <th className="py-3 px-4">{t("Thời điểm")}</th>
+                        <th className="py-3 px-4 text-right">{t("Thao tác")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {filteredHistory.length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="py-12 text-center text-slate-400">
-                            Không tìm thấy hồ sơ nào khớp với bộ lọc hoặc từ khóa tìm kiếm.
-                          </td>
+                          <td colSpan={7} className="py-12 text-center text-slate-400">{t("Không tìm thấy hồ sơ nào khớp với bộ lọc hoặc từ khóa tìm kiếm.")}</td>
                         </tr>
                       ) : (
                         filteredHistory.map((item) => (
@@ -1400,25 +1359,21 @@ export function StaffConsoleShell() {
                             <td className="py-3.5 px-4 text-[12px] font-medium text-slate-700">{item.routedTo}</td>
                             <td className="py-3.5 px-4 text-[12px]">
                               {item.isAutoClosed ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                                  ⏱ Tự động đóng (72h)
-                                </span>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">{t("⏱ Tự động đóng (72h)")}</span>
                               ) : item.customerConfirmed ? (
                                 <div className="flex flex-col">
                                   <span className="text-[#059669] font-medium flex items-center gap-1">
-                                    <CheckCircle2 className="w-3.5 h-3.5" /> Đã xác nhận
-                                  </span>
+                                    <CheckCircle2 className="w-3.5 h-3.5" />{t("Đã xác nhận")}</span>
                                   {item.customerFeedbackScore && (
                                     <span className="text-[11px] text-amber-600 font-semibold mt-0.5 flex items-center gap-0.5">
                                       <Star className="w-3 h-3 fill-amber-500 text-amber-500 inline" />
-                                      {item.customerFeedbackScore}/5 sao
-                                    </span>
+                                      {item.customerFeedbackScore}{t("/5 sao")}{" "}</span>
                                   )}
                                 </div>
                               ) : item.status === "Reopened" ? (
-                                <span className="text-[#DC2626] font-medium">Báo chưa giải quyết</span>
+                                <span className="text-[#DC2626] font-medium">{t("Báo chưa giải quyết")}</span>
                               ) : (
-                                <span className="text-slate-400">Chưa xác nhận</span>
+                                <span className="text-slate-400">{t("Chưa xác nhận")}</span>
                               )}
                             </td>
                             <td className="py-3.5 px-4 text-[12px] text-slate-500 font-mono">{item.resolvedAt}</td>
@@ -1427,9 +1382,7 @@ export function StaffConsoleShell() {
                                 type="button"
                                 onClick={() => setReviewingHistoryCase(item)}
                                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-[#1E40AF] text-[12px] font-semibold transition"
-                              >
-                                Xem lại hồ sơ
-                              </button>
+                              >{t("Xem lại hồ sơ")}</button>
                             </td>
                           </tr>
                         ))
@@ -1446,7 +1399,7 @@ export function StaffConsoleShell() {
                     <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                       <div>
                         <div className="font-mono text-lg font-bold text-slate-900">{reviewingHistoryCase.id}</div>
-                        <div className="text-[12px] text-slate-500">Hồ sơ lưu trữ kiểm định chất lượng AI & Bàn giao</div>
+                        <div className="text-[12px] text-slate-500">{t("Hồ sơ lưu trữ kiểm định chất lượng AI & Bàn giao")}</div>
                       </div>
                       <button
                         type="button"
@@ -1459,19 +1412,19 @@ export function StaffConsoleShell() {
 
                     <div className="space-y-3 text-[13px]">
                       <div className="p-3.5 rounded-xl bg-slate-50">
-                        <div className="text-[11px] font-bold uppercase text-[#1E40AF] mb-1">Case Brief Ban Đầu (AI Trích Xuất)</div>
+                        <div className="text-[11px] font-bold uppercase text-[#1E40AF] mb-1">{t("Case Brief Ban Đầu (AI Trích Xuất)")}</div>
                         <p className="text-slate-900 font-medium leading-relaxed">{reviewingHistoryCase.briefSummary}</p>
                       </div>
 
                       {reviewingHistoryCase.hasLocationConsent && (
                         <div className="p-3 rounded-xl bg-[#EFF3FC] text-[12px] flex items-center gap-2">
                           <MapPin className="w-4 h-4 text-[#1E40AF] shrink-0" />
-                          <span>Vị trí khách chia sẻ: <strong>{reviewingHistoryCase.locationName}</strong></span>
+                          <span>{t("Vị trí khách chia sẻ:")}{" "}<strong>{reviewingHistoryCase.locationName}</strong></span>
                         </div>
                       )}
 
                       <div className="p-3.5 rounded-xl bg-slate-50">
-                        <div className="text-[11px] font-bold uppercase text-slate-500 mb-1">Ghi Chú Kỹ Thuật (Staff Update)</div>
+                        <div className="text-[11px] font-bold uppercase text-slate-500 mb-1">{t("Ghi Chú Kỹ Thuật (Staff Update)")}</div>
                         <p className="text-slate-700 leading-relaxed">{reviewingHistoryCase.staffUpdateNotes}</p>
                       </div>
 
@@ -1481,7 +1434,7 @@ export function StaffConsoleShell() {
                             {[...Array(reviewingHistoryCase.customerFeedbackScore)].map((_, i) => (
                               <Star key={i} className="w-4 h-4 fill-current" />
                             ))}
-                            <span className="text-[12px] font-bold text-[#065F46] ml-2">Đánh giá của khách hàng</span>
+                            <span className="text-[12px] font-bold text-[#065F46] ml-2">{t("Đánh giá của khách hàng")}</span>
                           </div>
                           {reviewingHistoryCase.customerFeedbackTags && reviewingHistoryCase.customerFeedbackTags.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 pt-1">
@@ -1493,14 +1446,14 @@ export function StaffConsoleShell() {
                             </div>
                           )}
                           {reviewingHistoryCase.customerFeedbackComment && (
-                            <p className="text-[12px] text-[#065F46] italic">"{reviewingHistoryCase.customerFeedbackComment}"</p>
+                            <p className="text-[12px] text-[#065F46] italic">&quot;{reviewingHistoryCase.customerFeedbackComment}&quot;</p>
                           )}
                         </div>
                       )}
 
                       {reviewingHistoryCase.reopenReason && (
                         <div className="p-3.5 rounded-xl bg-[#FEF2F2]">
-                          <div className="text-[11px] font-bold uppercase text-[#DC2626] mb-1">Lý do khách mở lại (Reopened)</div>
+                          <div className="text-[11px] font-bold uppercase text-[#DC2626] mb-1">{t("Lý do khách mở lại (Reopened)")}</div>
                           <p className="text-[12px] text-[#DC2626] font-medium">{reviewingHistoryCase.reopenReason}</p>
                         </div>
                       )}
@@ -1517,15 +1470,13 @@ export function StaffConsoleShell() {
                         className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-[12px] font-semibold rounded-xl transition"
                       >
                         <Inbox className="w-3.5 h-3.5 text-[#1E40AF]" />
-                        <span>Mở chi tiết trong Hàng đợi</span>
+                        <span>{t("Mở chi tiết trong Hàng đợi")}</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setReviewingHistoryCase(null)}
                         className="px-4 py-2 bg-[#1E40AF] hover:bg-[#1D4ED8] text-white text-[12px] font-semibold rounded-xl transition"
-                      >
-                        Đóng cửa sổ
-                      </button>
+                      >{t("Đóng cửa sổ")}</button>
                     </div>
                   </div>
                 </div>
@@ -1539,10 +1490,8 @@ export function StaffConsoleShell() {
           {activeTab === "routing" && (
             <div className="space-y-6">
               <div>
-                <h1 className="text-xl font-semibold text-slate-900">Danh Mục Bộ Phận Tiếp Nhận (Routing Directory P0)</h1>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Cấu hình phân luồng điều phối tự động và thủ công. Không can thiệp sang CRM bên ngoài ở bản MVP.
-                </p>
+                <h1 className="text-xl font-semibold text-slate-900">{t("Danh Mục Bộ Phận Tiếp Nhận (Routing Directory P0)")}</h1>
+                <p className="text-xs text-slate-500 mt-0.5">{t("Cấu hình phân luồng điều phối tự động và thủ công. Không can thiệp sang CRM bên ngoài ở bản MVP.")}</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1551,20 +1500,19 @@ export function StaffConsoleShell() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase ${dept.color}`}>
-                          {dept.badge}
+                          {t(dept.badge)}
                         </span>
                         <span className="text-[11px] font-mono text-slate-500">
-                          {dept.activeTickets} ca active
-                        </span>
+                          {dept.activeTickets}{t("ca active")}</span>
                       </div>
 
                       <h3 className="text-[15px] font-semibold text-slate-900">{dept.name}</h3>
-                      <p className="text-[12px] text-slate-600 leading-relaxed">{dept.description}</p>
+                      <p className="text-[12px] text-slate-600 leading-relaxed">{t(dept.description)}</p>
                     </div>
 
                     <div className="pt-3 border-t border-slate-100 text-[11px] text-slate-600 space-y-1">
-                      <div><strong>Intent tiếp nhận:</strong> <code className="text-[#1E40AF]">{dept.intent}</code></div>
-                      <div><strong>Phụ trách chính:</strong> {dept.lead}</div>
+                      <div><strong>{t("Intent tiếp nhận:")}</strong> <code className="text-[#1E40AF]">{dept.intent}</code></div>
+                      <div><strong>{t("Phụ trách chính:")}</strong> {t(dept.lead)}</div>
                       <button
                         type="button"
                         onClick={() => {
@@ -1576,9 +1524,7 @@ export function StaffConsoleShell() {
                           setActiveTab("queue");
                         }}
                         className="w-full mt-2.5 py-1.5 text-center text-[12px] font-semibold text-[#1E40AF] bg-[#EFF3FC] hover:bg-[#DBEAFE] rounded-xl transition"
-                      >
-                        Xem {dept.activeTickets} ca trong hàng đợi &rarr;
-                      </button>
+                      >{t("Xem")}{" "}{dept.activeTickets}{" "}{t("ca trong hàng đợi →")}</button>
                     </div>
                   </div>
                 ))}
@@ -1593,13 +1539,11 @@ export function StaffConsoleShell() {
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <h1 className="text-xl font-semibold text-slate-900">Knowledge Hub Nội Bộ (RAG Knowledge Sources)</h1>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Cơ sở tri thức nguồn chính thống được kiểm chứng mà AI Agent sử dụng để trích dẫn URL cho khách hàng.
-                  </p>
+                  <h1 className="text-xl font-semibold text-slate-900">{t("Cẩm nang")} — RAG Knowledge Sources</h1>
+                  <p className="text-xs text-slate-500 mt-0.5">{t("Cơ sở tri thức nguồn chính thống được kiểm chứng mà AI Agent sử dụng để trích dẫn URL cho khách hàng.")}</p>
                 </div>
                 <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 self-start">
-                  {knowledgeArticles.length > 0 ? `${knowledgeArticles.length} bài viết (Đồng bộ API)` : "7 nguồn xác thực"}
+                  {knowledgeArticles.length > 0 ? `${knowledgeArticles.length} ${t("bài viết (Đồng bộ API)")}` : t("7 nguồn xác thực")}
                 </span>
               </div>
 
@@ -1612,13 +1556,13 @@ export function StaffConsoleShell() {
                     scope: item.summary || item.category,
                   }))
                   : [
-                    { id: "SRC-001", title: "Chính sách Bảo hành Ô tô Điện VinFast", url: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto", scope: "VF 8 (10 năm/200.000km, pin mua đứt không giới hạn km)" },
-                    { id: "SRC-002", title: "Hướng dẫn sử dụng Ứng dụng VinFast", url: "https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast", scope: "Đặt lịch xưởng, theo dõi dung lượng pin" },
-                    { id: "SRC-003", title: "Thông tin Cứu hộ Khẩn cấp & Cứu hộ Pin 24/7", url: "https://vinfastauto.com/vn_vi/thong-tin-cuu-ho-oto", scope: "Hotline 1900-232389, cứu hộ pin lưu động" },
-                    { id: "SRC-004", title: "Biểu phí & Chính sách Sạc tại Trạm Công cộng", url: "https://vinfastauto.com/vn_vi/chinh-sach-va-bieu-phi-sac-pin-cong-cong", scope: "Đơn giá kWh, phí chiếm trụ 1.000đ/phút sau 10 phút" },
-                    { id: "SRC-005", title: "Cẩm nang Bảo dưỡng Định kỳ 12.000 km", url: "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto", scope: "6 hạng mục kiểm tra tiêu chuẩn pack pin, phanh, gầm" },
-                    { id: "SRC-006", title: "Danh mục Sản phẩm & Chính sách Bán hàng", url: "https://vinfastauto.com/vn_vi/", scope: "Dải xe điện VF 3, VF 5, VF 6, VF 7, VF 8, VF 9" },
-                    { id: "SRC-007", title: "Sổ tay Hướng dẫn Sử dụng VF 8", url: "https://om.vinfastauto.com/vi_vn/detail?car=VF8&year=2026", scope: "Sổ tay điện tử hướng dẫn chi tiết vận hành VF 8" },
+                    { id: "SRC-001", title: t("Chính sách Bảo hành Ô tô Điện VinFast"), url: "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto", scope: t("VF 8 (10 năm/200.000km, pin mua đứt không giới hạn km)") },
+                    { id: "SRC-002", title: t("Hướng dẫn sử dụng Ứng dụng VinFast"), url: "https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast", scope: t("Đặt lịch xưởng, theo dõi dung lượng pin") },
+                    { id: "SRC-003", title: t("Thông tin Cứu hộ Khẩn cấp & Cứu hộ Pin 24/7"), url: "https://vinfastauto.com/vn_vi/thong-tin-cuu-ho-oto", scope: t("Hotline 1900-232389, cứu hộ pin lưu động") },
+                    { id: "SRC-004", title: t("Biểu phí & Chính sách Sạc tại Trạm Công cộng"), url: "https://vinfastauto.com/vn_vi/chinh-sach-va-bieu-phi-sac-pin-cong-cong", scope: t("Đơn giá kWh, phí chiếm trụ 1.000đ/phút sau 10 phút") },
+                    { id: "SRC-005", title: t("Cẩm nang Bảo dưỡng Định kỳ 12.000 km"), url: "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto", scope: t("6 hạng mục kiểm tra tiêu chuẩn pack pin, phanh, gầm") },
+                    { id: "SRC-006", title: t("Danh mục Sản phẩm & Chính sách Bán hàng"), url: "https://vinfastauto.com/vn_vi/", scope: t("Dải xe điện VF 3, VF 5, VF 6, VF 7, VF 8, VF 9") },
+                    { id: "SRC-007", title: t("Sổ tay Hướng dẫn Sử dụng VF 8"), url: "https://om.vinfastauto.com/vi_vn/detail?car=VF8&year=2026", scope: t("Sổ tay điện tử hướng dẫn chi tiết vận hành VF 8") },
                   ]
                 ).map((item) => (
                   <div key={item.id} className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] space-y-2">
@@ -1631,12 +1575,11 @@ export function StaffConsoleShell() {
                         target="_blank"
                         rel="noreferrer"
                         className="text-[11px] text-[#1E40AF] font-medium inline-flex items-center gap-1 hover:underline"
-                      >
-                        Nguồn chính thức <ExternalLink className="w-3 h-3" />
+                      >{t("Nguồn chính thức")}<ExternalLink className="w-3 h-3" />
                       </a>
                     </div>
                     <h4 className="text-[14px] font-semibold text-slate-900">{item.title}</h4>
-                    <p className="text-[12px] text-slate-500"><strong>Phạm vi trích dẫn:</strong> {item.scope}</p>
+                    <p className="text-[12px] text-slate-500"><strong>{t("Phạm vi trích dẫn:")}</strong> {item.scope}</p>
                   </div>
                 ))}
               </div>
@@ -1650,10 +1593,8 @@ export function StaffConsoleShell() {
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h1 className="text-xl font-semibold text-slate-900">Kiểm Thử Trực Tiếp Trợ Lý AI (Customer Live Preview)</h1>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Tương tác trực tiếp với Backend AI Agent (/api/v1/customer/chat) để kiểm tra luồng RAG, bóc tách Intent và mức ưu tiên trong môi trường an toàn.
-                  </p>
+                  <h1 className="text-xl font-semibold text-slate-900">{t("Kiểm Thử Trực Tiếp Trợ Lý AI (Customer Live Preview)")}</h1>
+                  <p className="text-xs text-slate-500 mt-0.5">{t("Tương tác trực tiếp với Backend AI Agent (/api/v1/customer/chat) để kiểm tra luồng RAG, bóc tách Intent và mức ưu tiên trong môi trường an toàn.")}</p>
                 </div>
 
                 <Link
@@ -1661,7 +1602,7 @@ export function StaffConsoleShell() {
                   target="_blank"
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1E40AF] text-white text-[12px] font-semibold hover:bg-[#1D4ED8] transition shadow-xs self-start"
                 >
-                  <span>Mở tab chat thật (/chat)</span>
+                  <span>{t("Mở tab chat thật (/chat)")}</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -1675,8 +1616,8 @@ export function StaffConsoleShell() {
                       <Bot className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <div className="text-[13px] font-bold">Trợ Lý Dịch Vụ VinFast (Live AI Turn)</div>
-                      <div className="text-[10px] text-white/80">Kết nối trực tiếp backend LangGraph</div>
+                      <div className="text-[13px] font-bold">{t("Trợ Lý Dịch Vụ VinFast (Live AI Turn)")}</div>
+                      <div className="text-[10px] text-white/80">{t("Kết nối trực tiếp backend LangGraph")}</div>
                     </div>
                   </div>
                   <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px] font-mono">LIVE_AGENT_SESSION</span>
@@ -1695,7 +1636,7 @@ export function StaffConsoleShell() {
                           : "bg-white text-slate-900 shadow-2xs border border-slate-100"
                           }`}
                       >
-                        <div className="whitespace-pre-line">{msg.text}</div>
+                        <div className="whitespace-pre-line">{idx === 0 ? t(msg.text) : msg.text}</div>
 
                         {/* Intent & Priority Chips */}
                         {msg.sender === "bot" && (msg.intent || msg.priority) && (
@@ -1724,8 +1665,7 @@ export function StaffConsoleShell() {
                         {msg.sender === "bot" && msg.citations && msg.citations.length > 0 && (
                           <div className="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-600 space-y-1">
                             <div className="font-semibold text-slate-700 flex items-center gap-1">
-                              <Sparkles className="w-3 h-3 text-[#1E40AF]" /> Trích dẫn RAG xác thực:
-                            </div>
+                              <Sparkles className="w-3 h-3 text-[#1E40AF]" />{t("Trích dẫn RAG xác thực:")}</div>
                             {msg.citations.map((c, i) => (
                               <a
                                 key={i}
@@ -1748,7 +1688,7 @@ export function StaffConsoleShell() {
                     <div className="flex justify-start">
                       <div className="bg-white rounded-2xl px-4 py-2.5 text-[13px] text-slate-500 shadow-2xs border border-slate-100 flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin text-[#1E40AF]" />
-                        <span>AI Agent đang bóc tách intent & tra cứu RAG...</span>
+                        <span>{t("AI Agent đang bóc tách intent & tra cứu RAG...")}</span>
                       </div>
                     </div>
                   )}
@@ -1761,7 +1701,7 @@ export function StaffConsoleShell() {
                     value={previewChatInput}
                     disabled={isPreviewSending}
                     onChange={(e) => setPreviewChatInput(e.target.value)}
-                    placeholder="Gõ thử câu hỏi như một khách hàng (ví dụ: 'Xe VF8 báo rùa vàng', 'Phí sạc quá giờ tính sao?')..."
+                    placeholder={t("Gõ thử câu hỏi như một khách hàng (ví dụ: 'Xe VF8 báo rùa vàng', 'Phí sạc quá giờ tính sao?')...")}
                     className="flex-1 text-[13px] px-3.5 py-2 rounded-xl bg-slate-50 focus:bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 disabled:opacity-60"
                   />
                   <button
@@ -1774,7 +1714,7 @@ export function StaffConsoleShell() {
                     ) : (
                       <Send className="w-3.5 h-3.5" />
                     )}
-                    <span>Gửi</span>
+                    <span>{t("Gửi")}</span>
                   </button>
                 </form>
               </div>
@@ -1787,8 +1727,8 @@ export function StaffConsoleShell() {
           {activeTab === "profile" && (
             <div className="max-w-xl mx-auto space-y-6">
               <div>
-                <h1 className="text-xl font-semibold text-slate-900">Hồ Sơ Kỹ Thuật Viên (Staff Profile)</h1>
-                <p className="text-xs text-slate-500 mt-0.5">Thông tin tài khoản xác thực và phân quyền xử lý ca trực HITL.</p>
+                <h1 className="text-xl font-semibold text-slate-900">{t("Hồ Sơ Kỹ Thuật Viên (Staff Profile)")}</h1>
+                <p className="text-xs text-slate-500 mt-0.5">{t("Thông tin tài khoản xác thực và phân quyền xử lý ca trực HITL.")}</p>
               </div>
 
               <div className="bg-white rounded-3xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.05)] space-y-5">
@@ -1797,37 +1737,32 @@ export function StaffConsoleShell() {
                     {user?.name?.charAt(0) || "V"}
                   </div>
                   <div>
-                    <h2 className="text-base font-bold text-slate-900">{user?.name || "Cố vấn Dịch vụ VinFast"}</h2>
+                    <h2 className="text-base font-bold text-slate-900">{user?.name || t("Cố vấn Dịch vụ VinFast")}</h2>
                     <div className="text-[12px] text-[#1E40AF] font-semibold">
-                      {user?.role === "STAFF" ? "Cố vấn Dịch vụ / Kỹ thuật viên Tiếp nhận HITL" : (user?.role || "Kỹ thuật viên Bậc 4")}
+                      {user?.role === "STAFF" ? t("Cố vấn Dịch vụ / Kỹ thuật viên Tiếp nhận HITL") : (user?.role || t("Kỹ thuật viên Bậc 4"))}
                     </div>
-                    <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                      Mã nhân viên: {user?.id || "STAFF_001"} &bull; {user?.email || "staff@vinfast.vn"}
+                    <div className="text-[11px] text-slate-400 font-mono mt-0.5">{t("Mã nhân viên:")}{" "}{user?.id || "STAFF_001"} &bull; {user?.email || "staff@vinfast.vn"}
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-3 pt-3 border-t border-slate-100 text-[13px]">
                   <div className="flex justify-between py-1">
-                    <span className="text-slate-500">Xưởng trực thuộc:</span>
-                    <span className="font-semibold text-slate-900">VinFast Times City (Hà Nội)</span>
+                    <span className="text-slate-500">{t("Xưởng trực thuộc:")}</span>
+                    <span className="font-semibold text-slate-900">{t("VinFast Times City (Hà Nội)")}</span>
                   </div>
                   <div className="flex justify-between py-1">
-                    <span className="text-slate-500">Trạng thái ca trực:</span>
+                    <span className="text-slate-500">{t("Trạng thái ca trực:")}</span>
                     <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-600">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      Đang trực tuyến (Active Shift)
-                    </span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />{t("Đang trực tuyến (Active Shift)")}</span>
                   </div>
                   <div className="flex justify-between py-1">
-                    <span className="text-slate-500">Quyền hạn HITL:</span>
-                    <span className="px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#059669] text-[11px] font-bold">
-                      Duyệt Brief / Reroute / Gửi Cập Nhật / Đóng Hồ Sơ
-                    </span>
+                    <span className="text-slate-500">{t("Quyền hạn HITL:")}</span>
+                    <span className="px-2 py-0.5 rounded-full bg-[#ECFDF5] text-[#059669] text-[11px] font-bold">{t("Duyệt Brief / Reroute / Gửi Cập Nhật / Đóng Hồ Sơ")}</span>
                   </div>
                   <div className="flex justify-between py-1">
-                    <span className="text-slate-500">Tổng ca giải quyết hôm nay:</span>
-                    <span className="font-mono font-bold text-[#1E40AF]">{stats.resolved} hồ sơ</span>
+                    <span className="text-slate-500">{t("Tổng ca giải quyết hôm nay:")}</span>
+                    <span className="font-mono font-bold text-[#1E40AF]">{stats.resolved}{" "}{t("hồ sơ")}</span>
                   </div>
                 </div>
 
@@ -1838,7 +1773,7 @@ export function StaffConsoleShell() {
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#FEF2F2] hover:bg-[#FEE2E2] text-[#DC2626] text-[12px] font-semibold transition"
                   >
                     <LogOut className="w-4 h-4" />
-                    <span>Đăng xuất tài khoản Staff</span>
+                    <span>{t("Đăng xuất tài khoản Staff")}</span>
                   </button>
                 </div>
               </div>

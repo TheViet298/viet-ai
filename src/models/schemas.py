@@ -182,6 +182,7 @@ class ClientContext(BaseModel):
 
 
 class CustomerChatRequest(BaseModel):
+    language: Literal['vi', 'en'] | None = None
     request_id: str | None = Field(default=None, min_length=1, max_length=100)
     session_id: str = Field(default="sess_default", description="Mã phiên hội thoại (No-PII)")
     case_id: str | None = None  # e.g. CASE-20260924-001, null nếu là tin nhắn đầu tiên
@@ -202,6 +203,11 @@ class ApiResponseEnvelope(BaseModel):
 
 
 class Citation(BaseModel):
+    fact_scope: dict[str, Any] | None = None
+    claim_evidence: dict[str, Any] | None = None
+    source_section: str | None = None
+    specs_reviewed_at: str | None = None
+    price_evidence: dict[str, Any] | None = None
     source_id: str
     title: str
     url: str
@@ -223,6 +229,18 @@ class EmergencyContext(BaseModel):
     incident_version: int
     safety_status: str
     safety_acknowledged_at: str | None = None
+
+
+class NearbyAction(BaseModel):
+    type: Literal["FIND_NEARBY"] = "FIND_NEARBY"
+    request_id: str
+    turn_id: str
+    category: Literal["CHARGING_STATION", "SHOWROOM", "SERVICE_WORKSHOP", "OTHER", "ALL"]
+    vehicle_type: Literal["CAR", "TWO_WHEELER"] = "CAR"
+    area_text: str | None = None
+    requires_location: bool = True
+    reason: str
+    limit: Literal[5] = 5
 
 
 class VehicleSpec(BaseModel):
@@ -247,6 +265,8 @@ class VehicleCard(BaseModel):
 
 
 class ChatResponseData(BaseModel):
+    language: Literal['vi', 'en'] = 'vi'
+    nearby_action: NearbyAction | None = None
     vehicle_comparison: bool = False
     vehicle_cards: list[VehicleCard] = Field(default_factory=list)
     emergency_context: EmergencyContext | None = None
@@ -271,6 +291,7 @@ class ChatResponseData(BaseModel):
 
 
 class SessionHistoryMessageItem(BaseModel):
+    language: Literal['vi', 'en'] = 'vi'
     vehicle_comparison: bool = False
     vehicle_cards: list[VehicleCard] = Field(default_factory=list)
     id: str
@@ -388,7 +409,7 @@ class CaseLocationOut(BaseModel):
     case_id: str
     status: str
     source: str
-    location_label: str
+    location_label: str | None = None
     latitude: float | None = None
     longitude: float | None = None
     precision: str
@@ -399,19 +420,40 @@ class CaseLocationOut(BaseModel):
 class ServicePointItem(BaseModel):
     id: str
     name: str
-    category: Literal["CHARGING_STATION", "SERVICE_CENTER", "RESCUE_POST", "SHOWROOM"]
+    category: str
+    category_slug: str | None = None
     address: str
+    province: str | None = None
     distance_km: float | None = None
+    distance_from_area_km: float | None = None
     latitude: float
     longitude: float
+    phone: str | None = None
     hotline: str | None = None
+    hotline_service: str | None = None
+    booking_url: str | None = None
+    dong_son: bool = False
     operating_hours: str | None = None
+    hours: str | None = None
     charger_types: list[str] | None = None
+    services_offered: list[str] | None = None
+    power_info: str | None = None
+    status: str | None = None
+    note: str | None = None
+    crawled_at: str | None = None
+    is_out_of_area: bool = False
 
 
 class ServicePointsData(BaseModel):
     case_id: str
-    recommended_points: list[ServicePointItem]
+    needs_location: bool = False
+    no_points_nearby: bool = False
+    is_out_of_area: bool = False
+    message: str | None = None
+    last_updated_label: str | None = None
+    rescue_hotline: str | None = None
+    area_reference: dict[str, str] | None = None
+    recommended_points: list[ServicePointItem] = []
 
 
 # ==============================================================================

@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldCheck, RefreshCw, AlertCircle, Clock, CheckCircle2, Flame, Wrench } from "lucide-react";
+import { ShieldCheck, RefreshCw, AlertCircle, Clock, CheckCircle2, Flame } from "lucide-react";
 import { useTickets } from "../hooks/useTickets";
 import { TicketFilters } from "./TicketFilters";
 import { TicketTable } from "./TicketTable";

@@ -11,6 +11,7 @@ from src.agents.guardrails import sanitize_pii
 from src.agents.nodes.triage_node import extract_fields
 from src.agents.state import AgentState
 from src.config import get_settings
+from src.services.agent_llm import new_turn_budget
 from src.services.chat_classification import denied_reports
 from src.services.chat_normalization import normalize_chat_text
 from src.services.followup_context import resolve_faq_followup
@@ -56,7 +57,7 @@ async def intake_node(state: AgentState) -> dict:
     return {
         **({'case_id': None, 'clarification_turn': 0, 'memory_summary': ''} if context.get('scope_changed') else {}),
         **consume_cardd_signal({**state, 'cardd_evidence': None} if context.get('scope_changed') else state, state.get('turn',0)+1, text),
-        "llm_budget": state.get('llm_budget') or {"deadline": time.monotonic() + get_settings().agent_turn_timeout_s, "attempts": 0},
+        "llm_budget": state.get('llm_budget') if state.get('llm_budget') is not None else new_turn_budget(time.monotonic() + get_settings().agent_turn_timeout_s),
         "retrieval_diagnostics": {},
         "query": text,
         "resolved_query": (state.get('turn_understanding') or {}).get('resolved_query') or (faq_query if faq_query != text else context["resolved_query"]),

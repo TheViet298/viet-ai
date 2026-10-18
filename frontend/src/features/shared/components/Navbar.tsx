@@ -1,10 +1,10 @@
 "use client";
+import { useLocale } from "@/features/shared/context/LocaleContext";
 
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ScanLine,
   MessageSquare,
   Search,
   BookOpen,
@@ -16,8 +16,11 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { ProductMark } from "./ProductMark";
 import { UserProfileModal } from "./UserProfileModal";
+import { ThemeToggle } from "./ThemeToggle";
+import { LanguageSwitch } from "./LanguageSwitch";
 
 export function Navbar() {
+  const { t } = useLocale();
   const pathname = usePathname();
   const { user, role, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -33,15 +36,15 @@ export function Navbar() {
   const navItems =
     role === "CUSTOMER"
       ? [
-          { name: "Trang chủ", href: "/", exact: true },
-          { name: "Trợ lý Chat", href: "/chat", icon: MessageSquare },
-          { name: "Trung tâm hỗ trợ", href: "/track-case", icon: Search },
-          { name: "Knowledge Hub", href: "/#knowledge-hub", icon: BookOpen },
+          { name: t("Trang chủ"), href: "/", exact: true },
+          { name: t("Trợ lý Chat"), href: "/chat", icon: MessageSquare },
+          { name: t("Trung tâm hỗ trợ"), href: "/track-case", icon: Search },
+          { name: t("Cẩm nang"), href: "/#knowledge-hub", icon: BookOpen },
         ]
       : [
-          { name: "Trang chủ", href: "/", exact: true },
-          { name: "Trợ lý Chat", href: "/chat", icon: MessageSquare },
-          { name: "Knowledge Hub", href: "/#knowledge-hub", icon: BookOpen },
+          { name: t("Trang chủ"), href: "/", exact: true },
+          { name: t("Trợ lý Chat"), href: "/chat", icon: MessageSquare },
+          { name: t("Cẩm nang"), href: "/#knowledge-hub", icon: BookOpen },
         ];
 
   const isAuthPage = pathname === "/login" || pathname === "/register";
@@ -60,27 +63,26 @@ export function Navbar() {
           <div className="mx-auto max-w-6xl w-full flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <ShieldAlert className="w-3.5 h-3.5 text-[#1E40AF]" />
-              Bạn đang duyệt giao diện với tư cách xem trước (Staff Preview Mode).
-            </span>
+              {t("Bạn đang duyệt giao diện với tư cách xem trước (Staff Preview Mode).")}</span>
             <Link
               href="/console"
               className="inline-flex items-center gap-1 font-bold underline hover:text-[#1D4ED8]"
             >
-              Quay lại Bàn Điều Phối <ArrowRight className="w-3 h-3" />
+              {t("Quay lại Bàn Điều Phối")}<ArrowRight className="w-3 h-3" />
             </Link>
           </div>
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           {/* Logo Brand */}
           <div className="flex items-center space-x-3">
-            <Link href="/" className="flex items-center space-x-2.5 group">
+            <Link href="/" aria-label="VFServ" className="flex items-center space-x-2.5 group">
               <div className="w-8 h-8 rounded-[10px] bg-[#1E40AF] flex items-center justify-center text-white shadow-xs transition-transform group-hover:scale-105">
                 <ProductMark className="w-4 h-4 text-white" />
               </div>
-              <div>
+              <div className="hidden sm:block">
                 <div className="font-bold text-[16px] tracking-tight flex items-center font-display text-[#0F172A] gap-2">
                   <span>VF<span className="text-[#1E40AF] font-bold">Serv</span></span>
                   {user?.isDemo && (
@@ -89,7 +91,7 @@ export function Navbar() {
                     </span>
                   )}
                 </div>
-                <div className="text-[9.5px] text-[#64748B] tracking-wider font-mono uppercase font-semibold">
+                <div className="hidden sm:block whitespace-nowrap text-[9.5px] text-[#64748B] tracking-wider font-mono uppercase font-semibold">
                   VinFast EV Hub
                 </div>
               </div>
@@ -97,7 +99,7 @@ export function Navbar() {
           </div>
 
           {/* Navigation Links theo Role (Guest hoặc Customer) */}
-          <nav className="hidden md:flex items-center space-x-1">
+          <nav className="hidden lg:flex items-center space-x-1">
             {navItems.map((item) => {
               const isActive = item.exact
                 ? pathname === item.href
@@ -114,27 +116,29 @@ export function Navbar() {
                   }`}
                 >
                   {Icon && <Icon className="w-3.5 h-3.5" />}
-                  <span>{item.name}</span>
+                  <span className="whitespace-nowrap">{item.name}</span>
                 </Link>
               );
             })}
           </nav>
 
           {/* Right Action: Auth / User Profile */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <LanguageSwitch /><ThemeToggle />
             {user && role === "CUSTOMER" ? (
               /* Hồ sơ Customer */
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setIsProfileOpen(true)}
-                  className="flex items-center gap-2 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] hover:border-slate-300 px-3 py-1 rounded-xl transition group text-left cursor-pointer"
-                  title="Xem và chỉnh sửa hồ sơ xe & tài khoản"
+                  className="flex items-center gap-2 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] hover:border-slate-300 px-2 sm:px-3 py-1 rounded-xl transition group text-left cursor-pointer"
+                  aria-label={t("Xem và chỉnh sửa hồ sơ xe & tài khoản")}
+                  title={t("Xem và chỉnh sửa hồ sơ xe & tài khoản")}
                 >
                   <div className="w-6 h-6 rounded-full bg-[#1E40AF] text-white flex items-center justify-center text-[11px] font-bold group-hover:scale-105 transition shrink-0">
                     <User className="w-3.5 h-3.5" />
                   </div>
-                  <div className="flex flex-col text-left">
+                  <div className="hidden sm:flex flex-col text-left">
                     <span className="text-[12px] font-semibold leading-tight text-[#0F172A] group-hover:text-[#1E40AF] transition">
                       {user.name}
                     </span>
@@ -148,7 +152,7 @@ export function Navbar() {
                   type="button"
                   onClick={logout}
                   className="rounded-[10px] p-1.5 text-[#64748B] hover:bg-[#FEE2E2] hover:text-[#DC2626] transition"
-                  title="Đăng xuất"
+                  title={t("Đăng xuất")}
                 >
                   <LogOut className="h-4 w-4" />
                 </button>
@@ -160,7 +164,7 @@ export function Navbar() {
                   href="/console"
                   className="inline-flex items-center gap-1.5 rounded-[10px] bg-[#1E40AF] hover:bg-[#1D4ED8] px-3 py-1.5 text-[12px] font-semibold text-white transition shadow-sm"
                 >
-                  <span>Bàn điều phối (Console)</span>
+                  <span>{t("Bàn điều phối (Console)")}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -169,16 +173,14 @@ export function Navbar() {
               <div className="flex items-center gap-1.5">
                 <Link
                   href="/login"
-                  className="rounded-[10px] px-3 py-1.5 text-[12px] font-medium text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A] transition"
+                  className="whitespace-nowrap rounded-[10px] px-2 sm:px-3 py-1.5 text-[12px] font-medium text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A] transition"
                 >
-                  Đăng nhập
-                </Link>
+                  {t("Đăng nhập")}</Link>
                 <Link
                   href="/register"
-                  className="inline-flex rounded-[10px] bg-[#1E40AF] hover:bg-[#1D4ED8] px-3 py-1.5 text-[12px] font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition"
+                  className="inline-flex whitespace-nowrap rounded-[10px] bg-[#1E40AF] hover:bg-[#1D4ED8] px-2 sm:px-3 py-1.5 text-[12px] font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition"
                 >
-                  Đăng ký
-                </Link>
+                  {t("Đăng ký")}</Link>
               </div>
             )}
           </div>

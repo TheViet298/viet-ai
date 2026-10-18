@@ -1,6 +1,7 @@
 "use client";
+import { useLocale } from "@/features/shared/context/LocaleContext";
 
-import { CheckCircle2, ChevronRight, PhoneCall, ShieldAlert } from "lucide-react";
+import { CheckCircle2, PhoneCall, ShieldAlert } from "lucide-react";
 
 interface EmergencyAlertBannerProps {
   visible: boolean;
@@ -21,6 +22,7 @@ export function EmergencyAlertBanner({
   error,
   canAcknowledge = true,
 }: EmergencyAlertBannerProps) {
+  const { t } = useLocale();
 
   if (!visible) return null;
 
@@ -42,12 +44,10 @@ export function EmergencyAlertBanner({
           <div className="flex items-center gap-2 min-w-0">
             <span className="inline-flex items-center gap-1 font-semibold text-emerald-400 shrink-0">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Đã xác nhận an toàn
-            </span>
+              {t("Đã xác nhận an toàn")}</span>
             <span className="text-slate-400 hidden sm:inline">•</span>
             <span className="text-slate-300 truncate hidden sm:inline">
-              Hồ sơ khẩn cấp vẫn đang được Cố vấn VinFast ưu tiên xử lý
-            </span>
+              {t("Hồ sơ khẩn cấp vẫn đang được Cố vấn VinFast ưu tiên xử lý")}</span>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -55,8 +55,7 @@ export function EmergencyAlertBanner({
               onClick={handleRestore}
               className="text-slate-400 hover:text-white text-[11px] underline underline-offset-2 transition"
             >
-              Xem hướng dẫn an toàn
-            </button>
+              {t("Xem hướng dẫn an toàn")}</button>
             <a
               href="tel:1900232389"
               className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-600/90 hover:bg-red-600 text-white rounded font-medium text-[11px] transition"
@@ -77,10 +76,9 @@ export function EmergencyAlertBanner({
         <div className="flex items-center gap-2.5 min-w-0">
           <ShieldAlert className="w-4 h-4 text-white shrink-0 animate-pulse" />
           <div className="text-[12px] sm:text-[12.5px] leading-snug truncate">
-            <strong className="font-bold text-white mr-1.5">Xe đang gặp sự cố?</strong>
+            <strong className="font-bold text-white mr-1.5">{t("Xe đang gặp sự cố?")}</strong>
             <span className="text-red-100">
-              Ưu tiên tới khu vực an toàn nếu có thể và gọi hotline cứu hộ.
-            </span>
+              {t("Ưu tiên tới khu vực an toàn nếu có thể và gọi hotline cứu hộ.")}</span>
           </div>
         </div>
 
@@ -89,10 +87,10 @@ export function EmergencyAlertBanner({
             disabled={pending || !canAcknowledge}
             onClick={handleDismiss}
             className="flex items-center gap-1 px-2.5 py-1 bg-red-700/80 hover:bg-red-800 text-white rounded-lg text-[11px] font-medium border border-red-500/50 transition active:scale-95 whitespace-nowrap"
-            title="Thu gọn cảnh báo nếu bạn đã ở vị trí an toàn"
+            title={t("Thu gọn cảnh báo nếu bạn đã ở vị trí an toàn")}
           >
             <CheckCircle2 className="w-3.5 h-3.5 text-red-200" />
-            <span>{pending ? "Đang lưu..." : "Đã an toàn"}</span>
+            <span>{pending ? t("Đang lưu...") : t("Đã an toàn")}</span>
           </button>
 
           <a

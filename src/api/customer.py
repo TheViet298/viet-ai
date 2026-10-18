@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 import re
 import uuid
@@ -19,6 +20,8 @@ from src.agents.guardrails import (
     sanitize_pii,
 )
 from src.agents.nodes.triage_node import classify_request_kind, extract_fields
+from src.agents.tools.vinfast_tools import vinfast_nearby_search
+from src.services.nearby_intent import classify_location_request
 from src.config import get_settings
 from src.db import get_db
 from src.models.db_models import (
@@ -70,7 +73,6 @@ from src.models.schemas import (
     SafetyAcknowledgementData,
     SafetyAcknowledgementPayload,
     ServiceHandoff,
-    ServicePointItem,
     ServicePointsData,
     SessionHistoryMessageItem,
     SessionHistoryResponseData,
@@ -417,6 +419,16 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         if guest_count >= 5:
             logger.warning(f"[403 FORBIDDEN] Guest session='{payload.session_id}' reached limit: guest_count={guest_count} >= 5")
             raise HTTPException(403, "Quý khách đã sử dụng hết 5 lượt chat thử nghiệm. Quý khách vui lòng đăng nhập để tiếp tục trải nghiệm ạ.")
+    if re.fullmatch(r'(?:cảm ơn|cám ơn)(?:\s+(?:bạn|em|anh|chị))?(?:[,!.\s]*(?:tôi|em|mình)?\s*(?:đã )?(?:hiểu rồi|hiểu|rõ rồi))?[!.\s]*', text, re.I):
+        reply = 'Dạ, rất vui được hỗ trợ Quý khách. Khi cần thêm thông tin, Quý khách cứ nhắn em nhé.'
+        customer_message = Message(id=str(uuid.uuid4()), session_id=payload.session_id,
+            sender_type='CUSTOMER', content=original_text,
+            msg_metadata={'user_id': user_id, 'guest_session_id': payload.guest_session_id})
+        db.add(customer_message)
+        db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='AGENT', content=reply))
+        db.info['chat_turn_customer_id'] = customer_message.id
+        return ApiResponse(data=ChatResponseData(response_type='FAQ_ANSWER', message=reply,
+                           remaining_guest_messages=remaining_guest_msgs))
     if spelling.get('needs_confirmation'):
         reply = clarification_for(text)
         customer_message = Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='CUSTOMER',
@@ -635,6 +647,11 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         vehicle_model = model_signals[0]["vehicle_model"]
         vehicle_label = vehicle_model
 
+    nearby_request = None
+    if not classification.is_critical and not payload.attachment_ids:
+        nearby_request = await classify_location_request(text, previous_context.get("nearby_request"), vehicle_model)
+    vehicle_context["nearby_request"] = nearby_request
+
     # 1. Lưu tin nhắn của Khách hàng vào bảng messages
     cust_msg = Message(
         id=str(uuid.uuid4()),
@@ -656,6 +673,17 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     db.add(cust_msg)
     db.info['chat_turn_customer_id'] = cust_msg.id
     db.flush()
+
+    if nearby_request:
+        from src.models.schemas import NearbyAction
+        action = NearbyAction(**nearby_request, request_id=str(uuid.uuid4()), turn_id=cust_msg.id)
+        reply = action.reason + (" Nhập khu vực hoặc dùng vị trí hiện tại để xem tối đa 5 kết quả." if action.requires_location
+                                 else " Em sẽ tìm quanh khu vực bạn đã nêu; khoảng cách tính từ tâm khu vực tham chiếu.")
+        db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
+                       sender_type="AGENT", content=reply, msg_metadata={"nearby_action": action.model_dump()}))
+        return ApiResponse(success=True, data=ChatResponseData(response_type="FAQ_ANSWER", message=reply,
+                           case_id=active_case_id, nearby_action=action, request_location=action.requires_location,
+                           remaining_guest_messages=remaining_guest_msgs), error=None)
 
     if not current_user and classification.request_kind in {'incident', 'complaint'}:
         reply = "Anh/chị vui lòng đăng nhập để tạo và theo dõi hồ sơ chuyên viên hỗ trợ. " + STANDARD_SAFE_GUIDANCE
@@ -877,11 +905,14 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         )
         db.add(case_brief)
 
-        from src.agents.guardrails import build_emergency_safe_guidance
-        safe_guidance = build_emergency_safe_guidance(text, is_turtle_critical=is_turtle_critical)
+        safe_guidance = (
+            EMERGENCY_SAFE_GUIDANCE
+        )
+        if is_turtle_critical:
+            safe_guidance += " Nếu xe đang trên cao tốc, chỉ di chuyển vào làn dừng khẩn cấp khi có thể thực hiện an toàn."
         agent_reply = (
             f"Dạ VinFast đã ghi nhận tình trạng khẩn cấp của xe {vehicle_label}. "
-            f"Hệ thống đã tự động tạo hồ sơ khẩn cấp (Mã: {case.id}). Quý khách vui lòng gọi hotline để được hỗ trợ.\n\n"
+            f"Hệ thống đã tự động tạo hồ sơ khẩn cấp (Mã: {case.id}). Anh/chị vui lòng gọi hotline để được hỗ trợ.\n\n"
             f"⚠️ HƯỚNG DẪN AN TOÀN NGAY LẬP TỨC: {safe_guidance}"
         )
 
@@ -915,7 +946,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     if any(s.get("evidence_type") == "IMAGE_ROUTING" for s in attached_signals):
         if active_case and current_user:
             check_case_ownership(active_case, current_user)
-        reply = "Dạ em chưa xác định chắc loại ảnh. Anh/chị vui lòng chọn loại ảnh táp-lô/trụ sạc hoặc ngoại thất xe rồi tải lại, hoặc gửi ảnh rõ hơn ạ."
+        reply = "Tôi chưa xác định chắc loại ảnh. Anh/chị vui lòng chọn loại ảnh táp-lô/trụ sạc hoặc ngoại thất xe rồi tải lại, hoặc gửi ảnh rõ hơn."
         db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
                        sender_type=SenderType.AGENT.value, created_at=reply_created_at,
                        content=reply, msg_metadata={"response_type": "CLARIFICATION", "image_kind": "unknown"}))
@@ -1220,9 +1251,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     ]
     if any(kw in lower_text for kw in oos_keywords):
         reply_no_source = (
-            "Dạ em đã kiểm tra trong cơ sở dữ liệu hướng dẫn và chính sách dịch vụ chính thức của VinFast "
-            "nhưng chưa có thông tin xác thực cho yêu cầu này (hoặc nội dung nằm ngoài phạm vi hỗ trợ của hệ sinh thái xe điện VinFast).\n\n"
-            "Nếu anh/chị cần hỗ trợ các vấn đề kỹ thuật, trạm sạc hay bảo hành xe VinFast, em luôn sẵn sàng hỗ trợ ạ!"
+            "Yêu cầu này nằm ngoài phạm vi hỗ trợ của trợ lý VinFast. "
+            "Em có thể hỗ trợ thông tin xe, trạm sạc, ứng dụng, bảo hành và các yêu cầu dịch vụ VinFast."
         )
         agent_msg = Message(
             id=str(uuid.uuid4()),
@@ -1250,7 +1280,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
 
     # 4. KIỂM TRA PHẢN ÁNH / KHIẾU NẠI (COMPLAINT / FEEDBACK)
     complaint_keywords = ["bức xúc", "khiếu nại", "thái độ", "trừ tiền", "hoàn tiền", "chiếm chỗ", "văng crash", "khen ngợi"]
-    is_complaint = any(kw in lower_text for kw in complaint_keywords)
+    is_complaint = classification.request_kind == 'complaint'
     if is_complaint:
         new_case_id = active_case_id or generate_case_id(db)
         case = scoped_cases(db, current_user).filter(Case.id == new_case_id).first()
@@ -1325,7 +1355,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 status=TicketStatus.STAFF_REVIEWING.value,
                 priority=case_prio,
                 message=agent_reply,
-                safe_guidance="Chuyên viên CSKH đang xử lý hồ sơ này của Quý khách.",
+                safe_guidance="Hồ sơ đã được ghi nhận và đang chờ chuyên viên CSKH xem xét.",
             ),
             error=None,
         )
@@ -1406,7 +1436,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 response_type='FAQ_ANSWER', message=reply, case_id=active_case_id,
                 remaining_guest_messages=remaining_guest_msgs,
             ), error=None)
-        if conversation.active_goal in {'quote', 'test_drive', 'maintenance', 'warranty', 'range', 'charging', 'capacity', 'concept'}:
+        if conversation.active_goal in {'quote', 'test_drive', 'maintenance', 'warranty', 'range', 'charging', 'capacity', 'concept', 'overview', 'appearance', 'application', 'charging_network', 'out_of_scope'}:
             is_technical_incident = False
 
     # --------------------------------------------------------------------------
@@ -1486,8 +1516,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     # --------------------------------------------------------------------------
     # NHÓM B: TƯ VẤN BÁN HÀNG, LÁI THỬ & GIÁ XE (SALES & SERVICES)
     # --------------------------------------------------------------------------
-    knowledge_parts = sales_parts(resolved_text, vehicle_model) if not is_technical_incident else []
-    if conversation.active_goal and conversation.active_goal not in {'quote', 'test_drive'} and turn_understanding.move != 'new_question':
+    knowledge_parts = sales_parts(resolved_text, vehicle_model, turn_understanding=turn_understanding.model_dump()) if not is_technical_incident else []
+    if conversation.active_goal and conversation.active_goal not in {'quote', 'test_drive', 'overview'} and turn_understanding.move != 'new_question':
         knowledge_parts = []
 
     # --------------------------------------------------------------------------
@@ -1552,16 +1582,6 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             ),
             error=None,
         )
-
-    if not is_technical_incident and any(k in lower_text for k in ["gần tôi", "gần nhất", "tìm trạm", "tìm showroom", "xung quanh đây", "trạm sạc quanh", "xưởng gần", "xưởng dịch vụ", "danh sách xưởng", "tìm xưởng"]):
-        target = "showroom" if "showroom" in lower_text else "xưởng dịch vụ" if "xưởng" in lower_text else "trạm sạc"
-        reply = f"Quý khách vui lòng chia sẻ vị trí để tìm {target} gần mình. Nếu không dùng GPS, Quý khách có thể nhập khu vực hoặc địa chỉ."
-        db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
-                       sender_type="AGENT", content=reply, msg_metadata={"action": "find_service_point"}))
-        db.flush()
-        return ApiResponse(success=True, data=ChatResponseData(response_type="FAQ_ANSWER", message=reply,
-            case_id=active_case_id, request_location=True,
-            show_emergency_banner=bool(active_case and active_case.priority == "CRITICAL")), error=None)
 
     # --------------------------------------------------------------------------
     # NHÓM C: TRA CỨU TRI THỨC / RAG FAQ (KHI KHÔNG PHẢI SỰ CỐ KỸ THUẬT)
@@ -1644,6 +1664,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         )
         db.info['conversation_claims'] = ai_res.get('answer_claims', [])
         db.info['conversation_retrieval'] = ai_res.get('retrieval_diagnostics', {})
+        db.info['conversation_final'] = {'answer_path': ai_res.get('answer_path') or ('rag' if ai_res.get('citations') or ai_res.get('is_no_source') else 'general'),
+                                         'successful': not ai_res.get('is_no_source', False)}
         if isinstance(agent_reply, list):
             agent_reply = "".join(
                 b.get("text", "") if isinstance(b, dict) else getattr(b, "text", str(b))
@@ -1658,19 +1680,19 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             diag_cat = diag.get("category")
             diag_stage = diag.get("stage")
             if diag_cat == "context_budget_exceeded" or diag_stage == "prompt":
-                agent_reply = "Tài liệu cần thiết vượt quá giới hạn xử lý hiện tại. Em sẽ chuyển chuyên viên kiểm tra đầy đủ điều kiện."
-            elif ((diag_stage == "generation" and diag_cat not in {"unsupported_answer", "unsupported_numeric_claim"})
-                  or diag_cat in ("generation_unavailable", "provider_error", "circuit_open", "rate_limited")):
+                agent_reply = "Em chưa đối chiếu đầy đủ tài liệu để trả lời chính xác câu hỏi này. Quý khách có thể cho biết phiên bản xe và nội dung muốn kiểm tra, hoặc liên hệ chuyên viên VinFast để được hỗ trợ nhé."
+            elif (not agent_reply or "chưa hoàn tất" in agent_reply) and ((diag_stage == "generation" and diag_cat not in {"unsupported_answer", "unsupported_numeric_claim"}) or diag_cat in ("generation_unavailable", "provider_error", "circuit_open", "rate_limited")):
                 agent_reply = "Em chưa hoàn tất được việc tạo câu trả lời từ tài liệu đã tìm thấy. Quý khách vui lòng thử lại; em chưa thể xác nhận nội dung lúc này."
-            elif not agent_reply or "chưa có nguồn" in agent_reply or "Tôi chưa có nguồn" in agent_reply:
-                agent_reply = "Em chưa có nguồn đã xác thực cho câu hỏi này. Quý khách có thể yêu cầu chuyển chuyên viên hỗ trợ."
+            elif not agent_reply or "chưa có nguồn" in agent_reply:
+                agent_reply = "Em chưa có đủ thông tin đã xác thực để trả lời chính xác câu hỏi này. Quý khách có thể cho biết thêm phiên bản xe hoặc liên hệ chuyên viên VinFast để đối chiếu nhé."
         citations = []
         if ai_res.get("citations"):
             seen_sources = set()
             for c in ai_res["citations"]:
-                if c.get("url") in seen_sources:
+                evidence_key = (c.get('source_id'), c.get('url'), c.get('relevant_snippet'))
+                if evidence_key in seen_sources:
                     continue
-                seen_sources.add(c.get("url"))
+                seen_sources.add(evidence_key)
                 citations.append(
                     Citation(
                         source_id=c.get("source_id", "SRC-KB"),
@@ -1681,6 +1703,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                         applicable_models=c.get("applicable_models", []),
                         source_type=c.get("source_type", "official_manual"),
                         relevant_snippet=c.get("relevant_snippet", ""),
+                        fact_scope=c.get('fact_scope'), claim_evidence=c.get('claim_evidence'),
+                        source_section=c.get('source_section'), specs_reviewed_at=c.get('specs_reviewed_at'),
+                        price_evidence=c.get('price_evidence'),
                     )
                 )
         service_handoff = ServiceHandoff(
@@ -1710,6 +1735,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             session_id=payload.session_id,
             sender_type=SenderType.AGENT.value,
             content=agent_reply,
+            created_at=reply_created_at,
             msg_metadata={"citations": [c.model_dump() for c in citations]},
         )
         db.add(agent_msg)
@@ -2163,6 +2189,33 @@ def submit_case_location(
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {payload.case_id}")
     check_case_ownership(case, current_user)
 
+    # Validate Vietnam bounding box (lat 8-24, lng 102-110); ngoài khung -> 422
+    if payload.latitude is not None or payload.longitude is not None:
+        if payload.latitude is not None and (payload.latitude < 8.0 or payload.latitude > 24.0):
+            raise HTTPException(
+                status_code=422,
+                detail="Tọa độ vĩ độ nằm ngoài lãnh thổ Việt Nam (Vĩ độ 8-24).",
+            )
+        if payload.longitude is not None and (payload.longitude < 102.0 or payload.longitude > 110.0):
+            raise HTTPException(
+                status_code=422,
+                detail="Tọa độ kinh độ nằm ngoài lãnh thổ Việt Nam (Kinh độ 102-110).",
+            )
+    if payload.status == "CONSENTED" and (payload.latitude is None or payload.longitude is None):
+        raise HTTPException(
+            status_code=422,
+            detail="Trạng thái CONSENTED yêu cầu phải cung cấp tọa độ.",
+        )
+
+    # Keep only the current location for this case, and never retain coordinates
+    # after the customer switches to manual entry or withdraws sharing.
+    location_label = sanitize_pii(payload.location_label.strip())[0]
+    latitude = payload.latitude if payload.status == "CONSENTED" else None
+    longitude = payload.longitude if payload.status == "CONSENTED" else None
+    share_with_staff = payload.share_with_staff if payload.status != "NOT_SHARED" else False
+    if payload.status == "NOT_SHARED":
+        location_label = ""
+
     loc = db.query(CaseLocation).filter(CaseLocation.case_id == payload.case_id).first()
     if not loc:
         loc = CaseLocation(
@@ -2170,22 +2223,22 @@ def submit_case_location(
             case_id=payload.case_id,
             status=payload.status,
             source=payload.source,
-            location_label=payload.location_label,
-            latitude=payload.latitude,
-            longitude=payload.longitude,
+            location_label=location_label,
+            latitude=latitude,
+            longitude=longitude,
             precision=payload.precision,
-            share_with_staff=payload.share_with_staff,
+            share_with_staff=share_with_staff,
             created_at=utcnow(),
         )
         db.add(loc)
     else:
         loc.status = payload.status
         loc.source = payload.source
-        loc.location_label = payload.location_label
-        loc.latitude = payload.latitude
-        loc.longitude = payload.longitude
+        loc.location_label = location_label
+        loc.latitude = latitude
+        loc.longitude = longitude
         loc.precision = payload.precision
-        loc.share_with_staff = payload.share_with_staff
+        loc.share_with_staff = share_with_staff
 
     db.commit()
     db.refresh(loc)
@@ -2207,68 +2260,25 @@ def submit_case_location(
     )
 
 
-DEMO_SERVICE_POINTS = [
-    ServicePointItem(
-        id="SP-HN-001",
-        name="Trạm sạc VinFast Vincom Metropolis",
-        category="CHARGING_STATION",
-        address="29 Liễu Giai, Ngọc Khánh, Ba Đình, Hà Nội",
-        distance_km=1.2,
-        latitude=21.0315,
-        longitude=105.8145,
-        hotline="1900-232389",
-        operating_hours="24/7",
-        charger_types=["DC 250kW (Siêu nhanh)", "DC 60kW", "AC 11kW"],
-    ),
-    ServicePointItem(
-        id="SP-HCM-001",
-        name="Trạm sạc & Dịch vụ VinFast Landmark 81",
-        category="CHARGING_STATION",
-        address="720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP.HCM",
-        distance_km=2.5,
-        latitude=10.7950,
-        longitude=106.7218,
-        hotline="1900-232389",
-        operating_hours="24/7",
-        charger_types=["DC 150kW", "DC 60kW", "AC 7.4kW"],
-    ),
-    ServicePointItem(
-        id="SP-DN-001",
-        name="Trạm Cứu hộ Cao tốc Long Thành - Dầu Giây",
-        category="RESCUE_POST",
-        address="Km 28 Cao tốc TP.HCM - Long Thành - Dầu Giây",
-        distance_km=5.0,
-        latitude=10.7712,
-        longitude=106.9450,
-        hotline="1900-232389 (Phím 1 Cứu hộ khẩn cấp)",
-        operating_hours="24/7",
-        charger_types=None,
-    ),
-    ServicePointItem(
-        id="SP-HCM-002",
-        name="Xưởng Dịch vụ VinFast Thảo Điền",
-        category="SERVICE_CENTER",
-        address="159 Xa Lộ Hà Nội, Thảo Điền, TP. Thủ Đức, TP.HCM",
-        distance_km=3.8,
-        latitude=10.8030,
-        longitude=106.7350,
-        hotline="1900-232389",
-        operating_hours="08:00 - 18:00 (Thứ 2 - Thứ 7)",
-        charger_types=["DC 60kW", "AC 11kW"],
-    ),
-    ServicePointItem(
-        id="SP-HN-002",
-        name="VinFast Showroom & Service Smart City",
-        category="SHOWROOM",
-        address="Khu đô thị Vinhomes Smart City, Tây Mỗ, Nam Từ Liêm, Hà Nội",
-        distance_km=8.4,
-        latitude=20.9982,
-        longitude=105.7420,
-        hotline="1900-232389",
-        operating_hours="08:30 - 20:00 Hàng ngày",
-        charger_types=["DC 150kW", "DC 60kW"],
-    ),
-]
+@router.get("/service-points/nearby")
+async def get_nearby_service_points(
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+    category: Literal["ALL", "CHARGING_STATION", "SHOWROOM", "SERVICE_WORKSHOP", "OTHER"] = "ALL",
+    radius_km: float = Query(50, gt=0, le=1000),
+    limit: int = Query(5, ge=1, le=100),
+    vehicle_type: Literal["CAR", "TWO_WHEELER"] = "CAR",
+):
+    """Snapshot directory. Top five only; no coordinate storage or request logging."""
+    if not math.isfinite(lat) or not math.isfinite(lng) or not math.isfinite(radius_km):
+        raise HTTPException(status_code=422, detail="Tọa độ hoặc bán kính không hợp lệ")
+
+    try:
+        data = await vinfast_nearby_search(lat, lng, category, vehicle_type, radius_km)
+        data["points"] = data["points"][:limit]
+    except (OSError, ValueError, KeyError, TypeError, EOFError):
+        raise HTTPException(status_code=503, detail="Danh mục điểm dịch vụ tạm thời không khả dụng") from None
+    return ApiResponse(success=True, data=data, error=None)
 
 
 @router.get("/cases/{case_id}/service-points", response_model=ApiResponse[ServicePointsData])
@@ -2279,24 +2289,19 @@ def get_case_service_points(
 ):
     """
     Lấy danh sách điểm hỗ trợ / trạm sạc / xưởng dịch vụ gợi ý theo sự cố (ADR-005).
-    P0 dùng 3-5 điểm seed demo phù hợp intent.
+    Truy vấn bảng service_points theo khoảng cách Haversine và phân loại theo intent / triage.
     """
     case = scoped_cases(db, current_user).filter(Case.id == case_id).first()
     if not case:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
     check_case_ownership(case, current_user)
 
-    # Sắp xếp ưu tiên theo intent
-    # Demo fixtures are not a verified directory and cannot be recommended.
-    points = []
-    if case.intent == Intent.CHARGING_BATTERY.value:
-        points.sort(key=lambda p: 0 if p.category == "CHARGING_STATION" else 1)
-    elif case.intent == Intent.SERVICE_INCIDENT.value:
-        points.sort(key=lambda p: 0 if p.category in ("RESCUE_POST", "SERVICE_CENTER") else 1)
+    from src.services.service_point_service import build_case_service_points_response
 
+    data = build_case_service_points_response(db=db, case=case)
     return ApiResponse(
         success=True,
-        data=ServicePointsData(case_id=case.id, recommended_points=points),
+        data=data,
         error=None,
     )
 
@@ -3062,6 +3067,7 @@ def get_session_chat_history(
         created_str = msg.created_at.isoformat() if msg.created_at else datetime.now(UTC).isoformat()
         items.append(
             SessionHistoryMessageItem(
+                language=meta.get('language', 'vi'),
                 id=msg.id,
                 sender=msg.sender_type,
                 content=msg.content,
@@ -3368,5 +3374,3 @@ def delete_all_chat_sessions(
         db.commit()
 
     return ApiResponse(success=True, data={"deleted_sessions_count": deleted_count})
-
-

@@ -10,7 +10,7 @@ from src.agents.guardrails import evaluate_hard_safety, strip_accents, without_n
 from src.agents.routing import decide_routing
 from src.agents.state import AgentState, IntentType, PriorityLevel
 from src.services.agent_llm import structured_call
-from src.services.chat_classification import current_clause, denied_reports, temporal_context, without_denied_reports
+from src.services.chat_classification import analyze_report_clauses, current_clause, denied_reports, temporal_context, without_denied_reports
 from src.services.chat_normalization import normalize_chat_text
 from src.services.followup_context import FAQ_FOLLOWUPS
 from src.services.location_extraction import extract_locations
@@ -32,11 +32,11 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
     if temporal_context(text) in {'resolved_past', 'hypothetical', 'knowledge'}:
         return 'faq'
     reports_denied = bool(denied_reports(text))
-    text = without_denied_reports(without_negated_hazards(current_clause(text)))
+    text = analyze_report_clauses(text).current_affirmed_text
     lower = text.lower()
     if any(k in lower for k in ["bí mật", "nội bộ", "không công khai", "tháng sau"]):
         return "faq"
-    if any(k in lower for k in ["khiếu nại", "bức xúc", "thái độ", "không hài lòng", "phản ánh", "hoàn tiền", "thu sai", "khen ngợi", "crash", "bị văng"]):
+    if analyze_report_clauses(text).affirmed_complaint:
         return "complaint"
 
     lower_unaccented = strip_accents(lower)
@@ -78,6 +78,12 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
     has_current_failure = bool(
         re.search(current_failure_regex, lower)
         or re.search(current_failure_unaccented_regex, lower_unaccented)
+        or re.search(
+            r"\b(?:pin|muc pin)\s+(?:vf\s*(?:[356789]|e34)\s+)?(?:(?:bi|dang)\s+)?"
+            r"(?:tut\s+muc\s+sac\s+nhanh|hien\s+thi\s+sai)\b|"
+            r"\btru\s+sac\s+(?:vf\s*(?:[356789]|e34)\s+)?khong\s+hoat\s+dong\b",
+            lower_unaccented,
+        )
     )
     if has_current_failure:
         return "incident"
@@ -109,6 +115,7 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
             "bảo hành",
             "thông số",
             "giá xe",
+            "hỏi giá",
             "đặt lịch",
             "hình thức",
             "tính năng",
@@ -250,7 +257,9 @@ async def triage_node(state: AgentState) -> dict:
     confidence = 0.90 if (is_crit or charging or complaint or incident or faq or continuation) else 0.55
     # Ordinary conversation needs no official evidence; product commitments,
     # technical details and repair requests still use the existing grounded flow.
-    specialist = is_vehicle_comparison(text) or any(term in lower for term in [
+    from src.services.rag_service import requires_official_evidence
+    evidence_required = requires_official_evidence(text, (state.get('turn_understanding') or {}).get('source_need'))
+    specialist = evidence_required or is_vehicle_comparison(text) or any(term in lower for term in [
         "bảo hành", "chính sách", "thông số", "dung lượng", "điện áp", "cell", "bms",
         "chu kỳ", "kwh", "bao nhiêu", "bao lâu", "quãng đường", "giá", "phí",
         "khuyến mãi", "ưu đãi", "đổi gói", "chuyển gói", "đặt lịch", "điều kiện",
@@ -266,7 +275,7 @@ async def triage_node(state: AgentState) -> dict:
              or lower.strip(" .!?") in ["xin chào", "chào", "hello", "cảm ơn"])
     )
     common_knowledge = (is_general_vehicle_question(text) and request_kind == "faq"
-                        and not is_crit and not foreign_domain and not complaint)
+                        and not is_crit and not foreign_domain and not complaint and not evidence_required)
     general = general or common_knowledge
     llm = await structured_call(state, "triage", TriageResult) if confidence < 0.60 and not foreign_domain and not is_crit and not general else None
     if llm and not foreign_domain and not is_crit:
@@ -325,6 +334,9 @@ async def triage_node(state: AgentState) -> dict:
         priority = "HIGH"
     elif "rùa" in lower and actual_failure:
         priority = "HIGH"
+    if actual_failure and not is_crit and not foreign_domain and re.search(
+            r'không (?:nhận sạc|sạc được|mở được cửa)|ngắt sạc liên tục|lỗi (?:bms|súng sạc)|mất nguồn 12v', lower):
+        priority = 'HIGH'
     if lower.strip(" .?!") in FAQ_FOLLOWUPS:
         # A short reference without a resolved topic needs clarification first.
         intent, faq, general, confidence = "Sales/General Info", False, False, 0.90
@@ -350,7 +362,7 @@ async def triage_node(state: AgentState) -> dict:
     flags = dict(state.get("guardrails", {}))
     flags.update(out_of_scope_detected=intent == "Out_of_Scope", sentiment_sensitive_escalated=complaint)
     reply = (
-        "Dạ em chuyên hỗ trợ thông tin xe điện và dịch vụ VinFast. Quý khách vui lòng cho biết yêu cầu liên quan đến VinFast ạ."
+        "Tôi hỗ trợ thông tin xe điện và dịch vụ VinFast. Quý khách vui lòng cho biết yêu cầu liên quan đến VinFast."
     )
     return {
         "intent": intent,
