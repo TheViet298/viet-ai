@@ -27,7 +27,6 @@ async def lifespan(app: FastAPI):
     os.makedirs("data/attachments", exist_ok=True)
     ensure_schema()
     import logging
-    import os
     from sqlalchemy import func, select
     from src.db import SessionLocal
     from src.models.db_models import ServicePoint
