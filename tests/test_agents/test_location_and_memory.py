@@ -14,7 +14,7 @@ async def test_location_consent_skip_and_manual_points():
     saved = save_location(data, "c1")
     assert saved["latitude"] is None
     points = suggest_service_points(cid, "c1")
-    assert len(points) == 3 and all(p["demo"] for p in points)
+    assert points == []  # No verified workshop mapping in the supplied CSV snapshot.
     save_location({**data, "status": "NOT_SHARED"}, "c1")
     assert suggest_service_points(cid, "c1") == []
     with pytest.raises(PermissionError):

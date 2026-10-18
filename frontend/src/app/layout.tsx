@@ -3,10 +3,9 @@ import { Navbar, Footer, AuthProvider } from "@/features/shared";
 import "./globals.css";
 import "./theme.css";
 import { LocaleProvider } from "@/features/shared/context/LocaleContext";
-
 import { ThemeProvider } from "@/features/shared/context/ThemeContext";
-
 import { THEME_INIT } from "@/features/shared/utils/theme-init";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 export const metadata: Metadata = {
   title: "VFServ — Dịch vụ & Điều phối Kỹ thuật Xe điện VinFast",

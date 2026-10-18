@@ -20,32 +20,32 @@ import {
   MessageSquare,
   MapPin,
   ExternalLink,
-  ChevronRight,
   ChevronDown,
   ChevronUp,
   BookOpen,
   Navigation,
   ThumbsUp,
-  Filter,
   ShieldCheck,
   Loader2,
-  Wrench,
-  BatteryCharging,
-  Info,
   ShieldAlert,
   ArrowRight,
-  Lock,
 } from "lucide-react";
 import {
   getCaseDetail,
-  getCaseStatus,
   getCustomerCases,
   reopenCustomerCase,
   submitCustomerFeedback,
   confirmCustomerCase,
   submitSafetyAcknowledgement,
+  getCaseServicePoints,
+  submitCustomerLocation,
 } from "@/features/chat/api/chatApi";
-import { CustomerCaseItem } from "@/features/chat/types";
+import {
+  CustomerCaseItem,
+  ServicePointsApiResponse,
+  ServicePointApiItem,
+} from "@/features/chat/types";
+import { VietmapMiniMap } from "@/features/chat/components/VietmapMiniMap";
 import { useAuth } from "@/features/shared";
 
 // =============================================================================
@@ -91,7 +91,7 @@ export interface TrackedCase {
   locationConsent?: "GRANTED" | "DENIED" | "MANUAL" | "PENDING";
   manualLocation?: string;
   missingFields?: string[];
-  capturedFields?: Record<string, any>;
+  capturedFields?: Record<string, unknown>;
   customerUpdate?: {
     resolvedAt?: string;
     staffName: string;
@@ -100,7 +100,7 @@ export interface TrackedCase {
     customerConfirmed?: boolean;
   };
   chatSnippet?: Array<{ sender: "CUSTOMER" | "AGENT" | "STAFF"; text: string; time: string }>;
-  suggestedServicePoints?: ServicePointSeed[];
+  suggestedServicePoints?: ServicePointApiItem[];
 }
 
 interface CuratedTopic {
@@ -186,8 +186,6 @@ const CURATED_TOPICS: CuratedTopic[] = [
   }
 ];
 
-const SAMPLE_CASES: Record<string, TrackedCase> = {};
-
 export default function TrackCasePage() {
   const { t, language } = useLocale();
   const { user, role } = useAuth();
@@ -227,10 +225,6 @@ export default function TrackCasePage() {
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState<boolean>(false);
   const [isFeedbackDismissed, setIsFeedbackDismissed] = useState<boolean>(false);
 
-  // Location Consent state
-  const [locationConsentChoice, setLocationConsentChoice] = useState<"GRANTED" | "MANUAL" | "SKIPPED" | null>(null);
-  const [manualLocationInput, setManualLocationInput] = useState<string>("");
-
   // Curated Topics Tab: Search & Filter & Accordion
   const [topicSearch, setTopicSearch] = useState<string>("");
   const [topicCategory, setTopicCategory] = useState<string>("ALL");
@@ -239,6 +233,52 @@ export default function TrackCasePage() {
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [caseLoadError, setCaseLoadError] = useState<string | null>(null);
   const [isConfirmingSafety, setIsConfirmingSafety] = useState<boolean>(false);
+
+  // Real Service Points from /cases/{id}/service-points (BƯỚC 4)
+  const [servicePointsData, setServicePointsData] = useState<ServicePointsApiResponse | null>(null);
+  const [isRequestingLocation, setIsRequestingLocation] = useState<boolean>(false);
+  const [clientUserCoord, setClientUserCoord] = useState<{ lat: number; lng: number } | null>(null);
+
+  const handleShareLocation = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setActionNotice("Trình duyệt không hỗ trợ định vị GPS trực tiếp.");
+      return;
+    }
+    setIsRequestingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setClientUserCoord({ lat, lng });
+        if (selectedCaseId) {
+          try {
+            await submitCustomerLocation({
+              case_id: selectedCaseId,
+              status: "CONSENTED",
+              source: "BROWSER_GPS",
+              location_label: "Vị trí GPS từ trình duyệt",
+              latitude: lat,
+              longitude: lng,
+              precision: "EXACT",
+              share_with_staff: true,
+            });
+            const updated = await getCaseServicePoints(selectedCaseId);
+            if (updated?.success && updated.data) {
+              setServicePointsData(updated.data);
+            }
+          } catch {
+            // Lỗi cập nhật backend không chặn hiển thị tọa độ trên bản đồ client
+          }
+        }
+        setIsRequestingLocation(false);
+      },
+      () => {
+        setIsRequestingLocation(false);
+        setActionNotice("Không nhận được quyền vị trí GPS. Hệ thống gợi ý theo khu vực.");
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
 
   const handleCopyId = (idToCopy: string) => {
     navigator.clipboard.writeText(idToCopy);
@@ -257,7 +297,17 @@ export default function TrackCasePage() {
 
     setSearchLoading(true);
     try {
-      const res = await getCaseDetail(caseId);
+      const [res, spRes] = await Promise.all([
+        getCaseDetail(caseId),
+        getCaseServicePoints(caseId).catch(() => null),
+      ]);
+
+      if (spRes?.success && spRes.data) {
+        setServicePointsData(spRes.data);
+      } else {
+        setServicePointsData(null);
+      }
+
       if (res?.success && res.data) {
         const d = res.data;
         const c = d.case;
@@ -266,7 +316,7 @@ export default function TrackCasePage() {
         const loc = d.location;
 
         // 1. Vehicle model - Never default to VF8
-        const rawModel = c.vehicle_model || captured.vehicle_model || "";
+        const rawModel = String(c.vehicle_model || captured.vehicle_model || "");
         const cleanModel = rawModel
           ? rawModel.toUpperCase().startsWith("VF")
             ? rawModel.toUpperCase().replace(/\s+/g, "")
@@ -281,7 +331,7 @@ export default function TrackCasePage() {
             : t("Đang xác minh");
 
         const warningLight = toCustomerWarningText(captured);
-        const rawErrorCode = captured.error_code || null;
+        const rawErrorCode = captured.error_code ? String(captured.error_code) : null;
 
         const isTurtle =
           /rùa|turtle/i.test(String(warningLight)) ||
@@ -324,7 +374,7 @@ export default function TrackCasePage() {
           : undefined;
 
         // 6. Safety Status & Incident Version
-        const safetyStatus = c.safety_status || captured.safety_status || "unconfirmed";
+        const safetyStatus = String(c.safety_status || captured.safety_status || "unconfirmed");
         const incidentVersion = c.incident_version ?? 1;
 
         // 7. Last Staff Update
@@ -363,7 +413,7 @@ export default function TrackCasePage() {
           safetyStatus: safetyStatus,
           incidentVersion: incidentVersion,
           chatSnippet: convSnippet.length > 0 ? convSnippet : undefined,
-          suggestedServicePoints: [],
+          suggestedServicePoints: spRes?.data?.recommended_points || [],
           customerUpdate:
             ["Resolved", "Closed"].includes(c.status) && lastStaffUpdate?.status_after_update === "Resolved"
               ? {
@@ -386,9 +436,9 @@ export default function TrackCasePage() {
         const errMsg = typeof res?.error === "string" ? res.error : (res?.error as any)?.message || t("Không tìm thấy dữ liệu hồ sơ");
         throw new Error(errMsg);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setCaseLoadError(
-        t("Không tải được chi tiết hồ sơ. Vui lòng thử lại.")
+        err instanceof Error ? err.message : t("Không tải được chi tiết hồ sơ. Vui lòng thử lại.")
       );
     } finally {
       setSearchLoading(false);
@@ -432,9 +482,9 @@ export default function TrackCasePage() {
         ...currentCase,
         safetyStatus: "customer_reported_safe",
       });
-      setActionNotice(t("Đã lưu xác nhận của anh/chị đang ở nơi an toàn. Trạng thái hồ sơ không thay đổi."));
-    } catch (err: any) {
-      setActionNotice(t("Chưa lưu được xác nhận an toàn. Anh/chị vui lòng thử lại."));
+      setActionNotice(t("Đã ghi nhận vị trí an toàn của Quý khách. Đội ngũ kỹ thuật đang tiếp tục hỗ trợ."));
+    } catch (err: unknown) {
+      setActionNotice(t("Không thể xác nhận an toàn: ") + (err instanceof Error ? err.message : t("Lỗi kết nối")));
     } finally {
       setIsConfirmingSafety(false);
     }
@@ -457,12 +507,12 @@ export default function TrackCasePage() {
       const receipt = await confirmCustomerCase(currentCase.id, {
         confirmation: "RESOLVED_CONFIRMED",
       });
-      if (!receipt.success || receipt.data.status !== "Closed") throw new Error("Confirmation not saved");
+      if (!receipt.success) throw new Error(receipt.error || "Máy chủ chưa ghi nhận xác nhận.");
       setConfirmStatus("RESOLVED_CONFIRMED");
       setCurrentCase({ ...currentCase, status: "Closed" });
-      setActionNotice(t("Cảm ơn anh/chị đã xác nhận! Hồ sơ đã được hoàn tất. Vui lòng dành 30 giây đánh giá chất lượng phục vụ."));
-    } catch {
-      setActionNotice(t("Chưa lưu được xác nhận. Hồ sơ chưa thay đổi; vui lòng thử lại."));
+      setActionNotice(t("Cảm ơn Quý khách đã xác nhận! Hồ sơ đã được hoàn tất. Vui lòng dành 30 giây đánh giá chất lượng phục vụ."));
+    } catch (err: unknown) {
+      setActionNotice("Lưu ý: " + (err instanceof Error ? err.message : t("Chưa lưu được xác nhận. Hồ sơ chưa thay đổi; vui lòng thử lại.")));
     } finally {
       setIsSubmittingConfirm(false);
     }
@@ -484,9 +534,9 @@ export default function TrackCasePage() {
           ? `${t("Khách yêu cầu mở lại:")} "${reopenReason}"`
           : t("Khách phản ánh sự cố chưa được khắc phục triệt để."),
       });
-      setActionNotice(t("Hồ sơ đã được mở lại và đang chờ kiểm tra bổ sung."));
-    } catch (err: any) {
-      setActionNotice(t("Không thể mở lại hồ sơ lúc này."));
+      setActionNotice(t("Hồ sơ đã được chuyển lại cho Cố vấn Dịch vụ để kiểm tra bổ sung!"));
+    } catch (err: unknown) {
+      setActionNotice("Lưu ý: " + (err instanceof Error ? err.message : t("Không thể mở lại hồ sơ lúc này.")));
     } finally {
       setIsSubmittingConfirm(false);
     }
@@ -505,8 +555,8 @@ export default function TrackCasePage() {
         setFeedbackSubmitted(true);
         setActionNotice(t("Cảm ơn anh/chị đã gửi đánh giá chất lượng dịch vụ!"));
       }
-    } catch (err: any) {
-      setActionNotice(t("Lỗi khi gửi đánh giá."));
+    } catch (err: unknown) {
+      setActionNotice("Lưu ý: " + (err instanceof Error ? err.message : t("Lỗi khi gửi đánh giá.")));
     } finally {
       setIsSubmittingFeedback(false);
     }
@@ -548,7 +598,7 @@ export default function TrackCasePage() {
     }
   };
 
-  const getStatusLabel = (status: TrackedCase["status"]) => {
+  const getStatusLabel = (status: string) => {
     switch (status) {
       case "New":
         return language === "en" ? "Awaiting review" : "Chờ tiếp nhận";
@@ -698,7 +748,7 @@ export default function TrackCasePage() {
                                 ? uc.vehicle_model.toUpperCase()
                                 : `VF ${uc.vehicle_model}`)
                               : "VF";
-                            const statusVn = getStatusLabel(uc.status as any);
+                            const statusVn = getStatusLabel(uc.status);
                             return (
                               <option key={uc.id} value={uc.id}>
                                 {model} · {statusVn} ({shortId})
@@ -707,7 +757,7 @@ export default function TrackCasePage() {
                           })}
                           {selectedCaseId && !userCases.some((uc) => uc.id === selectedCaseId) && (
                             <option value={selectedCaseId}>
-                              {currentCase?.vehicleModel || "VF"} · {getStatusLabel((currentCase?.status as any) || "Staff Reviewing")} ({selectedCaseId.length > 18 ? selectedCaseId.slice(0, 15) + "..." : selectedCaseId})
+                              {currentCase?.vehicleModel || "VF"} · {getStatusLabel(currentCase?.status || "Staff Reviewing")} ({selectedCaseId.length > 18 ? selectedCaseId.slice(0, 15) + "..." : selectedCaseId})
                             </option>
                           )}
                         </>
@@ -715,7 +765,7 @@ export default function TrackCasePage() {
                         <>
                           {selectedCaseId ? (
                             <option value={selectedCaseId}>
-                              {currentCase?.vehicleModel || "VF"} · {getStatusLabel((currentCase?.status as any) || "Staff Reviewing")} ({selectedCaseId.length > 18 ? selectedCaseId.slice(0, 15) + "..." : selectedCaseId})
+                              {currentCase?.vehicleModel || "VF"} · {getStatusLabel(currentCase?.status || "Staff Reviewing")} ({selectedCaseId.length > 18 ? selectedCaseId.slice(0, 15) + "..." : selectedCaseId})
                             </option>
                           ) : (
                             <option value="">{t("Chưa có hồ sơ xe")}</option>
@@ -1354,6 +1404,37 @@ export default function TrackCasePage() {
                 CỘT PHẢI (4/12): THÔNG TIN THAM CHIẾU (GỌN GÀNG, SÁT NHAU)
             ───────────────────────────────────────────────────────── */}
             <div className="lg:col-span-4 space-y-4">
+              {/* =======================================================
+                  RESCUE HOTLINE: HIỂN THỊ ĐẦU TIÊN, NỔI BẬT NẾU SỰ CỐ NẶNG
+              ======================================================= */}
+              {servicePointsData?.rescue_hotline && (
+                <div className="rounded-2xl border-2 border-red-500 bg-red-50 p-4 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <PhoneCall className="w-5 h-5 text-red-600 animate-pulse" />
+                      <span className="text-[12.5px] font-bold text-red-900 uppercase tracking-wide">
+                        Hotline Cứu hộ Khẩn cấp 24/7
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-bold tracking-wider">
+                      ƯU TIÊN
+                    </span>
+                  </div>
+
+                  <p className="text-[12px] text-red-800 leading-relaxed">
+                    Hồ sơ được xác định thuộc tình trạng cần cứu hộ khẩn cấp hoặc không thể di chuyển an toàn. Vui lòng bấm gọi ngay để điều xe cứu hộ:
+                  </p>
+
+                  <a
+                    href={`tel:${servicePointsData.rescue_hotline.replace(/[^0-9]/g, "")}`}
+                    className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-[13.5px] shadow-sm transition active:scale-[0.98]"
+                  >
+                    <PhoneCall className="w-4 h-4" />
+                    <span>☎ {servicePointsData.rescue_hotline}</span>
+                  </a>
+                </div>
+              )}
+
               {/* Card 1: Thông Tin Xe & Dữ Kiện Kỹ Thuật (Key-Value Sát Nhau) */}
               <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-4 sm:p-5 space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
@@ -1458,77 +1539,270 @@ export default function TrackCasePage() {
                 </div>
               </div>
 
-              {/* Card 2: Trạm & Điểm Dịch Vụ Phụ Trách (Chỉ đường Google Maps) */}
+              {/* =======================================================
+                  Card 2: ĐIỂM DỊCH VỤ VINFAST ĐỀ XUẤT + BẢN ĐỒ VIETMAP
+              ======================================================= */}
               <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 p-4 sm:p-5 space-y-3">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                   <h3 className="text-[13.5px] font-bold text-slate-900 flex items-center gap-1.5">
                     <MapPin className="w-4 h-4 text-[#1E40AF]" />
-                    <span>{t("Trạm / Điểm hỗ trợ")}</span>
+                    <span>Điểm hỗ trợ VinFast</span>
                   </h3>
-                  <span
-                    className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
-                      currentCase.locationShared
-                        ? "text-emerald-700 bg-emerald-50"
-                        : "text-amber-700 bg-amber-50"
-                    }`}
-                  >
-                    {currentCase.locationShared ? t("Đã định vị") : t("Gợi ý")}
+                  <div className="flex items-center gap-1.5">
+                    {servicePointsData?.needs_location ? (
+                      <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold text-amber-700 bg-amber-50 border border-amber-200/80">
+                        Gợi ý theo khu vực
+                      </span>
+                    ) : (
+                      <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80">
+                        Đã xác định vị trí
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Nút chia sẻ vị trí khi needs_location = true và chưa chia sẻ thành công */}
+                {servicePointsData?.needs_location && !servicePointsData?.no_points_nearby && (
+                  <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-100 flex items-center justify-between gap-2">
+                    <p className="text-[11.5px] text-blue-900 leading-snug">
+                      Chưa có GPS chính xác. Bấm để tìm điểm gần nhất theo vị trí thực tế của bạn.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleShareLocation}
+                      disabled={isRequestingLocation}
+                      className="shrink-0 px-2.5 py-1 rounded-lg bg-[#1E40AF] hover:bg-blue-700 text-white text-[11px] font-semibold transition flex items-center gap-1 disabled:opacity-50"
+                    >
+                      {isRequestingLocation ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>Đang lấy...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Navigation className="w-3 h-3" />
+                          <span>Chia sẻ vị trí</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {/* Nhãn ngày thu thập dữ liệu */}
+                <div className="text-[11px] text-slate-400">
+                  Trạng thái tại ngày thu thập:{" "}
+                  <span className="font-medium text-slate-600">
+                    {servicePointsData?.last_updated_label || "Tháng 10/2026"}
                   </span>
                 </div>
 
-                <div className="space-y-2 text-[12.5px]">
-                  <div>
-                    <h4 className="font-semibold text-slate-900 leading-snug">
-                      {currentCase.stationLocation || t("Chưa có dữ liệu")}
-                    </h4>
-                    <p className="text-[11.5px] text-slate-500 mt-0.5 leading-relaxed">
-                      {currentCase.locationShared
-                        ? (currentCase.suggestedServicePoints?.[0]?.address ||
-                          t("Vị trí đã được chia sẻ và xác minh từ thiết bị."))
-                        : (currentCase.suggestedServicePoints?.[0]?.address ||
-                          t("Chưa chia sẻ vị trí chính xác. Gợi ý trạm dịch vụ VinFast lân cận."))}
-                    </p>
-                  </div>
+                {/* Mini Map Vietmap (Tự động ẩn nếu thiếu key, card vẫn hiện) */}
+                <VietmapMiniMap
+                  points={servicePointsData?.recommended_points || []}
+                  userLocation={clientUserCoord}
+                  lastUpdatedLabel={servicePointsData?.last_updated_label || undefined}
+                />
 
-                  <div className="pt-2 flex items-center justify-between">
-                    {currentCase.suggestedServicePoints?.[0]?.distance && (
-                      <span className="text-[11px] text-slate-400 font-mono">
-                        {t("Khoảng cách:")}{" "}{currentCase.suggestedServicePoints[0].distance}
-                      </span>
-                    )}
+                {/* Danh sách các card điểm dịch vụ */}
+                <div className="space-y-3 pt-1">
+                  {(servicePointsData?.recommended_points || []).length === 0 ? (
+                    servicePointsData?.no_points_nearby ? (
+                      <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-[12px] space-y-2 text-center">
+                        <p className="font-semibold leading-relaxed">
+                          {servicePointsData.message || "Chưa có điểm dịch vụ trong 150 km quanh vị trí của Quý khách; vui lòng gọi hotline"}
+                        </p>
+                        <a
+                          href="tel:1900232389"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11.5px] transition"
+                        >
+                          <PhoneCall className="w-3.5 h-3.5" />
+                          <span>Hotline VinFast: 1900-232389</span>
+                        </a>
+                      </div>
+                    ) : currentCase?.locationShared && currentCase?.stationLocation ? (
+                      <div className="space-y-2 text-[12.5px]">
+                        <div>
+                          <h4 className="font-semibold text-slate-900 leading-snug">
+                            {currentCase.stationLocation}
+                          </h4>
+                          <p className="text-[11.5px] text-slate-500 mt-0.5 leading-relaxed">
+                            {t("Vị trí đã được chia sẻ và xác minh từ thiết bị.")}
+                          </p>
+                        </div>
+                        <div className="pt-2 flex items-center justify-end">
+                          <a
+                            href={`https://maps.google.com/?q=${encodeURIComponent(currentCase.stationLocation)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 text-[#1E40AF] hover:bg-blue-100 text-[11.5px] font-semibold transition"
+                          >
+                            <Navigation className="w-3 h-3" />
+                            <span>{t("Chỉ đường")}</span>
+                          </a>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[12px] text-slate-500 py-2 text-center">
+                        {servicePointsData?.message || "Đang tìm kiếm các điểm dịch vụ phù hợp trong khu vực..."}
+                      </p>
+                    )
+                  ) : (
+                    (servicePointsData?.recommended_points || []).map((point, idx) => {
+                      const isWorkshop = point.category === "workshop";
+                      const isCharging = point.category === "charging_station";
+                      const isGsm = point.category_slug === "service_gsm";
+                      const hasDongSon = point.dong_son || point.services_offered?.includes("dong_son");
 
-                    {(currentCase.suggestedServicePoints?.[0]?.address ||
-                      (currentCase.locationShared && currentCase.stationLocation)) && (
-                    <a
-                      href={`https://maps.google.com/?q=${encodeURIComponent(
-                        currentCase.suggestedServicePoints?.[0]?.address || currentCase.stationLocation || ""
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 text-[#1E40AF] hover:bg-blue-100 text-[11.5px] font-semibold transition"
-                    >
-                      <Navigation className="w-3 h-3" />
-                      <span>{t("Chỉ đường")}</span>
-                    </a>
-                    )}
-                  </div>
+                      // Link chỉ đường bằng tọa độ đích nếu có
+                      const directionsHref =
+                        point.latitude && point.longitude
+                          ? `https://www.google.com/maps/dir/?api=1&destination=${point.latitude},${point.longitude}`
+                          : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(point.address)}`;
+
+                      return (
+                        <div
+                          key={point.id || idx}
+                          className="p-3 rounded-xl border border-slate-200/90 hover:border-blue-300 bg-slate-50/60 hover:bg-white transition space-y-2 text-[12px]"
+                        >
+                          {/* Header điểm: Tên + Badges */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <h4 className="font-semibold text-slate-900 leading-snug">
+                                {idx + 1}. {point.name}
+                              </h4>
+                              <p className="text-[11.5px] text-slate-500 mt-0.5 leading-relaxed">
+                                {point.address}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              {isWorkshop && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">
+                                  Xưởng 2S
+                                </span>
+                              )}
+                              {isCharging && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                  Trạm sạc
+                                </span>
+                              )}
+                              {hasDongSon && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">
+                                  Đồng sơn
+                                </span>
+                              )}
+                              {isGsm && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                                  Taxi GSM
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Thông tin đặc thù từng loại điểm */}
+                          {isCharging && (
+                            <div className="text-[11.5px] text-slate-500 italic">
+                              ⚡ Chưa công bố công suất
+                            </div>
+                          )}
+
+                          {isWorkshop && (
+                            <div className="space-y-1 text-[11.5px] text-slate-600">
+                              <div>
+                                <span className="text-slate-400">Giờ mở cửa:</span>{" "}
+                                <span className="font-medium text-slate-700">
+                                  {point.operating_hours || point.hours || "08:00 - 18:00"}
+                                </span>
+                              </div>
+                              {point.hotline_service && (
+                                <div>
+                                  <span className="text-slate-400">Hotline xưởng:</span>{" "}
+                                  <a
+                                    href={`tel:${point.hotline_service.replace(/[^0-9]/g, "")}`}
+                                    className="font-semibold text-blue-700 hover:underline"
+                                  >
+                                    ☎ {point.hotline_service}
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Ghi chú lưu ý (GSM / Đồng sơn) */}
+                          {point.note && (
+                            <div className="p-2 rounded-lg bg-amber-50/80 border border-amber-200/70 text-[11px] text-amber-900 leading-snug">
+                              ⚠ {point.note}
+                            </div>
+                          )}
+
+                          {/* Khoảng cách + Nút Chỉ đường & Đặt lịch */}
+                          <div className="pt-1.5 flex flex-wrap items-center justify-between gap-1 border-t border-slate-100">
+                            {(() => {
+                              if (point.distance_km != null) {
+                                return (
+                                  <span className="text-[11px] text-slate-500 font-mono">
+                                    Cách Quý khách: {point.distance_km} km
+                                  </span>
+                                );
+                              }
+                              if (point.distance_from_area_km != null) {
+                                const areaLabel = servicePointsData?.area_reference?.label || "khu vực";
+                                const roundedKm = Math.round(point.distance_from_area_km);
+                                const nStr = roundedKm < 5 ? "dưới 5 km" : `${roundedKm} km`;
+                                return (
+                                  <span className="text-[11px] text-slate-500 font-mono">
+                                    Khoảng {nStr} từ {areaLabel} (đường chim bay, không phải khoảng cách từ vị trí của Quý khách)
+                                  </span>
+                                );
+                              }
+                              return <span />;
+                            })()}
+
+                            <div className="flex items-center gap-1.5">
+                              {point.booking_url && (
+                                <a
+                                  href={point.booking_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-[11px] font-semibold transition"
+                                >
+                                  <span>Đặt lịch</span>
+                                </a>
+                              )}
+                              <a
+                                href={directionsHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-[#1E40AF] hover:bg-blue-100 text-[11px] font-semibold transition"
+                              >
+                                <Navigation className="w-3 h-3" />
+                                <span>Chỉ đường</span>
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+
                 </div>
               </div>
 
-              {/* Card 3: Hotline Khẩn Cấp (Thu gọn duy nhất 1 lần ở cột phải) */}
-              <div className="rounded-2xl border border-red-200/80 bg-red-50/50 p-4 space-y-2">
+              {/* Card 3: Hotline Khẩn Cấp VinFast chung */}
+              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 space-y-2">
                 <div className="flex items-center gap-2">
                   <PhoneCall className="w-4 h-4 text-red-600" />
                   <span className="text-[12px] font-bold text-red-900 uppercase tracking-wide">
-                    {t("Hỗ trợ khẩn cấp 24/7")}</span>
+                    {t("Hỗ trợ khẩn cấp 24/7")}
+                  </span>
                 </div>
 
                 <p className="text-[12px] text-slate-600">
-                  {t("Nếu xe gặp sự cố nguy hiểm trên đường hoặc cần cứu hộ khẩn cấp:")}</p>
+                  {t("Nếu xe gặp sự cố nguy hiểm trên đường hoặc cần cứu hộ khẩn cấp:")}
+                </p>
 
                 <a
                   href="tel:1900232389"
-                  className="block w-full text-center py-2 px-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-[13px] shadow-2xs transition"
+                  className="block w-full text-center py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-[12.5px] transition"
                 >
                   ☎ 1900-232389
                 </a>

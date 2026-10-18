@@ -4,6 +4,7 @@ import { parseServerTimestamp } from "@/lib/utils";
 import { VehicleInfoCard } from "./VehicleInfoCard";
 import { VehicleComparison } from "./VehicleComparison";
 
+import * as React from "react";
 import { useMemo, Children, isValidElement } from "react";
 import Link from "next/link";
 import { ExternalLink, FileText, Check } from "lucide-react";
@@ -25,6 +26,17 @@ export function ChatMessageItem({
   showCaseBadge = false,
   onSelectReply,
 }: ChatMessageItemProps) {
+  const reactUseState = (React as any).useState || (() => [true, () => {}]);
+  const reactUseEffect = (React as any).useEffect || (() => {});
+  const [mounted, setMounted] = reactUseState(() => typeof window === "undefined");
+  reactUseEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const normalizedTimestamp =
+    message.timestamp && !message.timestamp.endsWith("Z") && !message.timestamp.includes("+")
+      ? `${message.timestamp}Z`
+      : message.timestamp;
   const { t, language } = useLocale(message.language || "vi");
   const isCustomer = message.sender === "CUSTOMER";
   const hasVehicleCards = !isCustomer && Boolean(message.vehicle_cards?.length);
@@ -76,7 +88,11 @@ export function ChatMessageItem({
       <div className="flex items-center gap-1.5 px-1 text-[11px] text-slate-400 font-medium">
         <span>{isCustomer ? t("Bạn") : "Serv"}</span>
         <span>·</span>
-        <span>{parseServerTimestamp(message.timestamp).toLocaleTimeString(language === "en" ? "en-US" : "vi-VN", { hour: "2-digit", minute: "2-digit" })}</span>
+        <time dateTime={normalizedTimestamp}>
+          {mounted
+            ? parseServerTimestamp(message.timestamp).toLocaleTimeString(language === "en" ? "en-US" : "vi-VN", { hour: "2-digit", minute: "2-digit" })
+            : ""}
+        </time>
       </div>
 
       {hasVehicleCards && (

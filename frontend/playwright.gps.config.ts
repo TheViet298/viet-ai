@@ -1,0 +1,2 @@
+import { defineConfig } from '@playwright/test';
+export default defineConfig({ testDir: './tests/e2e', timeout: 60000, workers: 1, outputDir: '../.test-runs/gps-browser', reporter: 'list', use: { baseURL: process.env.GPS_QA_BASE_URL || 'http://127.0.0.1:3018', channel: process.env.QA_BROWSER_CHANNEL || undefined, screenshot: 'only-on-failure', trace: 'retain-on-failure' }, projects: [375, 1440].map(width => ({ name: `gps-${width}`, use: { viewport: { width, height: 960 } } })) });

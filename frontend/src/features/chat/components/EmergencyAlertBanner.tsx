@@ -1,7 +1,7 @@
 "use client";
 import { useLocale } from "@/features/shared/context/LocaleContext";
 
-import { CheckCircle2, ChevronRight, PhoneCall, ShieldAlert } from "lucide-react";
+import { CheckCircle2, PhoneCall, ShieldAlert } from "lucide-react";
 
 interface EmergencyAlertBannerProps {
   visible: boolean;

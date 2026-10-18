@@ -1,0 +1,15 @@
+{
+  "records": [
+    {
+      "model": "VF8",
+      "source_id": "SRC-009",
+      "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf8",
+      "swatches": [
+        { "name": "Infinity Blanc" },
+        { "name": "Jet Black" },
+        { "name": "Crimson Red" },
+        { "name": "Ivy Green" }
+      ]
+    }
+  ]
+}

@@ -4,18 +4,50 @@ import {
   AttachmentOut,
   ChatResponseData,
   ChatSessionItem,
+  CaseLocationOut,
+  CaseLocationPayload,
+  Citation,
   ClientContext,
   CustomerCaseDetailData,
   CustomerCaseItem,
   VehicleCard,
 } from "../types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
+const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
 
 export async function getCustomerAuthHeaders(): Promise<Record<string, string>> {
   if (typeof window === "undefined") return {};
   const token = localStorage.getItem("vf_access_token") || localStorage.getItem("vf_customer_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+const locationUpdateQueue = new Map<string, Promise<unknown>>();
+
+export function submitCustomerLocation(payload: CaseLocationPayload): Promise<ApiResponse<CaseLocationOut>> {
+  const previous = locationUpdateQueue.get(payload.case_id) ?? Promise.resolve();
+  const request = previous.catch(() => undefined).then(async () => {
+    const authHeaders = await getCustomerAuthHeaders();
+    if (!authHeaders.Authorization) throw new Error("Vui lòng đăng nhập để chia sẻ vị trí với hồ sơ.");
+
+    // A later "Bỏ qua" request must clear coordinates after an earlier GPS request.
+    const body = payload.status === "NOT_SHARED"
+      ? { ...payload, location_label: payload.location_label.trim() || "Không chia sẻ", latitude: null, longitude: null, share_with_staff: false }
+      : payload;
+    const res = await fetch(`${BASE_URL}/api/v1/customer/location`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      throw new Error(`Không thể cập nhật vị trí hồ sơ (${res.status}).`);
+    }
+    return res.json() as Promise<ApiResponse<CaseLocationOut>>;
+  });
+  locationUpdateQueue.set(payload.case_id, request);
+  void request.finally(() => {
+    if (locationUpdateQueue.get(payload.case_id) === request) locationUpdateQueue.delete(payload.case_id);
+  }).catch(() => undefined);
+  return request;
 }
 
 /**
@@ -133,7 +165,7 @@ export async function getSessionHistory(sessionId: string): Promise<ApiResponse<
     language?: "vi" | "en";
     metadata?: {language?: "vi" | "en"};
     response_type?: "CLARIFICATION" | "FAQ_ANSWER" | "CASE_CREATED";
-    citations?: any[];
+    citations?: Citation[];
     vehicle_cards?: VehicleCard[];
     vehicle_comparison?: boolean;
     suggested_replies?: string[];
@@ -472,3 +504,33 @@ export async function submitSafetyAcknowledgement(
   return res.json();
 }
 
+
+export async function getNearbyServicePoints(coord: { lat: number; lng: number }, category: string, signal?: AbortSignal, options?: { vehicleType?: "CAR" | "TWO_WHEELER"; radiusKm?: number }) {
+  const query = new URLSearchParams({ lat: String(coord.lat), lng: String(coord.lng), category, radius_km: String(options?.radiusKm ?? 50), limit: "5", vehicle_type: options?.vehicleType ?? "CAR" });
+  const res = await fetch(`${BASE_URL}/api/v1/customer/service-points/nearby?${query}`, { signal });
+  if (!res.ok) throw new Error(`Không thể tải điểm dịch vụ (${res.status}).`);
+  const body = await res.json();
+  return (body.data.points as Array<{ id: string; name: string; category: string; address: string; latitude: number; longitude: number; distance_km?: number; hotline: string; demo?: boolean; source?: string; updated_at?: string; verification_status?: "UNVERIFIED" | "SNAPSHOT" | "VERIFIED" }>).map((point) => ({
+    id: point.id, name: point.name, type: point.category as import("../types").ServicePointSeed["type"], address: point.address, hotline: point.hotline ?? "", distanceKm: point.distance_km, coords: { lat: point.latitude, lng: point.longitude },
+    demo: point.demo !== false, source: point.source, updatedAt: point.updated_at ?? null,
+    verificationStatus: point.demo === false && point.verification_status === "SNAPSHOT" ? "SNAPSHOT" as const : point.demo === false && point.verification_status === "VERIFIED" ? "VERIFIED" as const : "UNVERIFIED" as const,
+  }));
+}
+
+/**
+ * Tải danh sách điểm dịch vụ đề xuất theo case_id từ API thật /cases/{id}/service-points
+ */
+export async function getCaseServicePoints(caseId: string): Promise<ApiResponse<import("../types").ServicePointsApiResponse>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const res = await fetch(`${BASE_URL}/api/v1/cases/${caseId}/service-points`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders,
+    },
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to load service points: ${errorText}`);
+  }
+  return res.json();
+}

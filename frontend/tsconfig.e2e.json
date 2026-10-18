@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "incremental": false },
+  "include": [
+    "next-env.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "playwright.config.ts",
+    "tests/e2e/**/*.ts",
+    ".next-gps-e2e/types/**/*.ts"
+  ],
+  "exclude": ["node_modules", ".next"]
+}

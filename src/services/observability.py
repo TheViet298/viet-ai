@@ -19,7 +19,8 @@ _identity: ContextVar[dict] = ContextVar('lf_identity', default={})
 _validation: ContextVar[dict] = ContextVar('lf_validation', default={})
 _PRIVATE = {'authorization', 'password', 'secret_key', 'public_key', 'api_key', 'token',
             'access_token', 'headers', 'image_url', 'inlinedata', 'inline_data', 'image',
-            'error', 'exception', 'stacktrace', 'captured_fields', 'memory_states', 'state'}
+            'error', 'exception', 'stacktrace', 'captured_fields', 'memory_states', 'state',
+            'latitude', 'longitude', 'location_label', 'lat', 'lng', 'lon'}
 _META = {'run_id', 'test_case_id', 'fault_injected', 'correlation_id', 'route', 'provider',
          'attempt', 'outcome', 'session_id', 'environment', 'release', 'usage_status'}
 
@@ -43,6 +44,19 @@ def mask_telemetry(*, data: Any, **kwargs: Any) -> Any:
         if isinstance(value, str):
             value = re.sub(r'data:image/[^\s"\']+', '[REDACTED_IMAGE]', value)
             value = re.sub(r'(?i)(?:sk-[\w-]+|pk-lf-[\w-]+|AIza[\w-]+|Bearer\s+\S+)', '[REDACTED_KEY]', value)
+            value = re.sub(r'(?i)\b(latitude|longitude|lat|lng|lon)\s*[:=]\s*[-+]?\d*\.?\d+', r'\1=[REDACTED]', value)
+
+            def _mask_vn_coord_pair(m: re.Match) -> str:
+                try:
+                    c1 = float(m.group(1))
+                    c2 = float(m.group(2))
+                    if 8.0 <= c1 <= 24.0 and 102.0 <= c2 <= 110.0:
+                        return "[COORDINATES_REDACTED]"
+                except Exception:
+                    pass
+                return m.group(0)
+
+            value = re.sub(r'(\b\d{1,2}(?:\.\d+)?)\s*,\s*(\b\d{2,3}(?:\.\d+)?)', _mask_vn_coord_pair, value)
             return sanitize_pii(value[:12000])[0]
         if value is None or isinstance(value, (int, float, bool)):
             return value

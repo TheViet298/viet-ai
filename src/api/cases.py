@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session, joinedload
 
 from src.db import get_db
 from src.models.db_models import Case, User
-from src.services.auth import require_staff, scoped_cases
+from src.models.schemas import ApiResponse, ServicePointsData
+from src.services.auth import check_case_ownership, get_optional_user, require_staff, scoped_cases
 
 router = APIRouter(prefix="/cases", tags=["cases-legacy"])
 
@@ -81,3 +82,29 @@ def get_case(
             for m in case.messages
         ],
     }
+
+
+@router.get("/{case_id}/service-points", response_model=ApiResponse[ServicePointsData])
+def get_case_service_points(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
+    """
+    Lấy danh sách điểm hỗ trợ / trạm sạc / xưởng dịch vụ gợi ý theo sự cố (ADR-005).
+    Truy vấn bảng service_points theo khoảng cách Haversine và phân loại theo intent / triage.
+    """
+    case = scoped_cases(db, current_user).filter(Case.id == case_id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy hồ sơ có mã {case_id}")
+
+    check_case_ownership(case, current_user)
+
+    from src.services.service_point_service import build_case_service_points_response
+
+    data = build_case_service_points_response(db=db, case=case)
+    return ApiResponse(
+        success=True,
+        data=data,
+        error=None,
+    )

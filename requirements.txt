@@ -32,3 +32,8 @@ pytest-asyncio>=0.24.0
 httpx>=0.28.0
 beautifulsoup4>=4.12,<5
 langfuse==3.15.0
+
+# Service-point catalog CSV/Excel importer
+pandas>=2.2,<3
+openpyxl>=3.1,<4
+scipy>=1.14,<2

@@ -237,7 +237,7 @@ def seed_database(reset: bool = False, demo: bool = True) -> None:
                 )
                 db.add(brief)
 
-            # 2.4 CaseLocation (nếu có)
+# 2.4 CaseLocation (nếu có)
             loc_data = item.get("location")
             if loc_data:
                 loc = CaseLocation(
@@ -253,6 +253,7 @@ def seed_database(reset: bool = False, demo: bool = True) -> None:
                     created_at=created_time,
                 )
                 db.add(loc)
+
 
             # 2.4.1 Attachment (nếu có, e.g. scenario 1)
             att_data = item.get("attachment")
@@ -329,6 +330,7 @@ def seed_database(reset: bool = False, demo: bool = True) -> None:
 
             seeded_cases_count += 1
 
+
         db.commit()
         print(f"[seed] Đã hoàn tất khởi tạo {seeded_cases_count} ca sự cố demo (tiền tố DEMO-{date_str}-xxx).")
 
@@ -338,11 +340,20 @@ def main() -> int:
     parser.add_argument("--demo", action="store_true", help="Kích hoạt seed dữ liệu kịch bản Demo (bắt buộc)")
     parser.add_argument("--reset", action="store_true", help="Dọn dẹp sạch dữ liệu demo cũ trước khi dựng lại")
     parser.add_argument("--yes", "-y", action="store_true", help="Xác nhận tiếp tục không cần hỏi tương tác")
+    parser.add_argument("--allow-remote", action="store_true", help="Cho phép chạy seed trên cơ sở dữ liệu từ xa")
     args = parser.parse_args()
+
+    # Kiểm tra an toàn: từ chối chạy trên DB từ xa trừ khi có cờ --allow-remote
+    from src.config import get_settings
+    db_url = get_settings().database_url or ""
+    is_local = "sqlite" in db_url or "localhost" in db_url or "127.0.0.1" in db_url
+    if not is_local and not args.allow_remote:
+        print("[seed ERROR] DATABASE_URL trỏ tới cơ sở dữ liệu từ xa. Cần thêm cờ '--allow-remote' để xác nhận thực thi.", file=sys.stderr)
+        return 1
 
     if not args.demo:
         print(
-            "CẢNH BÁO: Lệnh seed chỉ dành cho dữ liệu Demo có cờ is_demo=True.\n"
+"CẢNH BÁO: Lệnh seed chỉ dành cho dữ liệu Demo có cờ is_demo=True.\n"
             "Vui lòng chạy kèm cờ '--demo':\n"
             "    python -m src.seed --demo\n"
             "    python -m src.seed --demo --reset --yes",

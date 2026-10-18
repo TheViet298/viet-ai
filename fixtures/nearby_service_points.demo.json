@@ -1,0 +1,79 @@
+{
+  "metadata": {
+    "source": "ServiceFlow demo catalog (not an official directory)",
+    "updated_at": "2026-10-13",
+    "verification_status": "UNVERIFIED",
+    "demo": true
+  },
+  "points": [
+    {
+      "id": "SP-HN-001",
+      "name": "Trạm sạc VinFast Vincom Metropolis",
+      "category": "CHARGING_STATION",
+      "address": "29 Liễu Giai, Ngọc Khánh, Ba Đình, Hà Nội",
+      "latitude": 21.0315,
+      "longitude": 105.8145,
+      "hotline": "1900-232389",
+      "operating_hours": "24/7",
+      "charger_types": [
+        "DC 250kW (Siêu nhanh)",
+        "DC 60kW",
+        "AC 11kW"
+      ]
+    },
+    {
+      "id": "SP-HCM-001",
+      "name": "Trạm sạc & Dịch vụ VinFast Landmark 81",
+      "category": "CHARGING_STATION",
+      "address": "720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP.HCM",
+      "latitude": 10.795,
+      "longitude": 106.7218,
+      "hotline": "1900-232389",
+      "operating_hours": "24/7",
+      "charger_types": [
+        "DC 150kW",
+        "DC 60kW",
+        "AC 7.4kW"
+      ]
+    },
+    {
+      "id": "SP-DN-001",
+      "name": "Trạm Cứu hộ Cao tốc Long Thành - Dầu Giây",
+      "category": "OTHER",
+      "address": "Km 28 Cao tốc TP.HCM - Long Thành - Dầu Giây",
+      "latitude": 10.7712,
+      "longitude": 106.945,
+      "hotline": "1900-232389",
+      "operating_hours": "24/7",
+      "charger_types": null
+    },
+    {
+      "id": "SP-HCM-002",
+      "name": "Xưởng Dịch vụ VinFast Thảo Điền",
+      "category": "SERVICE_WORKSHOP",
+      "address": "159 Xa Lộ Hà Nội, Thảo Điền, TP. Thủ Đức, TP.HCM",
+      "latitude": 10.803,
+      "longitude": 106.735,
+      "hotline": "1900-232389",
+      "operating_hours": "08:00 - 18:00 (Thứ 2 - Thứ 7)",
+      "charger_types": [
+        "DC 60kW",
+        "AC 11kW"
+      ]
+    },
+    {
+      "id": "SP-HN-002",
+      "name": "VinFast Showroom & Service Smart City",
+      "category": "SHOWROOM",
+      "address": "Khu đô thị Vinhomes Smart City, Tây Mỗ, Nam Từ Liêm, Hà Nội",
+      "latitude": 20.9982,
+      "longitude": 105.742,
+      "hotline": "1900-232389",
+      "operating_hours": "08:30 - 20:00 Hàng ngày",
+      "charger_types": [
+        "DC 150kW",
+        "DC 60kW"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "source": "User-supplied VinFast location CSV snapshot; export date unknown",
+  "imported_at": "2026-10-15",
+  "updated_at": null,
+  "verification_status": "UNVERIFIED",
+  "normalized_sha256": "06fc9144a420b2976ca2df4100e65419b29c5925a8c0bbaa2fd8c8cc5559b4c4",
+  "input_files": {
+    "vinfast_showrooms.csv": {
+      "sha256": "76804fb8bc8106fc750644edf03c3bf2ecead5f7de0cfc196290b3226aad9f77",
+      "rows": 1138
+    },
+    "vinfast_tramsac.csv": {
+      "sha256": "88b65addf45106a752c7c23f2e27d8eba47c129775650826c78a432273aba020",
+      "rows": 67499
+    }
+  },
+  "rows": 68637
+}

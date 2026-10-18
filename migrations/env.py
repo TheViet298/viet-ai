@@ -7,9 +7,12 @@ from src.config import get_settings
 from src.db import Base
 from src.models import db_models as models  # noqa: F401
 
+from src.db import normalize_database_url
+
 config = context.config
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database_url)
+normalized_url = normalize_database_url(settings.database_url)
+config.set_main_option("sqlalchemy.url", normalized_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -19,7 +22,7 @@ target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
     context.configure(
-        url=settings.database_url,
+        url=normalized_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
