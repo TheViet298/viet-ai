@@ -194,8 +194,10 @@ async def _run_chat_turn(payload, user, db, handler):
                 data.show_emergency_banner = bool(data.show_emergency_banner or data.emergency_context)
             # Booking capability is a server fact, never a model-generated receipt.
             booking_progress = None
+            from src.services.faq_questions import faq_parts
+            compound_help = bool(faq_parts(canonical))
             if (conversation.active_goal == 'test_drive' or
-                conversation.active_goal == 'maintenance' and re.search(r'đặt lịch|đặt hẹn', conversation.topic, re.I)) and not data.show_emergency_banner:
+                conversation.active_goal == 'maintenance' and re.search(r'đặt lịch|đặt hẹn', conversation.topic, re.I)) and not data.show_emergency_banner and not compound_help:
                 from src.services.conversation_progress import progress_reply
                 booking_progress = derive_progress(conversation, {}, None, None)
                 operational_reply = progress_reply(turn, conversation, booking_progress)

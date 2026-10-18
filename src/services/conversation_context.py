@@ -232,7 +232,8 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
         # Interest in a car does not identify the vehicle reporting an incident.
         subject = updates.get('model')
     query = text
-    if goal and move != 'new_incident' and not is_generic_vehicle_comparison(text):
+    from src.services.faq_questions import faq_parts
+    if goal and move != 'new_incident' and not is_generic_vehicle_comparison(text) and not faq_parts(text):
         prefix = {'quote': 'Giá niêm yết và dự toán lăn bánh', 'test_drive': 'Đăng ký lái thử',
                   'maintenance': 'Bảo dưỡng', 'warranty': 'Bảo hành',
                   'range': 'Quãng đường một lần sạc', 'charging': 'Thời gian sạc',
