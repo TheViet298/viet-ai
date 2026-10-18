@@ -88,6 +88,8 @@ def canonical_query(text: str) -> str:
     quick_reply = HELP_INPUTS.get(re.sub(r'\s+', ' ', text).strip().rstrip('.!?').casefold())
     if quick_reply:
         return quick_reply
+    from src.services.faq_questions import canonical_service_clauses
+    text = canonical_service_clauses(text)
     text = re.sub(r'^Can you\s+(?=tư vấn)', '', text, flags=re.I)
     # Move entity-bearing phrases as a unit so qualifiers stay with their model.
     rules = [

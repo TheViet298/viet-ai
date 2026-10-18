@@ -13,11 +13,15 @@ HELP_INPUTS = {
 
 HELP_LABELS = {
     'Theo tài liệu VinFast:': 'According to VinFast documentation:',
+    'Em chưa tìm được đủ nguồn cho các phần sau:': 'I have not found enough verified sources for the following parts:',
     '### Cách sạc tại trạm công cộng': '### Charging at a public station',
     '### Biểu phí sạc': '### Charging fees',
     '### Tính năng trên App VinFast': '### VinFast app features',
     '### Bảo hành pin': '### Battery warranty',
     '### Bảo dưỡng định kỳ': '### Scheduled maintenance',
+    '### Bảo hành xe': '### Vehicle warranty',
+    '### Đặt lịch bảo dưỡng': '### Maintenance booking instructions',
+    '### Câu hỏi khác': '### Other question',
     'VinFast cung cấp đơn giá sạc ô tô điện, xe máy điện và hình thức thanh toán áp dụng tại các trạm sạc công cộng như sau:':
         'VinFast publishes the following charging rates and payment information for public stations:',
     'Phí sử dụng dịch vụ trạm sạc bổ sung sau khi hoàn thành phiên sạc:':
@@ -46,7 +50,7 @@ HELP_SOURCE_TITLES = {
 
 
 def english_help_answer(message: str) -> str | None:
-    if not message.startswith('Theo tài liệu VinFast:') or '__HELP_' in message:
+    if not message.startswith(('Theo tài liệu VinFast:', 'Em chưa tìm được đủ nguồn cho các phần sau:')) or '__HELP_' in message:
         return None
     fragments = {}
     def fragment(english):
