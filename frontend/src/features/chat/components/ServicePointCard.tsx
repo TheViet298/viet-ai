@@ -196,11 +196,11 @@ export function ServicePointCard({
         <div>
           {distKm != null ? (
             <span className="text-[11px] text-slate-600 font-mono font-medium">
-              Cách bạn: {distKm < 5 ? "dưới 5 km" : `${Math.round(distKm)} km`}
+              Cách Quý khách: {distKm < 5 ? "dưới 5 km" : `${Math.round(distKm)} km`}
             </span>
           ) : distAreaKm != null ? (
             <span className="text-[11px] text-slate-500 font-mono">
-              Khoảng {Math.round(distAreaKm) < 5 ? "dưới 5 km" : `${Math.round(distAreaKm)} km`} từ {areaLabel} (đường chim bay, không phải khoảng cách từ vị trí của bạn)
+              Khoảng {Math.round(distAreaKm) < 5 ? "dưới 5 km" : `${Math.round(distAreaKm)} km`} từ {areaLabel} (đường chim bay, không phải khoảng cách từ vị trí của Quý khách)
             </span>
           ) : null}
         </div>

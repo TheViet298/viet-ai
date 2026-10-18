@@ -26,6 +26,24 @@ async def lifespan(app: FastAPI):
     # Tự động đảm bảo các bảng trong SQLite DB và thư mục lưu trữ đã được tạo
     os.makedirs("data/attachments", exist_ok=True)
     ensure_schema()
+    import logging
+    import os
+    from sqlalchemy import func, select
+    from src.db import SessionLocal
+    from src.models.db_models import ServicePoint
+    logger = logging.getLogger(__name__)
+
+    catalog_mode = os.environ.get("GPS_CATALOG_MODE", "auto").strip().lower()
+    with SessionLocal() as db_session:
+        try:
+            sp_count = db_session.scalar(select(func.count()).select_from(ServicePoint)) or 0
+        except Exception:
+            sp_count = 0
+
+    logger.info("Service points count: %d, GPS_CATALOG_MODE: %s", sp_count, catalog_mode)
+    if sp_count == 0:
+        logger.warning("service_points trống, đang dùng snapshot — chạy import_service_points")
+
     print(f"Starting {settings.app_name} in {settings.app_env} mode")
     initialize_observability()
     auto_close_task = asyncio.create_task(auto_close_background_loop(interval_seconds=600))

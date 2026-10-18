@@ -66,11 +66,18 @@ def test_snapshot_integrity_vehicle_filter_distance_and_cache():
 @pytest.fixture
 def database(tmp_path, monkeypatch):
     from src import seed
+    from src.models.db_models import User, UserRole
+    from src.services.auth import hash_password
     engine = create_engine(f"sqlite:///{tmp_path / 'nearby.db'}", connect_args={"check_same_thread": False})
     sessions = sessionmaker(bind=engine, autoflush=False)
     monkeypatch.setattr(seed, "engine", engine)
     monkeypatch.setattr(seed, "SessionLocal", sessions)
-    seed.seed_database()
+    monkeypatch.setenv("DEMO_SEED_PASSWORD", "demo123456")
+    seed.seed_database(demo=True)
+    with sessions() as db:
+        cust = User(id="test_cust_fixed", username="customer@vinfast.vn", password_hash=hash_password("customer123"), role=UserRole.CUSTOMER.value, is_demo=False)
+        db.add(cust)
+        db.commit()
     def override():
         with sessions() as db:
             yield db

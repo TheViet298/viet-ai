@@ -156,7 +156,7 @@ export function VietmapMiniMap({
         const userEl = document.createElement("div");
         userEl.className =
           "w-5 h-5 rounded-full bg-blue-600 border-2 border-white shadow-lg ring-4 ring-blue-300/40 animate-pulse";
-        userEl.title = "Vị trí của bạn (chỉ lưu trên thiết bị)";
+        userEl.title = "vị trí của Quý khách (chỉ lưu trên thiết bị)";
 
         markers.current.push(
           new maplibre.Marker({ element: userEl })

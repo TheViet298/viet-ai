@@ -25,6 +25,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from src.config import get_settings
+from src.db import normalize_database_url
 from src.models.db_models import ServicePoint, utcnow
 
 
@@ -468,7 +469,7 @@ def get_target_db_url(cli_db_url: str | None, allow_remote: bool = False) -> str
     if not is_local_db(target_url) and allow_remote:
         print(f"[CẢNH BÁO] Đang kết nối tới Database từ xa: {mask_db_url(target_url)}")
 
-    return target_url
+    return normalize_database_url(target_url)
 
 
 def import_records(

@@ -5,7 +5,7 @@ import unicodedata
 from typing import Any
 
 from src.agents.state import PriorityLevel
-from src.services.chat_classification import analyze_report_clauses, current_clause, temporal_context
+from src.services.chat_classification import current_clause, temporal_context
 from src.services.chat_normalization import normalize_chat_text
 
 # =====================================================================
@@ -20,16 +20,46 @@ EMERGENCY_SAFE_GUIDANCE = (
     f"và gọi ngay Hotline Cứu hộ VinFast {VINFAST_HOTLINE} để được hỗ trợ khẩn cấp."
 )
 
-HYPOTHETICAL_SAFE_GUIDANCE = (
-    'Đây là hướng dẫn an toàn chung cho tình huống giả định, chưa phải báo cáo sự cố đang xảy ra. '
-    + EMERGENCY_SAFE_GUIDANCE +
-    ' Nếu có khói hoặc lửa, giữ khoảng cách với xe và không chạm vào pin, dây cao áp hoặc đầu nối sạc. '
-    'Không tiếp tục sử dụng xe cho đến khi nhân viên chuyên môn đã đánh giá an toàn.'
+EMERGENCY_PARKED_CHARGING_SAFE_GUIDANCE = (
+    "Quý khách vui lòng giữ bình tĩnh, dừng phiên sạc hoặc nhấn nút ngắt khẩn cấp trên trụ sạc nếu có thể thực hiện an toàn, "
+    "tuyệt đối không chạm vào cáp sạc hoặc khu vực có khói/mùi khét, nhanh chóng rời khỏi xe ra khoảng cách an toàn (tối thiểu 15m) "
+    f"và gọi ngay Hotline Cứu hộ VinFast {VINFAST_HOTLINE} để được hỗ trợ khẩn cấp."
 )
 
 STANDARD_SAFE_GUIDANCE = (
     "Quý khách vui lòng giữ xe ở vị trí đỗ an toàn và theo dõi cập nhật trạng thái xử lý trực tiếp trên giao diện này."
 )
+
+
+def build_emergency_safe_guidance(text: str, is_turtle_critical: bool = False) -> str:
+    """Sinh hướng dẫn an toàn khẩn cấp phù hợp với ngữ cảnh xe đang đỗ/sạc hay đang di chuyển."""
+    lower = normalize_chat_text(text or "").lower()
+    unaccented = strip_accents(lower)
+    is_parked_or_charging = bool(
+        re.search(
+            r"\b(đang đỗ|đỗ tại|đang sạc|khi đang sạc|lúc đang sạc|cắm sạc|trạm sạc|trụ sạc|bãi đỗ|hầm để xe|trong hầm|"
+            r"dang do|do tai|dang sac|khi dang sac|luc dang sac|cam sac|tram sac|tru sac|bai do|ham de xe|trong ham)\b",
+            lower,
+        )
+        or re.search(
+            r"\b(dang do|do tai|dang sac|khi dang sac|luc dang sac|cam sac|tram sac|tru sac|bai do|ham de xe|trong ham)\b",
+            unaccented,
+        )
+    )
+    is_driving = bool(
+        re.search(
+            r"\b(đang chạy|đang lái|đang đi|trên cao tốc|trên đường|giữa đường|mất phanh|kẹt chân ga|nổ lốp|"
+            r"dang chay|dang lai|dang di|tren cao toc|tren duong|giua duong|mat phanh|ket chan ga|no lop)\b",
+            lower,
+        )
+    )
+    if is_parked_or_charging and not is_driving and not is_turtle_critical:
+        return EMERGENCY_PARKED_CHARGING_SAFE_GUIDANCE
+
+    guidance = EMERGENCY_SAFE_GUIDANCE
+    if is_turtle_critical:
+        guidance += " Nếu xe đang trên cao tốc, chỉ di chuyển vào làn dừng khẩn cấp khi có thể thực hiện an toàn."
+    return guidance
 
 # =====================================================================
 # Layer 1: Privacy & PII Sanitizer Guardrail
@@ -77,20 +107,17 @@ def strip_accents(s: str) -> str:
 
 CRITICAL_STANDALONE_RULES: dict[str, str] = {
     "SMOKE_OR_FIRE": (
-        r"\b(cháy|cháy xe|xe bốc lửa|bốc lửa|có (?:ngọn )?lửa|ngọn lửa|bốc khói|khói từ (?:xe|pin)|xe.{0,15}(?:có|ra|xì) khói|mùi khét|xì khói|chập điện|"
+        r"\b(cháy|cháy xe|xe bốc lửa|bốc lửa|bốc khói|khói từ (?:xe|pin)|xe.{0,15}(?:có|ra|xì) khói|mùi khét|xì khói|chập điện|"
         r"chay|chay xe|xe boc lua|boc lua|boc khoi|khoi tu (?:xe|pin)|xe.{0,15}(?:co|ra|xi) khoi|mui khet|chap dien)\b"
     ),
     "BRAKE_FAILURE": (
-        r"\b(?:chân phanh|bàn đạp phanh|pedal phanh|phanh)\b[^,.;!?\n]{0,55}?\b(?:sát sàn|chạm (?:hoàn toàn )?xuống sàn|xuống tận sàn|ngừng hoạt động)\b|"
-        r"\bphanh\s+(?:VF\s*[356789]\s+)?(?:đang\s+)?không\s+ăn\b|"
-        r"\bphanh\s+(?:vf\s*[356789]\s+)?(?:dang\s+)?khong\s+an\b|"
         r"\b(mất phanh|liệt phanh|phanh không ăn|không phanh được|không ăn phanh|"
         r"hẫng phanh|đạp phanh không ăn|(chân phanh|phanh)\s*(bị\s*)?(hẫng|mất|kẹt|sát sàn)|"
         r"(hẫng|mất|kẹt)\s*(chân phanh|phanh)|"
         r"mat phanh|liet phanh|phanh khong an|khong phanh duoc|hang phanh)\b"
     ),
-    "ACCELERATOR_JAM": r"\b(kẹt chân ga|kẹt ga|dính ga|chân ga bị kẹt|ket chan ga|ket ga)\b|\b(?:bàn đạp ga|chân ga)\b[^,.;!?\n]{0,55}?\b(?:bị )?kẹt\b",
-    "TIRE_BURST": r"\b(nổ lốp|rách lốp|nổ vỏ|bể bánh|no lop|rach lop|be banh)\b|\blốp\b[^,.;!?\n]{0,55}?\b(?:bị )?nổ\b",
+    "ACCELERATOR_JAM": r"\b(kẹt chân ga|kẹt ga|dính ga|chân ga bị kẹt|ket chan ga|ket ga)\b",
+    "TIRE_BURST": r"\b(nổ lốp|rách lốp|nổ vỏ|bể bánh|no lop|rach lop|be banh)\b",
     "ACCIDENT": r"\b(tai nạn|lật xe|đâm va mạnh|va chạm mạnh|tai nan|lat xe)\b",
     "FLOODED_CABIN": r"\b(ngập nước đến sàn|nước tràn vào sàn|ngập sàn xe|ngập đến sàn|ngap nuoc den san|ngap san xe)\b",
 }
@@ -113,7 +140,7 @@ def evaluate_hard_safety(text: str) -> tuple[bool, str | None, PriorityLevel]:
     temporal = temporal_context(text)
     if temporal in {'resolved_past', 'hypothetical', 'knowledge'}:
         return False, 'TURTLE_DEFINITION' if re.search(TURTLE_PATTERN, text.lower()) else None, 'LOW'
-    text_lower = analyze_report_clauses(text).current_affirmed_text.lower()
+    text_lower = current_clause(text).lower()
     # Negated symptom mentions do not establish that symptom. Other actual
     # hazards in the same message remain eligible for hard safety.
     text_lower = without_negated_hazards(text_lower)
@@ -161,12 +188,6 @@ def evaluate_hard_safety(text: str) -> tuple[bool, str | None, PriorityLevel]:
 def without_negated_hazards(text: str) -> str:
     """Mask denied hazards while keeping affirmative hazards in other clauses."""
     text = normalize_chat_text(text)
-    text = re.sub(
-        r'\b(?:chân phanh|bàn đạp phanh|pedal phanh|phanh|bàn đạp ga|chân ga|lốp)\b'
-        r'(?:(?!\b(?:và|nhưng|and|but)\b)[^,.;!?\n]){0,55}?\b(?:không|chưa)\s+(?:bị\s+)?'
-        r'(?:kẹt|nổ|sát sàn|chạm (?:hoàn toàn )?xuống sàn|xuống tận sàn|ngừng hoạt động)\b',
-        '[phủ định]', text, flags=re.I,
-    )
     hazard_terms = (
         r"(?:khói|khoi(?!\s+dong)|mùi khét|mui khet|bốc khói|boc khoi|cháy xe|chay xe|cháy|chay|"
         r"chập điện|chap dien|xì khói|xi khoi|bốc lửa|boc lua|mất phanh|mat phanh|"
@@ -176,11 +197,11 @@ def without_negated_hazards(text: str) -> str:
         rf"\b(?:không|khong|chưa|chua)\s+(?:(?:còn|con|có|co|thấy|thay|bị|bi|hề|he|phát hiện)\s+)*"
         rf"{hazard_terms}(?:\s+(?:hay|hoặc|hoac|lẫn|lan|và|va)\s+(?:(?:có|co|thấy|thay|bị|bi)\s+)*{hazard_terms})*"
     )
-    text = re.sub(conjunction_pattern, "[phủ định]", text, flags=re.I)
+    text = re.sub(conjunction_pattern, "hiện tượng đã được phủ định", text, flags=re.I)
 
     prefix = r"\b(?:không|khong|chưa|chua)\s+(?:(?:còn|con|có|co|thấy|thay|bị|bi|hề|he|bao giờ|bao gio)\s+)*"
     for pattern in [*CRITICAL_STANDALONE_RULES.values(), TURTLE_PATTERN]:
-        text = re.sub(prefix + '(?:' + pattern + ')', "[phủ định]", text, flags=re.I)
+        text = re.sub(prefix + pattern, "hiện tượng đã được phủ định", text, flags=re.I)
     return text
 
 
@@ -195,9 +216,7 @@ def evaluate_hazardous_intervention(text: str) -> tuple[bool, str | None]:
     """Phát hiện yêu cầu hoặc câu hỏi về việc tự ý can thiệp phần cứng/hệ thống pin cao áp nguy hiểm."""
     lower = text.lower()
     lower_unaccented = strip_accents(lower)
-    if (re.search(HAZARDOUS_INTERVENTION_PATTERN, lower)
-            or re.search(HAZARDOUS_INTERVENTION_PATTERN, lower_unaccented)
-            or re.search(r'\b(?:vo hieu hoa|bo qua|bypass|tat)\b.{0,35}\b(?:bao ve|an toan)\b.{0,25}\b(?:pin|cao ap|bms)\b', lower_unaccented)):
+    if re.search(HAZARDOUS_INTERVENTION_PATTERN, lower) or re.search(HAZARDOUS_INTERVENTION_PATTERN, lower_unaccented):
         warning = (
             "CẢNH BÁO AN TOÀN CAO ÁP: Quý khách tuyệt đối không tự ý tháo mở, can thiệp hoặc chạm vào bộ pin và hệ thống dây điện cao áp. "
             "Hệ thống pin ô tô điện hoạt động ở điện áp rất cao và tiềm ẩn nguy cơ giật điện hoặc cháy nổ nguy hiểm đến tính mạng. "

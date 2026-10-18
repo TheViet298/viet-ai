@@ -147,5 +147,7 @@ def nearby_service_points(
         if km <= radius_km:
             matches.append((km, {**point.model_dump(), **metadata, "distance_km": round(km, 3)}))
     matches.sort(key=lambda entry: (entry[0], entry[1]["id"]))
+    catalog_source = "demo" if metadata.get("demo") else "snapshot"
     return {"points": [point for _, point in matches[:limit]], **metadata,
-            "distance_method": "AIRLINE", "radius_km": radius_km, "limit": limit, "vehicle_type": vehicle_type}
+            "distance_method": "AIRLINE", "radius_km": radius_km, "limit": limit, "vehicle_type": vehicle_type,
+            "meta": {"catalog_source": catalog_source}}

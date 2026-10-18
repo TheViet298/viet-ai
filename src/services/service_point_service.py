@@ -1032,9 +1032,9 @@ def build_case_service_points_response(
                                 ref_area_text = f", khoảng {rounded_km} km từ {area_ref['label']}"
                         else:
                             ref_area_text = ""
-                        message = f"Chưa có {cat_name} trong khu vực bạn nhập; điểm gần nhất ở {nearest_p}{ref_area_text}"
+                        message = f"Chưa có {cat_name} trong khu vực Quý khách nhập; điểm gần nhất ở {nearest_p}{ref_area_text}"
                     else:
-                        message = f"Chưa có {cat_name} trong khu vực bạn nhập; không tìm thấy điểm dịch vụ lân cận"
+                        message = f"Chưa có {cat_name} trong khu vực Quý khách nhập; không tìm thấy điểm dịch vụ lân cận"
 
         # Khi không có GPS, sắp xếp danh sách theo khoảng cách từ tâm khu vực (ưu tiên car/partner trước gsm)
         if not can_calculate_km:
@@ -1091,7 +1091,7 @@ def build_case_service_points_response(
     no_points_nearby = False
     if can_calculate_km and len(recommended_points) == 0:
         no_points_nearby = True
-        message = "Chưa có điểm dịch vụ trong 150 km quanh vị trí của bạn; vui lòng gọi hotline"
+        message = "Chưa có điểm dịch vụ trong 150 km quanh vị trí của Quý khách; vui lòng gọi hotline"
         needs_location = False
     else:
         needs_location = not can_calculate_km
@@ -1159,9 +1159,13 @@ def search_service_points_catalog(
         from sqlalchemy import func
         count_pts = db.scalar(select(func.count()).select_from(ServicePoint)) or 0
         if count_pts == 0:
-            logger.warning("Bảng service_points rỗng, fallback sang catalog snapshot/demo")
+            logger.warning("service_points trống, đang dùng snapshot — chạy import_service_points")
             from src.services.service_point_catalog import default_catalog_adapter, nearby_service_points
-            return nearby_service_points(lat, lng, category, radius_km, limit, default_catalog_adapter(), vehicle_type)
+            res = nearby_service_points(lat, lng, category, radius_km, limit, default_catalog_adapter(), vehicle_type)
+            if "meta" not in res:
+                res["meta"] = {}
+            res["meta"]["catalog_source"] = "snapshot"
+            return res
 
         is_car = (vehicle_type == "CAR")
         nearby_raw = find_nearby_service_points(
@@ -1215,6 +1219,7 @@ def search_service_points_catalog(
             "radius_km": radius_km,
             "limit": limit,
             "vehicle_type": vehicle_type,
+            "meta": {"catalog_source": "db"},
         }
     finally:
         if should_close_db:

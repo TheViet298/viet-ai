@@ -496,7 +496,7 @@ def test_area_matching_prioritizes_same_province_and_out_of_area_warning(step3_d
     """
     Item 3(c): Khi không có GPS:
     - Ưu tiên điểm có địa chỉ cùng tỉnh với nhãn
-    - Nếu không có điểm nào cùng tỉnh thì trả thêm message nói rõ 'Chưa có xưởng trong khu vực bạn nhập; điểm gần nhất ở [tỉnh khác]'
+    - Nếu không có điểm nào cùng tỉnh thì trả thêm message nói rõ 'Chưa có xưởng trong khu vực Quý khách nhập; điểm gần nhất ở [tỉnh khác]'
       và KHÔNG hiển thị như gợi ý bình thường (is_out_of_area=True).
     - Mỗi điểm trả thêm trường province (từ address).
     """
@@ -556,7 +556,7 @@ def test_area_matching_prioritizes_same_province_and_out_of_area_warning(step3_d
 
     resp_ct = build_case_service_points_response(db, case_ct)
     assert resp_ct.is_out_of_area is True
-    assert "Chưa có xưởng trong khu vực bạn nhập; điểm gần nhất ở Tỉnh An Giang" in resp_ct.message
+    assert "Chưa có xưởng trong khu vực Quý khách nhập; điểm gần nhất ở Tỉnh An Giang" in resp_ct.message
     for pt in resp_ct.recommended_points:
         assert pt.is_out_of_area is True
         assert pt.province is not None
@@ -698,7 +698,7 @@ def test_ninh_kieu_can_tho_fallback_returns_5_nearest_workshops(step3_db_session
 
     resp = build_case_service_points_response(db, case_ct)
     assert resp.is_out_of_area is True
-    assert "Chưa có xưởng trong khu vực bạn nhập; điểm gần nhất ở Tỉnh An Giang" in resp.message
+    assert "Chưa có xưởng trong khu vực Quý khách nhập; điểm gần nhất ở Tỉnh An Giang" in resp.message
     assert len(resp.recommended_points) == 5
     point_ids = [pt.id for pt in resp.recommended_points]
     assert set(point_ids[:2]) == {"ws_ag_1", "ws_ag_2"}
@@ -721,7 +721,7 @@ def test_gps_catalog_mode_db_and_warning_fallback(step3_db_session, monkeypatch,
     monkeypatch.setenv("GPS_CATALOG_MODE", "auto")
     with caplog.at_level(logging.WARNING):
         res_empty = search_service_points_catalog(21.0285, 105.8542, limit=2, db=db)
-    assert any("Bảng service_points rỗng" in record.message for record in caplog.records)
+    assert any("service_points trống, đang dùng snapshot" in record.message for record in caplog.records)
     assert len(res_empty["points"]) > 0
 
     # Thêm dữ liệu vào bảng service_points
