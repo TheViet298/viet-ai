@@ -9,7 +9,8 @@ import { getNearbyServicePoints, getCaseServicePoints } from "../api/chatApi";
 import { VietmapMiniMap } from "./VietmapMiniMap";
 import { ServicePointCard, AnyServicePoint } from "./ServicePointCard";
 
-type Category = "ALL" | "CHARGING_STATION" | "SHOWROOM" | "SERVICE_WORKSHOP" | "OTHER";
+export type Category = "ALL" | "CHARGING_STATION" | "SHOWROOM" | "SERVICE_WORKSHOP" | "OTHER";
+export type ServiceMapCategory = Category;
 const categories: [Category, string][] = [
   ["ALL", "Tất cả"],
   ["CHARGING_STATION", "Trụ sạc"],

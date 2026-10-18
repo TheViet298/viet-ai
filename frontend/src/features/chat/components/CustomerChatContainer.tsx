@@ -18,7 +18,7 @@ import { EmergencyAlertBanner } from "./EmergencyAlertBanner";
 import { ChatFeed } from "./ChatFeed";
 import { ChatInputBar } from "./ChatInputBar";
 import { LocationConsentCard } from "./LocationConsentCard";
-import { ServiceMapPanel } from "./ServiceMapPanel";
+import { ServiceMapPanel, type ServiceMapCategory } from "./ServiceMapPanel";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { NearbyResults } from "./NearbyResults";
 import { getAiSystemStatus, submitCustomerLocation, uploadAttachment } from "../api/chatApi";
@@ -113,7 +113,7 @@ function CustomerChatSession() {
   const [manualAction, setManualAction] = useState<NearbyAction | null>(null);
   const activeAction = nearbyAction ?? manualAction;
   const [showLocationCard, setShowLocationCard] = useState<boolean>(false);
-  const [suggestedCategory, setSuggestedCategory] = useState<"ALL" | "EXPRESSWAY_RESCUE" | "CHARGING_STATION" | "SERVICE_WORKSHOP">("ALL");
+  const [suggestedCategory, setSuggestedCategory] = useState<ServiceMapCategory>("ALL");
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
 
   const invalidateLocationRequest = () => {
@@ -663,7 +663,7 @@ function CustomerChatSession() {
                 setSuggestedCategory("SERVICE_WORKSHOP");
                 setShowLocationCard(true);
               } else if (lower.includes("cứu hộ") || lower.includes("cao tốc")) {
-                setSuggestedCategory("EXPRESSWAY_RESCUE");
+                setSuggestedCategory("SERVICE_WORKSHOP");
                 setShowLocationCard(true);
               }
             }}
