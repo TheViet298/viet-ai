@@ -1,1 +1,0 @@
-self.__REACT_LOADABLE_MANIFEST='{"features/chat/components/ServiceMapPanel.tsx -> maplibre-gl":{"id":1917,"files":["static/chunks/ca4dcb09.3f4b3deb51b068ff.js"]}}';

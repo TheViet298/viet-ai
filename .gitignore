@@ -99,3 +99,7 @@ chroma/
 /eval/results/evidence-20261010/
 /eval/results/natural-conversation-20261010/
 /eval/results/topic-followup-20261010/
+
+.ai-log/*.lock
+.ai-log/*.pid
+frontend/.next-e2e/
