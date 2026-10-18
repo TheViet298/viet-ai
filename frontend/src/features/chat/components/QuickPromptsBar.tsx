@@ -1,7 +1,7 @@
 "use client";
 
-import { HelpCircle, ChevronRight } from "lucide-react";
-import { QuickPrompt, VehicleModel } from "../types";
+import { HelpCircle } from "lucide-react";
+import { QuickPrompt } from "../types";
 
 interface QuickPromptsBarProps {
   onSelectPrompt: (prompt: QuickPrompt) => void;

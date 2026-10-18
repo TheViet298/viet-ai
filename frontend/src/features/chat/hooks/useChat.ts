@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useLocale, translate, Language } from "@/features/shared/context/LocaleContext";
-import { ChatMessage } from "../types";
+import { ChatMessage, NearbyAction } from "../types";
 import { sendChatMessage, getCaseStatus, acknowledgeCaseSafety, getSessionHistory } from "../api/chatApi";
 
 function getAuthOwner(): string {
@@ -56,7 +56,7 @@ export function getSalutation(fullName?: string): { title: string; shortName: st
   return { title: "", shortName, pronoun: "Quý khách" };
 }
 
-export function createWelcomeMessage(context?: ChatUserContext | string, language: Language = "vi"): ChatMessage {
+export function createWelcomeMessage(context?: ChatUserContext | string, language: Language = "vi", timestamp = ""): ChatMessage {
   const ctx: ChatUserContext =
     typeof context === "string" ? { userName: context } : context || {};
   const { userName, caseId } = ctx;
@@ -87,7 +87,7 @@ export function createWelcomeMessage(context?: ChatUserContext | string, languag
     id: "welcome-1",
     sender: "AGENT",
     content,
-    timestamp: new Date().toISOString(),
+    timestamp: timestamp || new Date().toISOString(),
     suggested_replies: ["Tư vấn xe", "Trạm sạc & ứng dụng", "Bảo hành & bảo dưỡng", "Báo sự cố kỹ thuật"].map(text => translate(text, language)),
   };
 }
@@ -126,12 +126,14 @@ export function useChat(context?: ChatUserContext | string) {
   const [criticalBannerDismissed, setCriticalBannerDismissed] = useState(false);
   const [sessionHasCritical, setSessionHasCritical] = useState(false);
   const [requestLocation, setRequestLocation] = useState(false);
+  const [nearbyAction, setNearbyAction] = useState<NearbyAction | null>(null);
   const [safetyPending, setSafetyPending] = useState(false);
   const [safetyError, setSafetyError] = useState<string | null>(null);
   const [incidentVersion, setIncidentVersion] = useState<number | null>(null);
   const safetyRef = useRef({ caseId: currentCaseId, version: 0, acknowledged: false, epoch: 0 });
   const failedRequest = useRef<{ key: string; id: string; caseId: string | null } | null>(null);
   const conversationGeneration = useRef(0);
+  const initialCaseId = useRef(ctx.caseId);
 
   const applySafety = (input: { case_id?: string | null; incident_version?: number | null; safety_status?: string; emergency_context?: { case_id: string; incident_version: number; safety_status: string } | null }) => {
     const data = input.emergency_context || input;
@@ -147,10 +149,10 @@ export function useChat(context?: ChatUserContext | string) {
   };
 
   useEffect(() => {
+    const caseId = initialCaseId.current;
     const savedCase = storedCaseId();
     if (!ctx.caseId) setCurrentCaseId(savedCase);
 
-    // Kiểm tra xem có initial prompt đang chờ từ URL hoặc sessionStorage không
     const hasPendingPrompt = typeof window !== "undefined" && (
       Boolean(typeof sessionStorage !== "undefined" && sessionStorage.getItem("vf_initial_prompt")) ||
       Boolean(typeof window.location !== "undefined" && new URLSearchParams(window.location.search).get("prompt"))
@@ -182,7 +184,7 @@ export function useChat(context?: ChatUserContext | string) {
                   priority: m.priority,
                 }));
                 setMessages(mapped);
-                if (hist.data.case_id && !ctx.caseId) {
+                if (hist.data.case_id && !caseId) {
                   setCurrentCaseId(hist.data.case_id);
                 }
               }
@@ -237,7 +239,7 @@ export function useChat(context?: ChatUserContext | string) {
     }
     setMessages((prev) => {
       if (prev.length === 1 && prev[0].id === "welcome-1") {
-        return [createWelcomeMessage(ctx, language)];
+        return [createWelcomeMessage(ctx, language, prev[0].timestamp || new Date().toISOString())];
       }
       return prev;
     });
@@ -245,7 +247,7 @@ export function useChat(context?: ChatUserContext | string) {
 
   const resetChat = () => {
     ++conversationGeneration.current;
-    setMessages([createWelcomeMessage(ctx, language)]);
+    setMessages([createWelcomeMessage(ctx, language, new Date().toISOString())]);
     setInput("");
     setLoading(false);
     setCurrentCaseId(null);
@@ -253,6 +255,7 @@ export function useChat(context?: ChatUserContext | string) {
     setCriticalBannerDismissed(false);
     setSessionHasCritical(false);
     setRequestLocation(false);
+    setNearbyAction(null);
     setSessionId(generateSecureSessionId());
     safetyRef.current = { caseId: null, version: 0, acknowledged: false, epoch: safetyRef.current.epoch + 1 };
     failedRequest.current = null;
@@ -366,6 +369,7 @@ export function useChat(context?: ChatUserContext | string) {
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setRequestLocation(false);
+    setNearbyAction(null);
     // 2. Kích hoạt trạng thái AI đang suy nghĩ
     setLoading(true);
 
@@ -433,6 +437,8 @@ export function useChat(context?: ChatUserContext | string) {
           setSessionHasCritical(false);
         }
 
+        setNearbyAction(data.nearby_action ?? null);
+
         // Backend trả về cờ request_location rõ ràng:
         if (data.request_location !== undefined) {
           setRequestLocation(Boolean(data.request_location));
@@ -443,9 +449,22 @@ export function useChat(context?: ChatUserContext | string) {
         // 3. AI trả lời xuất hiện sau khi suy nghĩ xong
         setMessages((prev) => [...prev, agentMsg]);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (generation !== conversationGeneration.current) return;
-      const errorContent = t("Chưa nhận được phản hồi từ hệ thống. Anh/chị vui lòng gửi lại câu hỏi sau ít phút. Lượt gửi này chưa xác nhận tạo hồ sơ hoặc thông báo cứu hộ.");
+      let errorContent = t("Chưa nhận được phản hồi từ hệ thống. Quý khách vui lòng gửi lại câu hỏi sau ít phút. Lượt gửi này chưa xác nhận tạo hồ sơ hoặc thông báo cứu hộ.");
+      if (err && typeof err === "object" && "message" in err && typeof err.message === "string") {
+        try {
+          const match = err.message.match(/Chat API error \(\d+\): (.*)/);
+          if (match && match[1]) {
+            const parsed = JSON.parse(match[1]);
+            if (parsed.detail) {
+              errorContent = parsed.detail;
+            }
+          }
+        } catch {
+          // Keep default message if parsing fails
+        }
+      }
       const errorMsg: ChatMessage = {
         id: `error_${Date.now()}`,
         sender: "AGENT",
@@ -476,6 +495,7 @@ export function useChat(context?: ChatUserContext | string) {
     canAcknowledgeSafety: Boolean(currentCaseId && incidentVersion),
     sessionHasCritical,
     requestLocation,
+    nearbyAction,
     sendMessage,
     resetChat,
     loadSession,

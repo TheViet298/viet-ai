@@ -2,24 +2,17 @@
 import { useLocale } from "@/features/shared/context/LocaleContext";
 
 import {
-  Car,
-  FileImage,
   RotateCcw,
-  ScanLine,
   ShieldCheck,
-  PhoneCall,
   ArrowRight,
-  ExternalLink,
-  MapPin,
-  Map,
   Compass,
   Plus,
   PanelLeft,
   History,
 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { UserLocationState } from "../types";
+import { UserLocationState, CaseLocationPayload, NearbyAction } from "../types";
 import { useChat } from "../hooks/useChat";
 import { EmergencyAlertBanner } from "./EmergencyAlertBanner";
 import { ChatFeed } from "./ChatFeed";
@@ -27,7 +20,9 @@ import { ChatInputBar } from "./ChatInputBar";
 import { LocationConsentCard } from "./LocationConsentCard";
 import { ServiceMapPanel } from "./ServiceMapPanel";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
-import { getAiSystemStatus, uploadAttachment } from "../api/chatApi";
+import { NearbyResults } from "./NearbyResults";
+import { getAiSystemStatus, submitCustomerLocation, uploadAttachment } from "../api/chatApi";
+import { shouldSyncLocation } from "../utils/locationTracking";
 import { getUploadError } from "../uploadState";
 import { useAuth, ProductMark } from "@/features/shared";
 
@@ -54,7 +49,7 @@ function CustomerChatSession() {
     safetyPending,
     safetyError,
     canAcknowledgeSafety,
-    requestLocation,
+    nearbyAction,
     sendMessage,
     resetChat,
     loadSession,
@@ -89,8 +84,12 @@ function CustomerChatSession() {
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const [isModalBlockingChat, setIsModalBlockingChat] = useState<boolean>(false);
   const uploadRequestId = useRef(0);
+  const locationRequestId = useRef(0);
+  const syncRequestId = useRef(0);
+  const failedLocationPayload = useRef<CaseLocationPayload | null>(null);
+  const stopWatchRef = useRef<(() => void) | null>(null);
+  const lastLocationSync = useRef<{ lat: number; lng: number; time: number; caseId: string } | null>(null);
   const hasSentInitialPrompt = useRef(false);
-  const [aiStatus, setAiStatus] = useState<string>("Trợ lý VFServ • Hỗ trợ dịch vụ xe điện VinFast");
 
   // ===========================================================================
   // SERVICE MAP PREVIEW & LOCATION CONSENT (ADR-005, screen-spec.md Section 5.4, CUS-03)
@@ -100,27 +99,104 @@ function CustomerChatSession() {
     source: "USER_TEXT",
     label: "",
   });
+  const [locationSyncError, setLocationSyncError] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [isMapOpen, setIsMapOpen] = useState<boolean>(false);
-  const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
+  const consentAt = useRef(0);
+  const [shareWithCase, setShareWithCase] = useState(false);
+  const [manualAction, setManualAction] = useState<NearbyAction | null>(null);
+  const activeAction = nearbyAction ?? manualAction;
   const [showLocationCard, setShowLocationCard] = useState<boolean>(false);
-  const [suggestedCategory, setSuggestedCategory] = useState<
-    "ALL" | "EXPRESSWAY_RESCUE" | "CHARGING_STATION" | "SERVICE_WORKSHOP"
-  >("ALL");
 
-  // Tự động kích hoạt Card xin vị trí khi phát hiện ca khẩn cấp hoặc backend gửi cờ request_location
+  const invalidateLocationRequest = () => {
+    locationRequestId.current += 1;
+    stopWatchRef.current?.();
+    stopWatchRef.current = null;
+    lastLocationSync.current = null;
+    setIsLocating(false);
+  };
+
+  useEffect(() => () => {
+    locationRequestId.current += 1;
+    stopWatchRef.current?.();
+    stopWatchRef.current = null;
+  }, []);
+
+  const syncLocation = useCallback((payload: CaseLocationPayload) => {
+    const id = ++syncRequestId.current;
+    failedLocationPayload.current = null;
+    setLocationSyncError(null);
+    void submitCustomerLocation(payload).then(() => {
+      if (id === syncRequestId.current) setLocationSyncError(null);
+    }).catch(() => {
+      if (id !== syncRequestId.current) return;
+      lastLocationSync.current = null;
+      failedLocationPayload.current = payload;
+      setLocationSyncError("Chưa đồng bộ được vị trí với hồ sơ. Vui lòng thử lại.");
+    });
+  }, []);
+
   useEffect(() => {
-    if (criticalBanner || requestLocation) {
-      setShowLocationCard(true);
-      if (criticalBanner) {
-        setSuggestedCategory("EXPRESSWAY_RESCUE");
-      } else {
-        setSuggestedCategory("CHARGING_STATION");
-      }
+    if (!shareWithCase || !currentCaseId || locationState.status !== "CONSENTED") return;
+    const coords = locationState.coords;
+    if (!coords) return;
+    const now = Date.now();
+    const previous = lastLocationSync.current;
+    if (coords && previous?.caseId === currentCaseId && !shouldSyncLocation(previous, coords, now)) return;
+    if (coords) lastLocationSync.current = { ...coords, time: now, caseId: currentCaseId };
+    syncLocation({
+      case_id: currentCaseId,
+      status: "CONSENTED",
+      source: "BROWSER_GPS",
+      location_label: "Vị trí hiện tại",
+      latitude: coords?.lat ?? null, longitude: coords?.lng ?? null,
+      precision: coords && (locationState.accuracy ?? 0) <= 500 ? "EXACT" : "APPROXIMATE",
+      share_with_staff: true,
+    });
+  }, [shareWithCase, currentCaseId, locationState, syncLocation]);
+
+  useEffect(() => {
+    if (loading) {
+      locationRequestId.current += 1;
+      setIsLocating(false);
+      setManualAction(null);
+      setShowLocationCard(false);
     }
-  }, [criticalBanner, requestLocation]);
+  }, [loading]);
+
+  useEffect(() => {
+    if (!activeAction) return;
+    setIsMapOpen(false);
+    if (activeAction.category === "ALL") { setShowLocationCard(false); return; }
+    if (activeAction.area_text) {
+      consentAt.current = 0;
+      locationRequestId.current += 1;
+      setLocationState({ status: "MANUAL", source: "USER_TEXT", label: activeAction.area_text });
+      setShowLocationCard(false);
+      return;
+    }
+    // Reuse only a deliberate location choice within this mounted session for 15 minutes.
+    const reusable = Date.now() - consentAt.current < 15 * 60 * 1000;
+    if (!reusable) setLocationState({ status: "PENDING", source: "USER_TEXT", label: "" });
+    setShowLocationCard(!reusable && !criticalBanner);
+    // Each server action is a new turn; location updates must not reopen its popup.
+  }, [activeAction, criticalBanner]);
+
+  useEffect(() => {
+    locationRequestId.current += 1;
+    consentAt.current = 0;
+    setLocationState({ status: "PENDING", source: "USER_TEXT", label: "" });
+    setShareWithCase(false);
+    setManualAction(null);
+    setShowLocationCard(false);
+  }, [user?.id]);
 
   const handleResetAll = () => {
+    invalidateLocationRequest();
+    if (shareWithCase && currentCaseId) syncLocation({ case_id: currentCaseId, status: "NOT_SHARED", source: "USER_TEXT", location_label: "Không chia sẻ", latitude: null, longitude: null, share_with_staff: false });
+    setShareWithCase(false);
+    consentAt.current = 0;
+    setManualAction(null);
     setResolvedImageKind(null);
     uploadRequestId.current += 1;
     setIsUploadingImage(false);
@@ -131,13 +207,7 @@ function CustomerChatSession() {
     setUploadedAttachmentId(null);
     setIsMapOpen(false);
     setShowLocationCard(false);
-    setSuggestedCategory("ALL");
-    setSelectedPointId(null);
-    setLocationState({
-      status: "PENDING",
-      source: "USER_TEXT",
-      label: "",
-    });
+    setLocationState({ status: "PENDING", source: "USER_TEXT", label: "" });
   };
 
   // Load AI System Status from /api/v1/status
@@ -191,72 +261,101 @@ function CustomerChatSession() {
   }, [sendMessage, setInput]);
 
   // ===========================================================================
-  // LOCATION HANDLERS (Tuân thủ ADR-005: timeout 8s, không lấy GPS nền, 3 lựa chọn)
+  // LOCATION HANDLERS (Kế hoạch 11/10: Desktop Browser định vị qua Wi-Fi/IP, timeout 8s, không lấy GPS nền, 3 lựa chọn)
   // ===========================================================================
   const handleConsentGps = () => {
+    invalidateLocationRequest();
+    const requestId = locationRequestId.current;
     setIsLocating(true);
-    if (typeof window === "undefined" || !navigator.geolocation) {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
       setIsLocating(false);
       setLocationState({
         status: "MANUAL",
         source: "USER_TEXT",
         label: t("Trình duyệt không hỗ trợ GPS (Vui lòng nhập tay)"),
+        errorCode: "UNSUPPORTED",
       });
       return;
     }
-
-    let timeoutId: NodeJS.Timeout;
-
     const successHandler = (pos: GeolocationPosition) => {
-      clearTimeout(timeoutId);
+      if (requestId !== locationRequestId.current) return;
+      const lat = pos.coords.latitude, lng = pos.coords.longitude, accuracy = pos.coords.accuracy;
+      if (!Number.isFinite(lat) || Math.abs(lat) > 90 || !Number.isFinite(lng) || Math.abs(lng) > 180 || !Number.isFinite(accuracy) || accuracy < 0) { errorHandler({ code: 2 } as GeolocationPositionError); return; }
       setIsLocating(false);
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
       setLocationState({
         status: "CONSENTED",
         source: "BROWSER_GPS",
-        label: t("Đã ghi nhận vị trí của bạn (GPS)"),
+        label: t("Đã ghi nhận vị trí của Quý khách (GPS)"),
         coords: { lat, lng },
+        accuracy,
+        isTracking: false,
+        errorCode: accuracy > 500 ? "ACCURACY_LOW" : undefined,
       });
+      consentAt.current = Date.now();
+      setShowLocationCard(false);
       setIsMapOpen(true);
     };
-
-    const errorHandler = () => {
+    const errorHandler = (err?: GeolocationPositionError) => {
+      if (requestId !== locationRequestId.current) return;
       clearTimeout(timeoutId);
+      invalidateLocationRequest();
       setIsLocating(false);
       setLocationState({
         status: "MANUAL",
         source: "USER_TEXT",
         label: t("Tín hiệu GPS yếu hoặc bị chặn (Vui lòng nhập tay)"),
+        errorCode: err?.code === 1 ? "PERMISSION_DENIED" : err?.code === 3 ? "TIMEOUT" : "POSITION_UNAVAILABLE",
       });
     };
-
-    // Timeout 8 giây theo đúng tài liệu (tránh treo khi ở trong hầm hoặc cao tốc)
     timeoutId = setTimeout(() => {
+      if (requestId !== locationRequestId.current) return;
+      invalidateLocationRequest();
       setIsLocating(false);
       setLocationState({
         status: "MANUAL",
         source: "USER_TEXT",
         label: t("Quá thời gian chờ GPS > 8s (Vui lòng nhập tay)"),
+        errorCode: "TIMEOUT",
       });
     }, 8000);
-
-    navigator.geolocation.getCurrentPosition(successHandler, errorHandler, {
-      timeout: 8000,
-      enableHighAccuracy: false,
-    });
+    try {
+      navigator.geolocation.getCurrentPosition(successHandler, errorHandler, {
+        enableHighAccuracy: false,
+        maximumAge: 0,
+        timeout: 8000,
+      });
+    } catch {
+      errorHandler({ code: 2 } as GeolocationPositionError);
+    }
   };
 
   const handleManualLocation = (areaText: string) => {
+    invalidateLocationRequest();
     setLocationState({
       status: "MANUAL",
       source: "USER_TEXT",
       label: areaText,
     });
-    setIsMapOpen(true);
+    consentAt.current = Date.now();
+    setShowLocationCard(false);
   };
 
   const handleSkipLocation = () => {
+    invalidateLocationRequest();
+    consentAt.current = 0;
+    setShowLocationCard(false);
+    if (shareWithCase && currentCaseId) {
+      syncLocation({
+        case_id: currentCaseId,
+        status: "NOT_SHARED",
+        source: "USER_TEXT",
+        location_label: "Không chia sẻ",
+        latitude: null,
+        longitude: null,
+        share_with_staff: false,
+      });
+    }
+    setShareWithCase(false);
     setLocationState({
       status: "NOT_SHARED",
       source: "USER_TEXT",
@@ -266,11 +365,13 @@ function CustomerChatSession() {
   };
 
   const handleResetLocation = () => {
-    setLocationState({
-      status: "PENDING",
-      source: "USER_TEXT",
-      label: "",
-    });
+    invalidateLocationRequest();
+    consentAt.current = 0;
+    setShowLocationCard(true);
+    setShareWithCase(false);
+    setIsMapOpen(false);
+    setLocationState({ status: "PENDING", source: "USER_TEXT", label: "" });
+    if (shareWithCase && currentCaseId) syncLocation({ case_id: currentCaseId, status: "NOT_SHARED", source: "USER_TEXT", location_label: "Không chia sẻ", latitude: null, longitude: null, share_with_staff: false });
   };
 
   const selectImage = async (file: File) => {
@@ -374,7 +475,7 @@ function CustomerChatSession() {
       {/* Main Layout: Desktop 55/45 khi mở map, Mặc định chat chiếm toàn bộ container */}
       <div
         className={`grid gap-4 items-start transition-all duration-300 ${
-          isMapOpen ? "lg:grid-cols-[1.12fr_0.88fr]" : "grid-cols-1"
+          isMapOpen ? "grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]" : "grid-cols-1"
         }`}
       >
         {/* =============================================================
@@ -461,6 +562,9 @@ function CustomerChatSession() {
               </div>
             </div>
 
+              <button type="button" onClick={() => setManualAction({ type: "FIND_NEARBY", request_id: crypto.randomUUID(), turn_id: "manual", category: "CHARGING_STATION", vehicle_type: "CAR", requires_location: true, reason: "Tìm trạm sạc ô tô gần Quý khách.", limit: 5 })} className="hidden sm:flex items-center gap-1 rounded-lg border border-blue-200 bg-white px-2 py-1 text-[11.5px] font-medium text-blue-800 hover:bg-blue-50 shadow-2xs transition">
+                <Compass className="w-3 h-3" /> Tìm điểm
+              </button>
           {/* Case Status Strip: Thanh mỏng 1 dòng khi đã có Case ID */}
           {currentCaseId && (
             <div className="px-3.5 py-1.5 bg-blue-50/80 border-b border-blue-200/60 flex items-center justify-between text-[11.5px] animate-fadeIn">
@@ -493,6 +597,7 @@ function CustomerChatSession() {
           {/* Messages Feed (Không còn hàng QuickPromptsBar trùng lặp, giữ khung chat thông thoáng) */}
           <ChatFeed
             messages={messages}
+            nearbyRequestId={activeAction?.request_id}
             loading={loading}
             isMapOpen={isMapOpen}
             showLocationCard={showLocationCard}
@@ -549,11 +654,19 @@ function CustomerChatSession() {
                 setShowLocationCard(true);
               }
             }}
-          />
+          >
+            <NearbyResults action={activeAction} locationState={locationState}
+              caseId={currentCaseId}
+              onChangeLocation={handleResetLocation} onStopSharing={handleSkipLocation}
+              onChooseCategory={(category) => sendMessage(`Tìm ${category === "SHOWROOM" ? "showroom" : category === "SERVICE_WORKSHOP" ? "xưởng dịch vụ" : "trạm sạc"} gần đây`)} />
+          </ChatFeed>
 
           {/* Card Xin Quyền Vị Trí: ĐƯA RA KHỎI LUỒNG CHAT, LÀM THANH MỎNG DÍNH TRÊN Ô NHẬP */}
+          {locationSyncError && <div role="alert" className="px-3 py-2 text-xs text-amber-900 bg-amber-50">{locationSyncError} <button type="button" className="underline" onClick={() => { if (failedLocationPayload.current) syncLocation(failedLocationPayload.current); }}>Thử lại đồng bộ</button></div>}
           {showLocationCard && (
             <LocationConsentCard
+              reason={activeAction?.reason}
+              modal
               locationState={locationState}
               isLocating={isLocating}
               isMapOpen={isMapOpen}
@@ -562,9 +675,14 @@ function CustomerChatSession() {
               onSkip={handleSkipLocation}
               onToggleMap={() => setIsMapOpen(!isMapOpen)}
               onResetLocation={handleResetLocation}
+              onStopSharing={handleSkipLocation}
             />
           )}
 
+          {currentCaseId && locationState.status === "CONSENTED" && !shareWithCase && (
+            <button type="button" className="mx-3 my-2 rounded-xl border px-3 py-2 text-sm" onClick={() => setShareWithCase(true)}>Chia sẻ vị trí với hồ sơ</button>
+          )}
+          {shareWithCase && <p className="px-3 text-xs text-slate-600">Vị trí đang được chia sẻ với hồ sơ. Dừng chia sẻ để xóa tọa độ.</p>}
           {/* Input Bar */}
           {(isUploadingImage || resolvedImageKind || imageUploadError) && (
             <div className="px-3 py-2 border-t border-slate-200 text-xs text-slate-600">
@@ -604,39 +722,12 @@ function CustomerChatSession() {
       </div>
 
         {/* =============================================================
-            CỘT PHẢI (DESKTOP): CHỈ TRƯỢT RA KHI KHÁCH KÍCH HOẠT ACTION (XEM MAP)
+            BẢN ĐỒ: CỘT PHẢI Ở DESKTOP, XẾP DƯỚI CHAT Ở MÀN HẸP
             Mặc định không có 5 card tĩnh làm rối mắt!
         ============================================================= */}
-        {isMapOpen && (
-          <div className="hidden lg:block animate-fadeIn">
-            <ServiceMapPanel
-              isOpen={isMapOpen}
-              onClose={() => setIsMapOpen(false)}
-              locationState={locationState}
-              servicePoints={[]}
-              selectedPointId={selectedPointId}
-              onSelectPoint={(id) => setSelectedPointId(id)}
-              suggestedCategory={suggestedCategory}
-            />
-          </div>
-        )}
+
       </div>
 
-      {/* =============================================================
-          MOBILE: BOTTOM-SHEET MODAL (HIỆN TRÊN ĐIỆN THOẠI KHI MỞ MAP)
-      ============================================================= */}
-      {isMapOpen && (
-        <ServiceMapPanel
-          isOpen={isMapOpen}
-          onClose={() => setIsMapOpen(false)}
-          locationState={locationState}
-          servicePoints={[]}
-          selectedPointId={selectedPointId}
-          onSelectPoint={(id) => setSelectedPointId(id)}
-          suggestedCategory={suggestedCategory}
-          isMobileModal={true}
-        />
-      )}
 
       {/* Keep the mobile map action in flow so it cannot cover the footer hotline. */}
       {!isMapOpen && (

@@ -4,6 +4,7 @@ import { useLocale } from "@/features/shared/context/LocaleContext";
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -13,8 +14,6 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  FileCheck,
-  FileText,
   ImagePlus,
   PhoneCall,
   ScanLine,
@@ -25,8 +24,6 @@ import {
   BookOpen,
   ExternalLink,
   MessageSquare,
-  AlertTriangle,
-  Clock,
 } from "lucide-react";
 import { getPublicArticles, getCustomerCases } from "@/features/chat/api/chatApi";
 import { ArticleItem, CustomerCaseItem } from "@/features/chat/types";
@@ -540,7 +537,7 @@ export function LandingPage() {
                 className="mb-3 flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50/60 p-2 text-[12px] animate-fadeIn cursor-default"
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <img src={imagePreview} alt={t("Ảnh xem trước")} className="h-10 w-14 rounded-lg object-cover border border-blue-200 shrink-0" />
+                  <Image src={imagePreview} alt={t("Ảnh xem trước")} width={56} height={40} unoptimized className="h-10 w-14 rounded-lg object-cover border border-blue-200 shrink-0" />
                   <div className="min-w-0">
                     <p className="font-semibold text-slate-900 truncate max-w-[200px] sm:max-w-xs">{imageName}</p>
                     <p className="text-[11px] text-[#1E40AF]">{t("Ảnh táp-lô đã sẵn sàng để AI nhận diện sơ bộ")}</p>

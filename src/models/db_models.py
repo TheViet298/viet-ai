@@ -2,8 +2,7 @@ import uuid
 from datetime import UTC, datetime
 from enum import StrEnum
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, false
-from sqlalchemy.dialects.sqlite import JSON
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, JSON, String, Text, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db import Base
@@ -390,3 +389,37 @@ class CaseUpdate(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     case: Mapped["Case"] = relationship(back_populates="updates")
+ 
+ 
+class ServicePoint(Base):
+    """
+    Bảng service_points: Lưu danh mục các điểm hỗ trợ dịch vụ VinFast (Trạm sạc, Showroom, Xưởng dịch vụ 2S).
+    Hỗ trợ tìm kiếm trạm gần nhất theo tọa độ (Haversine/spatial query) và định tuyến theo intent sự cố.
+    """
+
+    __tablename__ = "service_points"
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    source_file: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    source_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    category: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    category_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    category_slug: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    address: Mapped[str] = mapped_column(Text, nullable=False)
+    latitude: Mapped[float] = mapped_column(Float, nullable=False, index=True)
+    longitude: Mapped[float] = mapped_column(Float, nullable=False, index=True)
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    hotline_service: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    booking_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    dong_son: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    operating_hours: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    services_offered: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="ACTIVE", index=True)
+    access_type: Mapped[str] = mapped_column(String(50), nullable=False, default="Public", index=True)
+    is_car_compatible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    is_visible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, index=True)
+    extra_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    crawled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)

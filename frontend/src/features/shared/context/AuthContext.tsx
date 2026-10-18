@@ -67,7 +67,7 @@ const AuthContext = createContext<AuthContextType>({
 
 const STORAGE_KEY = "vf_serviceflow_auth";
 const TOKEN_KEY = "vf_access_token";
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
+const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
 
 function savedProfile(): Partial<AuthUser> {
   try {
@@ -103,11 +103,6 @@ function mapApiUser(user: ApiUser, profile: Partial<AuthUser> = {}): AuthUser {
     avatar: localProfile.avatar,
     isDemo: Boolean(user.is_demo),
   };
-}
-
-function clearLegacyTokens() {
-  localStorage.removeItem("vf_customer_token");
-  localStorage.removeItem("vf_staff_token");
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

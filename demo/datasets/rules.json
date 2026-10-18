@@ -1,0 +1,91 @@
+{
+  "urgent_keywords": [
+    "cháy",
+    "bốc khói",
+    "khói",
+    "mất phanh",
+    "không phanh được",
+    "kẹt chân ga",
+    "nổ lốp",
+    "tai nạn",
+    "mất lái"
+  ],
+  "urgent_composite": {
+    "signal": "rùa vàng",
+    "contexts": [
+      "cao tốc",
+      "mất kiểm soát",
+      "giảm công suất",
+      "dừng giữa đường"
+    ]
+  },
+  "technical_keywords": [
+    "lỗi",
+    "hỏng",
+    "không nhận sạc",
+    "không sạc được",
+    "không khởi động",
+    "không chạy",
+    "đèn báo",
+    "cảnh báo",
+    "rùa vàng",
+    "tụt pin",
+    "xì lốp",
+    "kẹt",
+    "rung",
+    "tiếng kêu",
+    "điều hòa không",
+    "sự cố"
+  ],
+  "high_keywords": [
+    "không khởi động",
+    "không chạy",
+    "không nhận sạc",
+    "không sạc được",
+    "rùa vàng",
+    "tụt pin",
+    "xì lốp"
+  ],
+  "low_keywords": [
+    "màn hình",
+    "ứng dụng",
+    "bluetooth",
+    "âm thanh"
+  ],
+  "product_keywords": [
+    "tư vấn",
+    "mua xe",
+    "sản phẩm",
+    "chọn xe",
+    "gia đình",
+    "đô thị",
+    "mấy chỗ",
+    "chỗ ngồi",
+    "ngân sách",
+    "vf3",
+    "vf5",
+    "vf6",
+    "vf7",
+    "vf8",
+    "vf9"
+  ],
+  "max_clarification_turns": 2,
+  "priority_order": {
+    "URGENT": 0,
+    "HIGH": 1,
+    "MEDIUM": 2,
+    "LOW": 3
+  },
+  "customer_care_keywords": [
+    "bảo hành",
+    "bảo dưỡng",
+    "đặt lịch",
+    "tổng đài",
+    "chăm sóc khách hàng",
+    "cskh",
+    "liên hệ",
+    "ứng dụng",
+    "showroom",
+    "xưởng dịch vụ"
+  ]
+}

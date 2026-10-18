@@ -20,6 +20,18 @@ export interface Citation {
 
 export type ChatResponseType = "CLARIFICATION" | "FAQ_ANSWER" | "CASE_CREATED";
 
+export interface NearbyAction {
+  type: "FIND_NEARBY";
+  request_id: string;
+  turn_id: string;
+  category: "ALL" | ServicePointSeed["type"];
+  vehicle_type: "CAR" | "TWO_WHEELER";
+  area_text?: string | null;
+  requires_location: boolean;
+  reason: string;
+  limit: 5;
+}
+
 export interface VehicleCard {
   battery_capacity?: string | null;
   fast_charge_time?: string | null;
@@ -38,6 +50,7 @@ export interface VehicleCard {
 
 export interface ChatResponseData {
   language?: "vi" | "en";
+  nearby_action?: NearbyAction | null;
   vehicle_comparison?: boolean;
   vehicle_cards?: VehicleCard[];
   emergency_context?: { case_id: string; incident_version: number; safety_status: string } | null;
@@ -109,7 +122,7 @@ export interface AttachmentOut {
   mime_type: string;
   analysis_status: string;
   ocr_text?: string | null;
-  detected_signals?: Record<string, any> | null;
+  detected_signals?: { image_kind?: string; analysis_error?: string; [key: string]: unknown } | null;
   vision_confidence?: number | null;
   created_at: string;
 }
@@ -141,11 +154,55 @@ export interface ArticleItem {
 export interface ServicePointSeed {
   id: string;
   name: string;
-  type: "SERVICE_WORKSHOP" | "CHARGING_STATION" | "EXPRESSWAY_RESCUE";
+  type: "SERVICE_WORKSHOP" | "CHARGING_STATION" | "SHOWROOM" | "OTHER";
   address: string;
   distance?: string;
+  demo?: boolean;
+  source?: string;
+  updatedAt?: string | null;
+  verificationStatus?: "UNVERIFIED" | "SNAPSHOT" | "VERIFIED";
   hotline: string;
+  distanceKm?: number;
   coords: { lat: number; lng: number };
+}
+
+export interface ServicePointApiItem {
+  id: string;
+  name: string;
+  category: "workshop" | "charging_station" | "showroom" | string;
+  category_slug?: string | null;
+  address: string;
+  province?: string | null;
+  phone?: string | null;
+  hotline_service?: string | null;
+  hours?: string | null;
+  operating_hours?: string | null;
+  is_car_compatible?: boolean;
+  services_offered?: string[];
+  dong_son?: boolean;
+  booking_url?: string | null;
+  distance_km?: number | null;
+  distance_from_area_km?: number | null;
+  note?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  is_out_of_area?: boolean;
+}
+
+export interface ServicePointsApiResponse {
+  case_id: string;
+  intent?: string;
+  recommended_points: ServicePointApiItem[];
+  needs_location: boolean;
+  no_points_nearby?: boolean;
+  is_out_of_area?: boolean;
+  message?: string | null;
+  last_updated_label?: string | null;
+  rescue_hotline?: string | null;
+  area_reference?: {
+    label: string;
+    level: "district" | "province";
+  } | null;
 }
 
 export interface UserLocationState {
@@ -153,6 +210,28 @@ export interface UserLocationState {
   source: "BROWSER_GPS" | "USER_TEXT" | "MAP_PICKER";
   label: string;
   coords?: { lat: number; lng: number };
+  accuracy?: number;
+  isTracking?: boolean;
+  errorCode?: "PERMISSION_DENIED" | "POSITION_UNAVAILABLE" | "TIMEOUT" | "ACCURACY_LOW" | "UNSUPPORTED";
+  errorMessage?: string;
+}
+
+export interface CaseLocationPayload {
+  case_id: string;
+  status: "CONSENTED" | "MANUAL" | "NOT_SHARED";
+  source: "BROWSER_GPS" | "USER_TEXT" | "MAP_PICKER";
+  location_label: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  precision?: "APPROXIMATE" | "EXACT";
+  share_with_staff: boolean;
+}
+
+export interface CaseLocationOut extends CaseLocationPayload {
+  precision: "APPROXIMATE" | "EXACT";
+  latitude: number | null;
+  longitude: number | null;
+  created_at: string;
 }
 
 export interface CustomerCaseDetailData {
@@ -163,7 +242,7 @@ export interface CustomerCaseDetailData {
   };
   case_brief?: {
     summary?: string;
-    captured_fields?: Record<string, any>;
+    captured_fields?: Record<string, unknown>;
     suggested_action?: string;
     confidence_score?: number;
     is_edited_by_staff?: boolean;

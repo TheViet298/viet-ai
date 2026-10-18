@@ -175,15 +175,16 @@ async def test_negated_error_does_not_route_incident(client, chat_db):
 
 
 @pytest.mark.asyncio
-async def test_web_failure_after_core_has_no_committed_core_turn(client, chat_db, monkeypatch):
+async def test_web_failure_after_handler_has_no_committed_turn(client, chat_db, monkeypatch):
     from src.api import customer
-    original = customer.process_chat_message
+    original = customer._process_customer_chat
 
-    async def fail_after_core(*args, **kwargs):
+    async def fail_after_handler(*args, **kwargs):
         await original(*args, **kwargs)
         raise RuntimeError('after draft')
 
-    monkeypatch.setattr(customer, 'process_chat_message', fail_after_core)
+    # The FAQ can route through sales or RAG; inject at their common transaction boundary.
+    monkeypatch.setattr(customer, '_process_customer_chat', fail_after_handler)
     with pytest.raises(RuntimeError, match='after draft'):
         await client.post('/api/v1/customer/chat', json={'session_id': 'rollback', 'message': 'Trạm sạc VinFast tính phí thế nào?'})
     db, _, _ = chat_db

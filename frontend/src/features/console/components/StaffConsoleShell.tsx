@@ -5,7 +5,6 @@ import { useLocale } from "@/features/shared/context/LocaleContext";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
-  ScanLine,
   LayoutDashboard,
   Inbox,
   History,
@@ -16,19 +15,11 @@ import {
   LogOut,
   RefreshCw,
   Search,
-  Filter,
   CheckCircle2,
-  Clock,
   Flame,
-  AlertCircle,
-  Car,
-  ChevronRight,
   ExternalLink,
-  MessageSquare,
-  ShieldCheck,
   MapPin,
   Sparkles,
-  ArrowRight,
   X,
   Star,
   Check,
@@ -46,6 +37,13 @@ import { sendChatMessage, getPublicArticles } from "@/features/chat/api/chatApi"
 import { ArticleItem } from "@/features/chat/types";
 
 import { cleanTicketHeadline } from "./TicketDetailPanel";
+
+const PRIORITY_WEIGHT: Record<string, number> = {
+  CRITICAL: 4,
+  HIGH: 3,
+  MEDIUM: 2,
+  LOW: 1,
+};
 
 export type ConsoleTab =
   | "queue"
@@ -75,13 +73,6 @@ export function getRelativeWaitTime(dateStr?: string, language = "vi"): string {
   } catch {
     return language === "en" ? "waiting --" : "chờ --";
   }
-}
-
-// Rút gọn mã case: CASE-20261004-001 -> 001
-function getShortTicketId(id: string): string {
-  const match = id.match(/(\d{3,4})$/);
-  if (match) return match[1];
-  return id.replace(/^CASE-/i, "");
 }
 
 // Lấy tiêu đề sự cố thật từ tóm tắt AI hoặc fallback theo intent/xe
@@ -217,10 +208,6 @@ export function StaffConsoleShell() {
   const {
     tickets,
     filteredTickets,
-    statusFilter,
-    setStatusFilter,
-    priorityFilter,
-    setPriorityFilter,
     searchQuery,
     setSearchQuery,
     loading,
@@ -408,14 +395,6 @@ export function StaffConsoleShell() {
     };
   }, [allTicketsWithLocalStatus]);
 
-  // Trọng số ưu tiên
-  const priorityWeight: Record<string, number> = {
-    CRITICAL: 4,
-    HIGH: 3,
-    MEDIUM: 2,
-    LOW: 1,
-  };
-
   // Lọc và sắp xếp hàng đợi xử lý: Ưu tiên trước, sau đó tới thời gian chờ
   const activeQueueTickets = useMemo(() => {
     return ticketsWithLocalStatus
@@ -442,8 +421,8 @@ export function StaffConsoleShell() {
       })
       .sort((a, b) => {
         // Sắp xếp mặc định: Mức ưu tiên (CRITICAL > HIGH > MEDIUM > LOW)
-        const weightA = priorityWeight[a.priority] || 1;
-        const weightB = priorityWeight[b.priority] || 1;
+        const weightA = PRIORITY_WEIGHT[a.priority] || 1;
+        const weightB = PRIORITY_WEIGHT[b.priority] || 1;
         if (weightB !== weightA) {
           return weightB - weightA;
         }
@@ -719,7 +698,7 @@ export function StaffConsoleShell() {
           },
         ]);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setPreviewMessages((prev) => [
         ...prev,
         {

@@ -348,6 +348,25 @@ async def test_customer_location_and_service_points(client):
     assert loc_body["data"]["location_label"] == "Trạm sạc Vincom Metropolis Liễu Giai, Ba Đình, Hà Nội"
     assert loc_body["data"]["latitude"] == 21.0315
 
+    # A later manual entry and an explicit skip must erase the previous GPS
+    # coordinates from the same case record, even if the client sends them again.
+    manual = await client.post("/api/v1/customer/location", json={
+        **loc_payload, "status": "MANUAL", "source": "USER_TEXT",
+        "location_label": "Ba Đình, Hà Nội",
+    }, headers=headers)
+    assert manual.status_code == 200
+    assert manual.json()["data"]["latitude"] is None
+    assert manual.json()["data"]["longitude"] is None
+
+    skipped = await client.post("/api/v1/customer/location", json={
+        **loc_payload, "status": "NOT_SHARED", "source": "USER_TEXT",
+    }, headers=headers)
+    assert skipped.status_code == 200
+    assert skipped.json()["data"]["location_label"] == ""
+    assert skipped.json()["data"]["latitude"] is None
+    assert skipped.json()["data"]["longitude"] is None
+    assert skipped.json()["data"]["share_with_staff"] is False
+
     # 2. Lấy gợi ý điểm hỗ trợ (Service Points)
     res_sp = await client.get(f"/api/v1/customer/cases/{case_001}/service-points", headers=headers)
     assert res_sp.status_code == 200

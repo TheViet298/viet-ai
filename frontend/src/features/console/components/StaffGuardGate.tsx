@@ -3,14 +3,15 @@
 import { useLocale } from "@/features/shared/context/LocaleContext";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { ShieldAlert, ArrowLeft, KeyRound, Lock } from "lucide-react";
 import { useAuth } from "@/features/shared";
 
 export function StaffGuardGate() {
+<<<<<<< HEAD
   const { t } = useLocale();
   const router = useRouter();
+=======
+>>>>>>> backup-gps-local-final
   const { role } = useAuth();
 
   const returnHref = role === "CUSTOMER" ? "/track-case" : "/";

@@ -35,6 +35,8 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next-e2e",
+    ".next-gps-e2e"
   ]
 }
