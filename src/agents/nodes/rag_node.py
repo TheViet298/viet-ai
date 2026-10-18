@@ -26,6 +26,34 @@ class GroundedAnswer(BaseModel):
 
 async def rag_node(state: AgentState) -> dict:
     query = state.get("resolved_query") or state.get("latest_user_message", "")
+    from src.services.charging_questions import charging_parts
+    parts = charging_parts(query)
+    if parts:
+        sections, results, citations = [], [], []
+        for label, subquery, source_need in parts:
+            understanding = {**(state.get('turn_understanding') or {}), 'source_need': source_need,
+                             'cost_subject': 'charging' if source_need == 'policy' else None}
+            result = await rag_node({**state, 'resolved_query': subquery, 'turn_understanding': understanding})
+            results.append(result)
+            body = result.get('response', '').removeprefix('Theo tài liệu VinFast:\n\n')
+            if source_need == 'policy' and result.get('rag_citations'):
+                body = '\n\n'.join('- ' + line for line in body.splitlines() if line.strip())
+                dates = sorted({c['verified_at'] for c in result['rag_citations']})
+                body += '\n\nĐây là mức phí trong tài liệu đã xác minh ngày ' + ', '.join(dates) + '. Cần kiểm tra biểu phí và ưu đãi áp dụng cho xe trên ứng dụng trước khi sạc.'
+            sections.append(f'### {label}\n\n{body}')
+            for citation in result.get('rag_citations', []):
+                if citation not in citations:
+                    citations.append(citation)
+        reply = 'Theo tài liệu VinFast:\n\n' + '\n\n'.join(sections)
+        return {'is_no_source': not bool(citations), 'is_rag_query': True,
+                'retrieval_status': 'SUCCESS' if citations else 'NO_SOURCE',
+                'retrieval_diagnostics': {'category': 'compound_charging', 'parts': [
+                    {'label': part[0], 'diagnostics': result.get('retrieval_diagnostics', {})}
+                    for part, result in zip(parts, results, strict=True)]},
+                'rag_citations': citations, 'rag_context': [c['relevant_snippet'] for c in citations],
+                'answer_claims': [claim for result in results for claim in result.get('answer_claims', [])],
+                'needs_staff_review': any(result.get('is_no_source') for result in results),
+                'response_type': 'FAQ_ANSWER', 'response': reply, 'final_response': reply}
     unsupported = any(term in query.lower() for term in ("bí mật", "nội bộ", "tháng sau", "không công khai", "chưa công khai"))
     remaining = state.get("llm_budget", {}).get("deadline", time.monotonic() + get_settings().agent_turn_timeout_s) - time.monotonic()
     retrieval = RAGService.failure("NO_SOURCE", "unsupported_request") if unsupported else RAGService.failure("TIMEOUT", "deadline_exhausted")
@@ -81,7 +109,7 @@ async def rag_node(state: AgentState) -> dict:
     generated = None
     if citations and state.get("confidence_score", 0) >= 0.60:
         public_snapshot = bool(color_snapshot or tariff_snapshot) or retrieval.get('diagnostics', {}).get('category') in {
-            'verified_public_price_snapshot', 'verified_catalog_fact_snapshot'}
+            'verified_public_price_snapshot', 'verified_catalog_fact_snapshot', 'verified_public_guide_snapshot'}
         generated = None if public_snapshot else await structured_call({**state, "rag_citations": citations}, "rag_qa", GroundedAnswer)
         if generated is None and get_settings().agent_llm_enabled and not public_snapshot:
             citations = []

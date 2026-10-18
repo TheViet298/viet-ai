@@ -310,6 +310,12 @@ def answer_section(query: str, text: str) -> str:
     lower = query.casefold()
     subject = normalized(query)
     body = normalized(text)
+    from src.services.charging_questions import is_public_charging_procedure
+    if is_public_charging_procedure(query):
+        steps = [int(n) for n in re.findall(r'buoc\s*(\d+)', body)]
+        if (not steps or steps != list(range(1, max(steps) + 1))
+                or not re.search(r'cam.{0,40}(?:sung sac|cap sac)|(?:sung sac|cap sac).{0,40}cam', body)):
+            return ''
     if is_maintenance_schedule(query):
         if re.search(r'\b(?:tai lieu|so bao duong|so tay)\b.{0,30}\b(?:nao|o dau)\b', subject):
             return text if any(reference in body for reference in ('so bao duong', 'so tay', 'tai lieu bao duong')) else ''
