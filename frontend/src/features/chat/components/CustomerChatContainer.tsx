@@ -114,6 +114,7 @@ function CustomerChatSession() {
   const activeAction = nearbyAction ?? manualAction;
   const [showLocationCard, setShowLocationCard] = useState<boolean>(false);
   const [suggestedCategory, setSuggestedCategory] = useState<"ALL" | "EXPRESSWAY_RESCUE" | "CHARGING_STATION" | "SERVICE_WORKSHOP">("ALL");
+  const [selectedPointId, setSelectedPointId] = useState<string | null>(null);
 
   const invalidateLocationRequest = () => {
     locationRequestId.current += 1;
@@ -489,7 +490,7 @@ function CustomerChatSession() {
       {/* Main Layout: Desktop 55/45 khi mở map, Mặc định chat chiếm toàn bộ container */}
       <div
         className={`grid gap-4 items-start transition-all duration-300 ${
-          isMapOpen ? "grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]" : "grid-cols-1"
+          isMapOpen ? "grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]" : "grid-cols-1"
         }`}
       >
         {/* =============================================================
@@ -740,11 +741,42 @@ function CustomerChatSession() {
       </div>
 
         {/* =============================================================
-            BẢN ĐỒ: CỘT PHẢI Ở DESKTOP, XẾP DƯỚI CHAT Ở MÀN HẸP
-            Mặc định không có 5 card tĩnh làm rối mắt!
+            BẢN ĐỒ: CỘT PHẢI Ở DESKTOP (CHIẾM ~42-45% KHÔNG GIAN)
+            CHỈ TRƯỢT RA KHI KHÁCH KÍCH HOẠT ACTION (XEM MAP)
         ============================================================= */}
-
+        {isMapOpen && (
+          <div className="hidden xl:block animate-fadeIn">
+            <ServiceMapPanel
+              caseId={currentCaseId}
+              isOpen={isMapOpen}
+              onClose={() => setIsMapOpen(false)}
+              locationState={locationState}
+              servicePoints={[]}
+              selectedPointId={selectedPointId}
+              onSelectPoint={(id) => setSelectedPointId(id)}
+              suggestedCategory={suggestedCategory}
+            />
+          </div>
+        )}
       </div>
+
+      {/* =============================================================
+          MOBILE: HIỆN DƯỚI LUỒNG CHAT KHI MỞ MAP TRÊN MÀN HÌNH NHỎ
+      ============================================================= */}
+      {isMapOpen && (
+        <div className="xl:hidden mt-3 animate-fadeIn">
+          <ServiceMapPanel
+            caseId={currentCaseId}
+            isOpen={isMapOpen}
+            onClose={() => setIsMapOpen(false)}
+            locationState={locationState}
+            servicePoints={[]}
+            selectedPointId={selectedPointId}
+            onSelectPoint={(id) => setSelectedPointId(id)}
+            suggestedCategory={suggestedCategory}
+          />
+        </div>
+      )}
 
 
       {/* Keep the mobile map action in flow so it cannot cover the footer hotline. */}
