@@ -33,9 +33,9 @@ Home places the mascot above the support heading and existing prompt box. The gu
 
 | Viewport | Character | Wrapper height | Circle core / outer ring diameter | Bubble placement |
 | --- | --- | --- | --- | --- |
-| Above `800px` | `151.2px` | `189px` | `162px` / `198px` | Right, `260px` wide, top `22.5px` |
-| Up to `800px` | `151.2px` | `216px` | `138.6px` / `174.6px` | Below, top `159.3px` |
-| Up to `600px` | `126px` | `199.8px` | `118.8px` / `154.8px` | Below, top `138.6px` |
+| Above `800px` | `122.472px` | `189px` | `162px` / `198px` | Right, `260px` wide, top `22.5px` |
+| Up to `800px` | `122.472px` | `216px` | `138.6px` / `174.6px` | Below, top `159.3px` |
+| Up to `600px` | `102.06px` | `199.8px` | `118.8px` / `154.8px` | Below, top `138.6px` |
 
 Below `800px`, bubble width is capped at `300px` and inset from available width. Its notch points toward Serv.
 
@@ -94,3 +94,11 @@ Chat-only refinement: compact Serv hides arm, feet and ground groups at the user
 Compact chat refinement: the circular halo is hidden; the home halo remains visible.
 
 Compact chat header: no mascot speech box or native speech tooltip; symbolic listening bubble hidden. Avatar button is 44px at every breakpoint, inside a vertically centered 57px header. The home speech box remains available. Verified at1440/390px.
+
+Additional home-only size refinement: artwork reduced another 10% to122.472px desktop /102.06px mobile. Halo, speech and compact chat sizing remain unchanged.
+
+Home artwork reduced a further10% to122.472px desktop /102.06px mobile; chat sizing unchanged.
+
+Cap refinement: preserve the approved blue and white V, use a three-quarter crown with visible panel seams and a curved brim projecting forward toward viewer-right, following the supplied baseball-cap reference.
+
+Brim refinement: shorten the visor tip and reduce its depth with a continuous crown attachment, keeping crown, color, direction and white V unchanged.

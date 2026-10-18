@@ -26,7 +26,16 @@ export function ServArtwork() {
    </g>
    <ellipse cx="63" cy="126" rx="6" ry="3.5" fill="#9cbcff" opacity=".7"/><ellipse cx="137" cy="126" rx="6" ry="3.5" fill="#9cbcff" opacity=".7"/>
    <g className="headset"><rect x="165" y="100" width="16" height="30" rx="7" fill="#172554" stroke="#0f172a" strokeWidth="2"/><path d="M173 124v9q0 12-15 12h-34" fill="none" stroke="#0f172a" strokeWidth="4" strokeLinecap="round"/><rect x="114" y="139" width="17" height="10" rx="5" fill="#172554" stroke="#fff" strokeWidth="1.5"/></g>
-   <g className="cap" transform="translate(0 9)"><path d="M49 54q2-35 43-36h15q35 2 41 36Z" fill="#1e40af"/><path d="M98 20q-10 13-11 31" fill="none" stroke="#7094ed" strokeWidth="2"/><path d="M46 52h105q16 0 24 9-32 8-63 0H46q-9-4 0-9Z" fill="#1e40af" stroke="#0f172a" strokeWidth="2" strokeLinejoin="round"/><path d="m106 30 8 13 8-13" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/><ellipse cx="98" cy="18" rx="5" ry="2.5" fill="#0f172a"/></g>
+   <g className="cap" transform="translate(0 9)">
+     <path d="M42 61C38 44 51 25 76 18C96 12 120 17 132 30C139 37 141 45 145 52C116 53 87 61 65 65Z" fill="#1e40af"/>
+     <path d="M83 18C69 28 63 44 66 63M97 18C112 24 122 37 126 53" fill="none" stroke="#7094ed" strokeWidth="1.5" opacity=".65"/>
+     <path d="M43 60C55 62 67 60 81 56" fill="none" stroke="#17358e" strokeWidth="2" strokeLinecap="round"/>
+     <path d="M80 57C100 51 124 48 145 51C153 54 162 60 168 67C156 63 146 67 137 71C125 77 115 76 105 71C94 66 85 61 80 57Z" fill="#1e40af" stroke="#0f172a" strokeWidth="1.6" strokeLinejoin="round"/>
+     <path d="M91 60C109 57 129 55 144 57C151 59 157 62 161 64M99 64C115 61 130 61 143 63" fill="none" stroke="#7094ed" strokeWidth="1.1" opacity=".55" strokeLinecap="round"/>
+     <path d="M107 72C118 77 128 77 138 71C148 66 158 63 168 67" fill="none" stroke="#17358e" strokeWidth="2" strokeLinecap="round"/>
+     <path d="m107 31 10 12 6-15" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+     <ellipse cx="85" cy="17" rx="5" ry="2.5" transform="rotate(-12 85 17)" fill="#1e40af" stroke="#7094ed" strokeWidth="1"/>
+   </g>
   </g>
  </g></g>
  <g className="thought fx" fill="#1e40af"><circle cx="169" cy="40" r="3"/><circle cx="180" cy="30" r="4"/><circle cx="191" cy="19" r="5"/></g>
