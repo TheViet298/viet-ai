@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from src.agents.context_manager import resolve_policy_conflict
-from src.agents.guardrails import build_emergency_safe_guidance, evaluate_hard_safety
+from src.agents.guardrails import (
+    EMERGENCY_SAFE_GUIDANCE,
+    build_emergency_safe_guidance,
+    evaluate_hard_safety,
+    evaluate_hazardous_intervention,
+)
 from src.agents.state import AgentState
 from src.services.chat_normalization import clarification_for
 
@@ -26,8 +31,8 @@ async def safety_node(state: AgentState) -> dict:
             "needs_staff_review": True,
             "guardrails": flags,
         }
-    if resolve_policy_conflict(text):
-        reply = "Dạ em không thể hướng dẫn can thiệp pin cao áp, vô hiệu hóa an toàn hoặc vượt rào bảo mật. Quý khách vui lòng liên hệ chuyên viên VinFast."
+    if resolve_policy_conflict(text) or evaluate_hazardous_intervention(text)[0]:
+        reply = "Tôi không thể hướng dẫn can thiệp pin cao áp, vô hiệu hóa an toàn hoặc vượt rào bảo mật. Quý khách vui lòng liên hệ chuyên viên VinFast."
         return {
             "is_critical": False,
             "safety_trigger": None,
