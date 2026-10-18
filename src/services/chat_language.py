@@ -68,9 +68,8 @@ def detect_language(text: str, previous: str = 'vi') -> str:
 
 
 def response_language(text: str, supplied: str | None, previous: str = 'vi') -> str:
-    from src.services.chat_normalization import fold_text
-    explicit = re.search(r'\b(?:in (?:english|vietnamese)|(?:bang )?tieng (?:anh|viet))\b', fold_text(text))
-    return detect_language(text, previous) if explicit else supplied or detect_language(text, previous)
+    # The UI locale only resolves language-neutral messages such as "VF8?".
+    return detect_language(text, supplied or previous)
 
 
 _VEHICLE = r'(?:VinFast\s+)?VF\s*(?:e34|[356789])(?:\s+(?:Eco|Plus)(?:\s+(?:AWD|FWD))?)?'
