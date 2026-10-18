@@ -2,6 +2,7 @@
 
 import { useLocale } from "@/features/shared/context/LocaleContext";
 import { NewsSection } from "./NewsSection";
+import { ServMascot } from "@/features/shared/components/serv/ServMascot";
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
@@ -183,6 +184,7 @@ export function LandingPage() {
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [isPromptFocused, setIsPromptFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isComposingPrompt = useRef(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
 
@@ -502,23 +504,16 @@ export function LandingPage() {
       <section className="pt-8 pb-12 md:pt-12 md:pb-16 relative">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center space-y-4">
           {/* Badge & Mini Greeting theo Role */}
-          {role === "CUSTOMER" && user ? (
+          {role === "CUSTOMER" && user && (
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-[12px] font-medium text-slate-700 animate-fadeIn">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>
                 {t("Xin chào")} <strong className="text-slate-900">{user.name}</strong> {t("• Chủ xe")} {user.vehicleModel || "VinFast EV"}
               </span>
             </div>
-          ) : (
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-[12px] font-medium text-slate-600 animate-fadeIn">
-              <span className="h-2 w-2 rounded-full bg-blue-500" />
-              <span>{t("Trợ lý Dịch vụ Khách hàng VinFast 24/7")}</span>
-              <span className="text-slate-300">·</span>
-              <Link href="/login" className="text-[#1E40AF] font-bold hover:underline">
-                {t("Đăng nhập chủ xe ›")}
-              </Link>
-            </div>
           )}
+
+          <ServMascot inputRef={textareaRef} />
 
           {/* Heading trung tính hơn, thân thiện và bao quát cả 3 nhóm khách */}
           <h1 className="text-3xl sm:text-[38px] font-bold tracking-tight text-slate-900 leading-tight">
@@ -567,8 +562,10 @@ export function LandingPage() {
               onChange={(e) => setPrompt(e.target.value)}
               onFocus={() => setIsPromptFocused(true)}
               onBlur={() => setIsPromptFocused(false)}
+              onCompositionStart={() => { isComposingPrompt.current = true; }}
+              onCompositionEnd={() => { isComposingPrompt.current = false; }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (e.key === "Enter" && !e.shiftKey && !isComposingPrompt.current && !e.nativeEvent.isComposing && e.keyCode !== 229) {
                   e.preventDefault();
                   handleSubmit();
                 }

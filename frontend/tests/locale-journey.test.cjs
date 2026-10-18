@@ -79,6 +79,8 @@ async function landingHandlers({language = 'en', prompt = '', image = null} = {}
       if (id.endsWith('/LocaleContext')) return {useLocale: () => ({language, t: text => translate(text, language)})};
       if (id.endsWith('/AuthContext')) return {useAuth: () => ({role:'GUEST',user:null})};
       if (id.endsWith('/chatApi')) return {};
+      if (id === './NewsSection') return {NewsSection: () => null};
+      if (id.endsWith('/ServMascot')) return {ServMascot: () => null};
       return require(id);
     },
   });

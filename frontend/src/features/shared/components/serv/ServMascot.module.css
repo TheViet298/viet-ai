@@ -1,0 +1,67 @@
+.root{--gx:0px;--gy:0px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
+.hero{flex-direction:column;margin:0 auto!important;width:100%;height:189px;isolation:isolate}
+.root::before{content:"";position:absolute;pointer-events:none;border-radius:50%;background:radial-gradient(circle at 50% 38%,#fff 0%,#eff6ff 58%,#e1edff 100%);box-shadow:0 0 0 9px rgb(231 241 255 / .75),0 0 0 18px rgb(231 241 255 / .38),0 14px 30px rgb(30 64 175 / .08);z-index:-1}
+.hero::before{width:162px;height:162px;left:calc(50% - 81px);top:13.5px}
+.speech{position:absolute;color:var(--theme-text,#0f172a);background:var(--theme-surface,#fff);border:1px solid var(--theme-line,#dce4f0);border-radius:16px;padding:15px 18px;font-size:14px;font-weight:600;line-height:1.55;text-align:center;margin:0;box-shadow:0 12px 28px -15px rgb(15 23 42 / .28);z-index:3;pointer-events:none;overflow-wrap:anywhere}
+.speech::before{content:"";position:absolute;width:13px;height:13px;background:inherit;border-left:1px solid var(--theme-line,#dce4f0);border-bottom:1px solid var(--theme-line,#dce4f0);left:-7px;top:22px;transform:rotate(45deg)}
+.hero .speech{left:calc(50% + 68.4px);top:22.5px;width:260px}
+.compact{isolation:isolate}
+.compact::before{display:none}
+.compact::before{width:47.8px;height:47.8px;left:calc(50% - 23.9px);top:calc(50% - 23.9px);box-shadow:0 0 0 2px rgb(231 241 255 / .75),0 0 0 4px rgb(231 241 255 / .38)}
+:global(html[data-theme=dark]) .root::before{background:radial-gradient(circle at 50% 38%,#243d60 0%,#1b304f 58%,#172843 100%);box-shadow:0 0 0 9px rgb(30 58 95 / .45),0 0 0 18px rgb(30 58 95 / .2),0 14px 30px rgb(0 0 0 / .12)}
+.character{display:block;flex-shrink:0;border:0;background:none;padding:0;cursor:pointer;border-radius:12px;line-height:0;-webkit-tap-highlight-color:transparent}
+.character:focus-visible{outline:2px solid #709bea;outline-offset:3px}
+.hero .character{width:151.2px;height:151.2px}
+.compact .character{width:44px;height:44px}
+.compact .character svg{transform:scale(.9)}
+.compact :global(.arm),.compact :global(.feet),.compact :global(.ground){display:none}
+.character svg{width:100%;height:100%;overflow:visible;display:block}
+.srOnly{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.caretMirror{position:fixed;visibility:hidden;pointer-events:none;box-sizing:border-box;border-style:solid;border-color:transparent;overflow-wrap:break-word;height:auto;z-index:-1}
+.root :global(.gaze){transform:translate(var(--gx),var(--gy))}
+.root :global(.eye){transform-box:fill-box;transform-origin:center}
+.root :global(.head),.root :global(.body-rig),.root :global(.feet){transform-box:fill-box;transform-origin:center}
+.root :global(.arm-right){transform-origin:164px 124px}.root :global(.arm-left){transform-origin:36px 124px}
+.root :global(.float){transform-origin:100px 180px}
+.root :global(.smile-eyes),.root :global(.care-eyes),.root :global(.wink-eyes),.root :global(.wide-eyes),.root :global(.sleepy-eyes),.root :global(.mouth-grin),.root :global(.mouth-o),.root :global(.mouth-flat),.root :global(.mouth-tiny),.root :global(.fx),.root :global(.prop){opacity:0}
+.root:is([data-state=hello],[data-state=happy],[data-state=wink],[data-state=surprise],[data-state=tap],[data-state=sleep],[data-state=care]) :global(.normal-eyes){opacity:0}
+.root:is([data-state=hello],[data-state=happy]) :global(.smile-eyes),.root[data-state=wink] :global(.wink-eyes),.root:is([data-state=surprise],[data-state=tap]) :global(.wide-eyes),.root[data-state=sleep] :global(.sleepy-eyes),.root[data-state=care] :global(.care-eyes){opacity:1}
+.root:is([data-state=hello],[data-state=surprise],[data-state=tap],[data-state=think],[data-state=care],[data-state=sleep],[data-state=read]) :global(.mouth-smile){opacity:0}
+.root[data-state=hello] :global(.mouth-grin),.root:is([data-state=surprise],[data-state=tap]) :global(.mouth-o),.root:is([data-state=think],[data-state=read],[data-state=sleep]) :global(.mouth-tiny),.root[data-state=care] :global(.mouth-flat){opacity:1}
+.root[data-state=hello] :global(.wave-mark),.root:is([data-state=wink],[data-state=happy]) :global(.spark),.root[data-state=think] :global(.thought),.root[data-state=listen] :global(.chat-bubble),.root[data-state=care] :global(.care-mark),.root[data-state=sleep] :global(.zzz),.root[data-state=run] :global(.speed),.root[data-state=tap] :global(.tap-mark),.root[data-state=search] :global(.prop-glass),.root[data-state=read] :global(.prop-tablet),.root[data-state=present] :global(.prop-card){opacity:1}
+.root[data-state=listen] :global(.head){transform:rotate(2deg)}.root[data-state=think] :global(.head){transform:rotate(-5deg)}.root[data-state=sleep] :global(.head){transform:translateY(4px) rotate(5deg)}
+.root:is([data-state=search],[data-state=present],[data-state=read]) :global(.arm-left){transform:rotate(14deg)}
+@media(prefers-reduced-motion:no-preference){
+ .root :global(.gaze){transition:transform .12s ease-out}
+ .root :global(.head),.root :global(.arm-left){transition:transform .2s ease-out}
+ .root :global(.float){animation:breathe 3.8s ease-in-out infinite}
+ .root :global(.eye){animation:blink 5.5s infinite}
+ .root[data-state=hello] :global(.arm-right){animation:wave .5s ease-in-out 3}
+ .root[data-state=tap] :global(.body-rig){animation:hop .5s ease-out}
+ .root[data-state=run] :global(.body-rig){animation:run .45s ease-in-out 4}
+ .root[data-state=run] :global(.feet){animation:steps .22s ease-in-out 8}
+ .root[data-state=think] :global(.thought circle),.root[data-state=listen] :global(.chat-bubble circle){animation:think 1.2s ease-in-out infinite}
+ .root[data-state=listen] :global(.chat-bubble circle:nth-child(2)){animation-delay:.15s}
+ .root[data-state=listen] :global(.chat-bubble circle:nth-child(3)){animation-delay:.3s}
+ .root[data-state=sleep] :global(.zzz){animation:doze 3s ease-in-out infinite}
+ .root[data-paused=true] *{animation-play-state:paused!important}
+ @keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+ @keyframes blink{0%,43%,47%,100%{transform:scaleY(1)}45%{transform:scaleY(.1)}}
+ @keyframes wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-42deg)}}
+ @keyframes hop{45%{transform:translateY(-7px) rotate(-3deg)}}
+ @keyframes run{50%{transform:translateX(7px) rotate(-4deg)}}
+ @keyframes steps{50%{transform:rotate(12deg)}}
+ @keyframes think{0%,100%{opacity:.3}50%{opacity:1}}
+ @keyframes doze{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-4px);opacity:1}}
+}
+@media(max-width:800px){.hero{height:216px;justify-content:flex-start;padding-top:3px}.hero .speech{left:50%;top:159.3px;transform:translateX(-50%);width:min(300px,calc(100% - 24px));padding:11px 15px;font-size:13px}.hero .speech::before{left:calc(50% - 7px);top:-7px;transform:rotate(135deg)}.hero::before{width:138.6px;height:138.6px;left:calc(50% - 69.3px);top:9.3px}}
+@media(max-width:600px){.hero{height:199.8px}.hero .character{width:126px;height:126px}.hero::before{width:118.8px;height:118.8px;left:calc(50% - 59.4px);top:6.6px}.hero .speech{top:138.6px}.compact .character{width:44px;height:44px}.compact::before{width:40.6px;height:40.6px;left:calc(50% - 20.3px);top:calc(50% - 20.3px)}}
+
+.sparks{position:absolute;pointer-events:none;left:calc(50% - 99px);top:-4.5px;width:198px;height:198px;z-index:0;color:#7098d5}.sparks svg{width:100%;height:100%;fill:currentColor}.sparks path{opacity:.35;transform-box:fill-box;transform-origin:center}
+:global(html[data-theme=dark]) .sparks{color:#9cbcff}
+:global(html[data-theme=dark]) .compact::before{box-shadow:0 0 0 2px rgb(30 58 95 / .45),0 0 0 4px rgb(30 58 95 / .2)}
+@media(prefers-reduced-motion:no-preference){.sparks path{animation:twinkle 3.6s cubic-bezier(.4,0,.2,1) infinite}.sparks path:nth-child(2){animation-delay:1.2s}.sparks path:nth-child(3){animation-delay:2.4s}@keyframes twinkle{0%,100%{opacity:0;transform:scale(.55) rotate(-12deg)}50%{opacity:.85;transform:scale(1) rotate(12deg)}}}
+@media(max-width:800px){.sparks{width:174.6px;height:174.6px;left:calc(50% - 87.3px);top:-8.7px}}
+@media(max-width:600px){.sparks{width:154.8px;height:154.8px;left:calc(50% - 77.4px);top:-11.4px}}
+
+.compact :global(.chat-bubble){display:none}

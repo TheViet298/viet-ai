@@ -2,6 +2,7 @@
 import { useLocale } from "@/features/shared/context/LocaleContext";
 
 import { ImagePlus, Send, X, Sparkles } from "lucide-react";
+import { useEffect, useRef, type RefObject } from "react";
 
 interface ChatInputBarProps {
   input: string;
@@ -16,6 +17,7 @@ interface ChatInputBarProps {
   imageKind?: "auto" | "dashboard" | "exterior";
   onSelectImage?: (file: File) => void;
   onClearImage?: () => void;
+  inputRef?: RefObject<HTMLTextAreaElement>;
 }
 
 export function ChatInputBar({
@@ -31,8 +33,19 @@ export function ChatInputBar({
   imageKind = "auto",
   onSelectImage,
   onClearImage,
+  inputRef,
 }: ChatInputBarProps) {
   const { t } = useLocale();
+  const localRef = useRef<HTMLTextAreaElement>(null);
+  const isComposing = useRef(false);
+  const textRef = inputRef || localRef;
+  useEffect(() => {
+    const field = textRef.current;
+    if (!field) return;
+    field.style.height = "auto";
+    field.style.height = `${Math.min(144, Math.max(44, field.scrollHeight))}px`;
+    if (!input) field.scrollTop = 0;
+  }, [input, textRef]);
   return (
     <div className="p-3 sm:p-3.5 border-t border-slate-200/80 bg-white">
       {/* Image Preview attachment badge */}
@@ -84,14 +97,22 @@ export function ChatInputBar({
           />
         </label>
 
-        <input
-          type="text"
+        <textarea
+          ref={textRef}
+          rows={1}
           aria-label={t("Tin nhắn gửi trợ lý VinFast")}
           value={input}
           onChange={(e) => onChangeInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && onSend()}
+          onCompositionStart={() => { isComposing.current = true; }}
+          onCompositionEnd={() => { isComposing.current = false; }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey && !isComposing.current && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+              e.preventDefault();
+              if (!disabled) onSend();
+            }
+          }}
           placeholder={t("Quý khách cần em hỗ trợ gì ạ?")}
-          className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200/90 bg-slate-50/50 hover:bg-white focus:bg-white text-[13px] sm:text-[13.5px] text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1E40AF] focus:ring-2 focus:ring-[#1E40AF]/15 transition"
+          className="flex-1 min-w-0 resize-none min-h-11 max-h-36 px-4 py-2.5 rounded-xl border border-slate-200/90 bg-slate-50/50 hover:bg-white focus:bg-white text-[13px] sm:text-[13.5px] leading-5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#1E40AF] focus:ring-2 focus:ring-[#1E40AF]/15 transition"
         />
 
         <button

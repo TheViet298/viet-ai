@@ -18,6 +18,7 @@ exports.loader = async function (overrides = {}) {
       setTimeout, clearTimeout, setInterval, clearInterval,
       require(id) {
         if (Object.hasOwn(overrides,id)) return overrides[id];
+        if (id.endsWith('.module.css')) return {__esModule: true, default: new Proxy({}, {get: (_target, key) => String(key)})};
         if (id === 'react-markdown') return {__esModule: true, ...markdown};
         if (id === 'remark-gfm') return {__esModule: true, ...gfm};
         if (id.startsWith('@/')) return load(id.slice(2));

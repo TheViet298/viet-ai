@@ -29,7 +29,8 @@ import { ServiceMapPanel } from "./ServiceMapPanel";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { getAiSystemStatus, uploadAttachment } from "../api/chatApi";
 import { getUploadError } from "../uploadState";
-import { useAuth, ProductMark } from "@/features/shared";
+import { ServMascot, type ServStatus } from "@/features/shared/components/serv/ServMascot";
+import { useAuth } from "@/features/shared";
 
 export function CustomerChatContainer() {
   const { user, isReady } = useAuth();
@@ -39,6 +40,7 @@ export function CustomerChatContainer() {
 
 function CustomerChatSession() {
   const { t } = useLocale();
+  const servInputRef = useRef<HTMLTextAreaElement>(null);
   const { user, role } = useAuth();
   const {
     guestLimitReached,
@@ -338,6 +340,11 @@ function CustomerChatSession() {
     setResolvedImageKind(null);
   };
 
+  const lastMessage = messages[messages.length - 1];
+  const servStatus: ServStatus = criticalBanner || imageUploadError || safetyError || guestLimitReached || lastMessage?.id.startsWith("error_")
+    ? "care" : isUploadingImage ? "uploading" : loading ? "thinking"
+    : messages.length > 1 && lastMessage?.sender === "AGENT" ? "result" : "idle";
+
   return (
     <div className="w-full">
       {/* Critical Alert Banner (Sticky 46px ngay dưới Navbar, đỏ đậm tương phản cao hoặc ribbon khi đã an toàn) */}
@@ -398,7 +405,7 @@ function CustomerChatSession() {
           {/* Cột Chat chính bên phải */}
           <div className="flex-1 flex flex-col min-w-0 h-full">
             {/* Header thu gọn thấp (~40px) */}
-            <div className="px-3.5 py-2 bg-slate-50/90 text-slate-900 flex items-center justify-between border-b border-slate-200/80">
+            <div data-chat-header className="min-h-14 px-3.5 py-1.5 bg-slate-50/90 text-slate-900 flex items-center justify-between gap-2 border-b border-slate-200/80">
               <div className="flex items-center space-x-2 min-w-0">
                 {/* Nút mở sidebar khi thu gọn trên Desktop */}
                 {!isSidebarOpen && (
@@ -421,12 +428,10 @@ function CustomerChatSession() {
                   <History className="w-4 h-4" />
                 </button>
 
-                <div className="w-7 h-7 rounded-lg bg-[#1E40AF] flex items-center justify-center text-white shrink-0 shadow-2xs">
-                  <ProductMark className="w-4 h-4 text-white" />
-                </div>
+                <ServMascot inputRef={servInputRef} status={servStatus} responseKey={lastMessage?.id} compact />
                 <div className="min-w-0">
                   <div className="font-bold text-[13px] text-slate-900 truncate">
-                    VFServ AI · <span className="font-normal text-slate-600">{t("Trợ lý Dịch vụ VinFast")}</span>
+                    Serv · <span className="font-normal text-slate-600">{t("Trợ lý Dịch vụ VinFast")}</span>
                   </div>
                 </div>
                 <div className="text-[11px] text-slate-500 hidden sm:flex items-center gap-1.5 pl-2 border-l border-slate-200">
@@ -580,6 +585,7 @@ function CustomerChatSession() {
             </p>
           )}
           <ChatInputBar
+            inputRef={servInputRef}
             input={input}
             onChangeInput={setInput}
             onSend={submit}

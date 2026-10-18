@@ -74,7 +74,7 @@ export function ChatMessageItem({
     <div lang={language} className={`flex flex-col ${isCustomer ? "items-end" : "items-start"} space-y-1.5`}>
       {/* Sender Label & Timestamp */}
       <div className="flex items-center gap-1.5 px-1 text-[11px] text-slate-400 font-medium">
-        <span>{isCustomer ? t("Bạn") : t("Trợ lý VinFast")}</span>
+        <span>{isCustomer ? t("Bạn") : "Serv"}</span>
         <span>·</span>
         <span>{parseServerTimestamp(message.timestamp).toLocaleTimeString(language === "en" ? "en-US" : "vi-VN", { hour: "2-digit", minute: "2-digit" })}</span>
       </div>

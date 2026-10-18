@@ -100,7 +100,7 @@ test('mixed-language history retains each message labels and translates card lab
   const messages=[{id:'vi',sender:'AGENT',language:'vi',content:'Xin chào',timestamp:'2026-10-01T01:00:00Z'},
     {id:'en',sender:'AGENT',language:'en',content:'Hello',timestamp:'2026-10-01T02:00:00Z',vehicle_cards:[{name:'VF7',specs:[{label:'Quãng đường',value:'123 km (NEDC)'}],price_label:'830 VND',verified_at:'2026-10-10'}]}];
   const html=renderToStaticMarkup(React.createElement(React.Fragment,null,messages.map(message=>React.createElement(ChatMessageItem,{...props,message,key:message.id}))));
-  assert.match(html,/lang="vi"/);assert.match(html,/lang="en"/);assert.match(html,/Trợ lý VinFast/);assert.match(html,/VinFast Assistant/);assert.match(html,/>Range</);assert.match(html,/123 km \(NEDC\)/);
+  assert.match(html,/lang="vi"/);assert.match(html,/lang="en"/);assert.match(html,/Serv/);assert.match(html,/>Range</);assert.match(html,/123 km \(NEDC\)/);
 });
 
 test('locale hydration does not overwrite saved English during the initial effects', () => {

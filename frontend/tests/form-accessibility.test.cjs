@@ -16,7 +16,7 @@ function load(path, overrides = {}) {
 test('chat and image inputs expose accessible names', () => {
   const {ChatInputBar} = load('../src/features/chat/components/ChatInputBar.tsx');
   const html = renderToStaticMarkup(React.createElement(ChatInputBar, {input: '', onSend() {}, onChangeInput() {}}));
-  assert.match(html, /type="text"[^>]*aria-label="Tin nhắn/);
+  assert.match(html, /<textarea[^>]*aria-label="Tin nhắn/);
   assert.match(html, /type="file"[^>]*aria-label="Tải ảnh/);
 });
 test('login labels target real fields with autocomplete', () => {

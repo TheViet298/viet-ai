@@ -120,7 +120,7 @@ export function ChatFeed({
 
             <div className="rounded-2xl rounded-tl-xs bg-slate-100 p-2.5 max-w-[85%] sm:max-w-[70%] space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-[11.5px] font-bold text-[#1E40AF]">{t("Trợ lý VinFast AI")}</span>
+                <span className="text-[11.5px] font-bold text-[#1E40AF]">Serv</span>
                 <span className="text-[10.5px] text-slate-400 flex items-center gap-1 font-medium">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping inline-block" />
                   <span>{t("Đang xử lý")}</span>
