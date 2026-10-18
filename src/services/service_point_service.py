@@ -450,6 +450,11 @@ for _k, _v in PROVINCE_CANONICAL_MAP.items():
 
 DISTRICT_TOWN_TO_PROVINCE: dict[str, str] = {
     # TP.HCM
+    "quận 1": "hồ chí minh",
+    "quận 3": "hồ chí minh",
+    "quận 7": "hồ chí minh",
+    "quận 10": "hồ chí minh",
+    "quận 12": "hồ chí minh",
     "thủ đức": "hồ chí minh",
     "bình tân": "hồ chí minh",
     "bình chánh": "hồ chí minh",
@@ -463,6 +468,8 @@ DISTRICT_TOWN_TO_PROVINCE: dict[str, str] = {
     "bình thạnh": "hồ chí minh",
     "vũng tàu": "hồ chí minh",
     # Hà Nội
+    "ba đình": "hà nội",
+    "tây hồ": "hà nội",
     "sóc sơn": "hà nội",
     "hoài đức": "hà nội",
     "hòai đức": "hà nội",
@@ -532,6 +539,23 @@ def match_province_segment(raw_segment: str) -> str | None:
         return LOOKUP_DISTRICT_MAP[norm]
     if norm_no_acc in LOOKUP_DISTRICT_MAP:
         return LOOKUP_DISTRICT_MAP[norm_no_acc]
+
+    # Bóc tách tiền tố quận/huyện/thị xã/thành phố nếu có
+    for prefix in ("quận ", "huyện ", "thị xã ", "tx ", "thành phố ", "tp "):
+        if norm.startswith(prefix):
+            sub = norm[len(prefix):].strip()
+            if sub in LOOKUP_DISTRICT_MAP:
+                return LOOKUP_DISTRICT_MAP[sub]
+            if sub in LOOKUP_PROVINCE_MAP:
+                return LOOKUP_PROVINCE_MAP[sub]
+        p_no_acc = strip_vietnamese_diacritics(prefix)
+        if norm_no_acc.startswith(p_no_acc):
+            sub_no_acc = norm_no_acc[len(p_no_acc):].strip()
+            if sub_no_acc in LOOKUP_DISTRICT_MAP:
+                return LOOKUP_DISTRICT_MAP[sub_no_acc]
+            if sub_no_acc in LOOKUP_PROVINCE_MAP:
+                return LOOKUP_PROVINCE_MAP[sub_no_acc]
+
     return None
 
 
