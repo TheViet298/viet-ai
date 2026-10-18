@@ -471,6 +471,7 @@ function CustomerChatSession() {
             }}
           >
             <NearbyResults action={activeAction} locationState={locationState}
+              caseId={currentCaseId}
               onChangeLocation={handleResetLocation} onStopSharing={handleSkipLocation}
               onChooseCategory={(category) => sendMessage(`Tìm ${category === "SHOWROOM" ? "showroom" : category === "SERVICE_WORKSHOP" ? "xưởng dịch vụ" : "trạm sạc"} gần đây`)} />
           </ChatFeed>

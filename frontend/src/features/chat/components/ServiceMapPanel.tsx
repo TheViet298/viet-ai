@@ -1,29 +1,25 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Map as MapLibreMap, Marker } from "maplibre-gl";
-import type { ServicePointSeed, UserLocationState } from "../types";
-import { calculateHaversineDistanceKm, formatDistanceKm, getDirectionsUrl, getOsmDirectionsUrl } from "../utils/distance";
+import { PhoneCall, X, MapPin } from "lucide-react";
+import type { ServicePointSeed, UserLocationState, ServicePointApiItem, ServicePointsApiResponse } from "../types";
+import { calculateHaversineDistanceKm } from "../utils/distance";
 import { resolveManualArea } from "../constants/manualAreas";
-import { createRasterMapStyle } from "../utils/mapTileProvider";
-import { getNearbyServicePoints } from "../api/chatApi";
+import { getNearbyServicePoints, getCaseServicePoints } from "../api/chatApi";
+import { VietmapMiniMap } from "./VietmapMiniMap";
+import { ServicePointCard, AnyServicePoint } from "./ServicePointCard";
 
-function pointLabel(point: ServicePointSeed) {
-  return point.demo ? "[Demo] " : point.verificationStatus === "VERIFIED" ? "" : "[Chưa xác minh] ";
-}
-
-type Category = "ALL" | ServicePointSeed["type"];
-const categories: [Category, string][] = [["ALL", "Tất cả"], ["CHARGING_STATION", "Trụ sạc"], ["SHOWROOM", "Showroom"], ["SERVICE_WORKSHOP", "Xưởng kỹ thuật"], ["OTHER", "Loại khác / Cứu hộ"]];
-function accuracyPolygon(lat: number, lng: number, meters: number): GeoJSON.Feature<GeoJSON.Polygon> {
-  const coordinates: [number, number][] = [];
-  for (let i = 0; i <= 64; i++) {
-    const angle = 2 * Math.PI * i / 64;
-    coordinates.push([lng + meters * Math.cos(angle) / (111320 * Math.max(0.01, Math.cos(lat * Math.PI / 180))), lat + meters * Math.sin(angle) / 111320]);
-  }
-  return { type: "Feature", geometry: { type: "Polygon", coordinates: [coordinates] }, properties: {} };
-}
+type Category = "ALL" | "CHARGING_STATION" | "SHOWROOM" | "SERVICE_WORKSHOP" | "OTHER";
+const categories: [Category, string][] = [
+  ["ALL", "Tất cả"],
+  ["CHARGING_STATION", "Trụ sạc"],
+  ["SHOWROOM", "Showroom"],
+  ["SERVICE_WORKSHOP", "Xưởng dịch vụ 2S"],
+  ["OTHER", "Loại khác"],
+];
 
 interface Props {
+  caseId?: string | null;
   providedPoints?: ServicePointSeed[];
   isOpen: boolean;
   onClose: () => void;
@@ -31,119 +27,230 @@ interface Props {
   servicePoints: ServicePointSeed[];
   selectedPointId: string | null;
   onSelectPoint: (id: string) => void;
-  onSelectDestination?: (point: ServicePointSeed) => void;
+  onSelectDestination?: (point: AnyServicePoint) => void;
   suggestedCategory?: Category;
 }
-export function ServiceMapPanel({ providedPoints, isOpen, onClose, locationState, servicePoints, selectedPointId, onSelectPoint, onSelectDestination, suggestedCategory = "ALL" }: Props) {
+
+export function ServiceMapPanel({
+  caseId,
+  providedPoints,
+  isOpen,
+  onClose,
+  locationState,
+  servicePoints,
+  selectedPointId,
+  onSelectPoint,
+  onSelectDestination,
+  suggestedCategory = "ALL",
+}: Props) {
   const [category, setCategory] = useState<Category>("ALL");
   const [nearby, setNearby] = useState<ServicePointSeed[] | null>(null);
-  const [mapError, setMapError] = useState(false);
-  const [mapReady, setMapReady] = useState(false);
-  const mapElement = useRef<HTMLDivElement>(null);
-  const map = useRef<MapLibreMap | null>(null);
-  const markers = useRef<Marker[]>([]);
+  const [caseServiceData, setCaseServiceData] = useState<ServicePointsApiResponse | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(selectedPointId);
   const requestId = useRef(0);
   const nearbyAbort = useRef<AbortController | null>(null);
-  const lastQuery = useRef<{ coord: { lat: number; lng: number }; time: number; category: Category; mode: UserLocationState["status"] } | null>(null);
-  const origin = locationState.status === "CONSENTED" ? locationState.coords : undefined;
-  const center = useMemo(() => origin ?? (locationState.status === "MANUAL" ? resolveManualArea(locationState.label)?.coord : undefined), [origin, locationState.status, locationState.label]);
-  const hasCenter = Boolean(center);
-  const latestCenter = useRef(center);
-  latestCenter.current = center;
-  const points = providedPoints ?? nearby ?? servicePoints;
-  const filtered = useMemo(() => points.filter((point) => category === "ALL" || point.type === category).map((point) => ({ ...point, km: center ? calculateHaversineDistanceKm(center, point.coords) : null })).filter((point) => point.km === null || point.km <= 50).sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity)), [points, category, center]);
-  const selected = filtered.find((point) => point.id === selectedPointId) ?? filtered[0];
 
-  useEffect(() => { setCategory(suggestedCategory); }, [suggestedCategory]);
+  const origin = locationState.status === "CONSENTED" ? locationState.coords : undefined;
+  const center = useMemo(
+    () => origin ?? (locationState.status === "MANUAL" ? resolveManualArea(locationState.label)?.coord : undefined),
+    [origin, locationState.status, locationState.label]
+  );
+
   useEffect(() => {
-    if (providedPoints) return;
-    if (!isOpen || !center) { requestId.current++; nearbyAbort.current?.abort(); lastQuery.current = null; setNearby(null); return; }
-    const now = Date.now();
-    const previous = lastQuery.current;
-    if (previous && previous.category === category && previous.mode === locationState.status && calculateHaversineDistanceKm(previous.coord, center) < 0.15 && now - previous.time < 30000) return;
-    lastQuery.current = { coord: center, time: now, category, mode: locationState.status };
+    setSelectedId(selectedPointId);
+  }, [selectedPointId]);
+
+  useEffect(() => {
+    setCategory(suggestedCategory);
+  }, [suggestedCategory]);
+
+  // Nếu có caseId thì lấy điểm dịch vụ từ /cases/{id}/service-points
+  useEffect(() => {
+    if (!isOpen || !caseId) return;
+    let cancelled = false;
+    getCaseServicePoints(caseId).then((res) => {
+      if (!cancelled && res?.success && res.data) {
+        setCaseServiceData(res.data);
+      }
+    }).catch(() => null);
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, caseId]);
+
+  // Nếu không có caseId hoặc không có caseServiceData, lấy từ /customer/service-points/nearby
+  useEffect(() => {
+    if (providedPoints || caseId) return;
+    if (!isOpen || !center) {
+      requestId.current++;
+      nearbyAbort.current?.abort();
+      setNearby(null);
+      return;
+    }
+
     const id = ++requestId.current;
     nearbyAbort.current?.abort();
     const controller = new AbortController();
     nearbyAbort.current = controller;
     setNearby(null);
-    getNearbyServicePoints(center, category, controller.signal).then((result) => {
-      if (id === requestId.current) setNearby(result);
-    }).catch(() => { if (id === requestId.current) setNearby(null); });
-    // Keep an in-flight query across small GPS updates that do not pass the throttle.
-    // It is cancelled only by a replacement query, close, or unmount.
-  }, [providedPoints, isOpen, center, category, locationState.status]);
-  useEffect(() => () => { nearbyAbort.current?.abort(); requestId.current++; }, []);
 
-  useEffect(() => {
-    if (!isOpen || !mapElement.current || !hasCenter) return;
-    setMapError(false);
-    let cancelled = false;
-    const resizeObserver = new ResizeObserver(() => map.current?.resize());
-    resizeObserver.observe(mapElement.current);
-    import("maplibre-gl").then((maplibre) => {
-      const initialCenter = latestCenter.current;
-      if (cancelled || !mapElement.current || !initialCenter) return;
-      try {
-        // Next.js 14 cannot bundle MapLibre v6's ESM worker reliably. Serve
-        // the copied worker from /public and configure it before map creation.
-        maplibre.setWorkerUrl("/maplibre-gl-worker.mjs");
-        const instance = new maplibre.Map({ container: mapElement.current, center: [initialCenter.lng, initialCenter.lat], zoom: 11, style: createRasterMapStyle(process.env.NEXT_PUBLIC_MAP_TILE_URL, process.env.NEXT_PUBLIC_MAP_TILE_ATTRIBUTION) });
-        map.current = instance;
-        instance.addControl(new maplibre.NavigationControl(), "top-right");
-        instance.on("error", () => { if (!cancelled) setMapError(true); });
-        instance.on("style.load", () => { if (!cancelled) { setMapError(false); setMapReady(true); } });
-      } catch { setMapError(true); }
-    }).catch(() => { if (!cancelled) setMapError(true); });
-    return () => { cancelled = true; resizeObserver.disconnect(); markers.current.forEach((marker) => marker.remove()); markers.current = []; map.current?.remove(); map.current = null; setMapReady(false); };
-  }, [isOpen, hasCenter]);
-
-  useEffect(() => {
-    const instance = map.current;
-    if (!instance || !center || !mapReady) return;
-    let disposed = false;
-    import("maplibre-gl").then((maplibre) => {
-      if (disposed || map.current !== instance) return;
-      markers.current.forEach((marker) => marker.remove());
-      markers.current = [];
-      const user = document.createElement("div"); user.className = "w-5 h-5 rounded-full bg-blue-700 border-2 border-white shadow-md";
-      user.title = origin ? "Vị trí hiện tại" : "Tâm khu vực tham chiếu";
-      markers.current.push(new maplibre.Marker({ element: user }).setLngLat([center.lng, center.lat]).addTo(instance));
-      filtered.forEach((point, index) => {
-        const button = document.createElement("button"); button.type = "button"; button.className = "w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-md"; button.title = `${index + 1}. ${pointLabel(point)}${point.name}`; button.textContent = String(index + 1); button.style.cssText = "width:24px;height:24px;color:white;font-size:12px";
-        button.onclick = () => onSelectPoint(point.id);
-        markers.current.push(new maplibre.Marker({ element: button }).setLngLat([point.coords.lng, point.coords.lat]).addTo(instance));
+    getNearbyServicePoints(center, category, controller.signal)
+      .then((result) => {
+        if (id === requestId.current) setNearby(result);
+      })
+      .catch(() => {
+        if (id === requestId.current) setNearby(null);
       });
-      const bounds = new maplibre.LngLatBounds([center.lng, center.lat], [center.lng, center.lat]);
-      filtered.forEach((point) => bounds.extend([point.coords.lng, point.coords.lat]));
-      instance.fitBounds(bounds, { padding: 32, maxZoom: 13, duration: 0 });
-      const source = instance.getSource("accuracy") as import("maplibre-gl").GeoJSONSource | undefined;
-      const data = origin && locationState.accuracy ? accuracyPolygon(center.lat, center.lng, locationState.accuracy) : { type: "FeatureCollection", features: [] } as GeoJSON.FeatureCollection;
-      if (source) source.setData(data);
-      else if (instance.isStyleLoaded()) { instance.addSource("accuracy", { type: "geojson", data }); instance.addLayer({ id: "accuracy-fill", type: "fill", source: "accuracy", paint: { "fill-color": "#2563eb", "fill-opacity": 0.16 } }); }
-    });
-    return () => { disposed = true; };
-  }, [center, filtered, locationState.accuracy, origin, onSelectPoint, mapReady]);
+
+    return () => {
+      controller.abort();
+    };
+  }, [providedPoints, caseId, isOpen, center, category]);
+
+  // Danh sách điểm hiển thị
+  const displayPoints: (ServicePointApiItem | ServicePointSeed)[] = useMemo(() => {
+    if (caseServiceData?.recommended_points && caseServiceData.recommended_points.length > 0) {
+      return caseServiceData.recommended_points;
+    }
+    const base = providedPoints ?? nearby ?? servicePoints;
+    return base
+      .filter((point) => category === "ALL" || point.type === category)
+      .map((point) => ({
+        ...point,
+        distance_km: center ? calculateHaversineDistanceKm(center, point.coords) : undefined,
+      }))
+      .filter((point) => point.distance_km === undefined || point.distance_km <= 50)
+      .sort((a, b) => (a.distance_km ?? Infinity) - (b.distance_km ?? Infinity));
+  }, [caseServiceData, providedPoints, nearby, servicePoints, category, center]);
+
+  const rescueHotline = caseServiceData?.rescue_hotline;
+  const noPointsNearby = caseServiceData?.no_points_nearby || (displayPoints.length === 0 && !caseId);
+
+  const handleSelect = (id: string) => {
+    setSelectedId(id);
+    onSelectPoint(id);
+    const cardEl = document.getElementById(`service-point-card-${id}`);
+    cardEl?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
 
   if (!isOpen) return null;
-  if (providedPoints) return <section aria-label="Bản đồ điểm dịch vụ" className="min-w-0 overflow-hidden rounded-xl border">
-    <header className="flex items-center justify-between p-3"><strong>Bản đồ tham khảo</strong><button type="button" onClick={onClose}>Đóng bản đồ</button></header>
-    <p className="px-3 pb-2 text-xs text-slate-600">Chấm xanh: {origin ? "vị trí hiện tại" : "tâm khu vực"}. Số trên bản đồ khớp danh sách kết quả.</p>
-    <div className="relative h-[280px] bg-slate-100" role="region" aria-label="Bản đồ tương tác"><div ref={mapElement} style={{ position: "absolute", inset: 0 }} />{mapError && <p role="alert" className="absolute bottom-2 left-2 right-2 bg-white p-2 text-xs">Không tải được bản đồ. Danh sách và chỉ đường vẫn sử dụng được.</p>}</div>
-  </section>;
-  return <section className="min-w-0 rounded-xl border bg-white overflow-hidden flex flex-col xl:h-[calc(100vh-140px)] xl:min-h-[580px] xl:max-h-[820px]" aria-label="Bản đồ điểm dịch vụ">
-    <header className="flex items-center justify-between p-3 border-b"><strong>Điểm dịch vụ</strong><button type="button" onClick={onClose} aria-label="Đóng bản đồ">Đóng</button></header>
-    <div className="flex min-h-0 flex-1 flex-col-reverse sm:min-h-[450px] sm:flex-row">
-      <div className="min-w-0 max-h-[380px] overflow-y-auto p-3 space-y-3 sm:max-h-[580px] sm:w-1/3 sm:shrink-0 xl:max-h-none">
-        <p className="text-xs text-slate-600">Điểm demo được gắn nhãn. Danh mục không xác nhận tình trạng hoạt động trực tiếp.</p>
-        {locationState.status === "MANUAL" && <p className="text-xs text-amber-800">{center ? "Tâm khu vực tham chiếu/ước lượng, không phải GPS. Khoảng cách chỉ để tham khảo." : "Chưa nhận diện chính xác khu vực. Dùng Đổi lại vị trí để chọn một khu vực gợi ý; chưa có khoảng cách tham khảo."}</p>}
-        {locationState.accuracy && locationState.accuracy > 500 && <p className="text-xs text-amber-800">Vị trí ước lượng ±{Math.round(locationState.accuracy)}m</p>}
-        <div className="flex flex-wrap gap-1">{categories.map(([value, label]) => <button key={value} type="button" aria-pressed={category === value} className={`px-2 py-1 rounded border text-xs ${category === value ? "bg-blue-700 text-white" : "bg-white"}`} onClick={() => { if (value === category) return; nearbyAbort.current?.abort(); requestId.current++; setNearby(null); setCategory(value); onSelectPoint(""); }}>{label}</button>)}</div>
-        {filtered.length === 0 && <div><p>Không có điểm dịch vụ phù hợp{center ? " trong bán kính 50 km" : " trong bộ lọc này"}.</p><a href="tel:1900232389" className="text-blue-700 underline">Gọi hỗ trợ 1900-232389</a></div>}
-        {filtered.map((point) => <button type="button" key={point.id} onClick={() => onSelectPoint(point.id)} className={`block w-full text-left p-2 rounded border ${selected?.id === point.id ? "border-blue-700" : "border-slate-200"}`}><strong>{pointLabel(point)}{point.name}</strong><span className="block text-xs">{point.address}</span>{point.km !== null && <span className="text-xs">{formatDistanceKm(point.km)} đường chim bay</span>}</button>)}
-        {selected && <div className="border-t pt-2 text-sm"><strong>{pointLabel(selected)}{selected.name}</strong><p>{selected.address}</p><p className="text-xs text-slate-600">Nguồn: {selected.source ?? "Chưa có nguồn"} · Cập nhật: {selected.updatedAt ?? "Chưa rõ"} · {selected.verificationStatus === "VERIFIED" && !selected.demo ? "Danh mục đã xác minh" : "Chưa xác minh"}</p>{selected.hotline && <a className="block text-blue-700" href={`tel:${selected.hotline.split(" ")[0].replace(/[^\d+]/g, "")}`}>Hotline: {selected.hotline}</a>}<div className="flex flex-wrap gap-3 mt-2"><a target="_blank" rel="noopener noreferrer" href={getDirectionsUrl({ ...selected.coords, address: selected.address }, origin)}>Google Maps{origin ? " chỉ đường" : " tìm địa chỉ"}</a>{origin && <a target="_blank" rel="noopener noreferrer" href={getOsmDirectionsUrl(selected.coords, origin)}>OpenStreetMap chỉ đường</a>}{onSelectDestination && <button type="button" onClick={() => onSelectDestination(selected)}>Chọn làm điểm đến</button>}</div></div>}
+
+  return (
+    <section
+      aria-label="Bản đồ điểm dịch vụ"
+      className="min-w-0 rounded-2xl border border-slate-200/90 bg-white overflow-hidden flex flex-col shadow-lg my-3"
+    >
+      <header className="flex items-center justify-between p-3.5 border-b border-slate-100 bg-slate-50/70">
+        <div className="flex items-center gap-2">
+          <MapPin className="w-4 h-4 text-[#1E40AF]" />
+          <strong className="text-sm font-bold text-slate-900">Điểm hỗ trợ VinFast</strong>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Đóng bản đồ"
+          className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 transition"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </header>
+
+      <div className="p-3.5 space-y-3">
+        {/* Banner Hotline Cứu Hộ Khẩn Cấp hiển thị đầu tiên nếu có */}
+        {rescueHotline && (
+          <div className="rounded-xl border-2 border-red-500 bg-red-50 p-3 shadow-xs space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-red-900 font-bold text-xs uppercase">
+                <PhoneCall className="w-4 h-4 text-red-600 animate-pulse" />
+                <span>Hotline Cứu hộ Khẩn cấp 24/7</span>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-bold">
+                ƯU TIÊN
+              </span>
+            </div>
+            <p className="text-[11.5px] text-red-800 leading-relaxed">
+              Hồ sơ được xác định thuộc tình trạng cần cứu hộ khẩn cấp hoặc không thể di chuyển an toàn:
+            </p>
+            <a
+              href={`tel:${rescueHotline.replace(/[^0-9]/g, "")}`}
+              className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-xs transition"
+            >
+              <PhoneCall className="w-3.5 h-3.5" />
+              <span>☎ {rescueHotline}</span>
+            </a>
+          </div>
+        )}
+
+        {/* Bộ lọc danh mục (khi không lấy theo hồ sơ sự cố cố định) */}
+        {!caseId && (
+          <div className="flex flex-wrap gap-1.5">
+            {categories.map(([val, label]) => (
+              <button
+                key={val}
+                type="button"
+                aria-pressed={category === val}
+                className={`px-2.5 py-1 rounded-lg border text-xs font-medium transition ${
+                  category === val
+                    ? "bg-[#1E40AF] text-white border-[#1E40AF]"
+                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                }`}
+                onClick={() => {
+                  setCategory(val);
+                  setSelectedId(null);
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Bản đồ Vietmap (Tự động ẩn nếu thiếu key, danh sách card vẫn hiện) */}
+        <VietmapMiniMap
+          points={displayPoints}
+          userLocation={origin}
+          selectedPointId={selectedId}
+          onSelectPoint={handleSelect}
+        />
+
+        {/* Danh sách các card điểm dịch vụ */}
+        <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+          {displayPoints.length === 0 ? (
+            noPointsNearby ? (
+              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-2 text-center">
+                <p className="font-semibold leading-relaxed">
+                  {caseServiceData?.message ||
+                    "Chưa có điểm dịch vụ trong 150 km quanh vị trí của bạn; vui lòng gọi hotline"}
+                </p>
+                <a
+                  href="tel:1900232389"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition"
+                >
+                  <PhoneCall className="w-3.5 h-3.5" />
+                  <span>Hotline VinFast: 1900-232389</span>
+                </a>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 py-3 text-center">
+                Không có điểm dịch vụ phù hợp trong bộ lọc này.
+              </p>
+            )
+          ) : (
+            displayPoints.map((point, idx) => (
+              <ServicePointCard
+                key={point.id || idx}
+                point={point}
+                index={idx}
+                isSelected={selectedId === point.id}
+                onSelect={() => handleSelect(point.id)}
+                areaLabel={caseServiceData?.area_reference?.label || locationState.label || "khu vực"}
+                userCoords={origin}
+                onSelectDestination={onSelectDestination}
+              />
+            ))
+          )}
+        </div>
       </div>
-      <div className="relative min-h-[280px] min-w-0 bg-slate-100 sm:w-2/3 sm:flex-1" role="region" aria-label="Bản đồ tương tác">{center ? <div ref={mapElement} style={{ position: "absolute", inset: 0 }} /> : <p className="p-4 text-sm">Nhập hoặc chọn khu vực để mở bản đồ.</p>}{mapError && <p role="alert" className="absolute bottom-2 left-2 right-2 bg-white p-2 text-xs">Không tải được bản đồ. Danh sách vẫn sử dụng được.</p>}</div>
-    </div>
-  </section>;
+    </section>
+  );
 }

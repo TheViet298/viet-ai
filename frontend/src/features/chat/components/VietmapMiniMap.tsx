@@ -4,8 +4,19 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import type { Map as MapLibreMap, Marker } from "maplibre-gl";
 import { ServicePointApiItem } from "../types";
 
+export type MiniMapPoint = ServicePointApiItem | (Partial<ServicePointApiItem> & {
+  id: string | number;
+  name: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  lat?: number;
+  lng?: number;
+  category?: string;
+  category_slug?: string;
+});
+
 interface Props {
-  points: ServicePointApiItem[];
+  points: MiniMapPoint[];
   userLocation?: { lat: number; lng: number } | null;
   lastUpdatedLabel?: string;
   selectedPointId?: string | null;
@@ -156,18 +167,45 @@ export function VietmapMiniMap({
         hasCoords = true;
       }
 
-      // 2. Markers các điểm dịch vụ đề xuất
+      // 2. Markers các điểm dịch vụ đề xuất theo loại điểm
       validPoints.forEach((point, index) => {
+        const isCharging =
+          point.category === "charging_station" ||
+          point.category_slug === "car_charging_station";
+        const isWorkshop =
+          point.category === "workshop" ||
+          Boolean(point.category_slug?.includes("service"));
+        const isShowroom =
+          point.category === "showroom" ||
+          point.category_slug === "showroom_car";
+
+        let colorBg = "bg-slate-700 hover:bg-slate-800";
+        let ringColor = "ring-slate-400/50";
+        if (isCharging) {
+          colorBg = "bg-emerald-600 hover:bg-emerald-700";
+          ringColor = "ring-emerald-400/60";
+        } else if (isWorkshop) {
+          colorBg = "bg-blue-600 hover:bg-blue-700";
+          ringColor = "ring-blue-400/60";
+        } else if (isShowroom) {
+          colorBg = "bg-amber-600 hover:bg-amber-700";
+          ringColor = "ring-amber-400/60";
+        }
+
+        const isSelected = point.id === selectedPointId;
         const pinEl = document.createElement("button");
         pinEl.type = "button";
-        pinEl.className =
-          point.id === selectedPointId
-            ? "w-7 h-7 rounded-full bg-red-600 border-2 border-white shadow-xl text-white font-bold text-xs ring-4 ring-red-400/50 flex items-center justify-center cursor-pointer transition transform scale-110"
-            : "w-6 h-6 rounded-full bg-slate-800 hover:bg-red-600 border-2 border-white shadow-md text-white font-bold text-[11px] flex items-center justify-center cursor-pointer transition";
+        pinEl.className = isSelected
+          ? `w-7 h-7 rounded-full ${colorBg} border-2 border-white shadow-xl text-white font-bold text-xs ring-4 ring-offset-1 ${ringColor} flex items-center justify-center cursor-pointer transition transform scale-120 z-20`
+          : `w-6 h-6 rounded-full ${colorBg} border-2 border-white shadow-md text-white font-bold text-[11px] flex items-center justify-center cursor-pointer transition hover:scale-110`;
         pinEl.textContent = String(index + 1);
-        pinEl.title = `${index + 1}. ${point.name} (${point.address})`;
+        pinEl.title = `${index + 1}. [${isCharging ? "Trạm sạc" : isWorkshop ? "Xưởng 2S" : isShowroom ? "Showroom" : "Điểm dịch vụ"}] ${point.name} (${point.address})`;
         pinEl.onclick = () => {
           if (onSelectPoint) onSelectPoint(point.id);
+          const cardEl = document.getElementById(`service-point-card-${point.id}`);
+          if (cardEl) {
+            cardEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
         };
 
         markers.current.push(

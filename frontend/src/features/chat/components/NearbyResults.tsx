@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { NearbyAction, ServicePointSeed, UserLocationState } from "../types";
 import { getNearbyServicePoints } from "../api/chatApi";
 import { resolveManualArea } from "../constants/manualAreas";
-import { formatDistanceKm, getDirectionsUrl } from "../utils/distance";
 import { ServiceMapPanel } from "./ServiceMapPanel";
+import { ServicePointCard } from "./ServicePointCard";
 
 interface Props {
   action: NearbyAction | null;
@@ -13,9 +13,10 @@ interface Props {
   onChangeLocation: () => void;
   onStopSharing: () => void;
   onChooseCategory: (category: string) => void;
+  caseId?: string | null;
 }
 
-export function NearbyResults({ action, locationState, onChangeLocation, onStopSharing, onChooseCategory }: Props) {
+export function NearbyResults({ action, locationState, onChangeLocation, onStopSharing, onChooseCategory, caseId }: Props) {
   const [points, setPoints] = useState<ServicePointSeed[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -74,24 +75,26 @@ export function NearbyResults({ action, locationState, onChangeLocation, onStopS
     {loading && <p role="status">Đang tìm địa điểm phù hợp…</p>}
     {error && <div role="alert"><p>Không tải được danh mục địa điểm. Bạn có thể thử lại hoặc đổi khu vực.</p><button className="mt-2 min-h-10 rounded-xl border px-3" onClick={() => setRetry(retry + 1)}>Thử lại tìm kiếm</button></div>}
     {!loading && !error && points.length === 0 && <p>Không có địa điểm phù hợp trong phạm vi này.{action.category === "SERVICE_WORKSHOP" && " Danh mục xưởng hiện chưa có dữ liệu đủ tin cậy."}</p>}
-    <ol className="space-y-3">
-      {points.map((point, index) => <li key={point.id} className="min-w-0 rounded-xl border border-slate-200 p-3">
-        <p className="break-words font-semibold">{index + 1}. {point.name}</p>
-        <p className="break-words text-slate-600">{point.address}</p>
-        <p className="my-1 text-xs text-slate-600">{point.distanceKm !== undefined ? `${formatDistanceKm(point.distanceKm)} đường chim bay` : "Chưa có khoảng cách"}{index === 0 ? " · Gần nhất trong kết quả" : ""}</p>
-        <p className="mb-2 text-xs text-slate-600">{point.demo ? "Dữ liệu demo" : "Dữ liệu snapshot"} · Chưa xác minh hoạt động hiện tại · {point.updatedAt ? `Cập nhật nguồn ${point.updatedAt}` : "Ngày cập nhật nguồn chưa rõ"}</p>
-        <a className="inline-flex min-h-10 max-w-full items-center justify-center rounded-xl bg-blue-800 px-4 py-2 text-center font-medium text-white hover:bg-blue-900"
-          href={getDirectionsUrl({ ...point.coords, address: point.address }, origin)} target="_blank" rel="noopener noreferrer">Chỉ đường Google Maps</a>
-      </li>)}
-    </ol>
-    <p className="text-xs text-slate-600">Nhấn Chỉ đường để mở Google Maps; tọa độ điểm đến{origin ? " và vị trí hiện tại" : ""} được chuyển sang dịch vụ đó. Không có thông tin cổng trống hoặc ETA trực tiếp.</p>
-    <div className="flex flex-wrap gap-2">
+    <div className="space-y-3">
+      {points.map((point, index) => (
+        <ServicePointCard
+          key={point.id}
+          point={point}
+          index={index}
+          isSelected={selected === point.id}
+          onSelect={() => setSelected(point.id)}
+          areaLabel={locationState.label}
+          userCoords={origin}
+        />
+      ))}
+    </div>
+    <div className="flex flex-wrap gap-2 pt-2">
       {!loading && !error && points.length < 5 && radius < 200 && <button className="min-h-10 rounded-xl border px-3" onClick={() => setRadius(radius * 2)}>Mở rộng tới {radius * 2} km</button>}
       {points.length > 0 && <button className="min-h-10 rounded-xl border px-3" onClick={() => setMapOpen(!mapOpen)}>{mapOpen ? "Ẩn bản đồ" : "Xem bản đồ"}</button>}
       <button className="min-h-10 rounded-xl border px-3" onClick={onChangeLocation}>Đổi vị trí</button>
       <button className="min-h-10 rounded-xl bg-rose-50 px-3 text-rose-700" onClick={onStopSharing}>Dừng chia sẻ</button>
     </div>
-    {mapOpen && <ServiceMapPanel isOpen onClose={() => setMapOpen(false)} locationState={locationState}
+    {mapOpen && <ServiceMapPanel caseId={caseId} isOpen onClose={() => setMapOpen(false)} locationState={locationState}
       servicePoints={points} providedPoints={points} selectedPointId={selected} onSelectPoint={setSelected} suggestedCategory={action.category} />}
   </section>;
 }
