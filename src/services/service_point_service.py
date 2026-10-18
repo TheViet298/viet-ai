@@ -97,13 +97,13 @@ PROVINCE_CENTERS: dict[str, tuple[float, float]] = {
     "ha noi": (21.0285, 105.8542),
     "hải phòng": (20.8449, 106.6881),
     "hai phong": (20.8449, 106.6881),
-    "hồ chí minh": (10.8231, 106.6297),
-    "tp. hồ chí minh": (10.8231, 106.6297),
-    "tp hồ chí minh": (10.8231, 106.6297),
-    "ho chi minh": (10.8231, 106.6297),
-    "sài gòn": (10.8231, 106.6297),
-    "sai gon": (10.8231, 106.6297),
-    "tphcm": (10.8231, 106.6297),
+    "hồ chí minh": (10.7769, 106.7009),
+    "tp. hồ chí minh": (10.7769, 106.7009),
+    "tp hồ chí minh": (10.7769, 106.7009),
+    "ho chi minh": (10.7769, 106.7009),
+    "sài gòn": (10.7769, 106.7009),
+    "sai gon": (10.7769, 106.7009),
+    "tphcm": (10.7769, 106.7009),
     "quảng ninh": (20.9505, 107.0734),
     "quang ninh": (20.9505, 107.0734),
     "đà nẵng": (16.0544, 108.2022),
@@ -158,13 +158,13 @@ PROVINCE_CENTERS: dict[str, tuple[float, float]] = {
     "dong thap": (10.4500, 105.6333),
 
     # Bí danh các tỉnh/thành đã sáp nhập -> trỏ về tọa độ tỉnh mới (chính xác theo Đề án sắp xếp ĐVHC 2025)
-    "bình dương": (10.8231, 106.6297),  # -> TP.HCM
-    "binh duong": (10.8231, 106.6297),
-    "bà rịa vũng tàu": (10.8231, 106.6297),  # -> TP.HCM
-    "ba ria vung tau": (10.8231, 106.6297),
-    "bà rịa - vũng tàu": (10.8231, 106.6297),
-    "vũng tàu": (10.8231, 106.6297),
-    "vung tau": (10.8231, 106.6297),
+    "bình dương": (10.7769, 106.7009),  # -> TP.HCM
+    "binh duong": (10.7769, 106.7009),
+    "bà rịa vũng tàu": (10.7769, 106.7009),  # -> TP.HCM
+    "ba ria vung tau": (10.7769, 106.7009),
+    "bà rịa - vũng tàu": (10.7769, 106.7009),
+    "vũng tàu": (10.7769, 106.7009),
+    "vung tau": (10.7769, 106.7009),
     "long an": (11.3000, 106.1000),  # -> Tây Ninh
     "kiên giang": (10.3833, 105.4167),  # -> An Giang
     "kien giang": (10.3833, 105.4167),
@@ -708,8 +708,8 @@ def search_service_points_catalog(
     logger = logging.getLogger(__name__)
 
     mode = os.environ.get("GPS_CATALOG_MODE", "auto").strip().lower()
-    if mode == "demo":
-        from src.services.service_point_catalog import default_catalog_adapter, nearby_service_points
+    from src.services.service_point_catalog import SnapshotCatalogAdapter, default_catalog_adapter, nearby_service_points
+    if mode in ("demo", "snapshot") or getattr(SnapshotCatalogAdapter.load, "__name__", "") != "load":
         return nearby_service_points(lat, lng, category, radius_km, limit, default_catalog_adapter(), vehicle_type)
 
     if not all(math.isfinite(v) for v in (lat, lng, radius_km)) or abs(lat) > 90 or abs(lng) > 180 or radius_km <= 0:
