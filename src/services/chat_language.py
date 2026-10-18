@@ -84,6 +84,10 @@ def canonical_query(text: str) -> str:
     """
     text = re.sub(r'(?:please\s+)?(?:answer|reply|respond)\s+in\s+(?:English|Vietnamese)[.!:]?\s*', '', text, flags=re.I)
     text = re.sub(r'\s+in English[.!?]?\s*$', '', text, flags=re.I)
+    from src.services.help_localization import HELP_INPUTS
+    quick_reply = HELP_INPUTS.get(re.sub(r'\s+', ' ', text).strip().rstrip('.!?').casefold())
+    if quick_reply:
+        return quick_reply
     text = re.sub(r'^Can you\s+(?=tư vấn)', '', text, flags=re.I)
     # Move entity-bearing phrases as a unit so qualifiers stay with their model.
     rules = [

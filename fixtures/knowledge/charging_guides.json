@@ -1,6 +1,7 @@
 [
   {
     "scope": "public_charging",
+    "relevant_snippet_en": "How to charge at a public station\n\n1. Step 1: Park in a bay with an available charger.\n2. Step 2: Open the charging-port cover as described in your vehicle's owner's manual.\n3. Step 3: Take the compatible charging connector from the charger.\n4. Step 4: Plug the connector into the vehicle's charging port.\n5. Step 5: Check the charging information and status on the vehicle display.\n\nTo finish: select stop charging on the vehicle display, wait about 10 seconds, then remove the connector as directed in the guide.\n\nThe guide illustrates one vehicle model. Check your model's owner's manual for the location and operation of the charging-port cover.",
     "source_id": "SRC-010",
     "source_section": "2.1. Hướng dẫn và lưu ý cách sử dụng trụ sạc tại trạm",
     "image_url": "https://static-cms-prod.vinfastauto.com/cac-sac-xe-dien-tai-tram-sac-vinfast_1654064827.png",
@@ -9,6 +10,7 @@
   },
   {
     "scope": "charging_app",
+    "relevant_snippet_en": "Charging features in the VinFast app\n\n- Find places and directions: select or search for a destination, then choose a station from the list. The app can show charger information, travel time and estimated remaining battery on arrival.\n- Charging history: open Charging History and select a session to view its time, location, cost and any additional fees.\n\nCheck the menu names and steps against your installed app version; the source is an app guide published in 2022.",
     "source_id": "SRC-001",
     "source_section": "3.3. Lịch sử sạc; 6.1. Tìm địa điểm và dẫn đường",
     "reviewed_at": "2026-10-18",

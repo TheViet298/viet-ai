@@ -8,6 +8,29 @@ from src.models.db_models import Message, User
 from src.services.auth import get_optional_user, require_customer
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize('query, expected, source_ids', [
+    ('Please explain public charging, charging fees and VinFast app features.',
+     'Charging at a public station', {'SRC-010', 'SRC-001'}),
+    ('I would like to ask about battery warranty and scheduled maintenance.',
+     'Battery warranty', {'SRC-002', 'SRC-004'}),
+])
+async def test_english_help_buttons_work_without_translation_model(client, language_db, query, expected, source_ids):
+    response = await client.post('/api/v1/customer/chat', json={
+        'session_id': 'english-help-button', 'message': query, 'language': 'en'})
+    assert response.status_code == 200
+    data = response.json()['data']
+    assert data['language'] == 'en'
+    assert expected in data['message']
+    assert 'could not prepare' not in data['message']
+    assert not any(word in data['message'] for word in ['Quý khách', 'Bảo hành', 'Theo tài liệu', 'trạm sạc'])
+    assert {c['source_id'] for c in data['citations']} >= source_ids
+    assert all('dưỡng' not in reply for reply in data['suggested_replies'] or [])
+    history = (await client.get('/api/v1/customer/sessions/english-help-button/history')).json()['data']['messages']
+    assert history[0]['content'] == query
+    assert history[1]['content'] == data['message']
+
+
 @pytest.fixture
 def language_db(tmp_path):
     engine = create_engine(f'sqlite:///{tmp_path / "language.db"}')
