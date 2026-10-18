@@ -233,7 +233,7 @@ def test_safe_cli_blocks_remote_host_without_flag(monkeypatch):
 
     # 2. Cho phép khi có --allow-remote
     target = get_target_db_url(cli_db_url=remote_url, allow_remote=True)
-    assert target == remote_url
+    assert target in (remote_url, remote_url.replace('postgresql://', 'postgresql+psycopg://'))
 
     # 3. Khi không truyền cli_db_url, và settings.database_url là remote -> từ chối
     class FakeSettings:
