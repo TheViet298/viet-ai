@@ -1,6 +1,12 @@
-# Hướng Dẫn & Checklist Triển Khai Service Points Lên Môi Trường Staging (Railway)
+# Hướng Dẫn & Quy Trình Nạp Dữ Liệu Service Points Lên Môi Trường Staging (Railway)
 
-Tài liệu này quy định quy trình chuẩn để deploy và kiểm thử tính năng Tích hợp Điểm dịch vụ / Trạm sạc (GPS Catalog & Bản đồ Vietmap) lên môi trường Staging (Railway / Docker).
+Tài liệu này quy định quy trình chuẩn để deploy và nạp dữ liệu Điểm dịch vụ / Trạm sạc (Service Points) lên môi trường Staging (Railway / Docker PostgreSQL).
+
+> [!IMPORTANT]
+> **Đặc điểm dữ liệu và môi trường:**
+> - Thư mục dữ liệu nguồn `data/crawl/` nằm trên máy local của lập trình viên và nằm trong `.gitignore` (môi trường Railway Staging không có thư mục này).
+> - Quá trình import dữ liệu lên DB Staging được thực hiện trực tiếp từ máy local kết nối tới DATABASE_URL public của DB STAGING (tuyệt đối không chạy trên Production).
+> - Để đảm bảo an toàn, công cụ CLI yêu cầu kiểm tra `--dry-run` trước, sau đó chạy lệnh chính thức kèm `--allow-remote` và `--crawled-at`.
 
 ---
 
@@ -11,19 +17,18 @@ Cấu hình các biến môi trường sau trên dashboard Railway / Staging env
 ```bash
 # ---- Database & Environment ----
 APP_ENV=staging
-DATABASE_URL=postgresql://staging_user:staging_pass@staging-db:5432/vinfast_serviceflow_staging
+DATABASE_URL=postgresql://staging_user:staging_pass@staging-db.railway.internal:5432/railway
 
 # ---- GPS Catalog Mode ----
-# 'auto': Ưu tiên đọc từ bảng service_points; nếu bảng rỗng ghi log WARNING và fallback an toàn sang snapshot.
-# 'db': Đọc từ bảng service_points trong Database.
+# 'auto': Ưu tiên đọc từ bảng service_points trong Database; nếu bảng rỗng ghi log WARNING.
+# 'db': Bắt buộc đọc từ bảng service_points trong Database.
 GPS_CATALOG_MODE=auto
 
 # ---- Demo Seed Password ----
 DEMO_SEED_PASSWORD=your_staging_secure_demo_password
 
 # ---- Frontend Vietmap Configuration ----
-# Khóa API để hiển thị raster tile bản đồ Vietmap.
-# Không commit key thật vào kho mã nguồn; cấu hình qua biến môi trường.
+# Khóa API để hiển thị raster tile bản đồ Vietmap (không commit key thật vào kho mã nguồn).
 NEXT_PUBLIC_VIETMAP_API_KEY=your_staging_vietmap_api_key_here
 
 # ---- CORS & Frontend URL ----
@@ -32,63 +37,59 @@ CORS_ORIGINS=https://staging.serviceflow.vinfast.vn,http://localhost:3000
 
 ---
 
-## 2. Thứ Tự Triển Khai Chuẩn Trên Staging (Railway)
+## 2. Quy Trình Nạp Dữ Liệu Service Points Từ Máy Local Lên Staging
 
-Thực hiện tuần tự các bước sau:
+Thực hiện tuần tự các bước sau từ terminal máy local (nơi có thư mục `data/crawl`):
 
-### Bước 2.1: Deploy Backend & Khởi Động Server
-- Khi ứng dụng backend khởi chạy, hàm `ensure_schema()` trong `lifespan` (`src/main.py`) sẽ tự động kiểm tra và đảm bảo các bảng, cột cần thiết.
-- **Lưu ý:** Bảng `service_points` tự sinh khi khởi động nhưng sẽ **RỖNG** (0 bản ghi) cho tới khi hoàn tất lệnh import. Hệ thống sẽ ghi log INFO về số bản ghi và log WARNING rõ ràng:
-  `"service_points trống, đang dùng snapshot — chạy import_service_points"`.
-
-### Bước 2.2: Chạy Alembic Upgrade Head
-Đảm bảo revision tracking của Alembic đồng bộ với database:
+### Bước 2.1: Chạy Alembic Upgrade Head Trên DB Staging
+Đồng bộ schema bảng `service_points` và các trường liên quan trên DB Staging:
 ```bash
-alembic upgrade head
-alembic current
+DATABASE_URL="postgresql://staging_user:staging_pass@autorack.proxy.rlwy.net:12345/railway" alembic upgrade head
 ```
 
-### Bước 2.3: Chạy Import Dry-Run
-Kiểm tra tính hợp lệ của dữ liệu trước khi nạp vào database:
+### Bước 2.2: Chạy Import Dry-Run Từ Máy Local
+Kiểm tra tính hợp lệ của dữ liệu trước khi nạp:
 ```bash
 python -m src.cli.import_service_points \
   --path data/crawl \
-  --dry-run \
-  --allow-remote
+  --db-url "postgresql://staging_user:staging_pass@autorack.proxy.rlwy.net:12345/railway" \
+  --dry-run
 ```
-Xác nhận log trả về: `[DRY-RUN] Xác nhận hợp lệ: 25228 bản ghi (18111 hiển thị). Không ghi vào DB.`
+> [!NOTE]
+> Lệnh dry-run cho phép kiểm tra cấu trúc dữ liệu mà không ghi bản ghi nào vào DB.
 
-### Bước 2.4: Chạy Import Thật
-Nạp chính thức dữ liệu vào bảng `service_points`:
+### Bước 2.3: Chạy Import Chính Thức Với Cờ `--allow-remote` Và `--crawled-at`
+Nạp chính thức dữ liệu vào bảng `service_points` của Staging:
 ```bash
 python -m src.cli.import_service_points \
   --path data/crawl \
+  --db-url "postgresql://staging_user:staging_pass@autorack.proxy.rlwy.net:12345/railway" \
   --crawled-at "2026-10-15T00:00:00Z" \
   --allow-remote
 ```
-Kiểm tra số lượng bản ghi:
+Xác nhận số lượng bản ghi:
 - Tổng số nạp: 25.228 bản ghi (xưởng 2S: 181, showroom: 352, trạm sạc: 24.695).
-- Tổng số hiển thị (`is_visible=True`): 18.111 bản ghi (đã ẩn 78 trạm sạc nghi ngờ lệch tọa độ > 50km theo KNN-5).
+- Tổng số hiển thị (`is_visible=True`): 18.189 bản ghi (ẩn các trạm sạc nghi ngờ lệch tọa độ).
 
-### Bước 2.5: Kiểm Tra API Endpoint
-Kiểm tra endpoint gợi ý điểm dịch vụ theo case:
-- `GET /api/v1/customer/cases/{id}/service-points` (yêu cầu token khách hàng hoặc token demo).
-- `GET /api/v1/customer/service-points/nearby` (public nearby search).
-- Kiểm tra response có `meta.catalog_source = "db"` khi bảng đã có dữ liệu.
-
-### Bước 2.6: Seed Dữ Liệu Demo Cho Staging (Tùy Chọn)
-> [!CAUTION]
-> **CẢNH BÁO QUAN TRỌNG:** Cờ `--demo --reset --yes` CHỈ được dùng trên môi trường Development và Staging. Tuyệt đối **KHÔNG** chạy lệnh này trên Production hoặc database chứa dữ liệu khách hàng thật.
-> Lệnh reset chỉ xóa các bản ghi có `is_demo=True` và **KHÔNG** xóa bảng `service_points` hay dữ liệu `is_demo=False`.
-
-```bash
-python -m src.seed --demo --reset --yes --allow-remote
-```
+### Bước 2.4: Kiểm Tra Sau Import & Xác Nhận `meta.catalog_source = "db"`
+Kiểm tra endpoint gợi ý điểm dịch vụ và nearby:
+- `GET https://staging.serviceflow.vinfast.vn/api/v1/customer/service-points/nearby?lat=21.0285&lng=105.8542`
+- Xác nhận trong JSON response có:
+  ```json
+  "meta": {
+    "catalog_source": "db"
+  }
+  ```
+- Kiểm tra số lượng bản ghi trong database:
+  ```sql
+  SELECT count(*), count(*) FILTER (WHERE is_visible) FROM service_points;
+  ```
 
 ---
 
 ## 3. Checklist Sau Triển Khai
 - [ ] Backend khởi động không có lỗi schema/driver (`psycopg`).
+- [ ] Dữ liệu `data/crawl/` đã được nạp thành công từ local lên DB Staging.
 - [ ] Endpoint `/api/v1/customer/service-points/nearby` phản hồi 200 kèm `meta.catalog_source = "db"`.
 - [ ] Endpoint `/api/v1/customer/cases/{id}/service-points` trả về xưởng gần nhất và hotline cứu hộ `1900-232389` đối với ca nặng.
-- [ ] Giao diện Frontend hiển thị đúng các xưởng dịch vụ kèm hotline và nhãn khoảng cách ("Cách Quý khách...").
+- [ ] Giao diện Frontend hiển thị đúng các xưởng dịch vụ kèm hotline và nhãn khoảng cách.
