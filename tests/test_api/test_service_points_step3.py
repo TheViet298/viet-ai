@@ -739,3 +739,280 @@ def test_gps_catalog_mode_db_and_warning_fallback(step3_db_session, monkeypatch,
     assert res_db["points"][0]["id"] == "cs_db_test_1"
     assert res_db["points"][0]["name"] == "Trạm sạc Database Thật"
 
+
+# ==============================================================================
+# ITEM 4: PYTEST MATCHER TỈNH (TEST 1, TEST 2, TEST 3)
+# ==============================================================================
+
+def test_item4_province_matcher_test1_34_canonical_units():
+    """Test 1: Tất cả 34 đơn vị hành chính cấp tỉnh hiện hành đều trỏ về chính nó."""
+    from src.services.service_point_service import detect_province_from_address
+
+    official_34 = [
+        "bắc ninh", "cần thơ", "huế", "hà nội", "hải phòng", "hồ chí minh",
+        "quảng ninh", "đà nẵng", "đồng nai", "an giang", "cao bằng", "cà mau",
+        "gia lai", "hà tĩnh", "hưng yên", "khánh hòa", "lai châu", "lào cai",
+        "lâm đồng", "lạng sơn", "nghệ an", "ninh bình", "phú thọ", "quảng ngãi",
+        "quảng trị", "sơn la", "thanh hóa", "thái nguyên", "tuyên quang",
+        "tây ninh", "vĩnh long", "điện biên", "đắk lắk", "đồng tháp"
+    ]
+    for p in official_34:
+        res = detect_province_from_address(f"Trụ sở UBND, {p}")
+        assert res == p, f"Expected {p} to map to itself, got {res}"
+
+
+def test_item4_province_matcher_test2_old_provinces_merged():
+    """Test 2: Tên cũ trỏ đúng tỉnh sáp nhập theo Nghị quyết.
+    Bao gồm các tỉnh bắt buộc: quảng bình, quảng nam, bắc kạn, yên bái, vĩnh phúc, ninh thuận, sóc trăng.
+    """
+    from src.services.service_point_service import detect_province_from_address
+
+    merged_cases = {
+        "quảng bình": "quảng trị",
+        "quảng nam": "đà nẵng",
+        "bắc kạn": "thái nguyên",
+        "yên bái": "lào cai",
+        "vĩnh phúc": "phú thọ",
+        "ninh thuận": "khánh hòa",
+        "sóc trăng": "cần thơ",
+        "long an": "tây ninh",
+        "kiên giang": "an giang",
+        "hà giang": "tuyên quang",
+        "hà nam": "ninh bình",
+        "nam định": "ninh bình",
+        "hải dương": "hải phòng",
+        "bắc giang": "bắc ninh",
+        "hòa bình": "phú thọ",
+        "thái bình": "hưng yên",
+        "bình định": "gia lai",
+        "phú yên": "đắk lắk",
+        "bình thuận": "lâm đồng",
+        "kon tum": "quảng ngãi",
+        "đắk nông": "lâm đồng",
+        "bình phước": "đồng nai",
+        "tiền giang": "đồng tháp",
+        "bến tre": "vĩnh long",
+        "trà vinh": "vĩnh long",
+        "hậu giang": "cần thơ",
+        "bạc liêu": "cà mau",
+    }
+    for old_name, expected_new in merged_cases.items():
+        res = detect_province_from_address(f"Xã ABC, Huyện XYZ, Tỉnh {old_name}")
+        assert res == expected_new, f"Expected {old_name} -> {expected_new}, got {res}"
+
+
+def test_item4_province_matcher_test3_aliases_accents_and_vietnam_stripping():
+    """Test 3: Thống nhất dấu thanh, so không dấu, bí danh và bỏ hậu tố Việt Nam / Vietnam."""
+    from src.services.service_point_service import detect_province_from_address
+
+    # Các chuỗi tối thiểu theo yêu cầu đề bài
+    required_aliases = [
+        ("thanh hoá", "thanh hóa"),
+        ("khánh hoà", "khánh hòa"),
+        ("đăk lăk", "đắk lắk"),
+        ("hoà bình", "phú thọ"),
+        ("đăk nông", "lâm đồng"),
+        ("tp.hcm", "hồ chí minh"),
+        ("tphcm", "hồ chí minh"),
+        ("tp hcm", "hồ chí minh"),
+        ("hcm", "hồ chí minh"),
+        ("sài gòn", "hồ chí minh"),
+        ("ha noi", "hà nội"),
+        ("hn", "hà nội"),
+        ("hanoi", "hà nội"),
+    ]
+    for raw_str, expected in required_aliases:
+        res = detect_province_from_address(f"Địa chỉ số 1, {raw_str}")
+        assert res == expected, f"Failed matching required string '{raw_str}' -> '{expected}', got '{res}'"
+
+    # Trường hợp kết thúc bằng Việt Nam / Vietnam -> bỏ và nhận diện đoạn liền trước
+    assert detect_province_from_address("Số 1 Tràng Tiền, Quận Hoàn Kiếm, Hà Nội, Việt Nam") == "hà nội"
+    assert detect_province_from_address("Số 10 Lê Lợi, Quận 1, TP.HCM, Vietnam") == "hồ chí minh"
+    assert detect_province_from_address("Đường 3/2, Quận Ninh Kiều, Cần Thơ, VN") == "cần thơ"
+
+    # Test nhãn người dùng nhập trực tiếp
+    assert detect_province_from_address("Thanh Hoá") == "thanh hóa"
+    assert detect_province_from_address("TP.HCM") == "hồ chí minh"
+    assert detect_province_from_address("Hà Nội, Việt Nam") == "hà nội"
+
+
+# ==============================================================================
+# ITEM 7G: PYTEST KHOẢNG CÁCH TỪ TÂM KHU VỰC & AREA_REFERENCE
+# ==============================================================================
+
+def test_item7g_case_with_gps_distance_and_area_reference_null(step3_db_session):
+    """Item 7g(i): Ca có GPS thật: distance_km có giá trị, distance_from_area_km và area_reference đều null."""
+    db = step3_db_session
+    now = utcnow()
+
+    case_gps = Case(
+        id="case_item7_gps", session_id="sess_7_gps", intent="Charging/Battery",
+        priority="LOW", status="SUBMITTED", created_at=now, updated_at=now,
+    )
+    loc_gps = CaseLocation(
+        case_id="case_item7_gps", source="BROWSER_GPS", status="CONSENTED",
+        location_label="Vị trí GPS", latitude=21.0285, longitude=105.8542,
+        precision="EXACT", share_with_staff=True, created_at=now,
+    )
+    sp_near = ServicePoint(
+        id="sp_gps_near", source_file="charging_stations", category="charging_station",
+        name="Trạm sạc Hoàn Kiếm", address="Quận Hoàn Kiếm, Hà Nội",
+        latitude=21.0290, longitude=105.8545, status="ACTIVE", access_type="Public",
+        is_car_compatible=True, is_visible=True, crawled_at=now, created_at=now, updated_at=now,
+    )
+    db.add_all([case_gps, loc_gps, sp_near])
+    db.commit()
+
+    resp = build_case_service_points_response(db, case_gps)
+    assert resp.area_reference is None
+    assert len(resp.recommended_points) > 0
+    pt0 = resp.recommended_points[0]
+    assert pt0.distance_km is not None
+    assert pt0.distance_from_area_km is None
+
+
+def test_item7g_case_user_text_ninh_kieu_can_tho(step3_db_session):
+    """Item 7g(ii): Ca USER_TEXT 'Quận Ninh Kiều, Cần Thơ':
+    distance_km null, distance_from_area_km bằng haversine từ tâm Ninh Kiều (10.0342, 105.7885),
+    area_reference.label và level đúng cấp district.
+    """
+    db = step3_db_session
+    now = utcnow()
+
+    case_nk = Case(
+        id="case_item7_nk", session_id="sess_7_nk", intent="Service/Incident",
+        priority="MEDIUM", status="SUBMITTED", created_at=now, updated_at=now,
+    )
+    loc_nk = CaseLocation(
+        case_id="case_item7_nk", source="USER_TEXT", status="SHARED",
+        location_label="Quận Ninh Kiều, Cần Thơ", precision="APPROXIMATE",
+        share_with_staff=True, created_at=now,
+    )
+    # Thêm 1 xưởng dịch vụ tại An Giang (vì Cần Thơ chưa có xưởng)
+    ws_ag = ServicePoint(
+        id="ws_ag_test7", source_file="service_2s", category="workshop", category_slug="service_car",
+        name="VinFast An Giang Thử Nghiệm", address="Thạnh Lộc, An Giang",
+        latitude=10.014305, longitude=105.114011, status="ACTIVE", access_type="Public",
+        is_car_compatible=True, is_visible=True, crawled_at=now, created_at=now, updated_at=now,
+    )
+    db.add_all([case_nk, loc_nk, ws_ag])
+    db.commit()
+
+    resp = build_case_service_points_response(db, case_nk)
+    assert resp.area_reference is not None
+    assert resp.area_reference["level"] == "district"
+    assert resp.area_reference["label"] == "trung tâm Quận Ninh Kiều"
+
+    # Tâm Ninh Kiều chuẩn (10.0342, 105.7885)
+    expected_dist = round(haversine_km(10.0342, 105.7885, ws_ag.latitude, ws_ag.longitude), 1)
+
+    pt = next(p for p in resp.recommended_points if p.id == "ws_ag_test7")
+    assert pt.distance_km is None
+    assert pt.distance_from_area_km is not None
+    assert abs(pt.distance_from_area_km - expected_dist) < 0.1
+
+
+def test_item7g_case_user_text_province_only_can_tho(step3_db_session):
+    """Item 7g(iii): Ca nhận diện chỉ ra tỉnh ('Cần Thơ') -> level = province, label = 'trung tâm Cần Thơ'."""
+    db = step3_db_session
+    now = utcnow()
+
+    case_ct = Case(
+        id="case_item7_ct", session_id="sess_7_ct", intent="Service/Incident",
+        priority="LOW", status="SUBMITTED", created_at=now, updated_at=now,
+    )
+    loc_ct = CaseLocation(
+        case_id="case_item7_ct", source="USER_TEXT", status="SHARED",
+        location_label="Cần Thơ", precision="APPROXIMATE",
+        share_with_staff=True, created_at=now,
+    )
+    db.add_all([case_ct, loc_ct])
+    db.commit()
+
+    resp = build_case_service_points_response(db, case_ct)
+    assert resp.area_reference is not None
+    assert resp.area_reference["level"] == "province"
+    assert resp.area_reference["label"] == "trung tâm Cần Thơ"
+    for pt in resp.recommended_points:
+        assert pt.distance_km is None
+        assert pt.distance_from_area_km is not None
+
+
+def test_item7g_case_unrecognized_area_needs_location(step3_db_session):
+    """Item 7g(iv): Ca không nhận diện được khu vực: cả 2 trường khoảng cách null, area_reference null và needs_location=True."""
+    db = step3_db_session
+    now = utcnow()
+
+    case_unk = Case(
+        id="case_item7_unk", session_id="sess_7_unk", intent="Service/Incident",
+        priority="LOW", status="SUBMITTED", created_at=now, updated_at=now,
+    )
+    loc_unk = CaseLocation(
+        case_id="case_item7_unk", source="USER_TEXT", status="SHARED",
+        location_label="Địa danh không xác định xyz999", precision="APPROXIMATE",
+        share_with_staff=True, created_at=now,
+    )
+    db.add_all([case_unk, loc_unk])
+    db.commit()
+
+    resp = build_case_service_points_response(db, case_unk)
+    assert resp.needs_location is True
+    assert resp.area_reference is None
+    assert len(resp.recommended_points) == 0
+
+
+def test_item7g_sorting_order_distance_from_area_km_with_gsm_exception(step3_db_session):
+    """Item 7g(v): Thứ tự sắp xếp theo distance_from_area_km, với ngoại lệ service_gsm LUÔN đứng sau car/partner."""
+    db = step3_db_session
+    now = utcnow()
+
+    case_sort = Case(
+        id="case_item7_sort", session_id="sess_7_sort", intent="Service/Incident",
+        priority="LOW", status="SUBMITTED", created_at=now, updated_at=now,
+    )
+    loc_sort = CaseLocation(
+        case_id="case_item7_sort", source="USER_TEXT", status="SHARED",
+        location_label="Quận Ninh Kiều, Cần Thơ", precision="APPROXIMATE",
+        share_with_staff=True, created_at=now,
+    )
+    # GSM ở rất gần (10 km)
+    ws_gsm_near = ServicePoint(
+        id="ws_sort_gsm_near", source_file="service_2s", category="workshop", category_slug="service_gsm",
+        name="Xưởng GSM Gần", address="An Giang", latitude=10.05, longitude=105.70,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    # Partner ở xa hơn một chút (30 km)
+    ws_partner_far = ServicePoint(
+        id="ws_sort_partner_far", source_file="service_2s", category="workshop", category_slug="service_car_partner",
+        name="Xưởng Partner Xa Hơn", address="An Giang", latitude=10.15, longitude=105.60,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    # Car ở rất xa (60 km)
+    ws_car_farthest = ServicePoint(
+        id="ws_sort_car_farthest", source_file="service_2s", category="workshop", category_slug="service_car",
+        name="Xưởng Car Xa Nhất", address="An Giang", latitude=10.30, longitude=105.45,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    db.add_all([case_sort, loc_sort, ws_gsm_near, ws_partner_far, ws_car_farthest])
+    db.commit()
+
+    resp = build_case_service_points_response(db, case_sort)
+    pts = resp.recommended_points
+    # service_car và service_car_partner phải luôn đứng trước service_gsm
+    ids = [p.id for p in pts]
+    assert "ws_sort_partner_far" in ids
+    assert "ws_sort_car_farthest" in ids
+    assert "ws_sort_gsm_near" in ids
+
+    idx_partner = ids.index("ws_sort_partner_far")
+    idx_car = ids.index("ws_sort_car_farthest")
+    idx_gsm = ids.index("ws_sort_gsm_near")
+
+    assert idx_partner < idx_gsm, "service_car_partner must be ranked before service_gsm"
+    assert idx_car < idx_gsm, "service_car must be ranked before service_gsm"
+    assert idx_partner < idx_car, "Between partner and car, sort by distance_from_area_km ascending"
+
+

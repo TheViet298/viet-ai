@@ -393,6 +393,7 @@ class ServicePointItem(BaseModel):
     address: str
     province: str | None = None
     distance_km: float | None = None
+    distance_from_area_km: float | None = None
     latitude: float
     longitude: float
     phone: str | None = None
@@ -419,6 +420,7 @@ class ServicePointsData(BaseModel):
     message: str | None = None
     last_updated_label: str | None = None
     rescue_hotline: str | None = None
+    area_reference: dict[str, str] | None = None
     recommended_points: list[ServicePointItem] = []
 
 

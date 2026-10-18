@@ -28,6 +28,8 @@ Features:
 from __future__ import annotations
 
 import math
+import re
+import unicodedata
 from datetime import datetime
 from typing import Any
 
@@ -222,33 +224,257 @@ PROVINCE_CENTERS: dict[str, tuple[float, float]] = {
 }
 
 
-def extract_province_from_address(addr: str | None) -> str | None:
-    """Trích xuất tên tỉnh/thành phố từ cột address."""
+TONE_UNIFICATION = {
+    "oà": "òa", "oá": "óa", "oả": "ỏa", "oã": "õa", "oạ": "ọa",
+    "oè": "òe", "oé": "óe", "oẻ": "ỏe", "oẽ": "õe", "oẹ": "ọe",
+    "uỳ": "ùy", "uý": "úy", "uỷ": "ủy", "uỹ": "ũy", "uỵ": "ụy",
+    "ăk": "ắk",
+}
+
+def strip_vietnamese_diacritics(text: str) -> str:
+    """Loại bỏ dấu tiếng Việt để so sánh dạng không dấu."""
+    norm = unicodedata.normalize("NFD", text)
+    stripped = "".join(ch for ch in norm if unicodedata.category(ch) != "Mn")
+    stripped = stripped.replace("đ", "d").replace("Đ", "d")
+    return unicodedata.normalize("NFC", stripped)
+
+def normalize_vietnamese_text(s: str) -> str:
+    """Chuẩn hóa Unicode NFC, thường hóa, thống nhất vị trí dấu thanh và tiền tố hành chính."""
+    s = unicodedata.normalize("NFC", s.strip().lower())
+    for old, new in TONE_UNIFICATION.items():
+        s = s.replace(old, new)
+    prefixes = [
+        "tỉnh ", "tp. ", "tp ", "tp.", "thành phố ", "thị xã ", "tx. ", "quận ", "huyện "
+    ]
+    changed = True
+    while changed:
+        changed = False
+        for p in prefixes:
+            if s.startswith(p):
+                s = s[len(p):].strip()
+                changed = True
+    return s
+
+# Bảng tra cứu canonical 34 tỉnh và bí danh
+PROVINCE_CANONICAL_MAP: dict[str, str] = {
+    "bắc ninh": "bắc ninh",
+    "cần thơ": "cần thơ",
+    "huế": "huế",
+    "thừa thiên huế": "huế",
+    "thừa thiên - huế": "huế",
+    "thua thien hue": "huế",
+    "hue": "huế",
+    "hà nội": "hà nội",
+    "ha noi": "hà nội",
+    "hanoi": "hà nội",
+    "hn": "hà nội",
+    "hải phòng": "hải phòng",
+    "hai phong": "hải phòng",
+    "hồ chí minh": "hồ chí minh",
+    "ho chi minh": "hồ chí minh",
+    "tp.hcm": "hồ chí minh",
+    "tphcm": "hồ chí minh",
+    "tp hcm": "hồ chí minh",
+    "hcm": "hồ chí minh",
+    "sài gòn": "hồ chí minh",
+    "sai gon": "hồ chí minh",
+    "tp. hồ chí minh": "hồ chí minh",
+    "tp hồ chí minh": "hồ chí minh",
+    "tp.hồ chí minh": "hồ chí minh",
+    "quảng ninh": "quảng ninh",
+    "quang ninh": "quảng ninh",
+    "đà nẵng": "đà nẵng",
+    "da nang": "đà nẵng",
+    "đồng nai": "đồng nai",
+    "dong nai": "đồng nai",
+    "an giang": "an giang",
+    "cao bằng": "cao bằng",
+    "cao bang": "cao bằng",
+    "cà mau": "cà mau",
+    "ca mau": "cà mau",
+    "gia lai": "gia lai",
+    "hà tĩnh": "hà tĩnh",
+    "ha tinh": "hà tĩnh",
+    "hưng yên": "hưng yên",
+    "hung yen": "hưng yên",
+    "khánh hòa": "khánh hòa",
+    "khanh hoa": "khánh hòa",
+    "khánh hoà": "khánh hòa",
+    "lai châu": "lai châu",
+    "lai chau": "lai châu",
+    "lào cai": "lào cai",
+    "lao cai": "lào cai",
+    "lâm đồng": "lâm đồng",
+    "lam dong": "lâm đồng",
+    "lạng sơn": "lạng sơn",
+    "lang son": "lạng sơn",
+    "nghệ an": "nghệ an",
+    "nghe an": "nghệ an",
+    "ninh bình": "ninh bình",
+    "ninh binh": "ninh bình",
+    "phú thọ": "phú thọ",
+    "phu tho": "phú thọ",
+    "quảng ngãi": "quảng ngãi",
+    "quang ngai": "quảng ngãi",
+    "quảng trị": "quảng trị",
+    "quang tri": "quảng trị",
+    "sơn la": "sơn la",
+    "son la": "sơn la",
+    "thanh hóa": "thanh hóa",
+    "thanh hoa": "thanh hóa",
+    "thanh hoá": "thanh hóa",
+    "thái nguyên": "thái nguyên",
+    "thai nguyen": "thái nguyên",
+    "tuyên quang": "tuyên quang",
+    "tuyen quang": "tuyên quang",
+    "tây ninh": "tây ninh",
+    "tay ninh": "tây ninh",
+    "vĩnh long": "vĩnh long",
+    "vinh long": "vĩnh long",
+    "điện biên": "điện biên",
+    "dien bien": "điện biên",
+    "đắk lắk": "đắk lắk",
+    "dak lak": "đắk lắk",
+    "đăk lăk": "đắk lắk",
+    "đắc lắc": "đắk lắk",
+    "daklak": "đắk lắk",
+    "đồng tháp": "đồng tháp",
+    "dong thap": "đồng tháp",
+
+    # Sáp nhập theo Nghị quyết:
+    "bình dương": "hồ chí minh",
+    "binh duong": "hồ chí minh",
+    "bà rịa vũng tàu": "hồ chí minh",
+    "ba ria vung tau": "hồ chí minh",
+    "bà rịa - vũng tàu": "hồ chí minh",
+    "vũng tàu": "hồ chí minh",
+    "vung tau": "hồ chí minh",
+    "long an": "tây ninh",
+    "kiên giang": "an giang",
+    "kien giang": "an giang",
+    "hà giang": "tuyên quang",
+    "ha giang": "tuyên quang",
+    "hà nam": "ninh bình",
+    "ha nam": "ninh bình",
+    "hải dương": "hải phòng",
+    "hai duong": "hải phòng",
+    "bắc giang": "bắc ninh",
+    "bac giang": "bắc ninh",
+    "vĩnh phúc": "phú thọ",
+    "vinh phuc": "phú thọ",
+    "hòa bình": "phú thọ",
+    "hoa binh": "phú thọ",
+    "hoà bình": "phú thọ",
+    "nam định": "ninh bình",
+    "nam dinh": "ninh bình",
+    "thái bình": "hưng yên",
+    "thai binh": "hưng yên",
+    "quảng bình": "quảng trị",
+    "quang binh": "quảng trị",
+    "bình định": "gia lai",
+    "binh dinh": "gia lai",
+    "quảng nam": "đà nẵng",
+    "quang nam": "đà nẵng",
+    "phú yên": "đắk lắk",
+    "phu yen": "đắk lắk",
+    "ninh thuận": "khánh hòa",
+    "ninh thuan": "khánh hòa",
+    "bình thuận": "lâm đồng",
+    "binh thuan": "lâm đồng",
+    "kon tum": "quảng ngãi",
+    "đắk nông": "lâm đồng",
+    "dak nong": "lâm đồng",
+    "đắc nông": "lâm đồng",
+    "dac nong": "lâm đồng",
+    "đăk nông": "lâm đồng",
+    "bình phước": "đồng nai",
+    "binh phuoc": "đồng nai",
+    "tiền giang": "đồng tháp",
+    "tien giang": "đồng tháp",
+    "bến tre": "vĩnh long",
+    "ben tre": "vĩnh long",
+    "trà vinh": "vĩnh long",
+    "tra vinh": "vĩnh long",
+    "hậu giang": "cần thơ",
+    "hau giang": "cần thơ",
+    "sóc trăng": "cần thơ",
+    "soc trang": "cần thơ",
+    "bạc liêu": "cà mau",
+    "bac lieu": "cà mau",
+    "yên bái": "lào cai",
+    "yen bai": "lào cai",
+    "bắc kạn": "thái nguyên",
+    "bac kan": "thái nguyên",
+    "bắc cạn": "thái nguyên",
+}
+
+LOOKUP_PROVINCE_MAP: dict[str, str] = {}
+for _k, _v in PROVINCE_CANONICAL_MAP.items():
+    _k_norm = normalize_vietnamese_text(_k)
+    LOOKUP_PROVINCE_MAP[_k_norm] = _v
+    _k_no_acc = strip_vietnamese_diacritics(_k_norm)
+    if _k_no_acc not in LOOKUP_PROVINCE_MAP:
+        LOOKUP_PROVINCE_MAP[_k_no_acc] = _v
+
+
+def match_province_segment(raw_segment: str) -> str | None:
+    norm = normalize_vietnamese_text(raw_segment)
+    if norm in LOOKUP_PROVINCE_MAP:
+        return LOOKUP_PROVINCE_MAP[norm]
+    norm_no_acc = strip_vietnamese_diacritics(norm)
+    if norm_no_acc in LOOKUP_PROVINCE_MAP:
+        return LOOKUP_PROVINCE_MAP[norm_no_acc]
+    return None
+
+
+def detect_province_from_address(addr: str | None) -> str | None:
+    """Nhận diện tên tỉnh canonical từ chuỗi address bằng cách duyệt các đoạn từ cuối lên."""
     if not addr or not addr.strip():
         return None
-    import re
     parts = [p.strip() for p in addr.split(",") if p.strip()]
     if not parts:
         return None
-    last = parts[-1]
-    last_clean = re.sub(r"\b(Việt Nam|Vietnam|VN)\b", "", last, flags=re.I).strip()
-    if not last_clean and len(parts) > 1:
-        last_clean = parts[-2].strip()
-    return last_clean or last
+    for part in reversed(parts):
+        norm_p = normalize_vietnamese_text(part)
+        norm_no_acc = strip_vietnamese_diacritics(norm_p)
+        if norm_no_acc in ["viet nam", "vietnam", "vn"]:
+            continue
+        prov = match_province_segment(part)
+        if prov:
+            return prov
+        for k in sorted(LOOKUP_PROVINCE_MAP.keys(), key=len, reverse=True):
+            if re.search(r"\b" + re.escape(k) + r"\b", norm_p):
+                return LOOKUP_PROVINCE_MAP[k]
+            if re.search(r"\b" + re.escape(k) + r"\b", norm_no_acc):
+                return LOOKUP_PROVINCE_MAP[k]
+    return None
+
+
+def extract_province_from_address(addr: str | None) -> str | None:
+    """Trích xuất tên tỉnh/thành phố hiển thị từ cột address."""
+    if not addr or not addr.strip():
+        return None
+    parts = [p.strip() for p in addr.split(",") if p.strip()]
+    if not parts:
+        return None
+    for part in reversed(parts):
+        norm_p = normalize_vietnamese_text(part)
+        norm_no_acc = strip_vietnamese_diacritics(norm_p)
+        if norm_no_acc in ["viet nam", "vietnam", "vn"]:
+            continue
+        return part
+    return parts[-1]
 
 
 def detect_province_from_label(label: str | None) -> str | None:
     """Nhận diện tên tỉnh/thành phố từ nhãn người dùng nhập (chuẩn hóa về tên chung)."""
     if not label or not label.strip():
         return None
-    norm = label.strip().lower()
+    norm = normalize_vietnamese_text(label)
     for district_alias, (prov, _) in DISTRICT_CENTERS.items():
         if district_alias in norm:
             return prov
-    for prov_alias in sorted(PROVINCE_CENTERS.keys(), key=len, reverse=True):
-        if prov_alias in norm:
-            return prov_alias
-    return None
+    return detect_province_from_address(label)
 
 
 def haversine_km(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
@@ -272,27 +498,41 @@ def is_valid_vietnam_coord(lat: float | None, lng: float | None) -> bool:
     return VN_LAT_MIN <= lat <= VN_LAT_MAX and VN_LNG_MIN <= lng <= VN_LNG_MAX
 
 
-def infer_coordinates_from_label(label: str | None) -> tuple[float, float] | None:
+def infer_coordinates_and_area_reference(
+    label: str | None,
+) -> tuple[float, float, dict[str, str], str | None] | None:
     """Khớp khu vực từ chuỗi nhãn theo thứ tự ưu tiên:
-    1. Quét tìm Quận/Huyện có trong DISTRICT_CENTERS. Nếu khớp -> trả về tọa độ tâm quận.
-    2. Nếu không khớp tâm quận (hoặc quận không có trong bảng): Quét tìm Tỉnh/Thành phố trong PROVINCE_CENTERS -> fallback về tâm tỉnh.
-    3. Nếu nhãn chỉ có phường (không khớp quận và không có tỉnh), hoặc tỉnh không nhận diện được -> trả về None.
+    1. Quét tìm Quận/Huyện có trong DISTRICT_CENTERS -> trả về (lat, lng, area_reference, prov).
+    2. Nếu không khớp tâm quận: Quét tìm Tỉnh/Thành phố trong PROVINCE_CENTERS -> fallback về tâm tỉnh.
+    3. Không khớp khu vực -> trả về None.
     """
     if not label or not label.strip():
         return None
-    norm = label.strip().lower()
+    norm = normalize_vietnamese_text(label)
 
     # 1. Tìm Quận/Huyện
-    for district_alias, (_prov, coords) in DISTRICT_CENTERS.items():
+    for district_alias, (prov, coords) in DISTRICT_CENTERS.items():
         if district_alias in norm:
-            return coords
+            dist_title = district_alias.title()
+            if not any(dist_title.lower().startswith(p) for p in ["quận", "huyện", "thị xã", "tp"]):
+                dist_title = f"Quận {dist_title}"
+            return coords[0], coords[1], {"label": f"trung tâm {dist_title}", "level": "district"}, prov
 
-    # 2. Fallback về tâm Tỉnh/Thành phố (ưu tiên khớp cụm từ dài trước)
-    for prov_alias in sorted(PROVINCE_CENTERS.keys(), key=len, reverse=True):
-        if prov_alias in norm:
-            return PROVINCE_CENTERS[prov_alias]
+    # 2. Fallback về tâm Tỉnh/Thành phố
+    prov_canonical = detect_province_from_address(label)
+    if prov_canonical and prov_canonical in PROVINCE_CENTERS:
+        coords = PROVINCE_CENTERS[prov_canonical]
+        prov_title = prov_canonical.title()
+        return coords[0], coords[1], {"label": f"trung tâm {prov_title}", "level": "province"}, prov_canonical
 
-    # 3. Phường đơn lẻ hoặc địa danh lạ không có tỉnh -> None
+    return None
+
+
+def infer_coordinates_from_label(label: str | None) -> tuple[float, float] | None:
+    """Wrapper tương thích ngược trả về (lat, lng) từ nhãn."""
+    res = infer_coordinates_and_area_reference(label)
+    if res:
+        return res[0], res[1]
     return None
 
 
@@ -479,11 +719,16 @@ def is_collision_or_bodywork_case(case: Case) -> bool:
 def format_service_point_item(
     sp: ServicePoint,
     distance_km: float | None = None,
+    distance_from_area_km: float | None = None,
     power_info: str | None = None,
     note: str | None = None,
     mask_phone: bool = False,
     is_out_of_area: bool = False,
 ) -> ServicePointItem:
+    # Không bao giờ để distance_from_area_km xuất hiện cùng lúc với distance_km khác null trên cùng một điểm
+    if distance_km is not None and distance_from_area_km is not None:
+        raise ValueError("distance_km and distance_from_area_km cannot both be non-null on the same point")
+
     phone = mask_phone_last_4(sp.phone) if mask_phone else sp.phone
     hotline_service = mask_phone_last_4(sp.hotline_service) if mask_phone else sp.hotline_service
 
@@ -501,6 +746,7 @@ def format_service_point_item(
         address=sp.address,
         province=extract_province_from_address(sp.address),
         distance_km=round(distance_km, 2) if distance_km is not None else None,
+        distance_from_area_km=round(distance_from_area_km, 1) if distance_from_area_km is not None else None,
         latitude=sp.latitude,
         longitude=sp.longitude,
         phone=phone,
@@ -524,13 +770,15 @@ def build_case_service_points_response(
     case: Case,
     mask_phone_in_response: bool = False,
 ) -> ServicePointsData:
-    """Tạo response đề xuất điểm dịch vụ cho một Case theo chuẩn BƯỚC 3."""
+    """Tạo response đề xuất điểm dịch vụ cho một Case theo chuẩn BƯỚC 3 & 4."""
     loc: CaseLocation | None = case.location
 
     # Kiểm tra điều kiện tính km
     can_calculate_km = False
     ref_lat: float | None = None
     ref_lng: float | None = None
+    area_ref: dict[str, str] | None = None
+    target_prov: str | None = None
 
     if (
         loc is not None
@@ -541,10 +789,11 @@ def build_case_service_points_response(
         can_calculate_km = True
         ref_lat = loc.latitude
         ref_lng = loc.longitude
+        area_ref = None
     elif loc is not None and loc.location_label:
-        inferred = infer_coordinates_from_label(loc.location_label)
+        inferred = infer_coordinates_and_area_reference(loc.location_label)
         if inferred:
-            ref_lat, ref_lng = inferred
+            ref_lat, ref_lng, area_ref, target_prov = inferred
             can_calculate_km = False
 
     intent = (case.intent or "").strip()
@@ -579,14 +828,15 @@ def build_case_service_points_response(
 
         # Xử lý ưu tiên cùng tỉnh khi không có GPS
         if not can_calculate_km and loc and loc.location_label:
-            label_prov = detect_province_from_label(loc.location_label)
-            if label_prov:
+            if not target_prov:
+                target_prov = detect_province_from_label(loc.location_label)
+            if target_prov:
                 same_prov = []
                 diff_prov = []
                 for sp_item in nearby_raw:
                     sp_obj = sp_item[0]
-                    sp_p = (extract_province_from_address(sp_obj.address) or "").lower()
-                    if label_prov in sp_p or sp_p in label_prov:
+                    sp_p = detect_province_from_address(sp_obj.address)
+                    if sp_p and (sp_p == target_prov):
                         same_prov.append(sp_item)
                     else:
                         diff_prov.append(sp_item)
@@ -622,14 +872,29 @@ def build_case_service_points_response(
                             res_ws.extend(gsm[: 5 - len(res_ws)])
                         nearby_raw = res_ws
 
+                    cat_name = "xưởng" if target_category == "workshop" else "trạm sạc" if target_category == "charging_station" else "showroom"
                     if nearby_raw:
                         nearest_sp = nearby_raw[0][0]
+                        nearest_dist = round(haversine_km(ref_lat, ref_lng, nearest_sp.latitude, nearest_sp.longitude), 1)
                         nearest_p = extract_province_from_address(nearest_sp.address) or "tỉnh khác"
-                        cat_name = "xưởng" if target_category == "workshop" else "trạm sạc" if target_category == "charging_station" else "showroom"
-                        message = f"Chưa có {cat_name} trong khu vực bạn nhập; điểm gần nhất ở {nearest_p}"
+                        ref_area_text = f", khoảng {nearest_dist:g} km từ {area_ref['label']}" if area_ref else ""
+                        message = f"Chưa có {cat_name} trong khu vực bạn nhập; điểm gần nhất ở {nearest_p}{ref_area_text}"
                     else:
-                        cat_name = "xưởng" if target_category == "workshop" else "trạm sạc" if target_category == "charging_station" else "showroom"
                         message = f"Chưa có {cat_name} trong khu vực bạn nhập; không tìm thấy điểm dịch vụ lân cận"
+
+        # Khi không có GPS, sắp xếp danh sách theo khoảng cách từ tâm khu vực (ưu tiên car/partner trước gsm)
+        if not can_calculate_km:
+            scored_points = [
+                (sp_item[0], haversine_km(ref_lat, ref_lng, sp_item[0].latitude, sp_item[0].longitude))
+                for sp_item in nearby_raw
+            ]
+            car_part = [p for p in scored_points if (p[0].category_slug or "") in ("service_car", "service_car_partner")]
+            car_part.sort(key=lambda m: (m[1], m[0].id))
+            gsm_pts = [p for p in scored_points if (p[0].category_slug or "") == "service_gsm"]
+            gsm_pts.sort(key=lambda m: (m[1], m[0].id))
+            oth = [p for p in scored_points if (p[0].category_slug or "") not in ("service_car", "service_car_partner", "service_gsm")]
+            oth.sort(key=lambda m: (m[1], m[0].id))
+            nearby_raw = car_part + oth + gsm_pts
 
         is_collision = is_collision_or_bodywork_case(case)
 
@@ -639,6 +904,7 @@ def build_case_service_points_response(
                     max_crawled_at = sp.crawled_at
 
             item_dist = dist if can_calculate_km else None
+            dist_from_area = round(dist, 1) if not can_calculate_km else None
 
             power_info = "Chưa công bố công suất" if target_category == "charging_station" else None
             note = None
@@ -651,6 +917,7 @@ def build_case_service_points_response(
             item = format_service_point_item(
                 sp=sp,
                 distance_km=item_dist,
+                distance_from_area_km=dist_from_area,
                 power_info=power_info,
                 note=note,
                 mask_phone=mask_phone_in_response,
@@ -683,6 +950,7 @@ def build_case_service_points_response(
         message=message,
         last_updated_label=last_updated_label,
         rescue_hotline=rescue_hotline,
+        area_reference=area_ref if not can_calculate_km else None,
         recommended_points=recommended_points,
     )
 
