@@ -135,7 +135,7 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
     original_text = text
     text = normalize_chat_text(text)
     # Resolve the comparison before replacing the previous subject.
-    comparison = re.fullmatch(r'\s*so sanh(?:\s+(?:xe nay|xe do|voi))?\s+(vf\s*[356789])\s*[.!?]?\s*', normalized(text))
+    comparison = re.fullmatch(r'\s*(?:so sanh(?:\s+(?:xe nay|xe do|voi))?|so voi)\s+(vf\s*[356789])\s*[.!?]?\s*', normalized(text))
     if (comparison and context.subject and context.active_goal in {'overview', 'quote', 'range', 'capacity', 'test_drive'}
             and comparison[1].replace(' ', '').upper() != context.subject):
         text = f'So sánh {context.subject} với {comparison[1].upper()}'
