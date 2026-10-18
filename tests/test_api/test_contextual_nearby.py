@@ -41,6 +41,7 @@ async def test_context_vehicle_area_and_topic_change():
     assert (await classify_location_request("tìm gần đây"))["category"] == "ALL"
 
 
+@pytest.mark.skipif(not SNAPSHOT_PATH.exists(), reason="service_points.snapshot.csv.gz not present")
 def test_snapshot_integrity_vehicle_filter_distance_and_cache():
     metadata = json.loads(SNAPSHOT_PATH.with_suffix("").with_suffix(".metadata.json").read_text())
     assert hashlib.sha256(gzip.decompress(SNAPSHOT_PATH.read_bytes())).hexdigest() == metadata["normalized_sha256"]
@@ -111,6 +112,7 @@ async def test_real_chat_action_followup_and_no_automatic_case(client, database)
     assert danger["priority"] == "CRITICAL" or danger["show_emergency_banner"]
 
 
+@pytest.mark.skipif(not SNAPSHOT_PATH.exists(), reason="service_points.snapshot.csv.gz not present")
 @pytest.mark.asyncio
 async def test_nearby_api_snapshot_limit_empty_invalid_and_failure(client, monkeypatch):
     url = "/api/v1/customer/service-points/nearby"

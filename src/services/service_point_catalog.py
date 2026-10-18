@@ -119,8 +119,12 @@ def default_catalog_adapter() -> CatalogAdapter:
     mode = os.environ.get("GPS_CATALOG_MODE", "auto").strip().lower()
     if mode == "demo":
         return JsonCatalogAdapter()
-    if mode in ("snapshot", "auto", "db"):
+    if mode == "snapshot":
         return SnapshotCatalogAdapter()
+    if mode in ("auto", "db"):
+        if SNAPSHOT_PATH.exists():
+            return SnapshotCatalogAdapter()
+        return JsonCatalogAdapter()
     raise ValueError("Unsupported GPS catalog mode")
 
 
