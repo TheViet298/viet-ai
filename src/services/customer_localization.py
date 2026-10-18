@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from src.services.agent_llm import structured_call
 from src.services.chat_language import protect_literals, restore_literals
+from src.services.help_localization import localize_help_response
 
 
 class Translation(BaseModel):
@@ -194,6 +195,8 @@ async def localize_response(data, language: str, budget: dict, *, snapshot: bool
     elif data.message == 'Dạ, rất vui được hỗ trợ Quý khách. Khi cần thêm thông tin, Quý khách cứ nhắn em nhé.':
         data.message = 'You’re welcome. Feel free to ask if you need any more help.'
         data.suggested_replies = []
+    elif localize_help_response(data):
+        pass
     else:
         source = [data.message, *(data.suggested_replies or [])]
         if data.safe_guidance:
