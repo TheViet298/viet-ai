@@ -27,16 +27,18 @@ class GroundedAnswer(BaseModel):
 async def rag_node(state: AgentState) -> dict:
     query = state.get("resolved_query") or state.get("latest_user_message", "")
     from src.services.charging_questions import charging_parts
-    parts = charging_parts(query)
+    from src.services.warranty_questions import warranty_maintenance_parts
+    warranty_parts = warranty_maintenance_parts(query)
+    parts = charging_parts(query) or warranty_parts
     if parts:
         sections, results, citations = [], [], []
         for label, subquery, source_need in parts:
             understanding = {**(state.get('turn_understanding') or {}), 'source_need': source_need,
-                             'cost_subject': 'charging' if source_need == 'policy' else None}
+                             'cost_subject': 'charging' if label == 'Biểu phí sạc' else None}
             result = await rag_node({**state, 'resolved_query': subquery, 'turn_understanding': understanding})
             results.append(result)
             body = result.get('response', '').removeprefix('Theo tài liệu VinFast:\n\n')
-            if source_need == 'policy' and result.get('rag_citations'):
+            if label == 'Biểu phí sạc' and result.get('rag_citations'):
                 body = '\n\n'.join('- ' + line for line in body.splitlines() if line.strip())
                 dates = sorted({c['verified_at'] for c in result['rag_citations']})
                 body += '\n\nĐây là mức phí trong tài liệu đã xác minh ngày ' + ', '.join(dates) + '. Cần kiểm tra biểu phí và ưu đãi áp dụng cho xe trên ứng dụng trước khi sạc.'
@@ -45,9 +47,12 @@ async def rag_node(state: AgentState) -> dict:
                 if citation not in citations:
                     citations.append(citation)
         reply = 'Theo tài liệu VinFast:\n\n' + '\n\n'.join(sections)
+        if warranty_parts:
+            reply += ('\n\nQuý khách cho biết dòng xe, đời xe, số km hiện tại và xe có từng chạy dịch vụ hay không '
+                      'để em đối chiếu thời hạn bảo hành pin và lịch bảo dưỡng đúng xe nhé.')
         return {'is_no_source': not bool(citations), 'is_rag_query': True,
                 'retrieval_status': 'SUCCESS' if citations else 'NO_SOURCE',
-                'retrieval_diagnostics': {'category': 'compound_charging', 'parts': [
+                'retrieval_diagnostics': {'category': 'compound_warranty_maintenance' if warranty_parts else 'compound_charging', 'parts': [
                     {'label': part[0], 'diagnostics': result.get('retrieval_diagnostics', {})}
                     for part, result in zip(parts, results, strict=True)]},
                 'rag_citations': citations, 'rag_context': [c['relevant_snippet'] for c in citations],

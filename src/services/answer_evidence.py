@@ -317,6 +317,11 @@ def answer_section(query: str, text: str) -> str:
                 or not re.search(r'cam.{0,40}(?:sung sac|cap sac)|(?:sung sac|cap sac).{0,40}cam', body)):
             return ''
     if is_maintenance_schedule(query):
+        from src.services.warranty_questions import is_general_maintenance_query
+        if (is_general_maintenance_query(query)
+                and 'lich bao duong theo dung mau xe' in body
+                and 'quang duong va thoi gian' in body):
+            return text
         if re.search(r'\b(?:tai lieu|so bao duong|so tay)\b.{0,30}\b(?:nao|o dau)\b', subject):
             return text if any(reference in body for reference in ('so bao duong', 'so tay', 'tai lieu bao duong')) else ''
         interval_lines = [normalized(line) for line in text.splitlines()

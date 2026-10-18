@@ -228,7 +228,8 @@ class RAGService:
     def retrieve(self, query: str, top_k: int = 3, vehicle_model: str | None = None, *, cost_subject: str | None = None, source_need: str | None = None) -> dict:
         settings = get_settings()
         from src.services.charging_questions import reviewed_charging_guides
-        reviewed = reviewed_charging_guides(query)
+        from src.services.warranty_questions import reviewed_warranty_overviews
+        reviewed = reviewed_charging_guides(query) or reviewed_warranty_overviews(query, vehicle_model)
         if reviewed:
             registry = source_registry()
             citations = [{**registry.get(record['source_id'], {}), **record,
