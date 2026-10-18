@@ -9,6 +9,7 @@ from src.services.auth import get_optional_user, require_customer
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize('opposite_locale', [False, True])
 @pytest.mark.parametrize('query, locale, headings, source_ids', [
     ('Hướng dẫn cách sạc tại trạm công cộng và biểu phí sạc.', 'vi',
      ['Cách sạc tại trạm công cộng', 'Biểu phí sạc'], {'SRC-010'}),
@@ -24,7 +25,7 @@ from src.services.auth import get_optional_user, require_customer
      ['Charging at a public station', 'Charging fees', 'VinFast app features', 'Battery warranty', 'Scheduled maintenance'],
      {'SRC-010', 'SRC-001', 'SRC-002', 'SRC-004'}),
 ])
-async def test_compound_faq_variants_keep_all_requested_topics(client, language_db, monkeypatch, query, locale, headings, source_ids):
+async def test_compound_faq_variants_keep_all_requested_topics(client, language_db, monkeypatch, query, locale, headings, source_ids, opposite_locale):
     from src.agents.nodes import rag_node as module
     search = module.vinfast_manual_search
     searches = []
@@ -34,7 +35,8 @@ async def test_compound_faq_variants_keep_all_requested_topics(client, language_
         return result
     monkeypatch.setattr(module, 'vinfast_manual_search', trace_search)
     response = await client.post('/api/v1/customer/chat', json={
-        'session_id': 'compound-variant', 'message': query, 'language': locale})
+        'session_id': 'compound-variant', 'message': query,
+        'language': ('en' if locale == 'vi' else 'vi') if opposite_locale else locale})
     assert response.status_code == 200
     data = response.json()['data']
     assert data['language'] == locale
@@ -116,6 +118,23 @@ def language_db(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_each_turn_follows_input_language_despite_ui_and_previous_turn(client, language_db):
+    questions = [
+        ('Please explain battery warranty and scheduled maintenance.', 'vi', 'en'),
+        ('Chính sách bảo hành pin và lịch bảo dưỡng định kỳ.', 'en', 'vi'),
+        ('Please explain public charging, charging fees and VinFast app features.', 'vi', 'en'),
+    ]
+    for query, selected, expected in questions:
+        response = await client.post('/api/v1/customer/chat', json={
+            'session_id': 'switch-input-language', 'message': query, 'language': selected})
+        assert response.status_code == 200
+        assert response.json()['data']['language'] == expected
+    history = (await client.get('/api/v1/customer/sessions/switch-input-language/history')).json()['data']['messages']
+    replies = [m for m in history if m['sender'] != 'CUSTOMER']
+    assert [m['language'] for m in replies] == ['en', 'vi', 'en']
+
+
+@pytest.mark.asyncio
 async def test_english_cards_and_history_preserve_original_input_and_locale(client, language_db):
     message = 'Tell me about the VF7'
     response = await client.post('/api/v1/customer/chat', json={'session_id': 'english-cards', 'message': message})
@@ -149,13 +168,13 @@ async def test_guest_quota_never_blocks_english_emergency(client, language_db, q
 
 
 @pytest.mark.asyncio
-async def test_explicit_output_locale_keeps_vietnamese_product_understanding(client, language_db):
+async def test_vietnamese_message_overrides_english_ui_locale(client, language_db):
     response = await client.post('/api/v1/customer/chat', json={
         'session_id': 'locale-preference', 'message': 'Tư vấn VF8', 'language': 'en'})
     data = response.json()['data']
-    assert data['language'] == 'en'
+    assert data['language'] == 'vi'
     assert {c['model'] for c in data['vehicle_cards']} == {'VF8'}
-    assert 'Here are' in data['message']
+    assert 'Here are' not in data['message']
 
 
 @pytest.mark.asyncio

@@ -63,3 +63,23 @@ compound-FAQ changes. The PostgreSQL tracer fix is preserved. Baseline compariso
 logs are `.test-runs/baseline-confirmed-v2.log`; final targeted results are in
 `.test-runs/faq-final-v2.log`, and the full suite log is
 `.test-runs/compound-remote-final.log`.
+
+## Input-language response policy
+
+Responses now follow the detected language of each incoming message, regardless
+of the selected VI/EN locale. An explicit request to answer in a language still
+wins. For language-neutral input such as `VF8?` or `Plus?`, the selected locale
+(or the previous conversation language when absent) supplies the fallback.
+
+Regression checks cover both mismatched UI/input directions, compound questions
+in both languages, explicit language requests, neutral short follow-ups and an
+English → Vietnamese → English conversation with persisted reply languages.
+Before the fix, 10 checks failed against the requested behavior. After the fix,
+the language/API/compound regression group passes all 122 checks. Logs are
+`.test-runs/language-input-red.log` and
+`.test-runs/language-input-targeted-final.log`.
+
+Full-suite verification after this policy change: **1,511 passed, 4 skipped,
+8 failed**, with six subtests passed. The eight failing tests are the same
+baseline failures listed above; no additional failing test was introduced.
+Full log: `.test-runs/language-input-full.log`.
