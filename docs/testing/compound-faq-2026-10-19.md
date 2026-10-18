@@ -40,3 +40,26 @@ path; they are retained rather than discarded.
 
 Local run logs are ignored under `.test-runs/compound-*.log`. These are automated
 backend/API checks, not a deployed-provider or production-data audit.
+
+## Final verification
+
+- Added 49 regression cases for compound questions and bilingual API behavior.
+- FAQ regressions, bilingual API checks and golden cases: **138 passed**.
+- Full suite on the latest remote base (`a9e4d79`) plus these fixes:
+  **1,497 passed, 4 skipped, 8 failed**, with six subtests passed.
+- All eight failures were reproduced on an untouched archive of `a9e4d79`
+  (8 failed, 15 passed in the affected test files). Seven concern observability
+  root/usage accounting; one concerns a vehicle-context test double's positional
+  argument signature. They are existing failures, not resolved by this FAQ patch.
+- Local browser checks submitted one five-topic question in Vietnamese and
+  English. Both displayed five answer sections and the corresponding sources.
+  Screenshots are saved locally under `.test-runs/compound-five-*.jpg`.
+- Automated model calls are mocked; these results do not certify live provider
+  availability or a deployed environment. No coverage percentage was measured.
+
+The remote branch was externally rewritten during this audit. Integration uses
+its new `a9e4d79` base and reapplies only the charging, warranty, English and
+compound-FAQ changes. The PostgreSQL tracer fix is preserved. Baseline comparison
+logs are `.test-runs/baseline-confirmed-v2.log`; final targeted results are in
+`.test-runs/faq-final-v2.log`, and the full suite log is
+`.test-runs/compound-remote-final.log`.
