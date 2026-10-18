@@ -1,0 +1,17 @@
+[
+  {
+    "scope": "public_charging",
+    "source_id": "SRC-010",
+    "source_section": "2.1. Hướng dẫn và lưu ý cách sử dụng trụ sạc tại trạm",
+    "image_url": "https://static-cms-prod.vinfastauto.com/cac-sac-xe-dien-tai-tram-sac-vinfast_1654064827.png",
+    "reviewed_at": "2026-10-18",
+    "relevant_snippet": "Hướng dẫn sạc ô tô tại trạm công cộng\n\n1. Bước 1: Đưa xe vào khoang đỗ có trụ sạc khả dụng.\n2. Bước 2: Mở nắp cổng sạc theo hướng dẫn sử dụng của mẫu xe.\n3. Bước 3: Lấy súng sạc phù hợp từ trụ.\n4. Bước 4: Cắm súng sạc vào cổng sạc của xe.\n5. Bước 5: Kiểm tra thông tin và trạng thái sạc trên màn hình xe.\n\nKhi kết thúc: chọn dừng sạc trên màn hình xe, chờ khoảng 10 giây rồi rút súng sạc theo hướng dẫn trong cẩm nang.\n\nCẩm nang minh họa thao tác trên một mẫu xe; vị trí và cách mở cổng sạc cần đối chiếu sổ tay đúng mẫu xe."
+  },
+  {
+    "scope": "charging_app",
+    "source_id": "SRC-001",
+    "source_section": "3.3. Lịch sử sạc; 6.1. Tìm địa điểm và dẫn đường",
+    "reviewed_at": "2026-10-18",
+    "relevant_snippet": "Tính năng liên quan đến sạc trên ứng dụng VinFast\n\n- Tìm địa điểm và dẫn đường: chọn địa điểm hoặc nhập tìm kiếm; chọn trạm trong danh sách. Ứng dụng cho phép xem thông tin trụ sạc, thời gian đến và mức pin dự kiến khi tới trạm.\n- Lịch sử sạc: mở mục Lịch sử sạc, chọn một phiên để xem thời gian, địa điểm, chi phí và phụ phí nếu có.\n\nTên mục và thao tác cần đối chiếu phiên bản ứng dụng đang sử dụng; tài liệu nguồn là hướng dẫn ứng dụng công bố năm 2022."
+  }
+]

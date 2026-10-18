@@ -15,6 +15,7 @@ Tài liệu này quản lý toàn bộ các nguồn dữ liệu chính thức ph
 | Mã Nguồn | Tên Tài Liệu & Phạm Vi | URL Chính Thức | Loại Nguồn | Trạng Thái | Ngày Xác Minh | Dòng Xe Áp Dụng |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **SRC-001** | Hướng dẫn sử dụng ứng dụng VinFast (App VinFast) | `https://vinfastauto.com/vn_vi/huong-dan-su-dung-ung-dung-vinfast` | `official_guide` | **Đã xác minh (200 OK)** | 2026-09-30 | Tất cả xe điện VinFast |
+| **SRC-010** | Cẩm nang sử dụng dịch vụ tại trạm sạc VinFast, mục 2.1 (ảnh được đọc và đối chiếu) | `https://vinfastauto.com/vn_vi/huong-dan-su-dung-dich-vu-tai-tram-sac-vinfast` | `official_guide` | **Đã xác minh (200 OK)** | 2026-10-18 | Hướng dẫn chung; thao tác theo sổ tay đúng mẫu xe |
 | **SRC-002** | Chính sách bảo hành xe ô tô VinFast | `https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto` | `official_policy` | **Đã xác minh (200 OK)** | 2026-09-30 | VF 3, VF 5, VF 6, VF e34, VF 7, VF 8, VF 9 |
 | **SRC-003** | Thông tin cứu hộ 24/7 và dịch vụ cứu hộ pin | `https://vinfastauto.com/vn_vi/thong-tin-cuu-ho-oto` | `official_service` | **Đã xác minh (200 OK)** | 2026-09-30 | Toàn bộ dòng xe ô tô |
 | **SRC-004** | Dịch vụ và quy trình bảo dưỡng ô tô VinFast | `https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto` | `official_service` | **Đã xác minh (200 OK)** | 2026-09-30 | Toàn bộ dòng xe ô tô |
