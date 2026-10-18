@@ -247,7 +247,7 @@ def seed_database() -> None:
         brief_2 = CaseBrief(
             id=str(uuid.uuid4()),
             case_id=case_2.id,
-            summary="SỰ CỐ NGUY HIỂM: Xe VF9 đang di chuyển trên cao tốc Long Thành - Dầu Giây báo rùa vàng và mất công suất đột ngột, xe đang dừng giữa đường.",
+            summary="SỰ CỐ NGUY HIỂM: Xe VF9 mất nguồn hoàn toàn trên cao tốc Long Thành - Dầu Giây (Km 28), xe dừng giữa đường không thể di chuyển.",
             captured_fields={
                 "vehicle_model": "VF9",
                 "incident_location": "Cao tốc Long Thành - Dầu Giây (Km 28)",
@@ -392,6 +392,20 @@ def seed_database() -> None:
             ),
         ]
 
+        # Vị trí cho Case 3 (Không có GPS, khách chỉ định khu vực "Quận Ninh Kiều, Cần Thơ")
+        loc_3 = CaseLocation(
+            id=str(uuid.uuid4()),
+            case_id=case_3.id,
+            status=LocationStatus.CONSENTED.value,
+            source=LocationSource.USER_TEXT.value,
+            location_label="Quận Ninh Kiều, Cần Thơ",
+            latitude=None,
+            longitude=None,
+            precision=LocationPrecision.APPROXIMATE.value,
+            share_with_staff=True,
+            created_at=now - timedelta(hours=4, minutes=50),
+        )
+
         # ======================================================================
         # KỊCH BẢN DEMO 4: Tư vấn chính sách giá & ưu đãi (Resolved + Feedback)
         # ======================================================================
@@ -478,19 +492,86 @@ def seed_database() -> None:
             created_at=now - timedelta(hours=17),
         )
 
+        # ======================================================================
+        # KỊCH BẢN DEMO 5: Bảo dưỡng định kỳ gần xưởng dịch vụ 2S (GPS thực)
+        # ======================================================================
+        case_5 = Case(
+            id="CASE-20260924-005",
+            user_id=user_cust_1.id,
+            session_id="sess_vf_88201",
+            mock_customer_id="CUST_MOCK_01",
+            mock_customer_name="Khách hàng Demo 01",
+            mock_customer_phone="0900-000-231",
+            vehicle_code_mock="VF-SF-00231",
+            vehicle_model="VF8",
+            intent=Intent.SERVICE_INCIDENT.value,
+            priority=Priority.MEDIUM.value,
+            status=TicketStatus.STAFF_REVIEWING.value,
+            created_at=now - timedelta(hours=2),
+            updated_at=now - timedelta(hours=1, minutes=45),
+        )
+
+        brief_5 = CaseBrief(
+            id=str(uuid.uuid4()),
+            case_id=case_5.id,
+            summary="Khách hàng cần bảo dưỡng định kỳ mốc 12.000 km cho xe VF8 tại xưởng dịch vụ 2S gần nhất.",
+            captured_fields={
+                "vehicle_model": "VF8",
+                "maintenance_milestone": "12.000 km",
+                "preferred_area": "Hà Đông, Hà Nội",
+            },
+            suggested_action="Xác nhận lịch hẹn và điều phối tiếp nhận tại xưởng dịch vụ VinFast Dương Nội.",
+            confidence_score=0.95,
+            is_edited_by_staff=False,
+            generated_at=now - timedelta(hours=1, minutes=50),
+        )
+
+        msgs_5 = [
+            Message(
+                id=str(uuid.uuid4()),
+                case_id=case_5.id,
+                session_id=case_5.session_id,
+                sender_type=SenderType.CUSTOMER.value,
+                content="Xe VF8 của tôi đến mốc bảo dưỡng 12.000 km, gợi ý xưởng dịch vụ 2S gần nhất giúp tôi.",
+                created_at=now - timedelta(hours=2),
+            ),
+            Message(
+                id=str(uuid.uuid4()),
+                case_id=case_5.id,
+                session_id=case_5.session_id,
+                sender_type=SenderType.AGENT.value,
+                content="Dạ em gợi ý xưởng dịch vụ VinFast Quốc Tế Dương Nội gần vị trí của anh/chị, có dịch vụ Đồng sơn và hotline trực tiếp 0984478585 ạ.",
+                created_at=now - timedelta(hours=1, minutes=50),
+            ),
+        ]
+
+        # Vị trí GPS thật gần xưởng 2S VinFast Quốc Tế Dương Nội (20.9571445, 105.7521365)
+        loc_5 = CaseLocation(
+            id=str(uuid.uuid4()),
+            case_id=case_5.id,
+            status=LocationStatus.CONSENTED.value,
+            source=LocationSource.BROWSER_GPS.value,
+            location_label="Phường Yên Nghĩa, Quận Hà Đông, Hà Nội",
+            latitude=20.9575,
+            longitude=105.7525,
+            precision=LocationPrecision.EXACT.value,
+            share_with_staff=True,
+            created_at=now - timedelta(hours=1, minutes=55),
+        )
+
         # Lưu toàn bộ vào SQLite
-        db.add_all([case_1, case_2, case_3, case_4])
-        db.add_all([brief_1, brief_2, brief_3, brief_4])
-        db.add_all(msgs_1 + msgs_2 + msgs_3 + msgs_4)
+        db.add_all([case_1, case_2, case_3, case_4, case_5])
+        db.add_all([brief_1, brief_2, brief_3, brief_4, brief_5])
+        db.add_all(msgs_1 + msgs_2 + msgs_3 + msgs_4 + msgs_5)
         db.add_all([att_1])
-        db.add_all([loc_1, loc_2])
+        db.add_all([loc_1, loc_2, loc_3, loc_5])
         db.add_all([update_2, update_4])
         db.add_all([audit_2, audit_4])
         db.add(feedback_4)
         db.commit()
 
         print(
-            "[seed] Đã seed thành công 4 kịch bản chuẩn hóa (CASE-20260924-001 -> 004) kèm Location & Updates vào SQLite!"
+            "[seed] Đã seed thành công 5 kịch bản chuẩn hóa (CASE-20260924-001 -> 005) kèm Location & Updates vào SQLite!"
         )
 
 
