@@ -9,7 +9,14 @@ test('welcome initialization does not read the clock; mount timestamp can be sup
   const source = fs.readFileSync(path.join(__dirname, '../src/features/chat/hooks/useChat.ts'), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
   const exports = {};
-  vm.runInNewContext(code, { exports, Date: class { constructor() { throw new Error('Clock read before mount'); } }, require: () => ({}) });
+  vm.runInNewContext(code, {
+    exports,
+    Date: class { constructor() { throw new Error('Clock read before mount'); } },
+    require: id => {
+      if (id.includes('LocaleContext')) return { translate: s => s, useLocale: () => ({ language: 'vi', t: s => s }) };
+      return {};
+    }
+  });
   assert.equal(exports.createWelcomeMessage().timestamp, '');
   assert.equal(exports.INITIAL_WELCOME_MESSAGE.timestamp, '');
   assert.equal(exports.createWelcomeMessage({}, '2026-10-13T12:34:00Z').timestamp, '2026-10-13T12:34:00Z');
@@ -21,11 +28,18 @@ test('message render uses supplied timestamp and remains blank until mount', () 
   let mounted = false;
   const exports = {};
   const jsx = (type, props) => ({ type, props });
-  vm.runInNewContext(code, { exports, Date, Number, require: id => {
-    if (id === 'react') return { useMemo: fn => fn(), useState: () => [mounted, () => {}], useEffect() {} };
-    if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx };
-    return {};
-  } });
+  vm.runInNewContext(code, {
+    exports,
+    Date,
+    Number,
+    require: id => {
+      if (id === 'react') return { useMemo: fn => fn(), useState: () => [mounted, () => {}], useEffect() {} };
+      if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx };
+      if (id.includes('LocaleContext')) return { useLocale: () => ({ language: 'vi', t: s => s }) };
+      if (id.includes('utils')) return { parseServerTimestamp: s => new Date(s) };
+      return {};
+    }
+  });
   const props = { message: { sender: 'CUSTOMER', timestamp: '2026-10-13T12:34:00Z', content: 'Test' }, isLastMessage: false, onSelectReply() {} };
   const findTime = node => {
     if (!node || typeof node !== 'object') return null;

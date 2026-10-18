@@ -15,7 +15,7 @@ function renderSupportCard(currentCase) {
     module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2020,
   }}).outputText;
   const servicePointsData = currentCase?.suggestedServicePoints?.length ? { recommended_points: currentCase.suggestedServicePoints.map(p => ({ display_name: p.address, address: p.address, distance_km: p.distance ? parseFloat(p.distance) : null, distance_from_area_km: null })) } : null;
-  vm.runInNewContext(code,{module,exports:module.exports,require,currentCase,servicePointsData,showTechDetails:false,VietmapMiniMap:()=>null,t:text=>text,encodeURIComponent,...icons});
+  vm.runInNewContext(code,{module,exports:module.exports,require,currentCase,servicePointsData,showTechDetails:false,VietmapMiniMap:()=>null,clientUserCoord:null,isRequestingLocation:false,handleShareLocation:()=>{},t:text=>text,encodeURIComponent,...icons});
   return renderToStaticMarkup(module.exports.card);
 }
 

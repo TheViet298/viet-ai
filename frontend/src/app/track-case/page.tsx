@@ -1619,6 +1619,28 @@ export default function TrackCasePage() {
                           <span>Hotline VinFast: 1900-232389</span>
                         </a>
                       </div>
+                    ) : currentCase?.locationShared && currentCase?.stationLocation ? (
+                      <div className="space-y-2 text-[12.5px]">
+                        <div>
+                          <h4 className="font-semibold text-slate-900 leading-snug">
+                            {currentCase.stationLocation}
+                          </h4>
+                          <p className="text-[11.5px] text-slate-500 mt-0.5 leading-relaxed">
+                            {t("Vị trí đã được chia sẻ và xác minh từ thiết bị.")}
+                          </p>
+                        </div>
+                        <div className="pt-2 flex items-center justify-end">
+                          <a
+                            href={`https://maps.google.com/?q=${encodeURIComponent(currentCase.stationLocation)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 text-[#1E40AF] hover:bg-blue-100 text-[11.5px] font-semibold transition"
+                          >
+                            <Navigation className="w-3 h-3" />
+                            <span>{t("Chỉ đường")}</span>
+                          </a>
+                        </div>
+                      </div>
                     ) : (
                       <p className="text-[12px] text-slate-500 py-2 text-center">
                         {servicePointsData?.message || "Đang tìm kiếm các điểm dịch vụ phù hợp trong khu vực..."}

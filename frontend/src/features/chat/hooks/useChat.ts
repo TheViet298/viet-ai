@@ -56,7 +56,12 @@ export function getSalutation(fullName?: string): { title: string; shortName: st
   return { title: "", shortName, pronoun: "Quý khách" };
 }
 
-export function createWelcomeMessage(context?: ChatUserContext | string, language: Language = "vi", timestamp = ""): ChatMessage {
+export function createWelcomeMessage(context?: ChatUserContext | string, language: Language | string = "vi", timestamp = ""): ChatMessage {
+  let lang: Language = (language === "en" ? "en" : "vi");
+  let ts = timestamp;
+  if (typeof language === "string" && language !== "vi" && language !== "en") {
+    ts = language;
+  }
   const ctx: ChatUserContext =
     typeof context === "string" ? { userName: context } : context || {};
   const { userName, caseId } = ctx;
@@ -83,12 +88,12 @@ export function createWelcomeMessage(context?: ChatUserContext | string, languag
     ? `Hello${shortName ? " " + shortName : ""}! Case ${caseId} has been saved. How can I help you today?`
     : `Hello${shortName ? " " + shortName : ""}! I am the VFServ Assistant. How can I help you today?`;
   return {
-    language,
+    language: lang,
     id: "welcome-1",
     sender: "AGENT",
     content,
-    timestamp: timestamp || new Date().toISOString(),
-    suggested_replies: ["Tư vấn xe", "Trạm sạc & ứng dụng", "Bảo hành & bảo dưỡng", "Báo sự cố kỹ thuật"].map(text => translate(text, language)),
+    timestamp: ts || '',
+    suggested_replies: ["Tư vấn xe", "Trạm sạc & ứng dụng", "Bảo hành & bảo dưỡng", "Báo sự cố kỹ thuật"].map(text => translate(text, lang)),
   };
 }
 
