@@ -53,6 +53,25 @@ async def test_product_followup_keeps_cards_and_previous_comparison_model(client
     assert history.json()['data']['messages'][-1]['vehicle_cards'] == data['vehicle_cards']
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize('followup', [
+    'so với VF3', 'So với VF 3?', 'so voi vf3', 'So sánh với VF3',
+])
+async def test_short_comparison_keeps_previously_advised_model(client, customer_db, followup):
+    session = 'short-comparison-followup'
+    for message in ['tư vấn VF8', followup]:
+        response = await client.post('/api/v1/customer/chat', json={
+            'session_id': session, 'message': message})
+        assert response.status_code == 200
+    data = response.json()['data']
+    assert data['vehicle_comparison'] is True
+    assert [card['model'] for card in data['vehicle_cards']] == ['VF8', 'VF3']
+    assert len(data['vehicle_cards']) == 2
+    history = (await client.get(f'/api/v1/customer/sessions/{session}/history')).json()['data']['messages']
+    assert history[-1]['vehicle_comparison'] is True
+    assert history[-1]['vehicle_cards'] == data['vehicle_cards']
+
+
 @pytest.mark.parametrize('model,variants', [('VF3', ['eco', 'plus']), ('VF5', [None]),
     ('VF6', ['eco', 'plus']), ('VF7', ['eco', 'plus', 'plus-awd']),
     ('VF8', ['eco', 'plus']), ('VF9', ['eco', 'plus'])])
