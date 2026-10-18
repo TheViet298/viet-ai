@@ -39,7 +39,13 @@ const {
   MAX_SUPPORT_RADIUS_KM,
 } = distanceModule;
 
-const { SEED_SERVICE_POINTS, getSeedServicePoints } = servicePointsModule;
+const TEST_SERVICE_POINTS = [
+  { id: 'SP-HN-001', name: 'Trạm sạc VinFast Vincom Metropolis', type: 'CHARGING_STATION', address: '29 Liễu Giai, Ngọc Khánh, Ba Đình, Hà Nội', demo: true, hotline: '1900-232389', coords: { lat: 21.0315, lng: 105.8145 } },
+  { id: 'SP-HCM-001', name: 'Trạm sạc & Dịch vụ VinFast Landmark 81', type: 'CHARGING_STATION', address: '720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP.HCM', demo: true, hotline: '1900-232389', coords: { lat: 10.795, lng: 106.7218 } },
+  { id: 'SP-DN-001', name: 'Trạm Cứu hộ Cao tốc Long Thành - Dầu Giây', type: 'OTHER', address: 'Km 28 Cao tốc TP.HCM - Long Thành - Dầu Giây', demo: true, hotline: '1900-232389', coords: { lat: 10.7712, lng: 106.945 } },
+  { id: 'SP-HCM-002', name: 'Xưởng Dịch vụ VinFast Thảo Điền', type: 'SERVICE_WORKSHOP', address: '159 Xa Lộ Hà Nội, Thảo Điền, TP. Thủ Đức, TP.HCM', demo: true, hotline: '1900-232389', coords: { lat: 10.803, lng: 106.735 } },
+  { id: 'SP-HN-002', name: 'VinFast Showroom & Service Smart City', type: 'SHOWROOM', address: 'Khu đô thị Vinhomes Smart City, Tây Mỗ, Nam Từ Liêm, Hà Nội', demo: true, hotline: '1900-232389', coords: { lat: 20.9982, lng: 105.742 } },
+];
 
 // =============================================================================
 // TEST SUITE: TÍNH NĂNG ĐỊNH VỊ VỊ TRÍ TRÊN WEBSITE DESKTOP BROWSER (ADR-005)
@@ -65,7 +71,7 @@ test('1. Khoảng cách Haversine và định dạng hiển thị', () => {
 
 test('2. Luồng CHO PHÉP VỊ TRÍ (CONSENTED): GPS thành công, tìm điểm gần nhất và tạo URL chỉ đường', () => {
   const userGps = { lat: 21.0315, lng: 105.8145 }; // Đúng tọa độ Vincom Metropolis
-  const points = getSeedServicePoints();
+  const points = TEST_SERVICE_POINTS;
   assert.ok(points.length >= 5, 'Phải có ít nhất 5 trạm hạt giống VinFast');
 
   // Tính toán khoảng cách tới toàn bộ các trạm
@@ -221,7 +227,7 @@ test('5. Luồng TỌA ĐỘ SAI SỐ LỚN (accuracy > 500m): Cảnh báo ướ
 test('6. Luồng KHÔNG CÓ ĐỊA ĐIỂM GẦN ĐÓ (> 50km): Kích hoạt cảnh báo và nút Hotline 1900-232389', () => {
   // Người dùng ở Cà Mau (lat: 9.1768, lng: 105.1524)
   const caMauCoord = { lat: 9.1768, lng: 105.1524 };
-  const points = getSeedServicePoints();
+  const points = TEST_SERVICE_POINTS;
 
   const enriched = points.map((p) => {
     const distKm = calculateHaversineDistanceKm(caMauCoord, p.coords);
@@ -240,7 +246,7 @@ test('6. Luồng KHÔNG CÓ ĐỊA ĐIỂM GẦN ĐÓ (> 50km): Kích hoạt c�
 });
 
 test('7. Luồng CHỌN ĐIỂM ĐẾN & ĐIỀU HƯỚNG: Sinh prompt chat và tạo link chỉ đường', () => {
-  const points = getSeedServicePoints();
+  const points = TEST_SERVICE_POINTS;
   const selectedPoint = points.find((p) => p.id === 'SP-HN-001');
   assert.ok(selectedPoint, 'Phải tìm thấy trạm SP-HN-001');
 
@@ -298,6 +304,6 @@ test('nearby sync threshold uses movement or elapsed time', () => {
   assert.equal(shouldSyncLocation(previous, { lat: 21, lng: 105 }, 31000), true);
 });
 test('all demo categories are present', () => {
-  assert.deepEqual(new Set(SEED_SERVICE_POINTS.map((point) => point.type)), new Set(['CHARGING_STATION', 'SHOWROOM', 'SERVICE_WORKSHOP', 'OTHER']));
-  assert.ok(SEED_SERVICE_POINTS.every((point) => point.demo));
+  assert.deepEqual(new Set(TEST_SERVICE_POINTS.map((point) => point.type)), new Set(['CHARGING_STATION', 'SHOWROOM', 'SERVICE_WORKSHOP', 'OTHER']));
+  assert.ok(TEST_SERVICE_POINTS.every((point) => point.demo));
 });

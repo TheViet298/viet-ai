@@ -1,6 +1,6 @@
 /**
  * Tiện ích tính toán khoảng cách thực tế theo tọa độ địa lý (Công thức Haversine chuẩn)
- * Tuân thủ ADR-005: Tính toán chính xác từ tọa độ thiết bị khách hàng đến các điểm hỗ trợ.
+ * Lựa chọn thiết kế hệ thống: Tính toán chính xác từ tọa độ thiết bị khách hàng đến các điểm hỗ trợ.
  */
 
 export interface Coordinates {

@@ -42,13 +42,8 @@ test('invalid/mixed-content custom configuration fails safely instead of droppin
     ['https://user:password@tiles.example.test/{z}/{x}/{y}.png', 'Example'],
   ]) assert.throws(() => createRasterMapStyle(url, credit));
 });
-test('frontend fallback matches canonical nearby catalog and provenance', () => {
-  const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, '../../fixtures/nearby_service_points.demo.json'), 'utf8'));
-  const { SEED_SERVICE_POINTS } = load('constants/servicePoints.ts');
-  assert.deepEqual(SEED_SERVICE_POINTS, fixture.points.map(point => ({
-    id: point.id, name: point.name, type: point.category, address: point.address,
-    demo: fixture.metadata.demo, source: fixture.metadata.source,
-    updatedAt: fixture.metadata.updated_at, verificationStatus: fixture.metadata.verification_status,
-    hotline: point.hotline, coords: { lat: point.latitude, lng: point.longitude },
-  })));
+test('frontend fallback SEED_SERVICE_POINTS is removed in favor of dynamic service points API', () => {
+  const { getSeedServicePoints } = load('constants/servicePoints.ts');
+  assert.equal(typeof getSeedServicePoints, 'function');
+  assert.deepEqual(getSeedServicePoints(), []);
 });

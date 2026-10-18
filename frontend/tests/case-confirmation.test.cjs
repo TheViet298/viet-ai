@@ -35,7 +35,8 @@ function renderPage(confirmCustomerCase) {
       if (id === 'next/link') return { default: 'a' };
       if (id === 'lucide-react') return new Proxy({}, { get: (_target, key) => key });
       if (id === '@/features/shared') return { useAuth: () => ({ role: 'CUSTOMER' }) };
-      if (id === '@/features/chat/api/chatApi') return { confirmCustomerCase };
+      if (id === '@/features/chat/api/chatApi') return { confirmCustomerCase, getCaseServicePoints: () => Promise.resolve({ success: true, data: null }), submitCustomerLocation: () => Promise.resolve() };
+      if (id === '@/features/chat/components/VietmapMiniMap') return { VietmapMiniMap: () => null };
       throw new Error(`Unexpected import: ${id}`);
     },
   });

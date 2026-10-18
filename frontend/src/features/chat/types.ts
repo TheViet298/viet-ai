@@ -148,10 +148,49 @@ export interface ServicePointSeed {
   demo?: boolean;
   source?: string;
   updatedAt?: string | null;
-  verificationStatus?: "UNVERIFIED" | "VERIFIED";
+  verificationStatus?: "UNVERIFIED" | "SNAPSHOT" | "VERIFIED";
   hotline: string;
   distanceKm?: number;
   coords: { lat: number; lng: number };
+}
+
+export interface ServicePointApiItem {
+  id: string;
+  name: string;
+  category: "workshop" | "charging_station" | "showroom" | string;
+  category_slug?: string | null;
+  address: string;
+  province?: string | null;
+  phone?: string | null;
+  hotline_service?: string | null;
+  hours?: string | null;
+  operating_hours?: string | null;
+  is_car_compatible?: boolean;
+  services_offered?: string[];
+  dong_son?: boolean;
+  booking_url?: string | null;
+  distance_km?: number | null;
+  distance_from_area_km?: number | null;
+  note?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  is_out_of_area?: boolean;
+}
+
+export interface ServicePointsApiResponse {
+  case_id: string;
+  intent?: string;
+  recommended_points: ServicePointApiItem[];
+  needs_location: boolean;
+  no_points_nearby?: boolean;
+  is_out_of_area?: boolean;
+  message?: string | null;
+  last_updated_label?: string | null;
+  rescue_hotline?: string | null;
+  area_reference?: {
+    label: string;
+    level: "district" | "province";
+  } | null;
 }
 
 export interface UserLocationState {

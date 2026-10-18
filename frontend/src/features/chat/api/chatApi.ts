@@ -382,9 +382,28 @@ export async function getNearbyServicePoints(coord: { lat: number; lng: number }
   const res = await fetch(`${BASE_URL}/api/v1/customer/service-points/nearby?${query}`, { signal });
   if (!res.ok) throw new Error(`Không thể tải điểm dịch vụ (${res.status}).`);
   const body = await res.json();
-  return (body.data.points as Array<{ id: string; name: string; category: string; address: string; latitude: number; longitude: number; distance_km?: number; hotline: string; demo?: boolean; source?: string; updated_at?: string; verification_status?: "UNVERIFIED" | "VERIFIED" }>).map((point) => ({
+  return (body.data.points as Array<{ id: string; name: string; category: string; address: string; latitude: number; longitude: number; distance_km?: number; hotline: string; demo?: boolean; source?: string; updated_at?: string; verification_status?: "UNVERIFIED" | "SNAPSHOT" | "VERIFIED" }>).map((point) => ({
     id: point.id, name: point.name, type: point.category as import("../types").ServicePointSeed["type"], address: point.address, hotline: point.hotline ?? "", distanceKm: point.distance_km, coords: { lat: point.latitude, lng: point.longitude },
     demo: point.demo !== false, source: point.source, updatedAt: point.updated_at ?? null,
-    verificationStatus: point.verification_status === "VERIFIED" && point.demo === false ? "VERIFIED" as const : "UNVERIFIED" as const,
+    verificationStatus: point.demo === false && point.verification_status === "SNAPSHOT" ? "SNAPSHOT" as const : point.demo === false && point.verification_status === "VERIFIED" ? "VERIFIED" as const : "UNVERIFIED" as const,
   }));
 }
+
+/**
+ * Tải danh sách điểm dịch vụ đề xuất theo case_id từ API thật /cases/{id}/service-points
+ */
+export async function getCaseServicePoints(caseId: string): Promise<ApiResponse<import("../types").ServicePointsApiResponse>> {
+  const authHeaders = await getCustomerAuthHeaders();
+  const res = await fetch(`${BASE_URL}/api/v1/cases/${caseId}/service-points`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders,
+    },
+  });
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to load service points: ${errorText}`);
+  }
+  return res.json();
+}
+
