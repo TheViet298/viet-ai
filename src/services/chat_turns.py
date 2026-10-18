@@ -159,7 +159,10 @@ async def _run_chat_turn(payload, user, db, handler):
                     data.suggested_replies = ['Dự toán lăn bánh ' + card.name for card in data.vehicle_cards]
                 if data.vehicle_comparison:
                     if is_generic_vehicle_comparison(card_text):
+                        from src.models.schemas import Citation
+                        from src.services.vehicle_catalog import catalog_citations
                         data.message = vehicle_comparison_reply(data.vehicle_cards)
+                        data.citations = [Citation(**item) for item in catalog_citations(data.vehicle_cards)]
                         data.response_type = 'FAQ_ANSWER'
                         answer_path = 'snapshot'
                     data.suggested_replies = []
