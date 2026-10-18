@@ -120,7 +120,11 @@ def mask_phone_for_log(phone: str | None) -> str | None:
     return "****"
 
 
-def parse_service_points(crawl_dir: Path, cli_crawled_at: datetime | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def parse_service_points(
+    crawl_dir: Path,
+    cli_crawled_at: datetime | None = None,
+    suspect_hide: bool = False,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     stats = {}
 
     # 1. Charging Stations
@@ -304,7 +308,113 @@ def parse_service_points(crawl_dir: Path, cli_crawled_at: datetime | None = None
             "crawled_at": s2_mtime,
         })
 
+    if suspect_hide:
+        suspect_info = apply_suspect_coordinate_rule(records, suspect_hide=True)
+        stats["suspect_info"] = suspect_info
+
     return records, stats
+
+
+def apply_suspect_coordinate_rule(
+    records: list[dict[str, Any]],
+    suspect_hide: bool = True,
+    max_threshold: int = 300,
+) -> dict[str, Any]:
+    """Áp quy tắc phát hiện và xử lý tọa độ đáng ngờ:
+    - KNN-5: 5 láng giềng đồng thuận cùng 1 tỉnh khác tỉnh trong address.
+    - Khoảng cách tới trạm gần nhất cùng tỉnh theo address > 50 km.
+    - Gắn extra_metadata['coordinate_suspect'] = True.
+    - Nếu tổng số trạm đáng ngờ <= max_threshold (300) và suspect_hide=True:
+      gán is_visible = False.
+    - Nếu tổng số trạm đáng ngờ > max_threshold: tắt tự động ẩn, chỉ gắn cờ/báo cáo.
+    """
+    from collections import Counter
+    from scipy.spatial import KDTree
+    from src.services.service_point_service import detect_province_from_address, haversine_km
+
+    charging_stations = [r for r in records if r.get("category_slug") == "car_charging_station"]
+
+    valid_stations = []
+    coords = []
+    stations_by_prov: dict[str, list[tuple[str, float, float]]] = {}
+
+    for r in charging_stations:
+        lat = r.get("latitude")
+        lng = r.get("longitude")
+        if lat is None or lng is None:
+            continue
+        prov = detect_province_from_address(r.get("address", ""))
+        if not prov:
+            continue
+        valid_stations.append({
+            "record": r,
+            "lat": lat,
+            "lng": lng,
+            "prov": prov,
+        })
+        coords.append([lat, lng])
+        stations_by_prov.setdefault(prov, []).append((r["id"], lat, lng))
+
+    if len(coords) < 6:
+        return {"total_suspects": 0, "newly_hidden": 0, "new_visible": sum(1 for r in charging_stations if r["is_visible"]), "breakdown": {}}
+
+    tree = KDTree(coords)
+    distances, indices = tree.query(coords, k=6)
+
+    suspect_candidates = []
+    for idx, st in enumerate(valid_stations):
+        neighbor_indices = indices[idx][1:6]
+        neighbor_provinces = [valid_stations[n_idx]["prov"] for n_idx in neighbor_indices]
+        if len(neighbor_provinces) == 5 and len(set(neighbor_provinces)) == 1:
+            dom_prov = neighbor_provinces[0]
+            if dom_prov != st["prov"]:
+                same_prov_list = stations_by_prov.get(st["prov"], [])
+                min_dist = float("inf")
+                for other_id, other_lat, other_lng in same_prov_list:
+                    if other_id == st["record"]["id"]:
+                        continue
+                    d = haversine_km(st["lat"], st["lng"], other_lat, other_lng)
+                    if d < min_dist:
+                        min_dist = d
+                if min_dist > 50.0:
+                    suspect_candidates.append((st["record"], st["prov"], dom_prov, min_dist))
+
+    total_suspects = len(suspect_candidates)
+    should_hide = suspect_hide
+    if total_suspects > max_threshold:
+        print(f"[CẢNH BÁO] Số trạm nghi ngờ ({total_suspects}) vượt ngưỡng ({max_threshold}). Tắt cờ tự động ẩn.")
+        should_hide = False
+
+    newly_hidden = 0
+    major_cities = ["hà nội", "hồ chí minh", "đà nẵng", "cần thơ", "huế", "hải phòng"]
+    city_counter = Counter()
+
+    for rec, prov, dom_prov, dist in suspect_candidates:
+        if "extra_metadata" not in rec or rec["extra_metadata"] is None:
+            rec["extra_metadata"] = {}
+        rec["extra_metadata"]["coordinate_suspect"] = True
+        rec["extra_metadata"]["suspect_reason"] = "knn5_consensus_mismatch_and_dist_gt_50km"
+        rec["extra_metadata"]["neighbor_province"] = dom_prov
+        rec["extra_metadata"]["dist_to_same_province_station_km"] = round(dist, 1)
+
+        if should_hide:
+            if rec.get("is_visible"):
+                newly_hidden += 1
+                rec["is_visible"] = False
+                if prov in major_cities:
+                    city_counter[prov] += 1
+        else:
+            if prov in major_cities:
+                city_counter[prov] += 1
+
+    new_visible_charging = sum(1 for r in charging_stations if r["is_visible"])
+    return {
+        "total_suspects": total_suspects,
+        "should_hide": should_hide,
+        "newly_hidden": newly_hidden,
+        "new_visible_charging_stations": new_visible_charging,
+        "city_breakdown": dict(city_counter),
+    }
 
 
 from urllib.parse import urlparse
@@ -376,8 +486,8 @@ def import_records(
     # Validate exact counts
     if total_loaded != 25228:
         raise ValueError(f"LỆCH TỔNG SỐ NẠP: Kỳ vọng 25228, thực tế {total_loaded}. DỪNG.")
-    if total_visible != 18189:
-        raise ValueError(f"LỆCH TỔNG SỐ HIỂN THỊ: Kỳ vọng 18189, thực tế {total_visible}. DỪNG.")
+    if total_visible < 17000 or total_visible > 18189:
+        raise ValueError(f"LỆCH TỔNG SỐ HIỂN THỊ: Kỳ vọng 17000..18189, thực tế {total_visible}. DỪNG.")
 
     if dry_run:
         print(f"[DRY-RUN] Xác nhận hợp lệ: {total_loaded} bản ghi ({total_visible} hiển thị). Không ghi vào DB.")
@@ -432,13 +542,24 @@ def print_cross_tabulation(records: list[dict[str, Any]], stats: dict[str, Any])
     print("\n1. THỐNG KÊ THEO FILE NGUỒN (NẠP / BỎ QUA):")
     print("-" * 70)
     for src, st in stats.items():
+        if src == "suspect_info":
+            continue
         print(f" - {src:20s}: Tổng {st['raw']:>6} dòng | Nạp: {st['loaded']:>6} | Bỏ qua: {st['skipped']:>6}")
 
     total_loaded = len(df)
     total_visible = df["is_visible"].sum()
     print("-" * 70)
     print(f" => TỔNG CỘNG NẠP      : {total_loaded} (Kỳ vọng: 25228 -> {'KHỚP' if total_loaded == 25228 else 'LỆCH'})")
-    print(f" => TỔNG CỘNG HIỂN THỊ: {total_visible} (Kỳ vọng: 18189 -> {'KHỚP' if total_visible == 18189 else 'LỆCH'})")
+    print(f" => TỔNG CỘNG HIỂN THỊ: {total_visible}")
+
+    if "suspect_info" in stats:
+        s_info = stats["suspect_info"]
+        print("\n4. THỐNG KÊ TỌA ĐỘ ĐÁNG NGỜ (KNN-5 & DIST > 50KM):")
+        print("-" * 70)
+        print(f" - Tổng số trạm đáng ngờ phát hiện: {s_info['total_suspects']}")
+        print(f" - Số trạm bị ẩn (chuyển is_visible=False): {s_info['newly_hidden']}")
+        print(f" - Số trạm sạc hiển thị mới: {s_info['new_visible_charging_stations']} (kỳ vọng 17.656 - {s_info['newly_hidden']})")
+        print(f" - Phân bố số bị ẩn tại các TP lớn: {s_info['city_breakdown']}")
 
     print("\n2. BẢNG CHÉO (CATEGORY x STATUS x ACCESS_TYPE):")
     print("-" * 70)
@@ -460,6 +581,7 @@ def main():
     parser.add_argument("--crawled-at", default=None, help="ISO timestamp for crawled_at.")
     parser.add_argument("--allow-remote", action="store_true", help="Allow running against remote databases.")
     parser.add_argument("--dry-run", action="store_true", help="Validate without writing to database.")
+    parser.add_argument("--suspect-hide", action=argparse.BooleanOptionalAction, default=True, help="Hide suspect stations based on KNN-5 consensus and distance > 50km.")
     args = parser.parse_args()
 
     crawl_dir = Path(args.path)
@@ -476,7 +598,7 @@ def main():
             sys.exit(1)
 
     print(f"Đang đọc dữ liệu từ: {crawl_dir}...")
-    records, stats = parse_service_points(crawl_dir, crawled_at_dt)
+    records, stats = parse_service_points(crawl_dir, crawled_at_dt, suspect_hide=args.suspect_hide)
 
     print("Đang kiểm tra / nạp vào cơ sở dữ liệu...")
     total_loaded, total_visible = import_records(

@@ -1057,3 +1057,76 @@ def test_item4_distance_formatting_rule(step3_db_session):
     assert "dưới 5 km từ trung tâm Quận Ninh Kiều" in resp.message
 
 
+def test_suspect_coordinate_rule_cases():
+    """A3: Pytest cho quy tắc (ca đồng thuận, ca không đồng thuận, ca cách <50 km không bị ẩn)."""
+    from src.cli.import_service_points import apply_suspect_coordinate_rule
+
+    # 1. Ca đồng thuận 5 láng giềng cùng 1 tỉnh khác + cách trạm cùng tỉnh > 50km -> bị ẩn
+    # 5 trạm HCM
+    hcm_stations = [
+        {
+            "id": f"cs_hcm_{i}", "category_slug": "car_charging_station", "address": "Quận 1, TP. Hồ Chí Minh",
+            "latitude": 10.77 + i * 0.01, "longitude": 106.70 + i * 0.01, "is_visible": True, "extra_metadata": {},
+        }
+        for i in range(5)
+    ]
+    # 1 trạm Hà Nội cách đó 1000 km
+    hn_station_far = {
+        "id": "cs_hn_far", "category_slug": "car_charging_station", "address": "Quận Hoàn Kiếm, Hà Nội",
+        "latitude": 21.02, "longitude": 105.85, "is_visible": True, "extra_metadata": {},
+    }
+    # 1 trạm có địa chỉ Hà Nội nhưng tọa độ nằm ở trung tâm HCM
+    suspect_target = {
+        "id": "cs_suspect_target", "category_slug": "car_charging_station", "address": "Quận Cầu Giấy, Hà Nội",
+        "latitude": 10.775, "longitude": 106.705, "is_visible": True, "extra_metadata": {},
+    }
+    dataset1 = hcm_stations + [hn_station_far, suspect_target]
+    res1 = apply_suspect_coordinate_rule(dataset1, suspect_hide=True)
+    assert res1["total_suspects"] == 1
+    assert res1["newly_hidden"] == 1
+    assert suspect_target["is_visible"] is False
+    assert suspect_target["extra_metadata"]["coordinate_suspect"] is True
+    assert suspect_target["extra_metadata"]["neighbor_province"] == "hồ chí minh"
+
+    # 2. Ca không đồng thuận: 5 láng giềng gồm 3 HCM, 2 Đồng Nai -> KHÔNG bị ẩn
+    dn_stations = [
+        {
+            "id": f"cs_dn_{i}", "category_slug": "car_charging_station", "address": "Biên Hòa, Đồng Nai",
+            "latitude": 10.78 + i * 0.01, "longitude": 106.71 + i * 0.01, "is_visible": True, "extra_metadata": {},
+        }
+        for i in range(2)
+    ]
+    suspect_target2 = {
+        "id": "cs_target2", "category_slug": "car_charging_station", "address": "Hà Nội",
+        "latitude": 10.775, "longitude": 106.705, "is_visible": True, "extra_metadata": {},
+    }
+    dataset2 = hcm_stations[:3] + dn_stations + [hn_station_far, suspect_target2]
+    res2 = apply_suspect_coordinate_rule(dataset2, suspect_hide=True)
+    assert res2["total_suspects"] == 0
+    assert suspect_target2["is_visible"] is True
+
+    # 3. Ca khoảng cách tới trạm cùng tỉnh <= 50 km -> KHÔNG bị ẩn
+    # Trạm địa chỉ Đồng Nai, tọa độ gần HCM, nhưng trạm Đồng Nai gần nhất chỉ cách ~15 km
+    dn_near_station = {
+        "id": "cs_dn_near", "category_slug": "car_charging_station", "address": "Long Thành, Đồng Nai",
+        "latitude": 10.85, "longitude": 106.75, "is_visible": True, "extra_metadata": {},
+    }
+    suspect_target3 = {
+        "id": "cs_target3", "category_slug": "car_charging_station", "address": "Biên Hòa, Đồng Nai",
+        "latitude": 10.775, "longitude": 106.705, "is_visible": True, "extra_metadata": {},
+    }
+    dataset3 = hcm_stations + [dn_near_station, suspect_target3]
+    res3 = apply_suspect_coordinate_rule(dataset3, suspect_hide=True)
+    assert res3["total_suspects"] == 0
+    assert suspect_target3["is_visible"] is True
+
+    # 4. Khi tổng số trạm đáng ngờ vượt ngưỡng max_threshold -> tự động tắt cờ ẩn
+    suspect_target4 = dict(suspect_target)
+    suspect_target4["is_visible"] = True
+    dataset4 = hcm_stations + [hn_station_far, suspect_target4]
+    res4 = apply_suspect_coordinate_rule(dataset4, suspect_hide=True, max_threshold=0)
+    assert res4["should_hide"] is False
+    assert res4["newly_hidden"] == 0
+    assert suspect_target4["is_visible"] is True
+
+
