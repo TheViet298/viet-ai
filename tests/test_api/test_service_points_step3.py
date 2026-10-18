@@ -13,6 +13,7 @@ from src.models.db_models import Case, CaseBrief, CaseLocation, Message, Priorit
 from src.services.auth import create_token
 from src.services.service_point_service import (
     build_case_service_points_response,
+    detect_province_from_label,
     find_nearby_service_points,
     haversine_km,
     infer_coordinates_from_label,
@@ -910,6 +911,8 @@ def test_item7g_case_user_text_ninh_kieu_can_tho(step3_db_session):
     assert pt.distance_km is None
     assert pt.distance_from_area_km is not None
     assert abs(pt.distance_from_area_km - expected_dist) < 0.1
+    # Kiểm tra message làm tròn đến km
+    assert f"khoảng {round(expected_dist)} km từ trung tâm Quận Ninh Kiều" in resp.message
 
 
 def test_item7g_case_user_text_province_only_can_tho(step3_db_session):
@@ -1014,5 +1017,43 @@ def test_item7g_sorting_order_distance_from_area_km_with_gsm_exception(step3_db_
     assert idx_partner < idx_gsm, "service_car_partner must be ranked before service_gsm"
     assert idx_car < idx_gsm, "service_car must be ranked before service_gsm"
     assert idx_partner < idx_car, "Between partner and car, sort by distance_from_area_km ascending"
+
+
+def test_item3_district_labels_detect_canonical_province():
+    """Mục 3: Thêm pytest kiểm tra các nhãn: Nha Trang, Thủ Đức, Biên Hòa, Vinh, Hạ Long, Sóc Sơn, Hà Nội ra đúng tỉnh."""
+    assert detect_province_from_label("Nha Trang") == "khánh hòa"
+    assert detect_province_from_label("Thủ Đức") == "hồ chí minh"
+    assert detect_province_from_label("Biên Hòa") == "đồng nai"
+    assert detect_province_from_label("Vinh") == "nghệ an"
+    assert detect_province_from_label("Hạ Long") == "quảng ninh"
+    assert detect_province_from_label("Sóc Sơn, Hà Nội") == "hà nội"
+
+
+def test_item4_distance_formatting_rule(step3_db_session):
+    """Mục 4: Định dạng khoảng cách backend và giao diện: làm tròn đến km; dưới 5 km hiển thị 'dưới 5 km'."""
+    db = step3_db_session
+    now = utcnow()
+    # Case có điểm dưới 5 km ngoại tỉnh (test message)
+    case_near = Case(
+        id="case_near_4", session_id="sess_near_4", intent="Service/Incident",
+        priority="LOW", status="SUBMITTED", created_at=now, updated_at=now,
+    )
+    loc_near = CaseLocation(
+        case_id="case_near_4", source="USER_TEXT", status="SHARED",
+        location_label="Quận Ninh Kiều, Cần Thơ", precision="APPROXIMATE",
+        share_with_staff=True, created_at=now,
+    )
+    # Xưởng cách tâm khoảng 3 km nhưng ngoại tỉnh (An Giang)
+    ws_near = ServicePoint(
+        id="ws_near_under_5", source_file="service_2s", category="workshop", category_slug="service_car",
+        name="Xưởng Rất Gần", address="An Giang", latitude=10.02, longitude=105.77,
+        status="ACTIVE", access_type="Public", is_car_compatible=True, is_visible=True,
+        crawled_at=now, created_at=now, updated_at=now,
+    )
+    db.add_all([case_near, loc_near, ws_near])
+    db.commit()
+
+    resp = build_case_service_points_response(db, case_near)
+    assert "dưới 5 km từ trung tâm Quận Ninh Kiều" in resp.message
 
 

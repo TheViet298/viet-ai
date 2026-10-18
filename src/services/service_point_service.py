@@ -52,7 +52,7 @@ DEFAULT_SEARCH_RADIUS: dict[str, float] = {
     "showroom": 50.0,
 }
 
-# Tọa độ trung tâm Quận/Huyện (22 mục tham chiếu cấp quận)
+# Tọa độ trung tâm Quận/Huyện/Thị xã phổ biến
 DISTRICT_CENTERS: dict[str, tuple[str, tuple[float, float]]] = {
     # Cần Thơ
     "ninh kiều": ("cần thơ", (10.0342, 105.7885)),
@@ -65,25 +65,57 @@ DISTRICT_CENTERS: dict[str, tuple[str, tuple[float, float]]] = {
     "đống đa": ("hà nội", (21.0181, 105.8299)),
     "hai bà trưng": ("hà nội", (21.0080, 105.8500)),
     "hà đông": ("hà nội", (20.9720, 105.7740)),
+    "thanh xuân": ("hà nội", (20.9928, 105.8117)),
+    "nam từ liêm": ("hà nội", (21.0131, 105.7667)),
+    "bắc từ liêm": ("hà nội", (21.0667, 105.7667)),
+    "long biên": ("hà nội", (21.0367, 105.8925)),
+    "gia lâm": ("hà nội", (21.0142, 105.9400)),
+    "đông anh": ("hà nội", (21.1378, 105.8456)),
+    "sóc sơn": ("hà nội", (21.2575, 105.8500)),
+    "hoài đức": ("hà nội", (21.0189, 105.7078)),
+    "hòai đức": ("hà nội", (21.0189, 105.7078)),
+    "vinhomes ocean park": ("hà nội", (20.9954, 105.9482)),
     # Đà Nẵng
     "hải châu": ("đà nẵng", (16.0544, 108.2022)),
     "thanh khê": ("đà nẵng", (16.0617, 108.1822)),
     "sơn trà": ("đà nẵng", (16.0820, 108.2430)),
+    "liên chiểu": ("đà nẵng", (16.0767, 108.1500)),
+    "ngũ hành sơn": ("đà nẵng", (16.0028, 108.2500)),
     # TP. Hồ Chí Minh
     "quận 1": ("hồ chí minh", (10.7769, 106.7009)),
     "quận 3": ("hồ chí minh", (10.7844, 106.6843)),
     "quận 7": ("hồ chí minh", (10.7340, 106.7218)),
     "tân bình": ("hồ chí minh", (10.8015, 106.6534)),
+    "tân phú": ("hồ chí minh", (10.7904, 106.6284)),
+    "phú nhuận": ("hồ chí minh", (10.7992, 106.6806)),
+    "gò vấp": ("hồ chí minh", (10.8388, 106.6653)),
     "bình thạnh": ("hồ chí minh", (10.8106, 106.7091)),
+    "bình tân": ("hồ chí minh", (10.7656, 106.6047)),
+    "bình chánh": ("hồ chí minh", (10.6874, 106.5925)),
+    "hóc môn": ("hồ chí minh", (10.8844, 106.5919)),
+    "củ chi": ("hồ chí minh", (11.0067, 106.4950)),
+    "nhà bè": ("hồ chí minh", (10.6486, 106.7297)),
     "thủ đức": ("hồ chí minh", (10.8494, 106.7537)),
+    "vũng tàu": ("hồ chí minh", (10.3460, 107.0843)),
+    # Nghệ An
+    "vinh": ("nghệ an", (18.6734, 105.6813)),
+    "tp vinh": ("nghệ an", (18.6734, 105.6813)),
+    "thành phố vinh": ("nghệ an", (18.6734, 105.6813)),
+    # Quảng Ninh
+    "hạ long": ("quảng ninh", (20.9505, 107.0734)),
+    "cẩm phả": ("quảng ninh", (21.0167, 107.3167)),
+    "uông bí": ("quảng ninh", (21.0333, 106.7667)),
     # Đồng Nai
+    "biên hòa": ("đồng nai", (10.9574, 106.8427)),
     "long thành": ("đồng nai", (10.7712, 106.9450)),
-    # Lâm Đồng
-    "đà lạt": ("lâm đồng", (11.9404, 108.4583)),
     # Khánh Hòa
     "nha trang": ("khánh hòa", (12.2388, 109.1967)),
-    # Bà Rịa - Vũng Tàu
-    "vũng tàu": ("bà rịa vũng tàu", (10.3460, 107.0843)),
+    "cam ranh": ("khánh hòa", (11.9214, 109.1592)),
+    # Phú Thọ (Vĩnh Phúc -> Phú Thọ)
+    "vĩnh yên": ("phú thọ", (21.3089, 105.6047)),
+    # Lâm Đồng
+    "đà lạt": ("lâm đồng", (11.9404, 108.4583)),
+    "bảo lộc": ("lâm đồng", (11.5475, 107.8083)),
 }
 
 # Tọa độ trung tâm Tỉnh/Thành phố (Phủ đủ 34 đơn vị hành chính hiện hành và các bí danh sáp nhập)
@@ -416,6 +448,74 @@ for _k, _v in PROVINCE_CANONICAL_MAP.items():
     if _k_no_acc not in LOOKUP_PROVINCE_MAP:
         LOOKUP_PROVINCE_MAP[_k_no_acc] = _v
 
+DISTRICT_TOWN_TO_PROVINCE: dict[str, str] = {
+    # TP.HCM
+    "thủ đức": "hồ chí minh",
+    "bình tân": "hồ chí minh",
+    "bình chánh": "hồ chí minh",
+    "củ chi": "hồ chí minh",
+    "hóc môn": "hồ chí minh",
+    "nhà bè": "hồ chí minh",
+    "gò vấp": "hồ chí minh",
+    "tân bình": "hồ chí minh",
+    "tân phú": "hồ chí minh",
+    "phú nhuận": "hồ chí minh",
+    "bình thạnh": "hồ chí minh",
+    "vũng tàu": "hồ chí minh",
+    # Hà Nội
+    "sóc sơn": "hà nội",
+    "hoài đức": "hà nội",
+    "hòai đức": "hà nội",
+    "đông anh": "hà nội",
+    "gia lâm": "hà nội",
+    "long biên": "hà nội",
+    "cầu giấy": "hà nội",
+    "đống đa": "hà nội",
+    "hoàn kiếm": "hà nội",
+    "hà đông": "hà nội",
+    "thanh xuân": "hà nội",
+    "nam từ liêm": "hà nội",
+    "bắc từ liêm": "hà nội",
+    "vinhomes ocean park": "hà nội",
+    # Nghệ An (chỉ khi đứng một mình hoặc kèm "TP Vinh")
+    "vinh": "nghệ an",
+    "tp vinh": "nghệ an",
+    "thành phố vinh": "nghệ an",
+    # Quảng Ninh
+    "hạ long": "quảng ninh",
+    "cẩm phả": "quảng ninh",
+    "uông bí": "quảng ninh",
+    # Đồng Nai
+    "biên hòa": "đồng nai",
+    "long thành": "đồng nai",
+    # Khánh Hòa
+    "nha trang": "khánh hòa",
+    "cam ranh": "khánh hòa",
+    # Phú Thọ (Vĩnh Phúc -> Phú Thọ)
+    "vĩnh yên": "phú thọ",
+    # Đà Nẵng
+    "thanh khê": "đà nẵng",
+    "hải châu": "đà nẵng",
+    "sơn trà": "đà nẵng",
+    "liên chiểu": "đà nẵng",
+    "ngũ hành sơn": "đà nẵng",
+    # Cần Thơ
+    "ninh kiều": "cần thơ",
+    "bình thủy": "cần thơ",
+    "cái răng": "cần thơ",
+    # Lâm Đồng
+    "đà lạt": "lâm đồng",
+    "bảo lộc": "lâm đồng",
+}
+
+LOOKUP_DISTRICT_MAP: dict[str, str] = {}
+for _dk, _dv in DISTRICT_TOWN_TO_PROVINCE.items():
+    _dk_norm = normalize_vietnamese_text(_dk)
+    LOOKUP_DISTRICT_MAP[_dk_norm] = _dv
+    _dk_no_acc = strip_vietnamese_diacritics(_dk_norm)
+    if _dk_no_acc not in LOOKUP_DISTRICT_MAP:
+        LOOKUP_DISTRICT_MAP[_dk_no_acc] = _dv
+
 
 def match_province_segment(raw_segment: str) -> str | None:
     norm = normalize_vietnamese_text(raw_segment)
@@ -424,6 +524,14 @@ def match_province_segment(raw_segment: str) -> str | None:
     norm_no_acc = strip_vietnamese_diacritics(norm)
     if norm_no_acc in LOOKUP_PROVINCE_MAP:
         return LOOKUP_PROVINCE_MAP[norm_no_acc]
+
+    # Kiểm tra bảng quận/huyện/thị xã phổ biến
+    if norm == "vinh" or norm_no_acc == "vinh":
+        return "nghệ an"
+    if norm in LOOKUP_DISTRICT_MAP:
+        return LOOKUP_DISTRICT_MAP[norm]
+    if norm_no_acc in LOOKUP_DISTRICT_MAP:
+        return LOOKUP_DISTRICT_MAP[norm_no_acc]
     return None
 
 
@@ -447,6 +555,17 @@ def detect_province_from_address(addr: str | None) -> str | None:
                 return LOOKUP_PROVINCE_MAP[k]
             if re.search(r"\b" + re.escape(k) + r"\b", norm_no_acc):
                 return LOOKUP_PROVINCE_MAP[k]
+        for k in sorted(LOOKUP_DISTRICT_MAP.keys(), key=len, reverse=True):
+            if k == "vinh":
+                if re.search(r"\b(?:tp\.?\s*)?vinh\b", norm_p) and "vinhomes" not in norm_p and "trà vinh" not in norm_p:
+                    return "nghệ an"
+                if re.search(r"\b(?:tp\.?\s*)?vinh\b", norm_no_acc) and "vinhomes" not in norm_no_acc and "tra vinh" not in norm_no_acc:
+                    return "nghệ an"
+                continue
+            if re.search(r"\b" + re.escape(k) + r"\b", norm_p):
+                return LOOKUP_DISTRICT_MAP[k]
+            if re.search(r"\b" + re.escape(k) + r"\b", norm_no_acc):
+                return LOOKUP_DISTRICT_MAP[k]
     return None
 
 
@@ -471,7 +590,11 @@ def detect_province_from_label(label: str | None) -> str | None:
     if not label or not label.strip():
         return None
     norm = normalize_vietnamese_text(label)
+    if re.search(r"\b(?:tp\.?\s*)?vinh\b", norm) and "vinhomes" not in norm and "trà vinh" not in norm:
+        return "nghệ an"
     for district_alias, (prov, _) in DISTRICT_CENTERS.items():
+        if district_alias in ("vinh", "tp vinh", "thành phố vinh"):
+            continue
         if district_alias in norm:
             return prov
     return detect_province_from_address(label)
@@ -875,9 +998,16 @@ def build_case_service_points_response(
                     cat_name = "xưởng" if target_category == "workshop" else "trạm sạc" if target_category == "charging_station" else "showroom"
                     if nearby_raw:
                         nearest_sp = nearby_raw[0][0]
-                        nearest_dist = round(haversine_km(ref_lat, ref_lng, nearest_sp.latitude, nearest_sp.longitude), 1)
+                        nearest_dist = haversine_km(ref_lat, ref_lng, nearest_sp.latitude, nearest_sp.longitude)
                         nearest_p = extract_province_from_address(nearest_sp.address) or "tỉnh khác"
-                        ref_area_text = f", khoảng {nearest_dist:g} km từ {area_ref['label']}" if area_ref else ""
+                        if area_ref:
+                            if nearest_dist < 5:
+                                ref_area_text = f", dưới 5 km từ {area_ref['label']}"
+                            else:
+                                rounded_km = round(nearest_dist)
+                                ref_area_text = f", khoảng {rounded_km} km từ {area_ref['label']}"
+                        else:
+                            ref_area_text = ""
                         message = f"Chưa có {cat_name} trong khu vực bạn nhập; điểm gần nhất ở {nearest_p}{ref_area_text}"
                     else:
                         message = f"Chưa có {cat_name} trong khu vực bạn nhập; không tìm thấy điểm dịch vụ lân cận"
