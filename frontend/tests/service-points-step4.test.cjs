@@ -100,13 +100,13 @@ test('Step 4 Frontend: Distance display formats according to GPS vs area_referen
 
   // Kiểm tra hiển thị "Cách bạn: x.xx km" khi distance_km có giá trị
   assert.ok(
-    content.includes('Cách bạn: {point.distance_km} km'),
-    'Must display "Cách bạn: {point.distance_km} km" when distance_km is present'
+    content.includes('Cách Quý khách: {point.distance_km} km'),
+    'Must display "Cách Quý khách: {point.distance_km} km" when distance_km is present'
   );
 
   // Kiểm tra hiển thị "Khoảng N km từ {areaLabel}" khi distance_km null và distance_from_area_km có giá trị
   assert.ok(
-    content.includes('Khoảng {nStr} từ {areaLabel} (đường chim bay, không phải khoảng cách từ vị trí của bạn)'),
+    content.includes('Khoảng {nStr} từ {areaLabel} (đường chim bay, không phải khoảng cách từ vị trí của Quý khách)'),
     'Must display "Khoảng N km từ {area_reference.label}..." when distance_from_area_km is present'
   );
   assert.ok(

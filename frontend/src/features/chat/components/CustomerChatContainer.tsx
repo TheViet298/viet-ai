@@ -90,6 +90,7 @@ function CustomerChatSession() {
   const stopWatchRef = useRef<(() => void) | null>(null);
   const lastLocationSync = useRef<{ lat: number; lng: number; time: number; caseId: string } | null>(null);
   const hasSentInitialPrompt = useRef(false);
+  const [aiStatus, setAiStatus] = useState<string>('Trợ lý VFServ • Hỗ trợ dịch vụ xe điện VinFast');
 
   // ===========================================================================
   // SERVICE MAP PREVIEW & LOCATION CONSENT (ADR-005, screen-spec.md Section 5.4, CUS-03)
@@ -107,6 +108,7 @@ function CustomerChatSession() {
   const [manualAction, setManualAction] = useState<NearbyAction | null>(null);
   const activeAction = nearbyAction ?? manualAction;
   const [showLocationCard, setShowLocationCard] = useState<boolean>(false);
+  const [suggestedCategory, setSuggestedCategory] = useState<"ALL" | "EXPRESSWAY_RESCUE" | "CHARGING_STATION" | "SERVICE_WORKSHOP">("ALL");
 
   const invalidateLocationRequest = () => {
     locationRequestId.current += 1;
@@ -266,6 +268,7 @@ function CustomerChatSession() {
   const handleConsentGps = () => {
     invalidateLocationRequest();
     const requestId = locationRequestId.current;
+    let timeoutId: any;
     setIsLocating(true);
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setIsLocating(false);

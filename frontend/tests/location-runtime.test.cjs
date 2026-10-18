@@ -23,12 +23,13 @@ function harness() {
     const file = path.resolve(__dirname, relative);
     const code = ts.transpileModule(fs.readFileSync(file,'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX } }).outputText;
     const exports = {};
-    vm.runInNewContext(code, { exports, Date, Math, Number, crypto: { randomUUID: () => "test-action" }, window: { matchMedia: () => ({ matches: false }) }, navigator: { geolocation: geo }, sessionStorage: { getItem() { return null; }, removeItem() {} }, require(id) {
+    vm.runInNewContext(code, { exports, Date, Math, Number, setTimeout, clearTimeout, crypto: { randomUUID: () => "test-action" }, window: { matchMedia: () => ({ matches: false }) }, navigator: { geolocation: geo }, sessionStorage: { getItem() { return null; }, removeItem() {} }, require(id) {
       if (id === 'react') return react;
       if (id === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (id === '../hooks/useChat') return { useChat: () => ({ ...chat, currentCaseId: caseId }) };
       if (id === '@/features/shared') return { useAuth: () => ({ role: 'CUSTOMER', isReady: true }), ProductMark: 'ProductMark' };
-      if (id === '../api/chatApi') return { submitCustomerLocation(payload) { calls.push(payload); return fail ? Promise.reject(new Error('offline')) : Promise.resolve({}); } };
+      if (id.includes('LocaleContext')) return { useLocale: () => ({ t: (s) => s, language: 'vi' }) };
+      if (id === '../api/chatApi') return { submitCustomerLocation(payload) { calls.push(payload); return fail ? Promise.reject(new Error('offline')) : Promise.resolve({}); }, getAiSystemStatus() { return Promise.resolve({ online: true, degraded: false }); } };
       if (id === '../constants/servicePoints') return { getSeedServicePoints: () => [] };
       if (id === '../utils/locationTracking') return load('../src/features/chat/utils/locationTracking.ts');
       if (id === './distance') return load('../src/features/chat/utils/distance.ts');
@@ -90,7 +91,7 @@ test('failed explicit case sharing and clearing can be retried against the origi
   assert.ok(h.nodes().some(n=>n.props?.role==='alert'));
   h.fail(false); h.nodes().find(n=>n.type==='button' && n.props.children==='Thử lại đồng bộ').props.onClick(); await h.flush();
   assert.equal(h.calls.at(-1).case_id,'CASE-OLD');
-  h.fail(true); h.nodes().find(n=>n.type==='button' && n.props.title==='Làm mới cuộc trò chuyện').props.onClick(); await h.flush();
+  h.fail(true); h.nodes().find(n=>n.type==='button' && (n.props.title==='Làm mới cuộc trò chuyện' || n.props.title==='Cuộc trò chuyện mới')).props.onClick(); await h.flush();
   h.fail(false); h.nodes().find(n=>n.type==='button' && n.props.children==='Thử lại đồng bộ').props.onClick(); await h.flush();
   assert.equal(h.calls.at(-1).case_id,'CASE-OLD'); assert.equal(h.calls.at(-1).status,'NOT_SHARED');
 });

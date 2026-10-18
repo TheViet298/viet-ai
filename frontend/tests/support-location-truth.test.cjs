@@ -9,12 +9,13 @@ const icons = require('lucide-react');
 
 function renderSupportCard(currentCase) {
   const source = fs.readFileSync(require.resolve('../src/app/track-case/page.tsx'),'utf8');
-  const card = source.match(/\{\/\* Card 2:[\s\S]*?\*\/\}([\s\S]*?)\{\/\* Card 3:/)[1].trim();
+  const card = source.match(/\{\/\*[\s=]*Card 2:[\s\S]*?\*\/\}([\s\S]*?)\{\/\* Card 3:/)[1].trim();
   const module = {exports:{}};
   const code = ts.transpileModule('exports.card = ('+card+');',{compilerOptions:{
     module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2020,
   }}).outputText;
-  vm.runInNewContext(code,{module,exports:module.exports,require,currentCase,t:text=>text,encodeURIComponent,...icons});
+  const servicePointsData = currentCase?.suggestedServicePoints?.length ? { recommended_points: currentCase.suggestedServicePoints.map(p => ({ display_name: p.address, address: p.address, distance_km: p.distance ? parseFloat(p.distance) : null, distance_from_area_km: null })) } : null;
+  vm.runInNewContext(code,{module,exports:module.exports,require,currentCase,servicePointsData,showTechDetails:false,VietmapMiniMap:()=>null,t:text=>text,encodeURIComponent,...icons});
   return renderToStaticMarkup(module.exports.card);
 }
 

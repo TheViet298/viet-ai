@@ -698,7 +698,7 @@ export function StaffConsoleShell() {
           },
         ]);
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       setPreviewMessages((prev) => [
         ...prev,
         {

@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Lock,
   ArrowRight,
+  Sparkles,
   Mail,
   AlertCircle,
   ArrowLeft,

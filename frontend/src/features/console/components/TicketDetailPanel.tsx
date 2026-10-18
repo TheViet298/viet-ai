@@ -7,15 +7,22 @@ import {
   Edit3,
   Check,
   X,
+  Clock,
   Send,
   CheckCircle2,
   AlertCircle,
   AlertTriangle,
+  XCircle,
+  Car,
+  MapPin,
   Bot,
   User,
   Loader2,
   GitBranch,
+  ShieldAlert,
   ChevronRight,
+  Flame,
+  FileText,
   MessageSquare,
 } from "lucide-react";
 import {
@@ -24,6 +31,7 @@ import {
   StaffActionType,
   TicketDetail,
   VIETNAMESE_STATUS_MAP,
+  VIETNAMESE_PRIORITY_MAP,
 } from "../types";
 import { ROUTING_DEPARTMENTS } from "./StaffConsoleShell";
 import { getTicketDetail, submitStaffAction } from "../api/consoleApi";
@@ -202,10 +210,10 @@ export function TicketDetailPanel({
   const captured = ticketDetail.case_brief.captured_fields || {};
 
   // 1. Dòng xe
-  const resolvedModel = String(captured.vehicle_model || ticket.vehicle_model || "VF8");
+  const resolvedModel = captured.vehicle_model || ticket.vehicle_model || "VF8";
 
   // 2. Vị trí
-  const resolvedLocation = String(
+  const resolvedLocation =
     ticketDetail.location?.location_label ||
     captured.station_location ||
     captured.location_label ||

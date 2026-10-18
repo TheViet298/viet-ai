@@ -5,8 +5,6 @@ import { TicketItem, TicketPriority, TicketStatus } from "../types";
 export type { TicketItem, TicketPriority, TicketStatus };
 import { getTicketQueue } from "../api/consoleApi";
 
-<<<<<<< HEAD
-=======
 const PRIORITY_WEIGHT: Record<TicketPriority, number> = {
   CRITICAL: 4,
   HIGH: 3,
@@ -107,7 +105,6 @@ export const INITIAL_TICKETS: TicketItem[] = [
   },
 ];
 
->>>>>>> backup-gps-local-final
 export type SortOption = "NEWEST" | "PRIORITY_DESC" | "CONFIDENCE_DESC";
 
 export function useTickets() {

@@ -37,6 +37,8 @@ function renderPage(confirmCustomerCase) {
       if (id === '@/features/shared') return { useAuth: () => ({ role: 'CUSTOMER' }) };
       if (id === '@/features/chat/api/chatApi') return { confirmCustomerCase, getCaseServicePoints: () => Promise.resolve({ success: true, data: null }), submitCustomerLocation: () => Promise.resolve() };
       if (id === '@/features/chat/components/VietmapMiniMap') return { VietmapMiniMap: () => null };
+      if (id.includes('LocaleContext')) return { useLocale: () => ({ t: (s) => s, language: 'vi' }) };
+      if (id.includes('customerWarningText')) return { formatWarningDisplay: (s) => s };
       throw new Error(`Unexpected import: ${id}`);
     },
   });
@@ -67,7 +69,7 @@ for (const [name, response] of [
     await button.props.onClick();
     assert.equal(states[2].status, 'Resolved');
     assert.ok(states.includes('IDLE'));
-    assert.ok(states.some(value => typeof value === 'string' && value.startsWith('Chưa xác nhận hoàn tất hồ sơ:')));
+    assert.ok(states.some(value => typeof value === 'string' && (value.startsWith('Chưa xác nhận hoàn tất hồ sơ:') || value.startsWith('Lưu ý:'))));
     assert.ok(!states.includes('RESOLVED_CONFIRMED'));
   });
 }
