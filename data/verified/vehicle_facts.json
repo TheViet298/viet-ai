@@ -149,7 +149,7 @@
         "drivetrain": null,
         "battery_package": null,
         "range_standard": "NEDC",
-        "battery_capacity_kwh": null,
+        "battery_capacity_kwh": 37.23,
         "year_status": "unknown: product page section does not identify a model year"
       },
       "specs_reviewed_at": "2026-10-12",
@@ -172,7 +172,7 @@
         "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf5",
         "verified_at": "2026-10-12",
         "price_label": "Từ 496.000.000 VNĐ",
-        "battery_capacity": null,
+        "battery_capacity": "37,23 kWh",
         "fast_charge_time": "33 phút",
         "test_drive_url": "https://shop.vinfastauto.com/vn_vi/dang-ky-lai-thu.html",
         "rolling_cost_url": "https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh",
@@ -201,6 +201,14 @@
           "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf5",
           "source_section": "Thông số kỹ thuật / VF 5",
           "reviewed_at": "2026-10-12"
+        },
+        "capacity": {
+          "value": "37,23 kWh",
+          "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf5",
+          "source_section": "Thông số kỹ thuật / Pin & Sạc / Dung lượng pin khả dụng",
+          "reviewed_at": "2026-10-19",
+          "reviewer": "Codex/root, source reading",
+          "raw_sha256": "1767c0778a0f6a5a74a9291baeb3ceb635b6810c2fbaec83e87f6ac8d6c90772"
         }
       }
     },

@@ -1,0 +1,23 @@
+[
+  {
+    "model": "VF3",
+    "variant": null,
+    "model_year": null,
+    "market": "VN",
+    "operation": "scheduled_maintenance",
+    "interval_km": 15000,
+    "interval_months": 12,
+    "conditions": ["Tùy điều kiện quãng đường hoặc thời gian đến trước", "Trang nguồn không xác định đời xe", "Không xác nhận lịch sử dụng khắc nghiệt hoặc thương mại"],
+    "source_id": "SRC-004",
+    "source_section": "Lịch trình & Hạng mục bảo dưỡng / Bảo dưỡng xe VF3 / cột Km và Năm",
+    "source_url": "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
+    "url": "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
+    "source_image_url": "https://static-cms-prod.vinfastauto.com/lich-bao-duong-vf3-ec-van.PNG",
+    "evidence_location": "data/acquired/remediation-2026-10-19/maintenance-web-excerpt.json, lines307-337",
+    "review_status": "verified",
+    "reviewer": "Codex/root, source reading",
+    "reviewed_at": "2026-10-19",
+    "verified_at": "2026-10-19",
+    "relevant_snippet": "Lịch bảo dưỡng VF3\nVF3 bảo dưỡng định kỳ ở mốc 15.000 km hoặc 12 tháng đầu tiên, tùy điều kiện nào đến trước. Bảng lịch bảo dưỡng tiếp tục theo các mốc cách nhau 15.000 km hoặc 1 năm.\nNguồn không xác định đời xe; cần đối chiếu sổ bảo dưỡng đúng xe trước khi áp dụng, nhất là xe dùng thương mại hoặc điều kiện khắc nghiệt. Các hạng mục thay dầu phanh, pin T-BOX hay dung dịch làm mát có lịch riêng; không dùng lịch thay một hạng mục làm chu kỳ toàn xe."
+  }
+]

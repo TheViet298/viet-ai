@@ -229,11 +229,19 @@ class RAGService:
         settings = get_settings()
         from src.services.charging_questions import reviewed_charging_guides
         from src.services.warranty_questions import reviewed_warranty_overviews
-        reviewed = reviewed_charging_guides(query) or reviewed_warranty_overviews(query, vehicle_model)
+        from src.services.reviewed_knowledge import reviewed_maintenance_schedules, reviewed_model_colors
+        reviewed = (reviewed_charging_guides(query) or reviewed_warranty_overviews(query, vehicle_model)
+                    or reviewed_maintenance_schedules(query, vehicle_model) or reviewed_model_colors(query, vehicle_model))
         if reviewed:
             registry = source_registry()
-            citations = [{**registry.get(record['source_id'], {}), **record,
-                          'applicable_models': ['ALL'], 'distance': 0.0} for record in reviewed]
+            citations = []
+            for record in reviewed:
+                source = registry.get(record['source_id'], {})
+                url = record.get('url') or record.get('source_url') or source.get('url')
+                verified_at = source.get('approved_urls', {}).get(url) or (
+                    source.get('verified_at') if url == source.get('url') else None)
+                citations.append({**source, **record, 'url': url, 'verified_at': verified_at,
+                                  'applicable_models': record.get('applicable_models', ['ALL']), 'distance': 0.0})
             citations = [citation for citation in citations if valid_citation(citation, vehicle_model)]
             if citations:
                 return {'status': 'SUCCESS', 'citations': citations, 'best_distance': 0.0,

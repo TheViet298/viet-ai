@@ -5,11 +5,54 @@
       "source_id": "SRC-009",
       "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf8",
       "swatches": [
-        { "name": "Infinity Blanc" },
-        { "name": "Jet Black" },
-        { "name": "Crimson Red" },
-        { "name": "Ivy Green" }
+        {
+          "name": "Infinity Blanc"
+        },
+        {
+          "name": "Jet Black"
+        },
+        {
+          "name": "Crimson Red"
+        },
+        {
+          "name": "Ivy Green"
+        }
       ]
+    },
+    {
+      "model": "VF5",
+      "variant": null,
+      "model_year": null,
+      "market": "VN",
+      "source_id": "SRC-009",
+      "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf5",
+      "source_section": "6 màu xe đa dạng - Dẫn lối chất riêng",
+      "reviewed_at": "2026-10-19",
+      "reviewer": "Codex/root, source reading",
+      "raw_sha256": "1767c0778a0f6a5a74a9291baeb3ceb635b6810c2fbaec83e87f6ac8d6c90772",
+      "swatches": [
+        {
+          "name": "Infinity Blanc"
+        },
+        {
+          "name": "Zenith Grey"
+        },
+        {
+          "name": "Solar Ruby"
+        },
+        {
+          "name": "Summer Yellow Body - Jet Black Roof"
+        },
+        {
+          "name": "Sky Blue - Infinity Blanc Roof"
+        },
+        {
+          "name": "Urban Mint"
+        }
+      ],
+      "review_status": "verified",
+      "verified_at": "2026-10-19",
+      "relevant_snippet": "Màu ngoại thất VF5 theo trang sản phẩm: Infinity Blanc Zenith Grey Solar Ruby Summer Yellow Body - Jet Black Roof Sky Blue - Infinity Blanc Roof Urban Mint. Danh sách ở cấp mẫu xe; chưa xác nhận phiên bản, đời xe hoặc tồn kho tại nơi bán."
     }
   ]
 }
