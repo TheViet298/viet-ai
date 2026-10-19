@@ -58,6 +58,14 @@ def user_updates(text: str) -> dict[str, str | None]:
     """Only explicit customer observations; never extract assistant claims."""
     text = normalize_chat_text(text)
     lower = normalized(text)
+    # A correction may mention the rejected value before or after its replacement.
+    slot_value = (r'(?:xe\s+)?vf\s*(?:e34|[356789])(?:\s+(?:(?:phien ban|ban)\s+)?(?:plus|eco)(?:\s+(?:awd|fwd))?)?'
+                  r'|(?:phien ban\s+|ban\s+)?(?:plus|eco)'
+                  r'|ha noi|(?:tp\.?\s*)?(?:ho chi minh|hcm)|sai gon|da nang'
+                  r'|pin cao ap|ac quy(?:\s+12\s*v)?|pin 12\s*v'
+                  r'|(?:doi|nam san xuat|xe nam)\s*20\d{2}|mua (?:kem|dut|ca|luon) pin|thue pin')
+    lower = re.sub(r'\b(?:chu khong phai|khong phai)\s+(?:' + slot_value + r')\b', '', lower)
+    lower = re.sub(r'\bkhong\s+(?:mua (?:kem|dut|ca|luon) pin|thue pin)\b', '', lower)
     updates = {}
     model = re.search(r'\bvf\s*(e34|[356789])\b', lower)
     if model:
@@ -150,6 +158,21 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
     lower = normalized(text)
     classification = classify_chat_context(text)
     updates = user_updates(text)
+    if context.active_goal == 'incident':
+        from src.agents.nodes.triage_node import extract_fields
+        incident_slots = extract_fields(text)
+        updates.update({key: value for key, value in incident_slots.items()
+                        if key in {'charger_id', 'station_location', 'current_location'}})
+    retracted = []
+    for key, fact in context.facts.items():
+        if fact.status != 'confirmed' or not fact.value or key in updates:
+            continue
+        value = re.escape(normalized(fact.value))
+        if key == 'model':
+            value = value.replace('vf', r'vf\s*')
+        if re.search(r'\b(?:chu khong phai|khong phai|khong)\s+'
+                     r'(?:(?:doi|nam san xuat|xe nam)\s+)?' + value + r'\b', lower):
+            retracted.append(key)
     goal = context.active_goal
     topic = context.topic
     cost_subject = cost_subject_for(text)
@@ -170,6 +193,14 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
         explicit_goal = 'charging_network'
     elif cost_subject in {'repair', 'maintenance'}:
         explicit_goal = 'maintenance'
+    if (context.active_goal == 'quote' and 'battery' in updates
+            and explicit_goal in {None, 'quote', 'charging_network'}
+            and not re.search(r'\b(?:gia|phi|tien|bao nhieu|chinh sach|dieu kien|huong dan|tram sac|ung dung|app|tim hieu|dich vu|giai thich)\b', lower)):
+        cost_subject, explicit_goal = 'vehicle_purchase', 'quote'
+    if (context.active_goal == 'incident' and explicit_goal == 'charging_network'
+            and 'station_location' in updates and classification.request_kind == 'uncertain'
+            and not re.search(r'\b(?:tim|huong dan|cach|o dau|gan|phi|gia|la gi|bao nhieu)\b', lower)):
+        explicit_goal = None
     if classification.request_kind == 'complaint':
         explicit_goal = 'complaint'
     if re.search(r'thoi tiet|nau pho|bai tap toan|tesla|hyundai', lower):
@@ -237,6 +268,8 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
     elif move == 'new_question' and not updates:
         goal, topic = None, ''
     subject = updates.get('model') or context.subject
+    if 'model' in retracted:
+        subject = None
     if move == 'new_incident' and context.active_goal != 'incident':
         # Interest in a car does not identify the vehicle reporting an incident.
         subject = updates.get('model')
@@ -252,13 +285,13 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
                   'application': 'Hướng dẫn ứng dụng VinFast',
                   'charging_network': 'Chi phí sạc' if cost_subject == 'charging' else 'Thuê pin' if cost_subject == 'battery_rental' else 'Mạng lưới trạm sạc'}.get(goal, '')
         facts = {k: v.value for k, v in context.facts.items()
-                 if v.status == 'confirmed' and goal == context.active_goal and subject == context.subject}
+                 if v.status == 'confirmed' and k not in retracted
+                 and goal == context.active_goal and subject == context.subject}
         facts.update(updates)
         details = ' '.join(str(facts[k]) for k in ('version', 'battery', 'city', 'component', 'year') if facts.get(k))
         query = f'{prefix} {subject or ""} {details}. {text}'[:1000]
         if goal == 'concept':
             query = (f'{context.topic}. {text}' if move != 'new_question' and context.active_goal == 'concept' else text)[:1000]
-    retracted = []
     denied_code = re.search(r'(?:khong con|khong phai|het).*?\b(cc\d{2}|e\d{3}|p\d{4}|bms_\d{3})\b', lower)
     if denied_code and context.facts.get('error_code') and context.facts['error_code'].value == denied_code[1].upper():
         retracted.append('error_code')
@@ -280,6 +313,7 @@ def apply_turn(context: ConversationContext, turn: TurnUnderstanding, turn_numbe
         result.facts = {}
         result.pending_question = {}
         result.action = {}
+        result.last_answer = []
     if turn.subject != result.subject:
         for key in ('version', 'battery', 'year', 'component'):
             result.facts.pop(key, None)

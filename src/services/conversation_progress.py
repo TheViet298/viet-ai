@@ -27,6 +27,7 @@ class ConversationProgress(BaseModel):
 def derive_progress(context: ConversationContext, capabilities: dict[str, bool],
                     case_snapshot: dict | None, action_receipt: dict | None) -> ConversationProgress:
     known = {k: v.value for k, v in context.facts.items() if v.status == 'confirmed' and v.value is not None}
+    supplied = {key for key, fact in context.facts.items() if fact.status != 'retracted'}
     if context.subject:
         known['model'] = context.subject
     result = ConversationProgress(state='ready_to_lookup', known_facts=known)
@@ -44,13 +45,13 @@ def derive_progress(context: ConversationContext, capabilities: dict[str, bool],
         result.state = 'collecting_input' if capabilities.get(capability, False) else 'external_action_required'
         result.blocked_reason = 'Chat chưa có kết nối xác nhận lịch trống và đặt lịch.'
         result.next_action = 'Đăng ký trên Ứng dụng VinFast hoặc liên hệ showroom/xưởng để xác nhận lịch.'
-        result.missing_fields = [k for k in ('city', 'date') if k not in context.facts]
+        result.missing_fields = [k for k in ('city', 'date') if k not in supplied]
         if known.get('date') in {'thu bay', 'chu nhat', 'ngay mai', 'hom nay'}:
             result.missing_fields = list(dict.fromkeys([*result.missing_fields, 'exact_date']))
     elif context.active_goal == 'quote':
         result.state = 'needs_verified_data'
         result.next_action = 'Tra giá bán công bố đúng phiên bản, sau đó chọn cấu hình trên công cụ tính lăn bánh.'
-        result.missing_fields = [k for k in ('version',) if k not in context.facts]
+        result.missing_fields = [k for k in ('version',) if k not in supplied]
     elif context.active_goal == 'incident':
         snapshot = case_snapshot or {}
         result.case_id = snapshot.get('id')
@@ -60,7 +61,7 @@ def derive_progress(context: ConversationContext, capabilities: dict[str, bool],
         result.missing_fields = [k for k in required if not result.known_facts.get(k)]
         result.next_action = 'Bổ sung thông tin còn thiếu để chuyên viên kiểm tra hồ sơ.'
     elif context.active_goal in {'warranty', 'range', 'capacity', 'charging', 'maintenance'}:
-        result.missing_fields = [k for k in ('version', 'year') if k not in context.facts]
+        result.missing_fields = [k for k in ('version', 'year') if k not in supplied]
     result.missing_fields = result.missing_fields[:2]
     return result
 
