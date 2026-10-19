@@ -123,7 +123,8 @@ async def test_long_multitopic_session_checks_each_turn(client, customer_db, tmp
             else:
                 # A single color question can have model-only evidence and an
                 # explicit unresolved trim/stock scope, without decomposition.
-                assert 'chưa tách màu' in data['message'], label
+                assert 'chưa xác nhận' in data['message'], label
+                assert all(c['source_id'] == 'SRC-009' for c in data['citations']), label
                 assert 'tồn kho' in data['message'], label
             assert data['citations'], label
         if step.get('language'):

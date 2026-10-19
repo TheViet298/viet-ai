@@ -419,6 +419,15 @@
           "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
           "source_section": "Thông số kỹ thuật / VF 7 Eco",
           "reviewed_at": "2026-10-12"
+        },
+        "fast_charge": {
+          "value": "25 phút (từ 10%–70%)",
+          "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+          "source_document_url": "https://static-cms-prod.vinfastauto.com/statics/shared/10042026-Brochur-%20VF-7.pdf",
+          "source_section": "Brochure VF7 10/04/2026 / trang13 / Thời gian nạp pin nhanh nhất / eco",
+          "reviewed_at": "2026-10-19",
+          "reviewer": "Codex/root, official product reading and visual brochure review",
+          "evidence_location": "fixtures/knowledge/source_reviews/vf3-vf7-product-2026-10-19.json"
         }
       }
     },
@@ -455,13 +464,13 @@
         "verified_at": "2026-10-12",
         "price_label": "Từ 830.000.000 VNĐ",
         "battery_capacity": "70 kWh",
-        "fast_charge_time": "25 phút",
+        "fast_charge_time": "28 phút",
         "test_drive_url": "https://shop.vinfastauto.com/vn_vi/dang-ky-lai-thu.html",
         "rolling_cost_url": "https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh",
         "specs": [
           { "label": "Số chỗ ngồi", "value": "5 chỗ" },
           { "label": "Quãng đường", "value": "500,5 km (NEDC)" },
-          { "label": "Thời gian sạc", "value": "25 phút (từ 10%–70%)" },
+          { "label": "Thời gian sạc", "value": "28 phút (từ 10%–70%)" },
           { "label": "Công suất tối đa", "value": "150 kW" }
         ]
       },
@@ -489,6 +498,15 @@
           "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
           "source_section": "Thông số kỹ thuật / VF 7 Plus",
           "reviewed_at": "2026-10-12"
+        },
+        "fast_charge": {
+          "value": "28 phút (từ 10%–70%)",
+          "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+          "source_document_url": "https://static-cms-prod.vinfastauto.com/statics/shared/10042026-Brochur-%20VF-7.pdf",
+          "source_section": "Brochure VF7 10/04/2026 / trang13 / Thời gian nạp pin nhanh nhất / plus",
+          "reviewed_at": "2026-10-19",
+          "reviewer": "Codex/root, official product reading and visual brochure review",
+          "evidence_location": "fixtures/knowledge/source_reviews/vf3-vf7-product-2026-10-19.json"
         }
       }
     },
@@ -525,13 +543,13 @@
         "verified_at": "2026-10-12",
         "price_label": "Chưa có giá xác thực",
         "battery_capacity": "70 kWh",
-        "fast_charge_time": "25 phút",
+        "fast_charge_time": "37 phút",
         "test_drive_url": "https://shop.vinfastauto.com/vn_vi/dang-ky-lai-thu.html",
         "rolling_cost_url": "https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh",
         "specs": [
           { "label": "Số chỗ ngồi", "value": "5 chỗ" },
           { "label": "Quãng đường", "value": "469 km (NEDC)" },
-          { "label": "Thời gian sạc", "value": "25 phút (từ 10%–70%)" },
+          { "label": "Thời gian sạc", "value": "37 phút (từ 10%–70%)" },
           { "label": "Công suất tối đa", "value": "260 kW" }
         ]
       },
@@ -559,6 +577,15 @@
           "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
           "source_section": "Thông số kỹ thuật / VF 7 Plus AWD",
           "reviewed_at": "2026-10-12"
+        },
+        "fast_charge": {
+          "value": "37 phút (từ 10%–70%)",
+          "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+          "source_document_url": "https://static-cms-prod.vinfastauto.com/statics/shared/10042026-Brochur-%20VF-7.pdf",
+          "source_section": "Brochure VF7 10/04/2026 / trang13 / Thời gian nạp pin nhanh nhất / plus-awd",
+          "reviewed_at": "2026-10-19",
+          "reviewer": "Codex/root, official product reading and visual brochure review",
+          "evidence_location": "fixtures/knowledge/source_reviews/vf3-vf7-product-2026-10-19.json"
         }
       }
     },

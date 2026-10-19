@@ -1,0 +1,38 @@
+{
+  "new_data_regressions": {
+    "passed": 8,
+    "first_red_failures": 7,
+    "duplicate_time_red_failures": 3
+  },
+  "targeted_regressions": {
+    "passed": 83,
+    "log": ".test-runs/vf37-targeted-final.log"
+  },
+  "api_smoke": {
+    "passed": 5,
+    "scope": "VI exact Eco25/Plus28/AWD37; EN AWD37 and VF3 Plus model palette, without provider translation"
+  },
+  "holdout": {
+    "answerable_pass": 30,
+    "boundary_pass": 10,
+    "frozen_bytes_changed": false
+  },
+  "configured_provider_regression": {
+    "first_run": "VI14/14, EN13/14; unrelated VF8 range clarification presentation failed",
+    "english_repeat": "14/14 passed",
+    "first_log": ".test-runs/vf37-contract.log",
+    "repeat_log": ".test-runs/vf37-en-repeat.log"
+  },
+  "backend_full_final": {
+    "passed": 2189,
+    "skipped": 49,
+    "warnings": 9,
+    "subtests_passed": 6,
+    "duration_s": 249.24,
+    "log": ".test-runs/vf37-full-final.log"
+  },
+  "active_index_changed": false,
+  "postgresql_gate": "BLOCKED as previously acknowledged",
+  "deployment": "not performed",
+  "independent_review": "No high/medium findings"
+}

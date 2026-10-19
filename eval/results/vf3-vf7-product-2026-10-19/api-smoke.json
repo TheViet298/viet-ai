@@ -1,0 +1,614 @@
+[
+  {
+    "question": "Thời gian sạc nhanh VF7 Eco là bao lâu?",
+    "expected_language": "vi",
+    "passed": true,
+    "data": {
+      "language": "vi",
+      "nearby_action": null,
+      "vehicle_comparison": false,
+      "vehicle_cards": [
+        {
+          "battery_capacity": "59,6 kWh",
+          "fast_charge_time": "25 phút",
+          "model": "VF7",
+          "name": "VinFast VF 7 Eco",
+          "image_url": "https://static-cms-prod.vinfastauto.com/statics/car/vf7/hinh-anh-vinfast-vf7-text-logo-banner-desktop.webp",
+          "specs": [
+            {
+              "label": "Số chỗ ngồi",
+              "value": "5 chỗ"
+            },
+            {
+              "label": "Quãng đường",
+              "value": "440 km (NEDC)"
+            },
+            {
+              "label": "Công suất tối đa",
+              "value": "130 kW"
+            },
+            {
+              "label": "Thời gian sạc",
+              "value": "25 phút (từ 10%–70%)"
+            }
+          ],
+          "price_label": "Từ 740.000.000 VNĐ",
+          "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+          "verified_at": "2026-10-12",
+          "variant": "eco",
+          "specs_source_url": null,
+          "test_drive_url": "https://shop.vinfastauto.com/vn_vi/dang-ky-lai-thu.html",
+          "rolling_cost_url": "https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh"
+        }
+      ],
+      "emergency_context": null,
+      "safety_status": "unconfirmed",
+      "safety_acknowledged_at": null,
+      "incident_version": null,
+      "visual_evidence": null,
+      "response_type": "FAQ_ANSWER",
+      "message": "Theo tài liệu VinFast:\n\nVinFast VF 7 Eco FWD: Thời gian sạc: 25 phút (từ 10%–70%)",
+      "case_id": null,
+      "status": null,
+      "priority": null,
+      "clarification_turn": null,
+      "max_clarification_turns": null,
+      "suggested_replies": [
+        "Dự toán lăn bánh VinFast VF 7 Eco"
+      ],
+      "citations": [
+        {
+          "fact_scope": {
+            "model": "VF7",
+            "variant": "eco",
+            "model_year": null,
+            "market": "VN",
+            "drivetrain": "FWD",
+            "battery_package": null,
+            "range_standard": "NEDC",
+            "battery_capacity_kwh": 59.6,
+            "year_status": "unknown: product page section does not identify a model year"
+          },
+          "claim_evidence": {
+            "seats": {
+              "value": "5 chỗ",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Eco",
+              "reviewed_at": "2026-10-12"
+            },
+            "range": {
+              "value": "440 km (NEDC)",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Eco",
+              "reviewed_at": "2026-10-12"
+            },
+            "power": {
+              "value": "130 kW",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Eco",
+              "reviewed_at": "2026-10-12"
+            },
+            "capacity": {
+              "value": "59,6 kWh",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Eco",
+              "reviewed_at": "2026-10-12"
+            },
+            "fast_charge": {
+              "value": "25 phút (từ 10%–70%)",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_document_url": "https://static-cms-prod.vinfastauto.com/statics/shared/10042026-Brochur-%20VF-7.pdf",
+              "source_section": "Brochure VF7 10/04/2026 / trang13 / Thời gian nạp pin nhanh nhất / eco",
+              "reviewed_at": "2026-10-19",
+              "reviewer": "Codex/root, official product reading and visual brochure review",
+              "evidence_location": "fixtures/knowledge/source_reviews/vf3-vf7-product-2026-10-19.json"
+            }
+          },
+          "source_section": "Thông số kỹ thuật / VF 7 Eco",
+          "specs_reviewed_at": "2026-10-12",
+          "price_evidence": {
+            "price_vnd": 740000000,
+            "price_type": "list",
+            "reviewed_at": "2026-10-16",
+            "effective_from": null,
+            "valid_until": null,
+            "conditions": "Giá niêm yết trên trang sản phẩm; chưa phải giá lăn bánh hoặc giá sau ưu đãi. Phương án pin và đời xe không được xác nhận riêng trong mục giá.",
+            "source_section": "Giá niêm yết / VF 7 Eco",
+            "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7"
+          },
+          "source_id": "SRC-009",
+          "title": "VinFast VF 7 Eco — thông số kỹ thuật",
+          "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+          "verified_at": "2026-10-16",
+          "status_code": 200,
+          "applicable_models": [
+            "VF7"
+          ],
+          "source_type": "official_catalog",
+          "relevant_snippet": "VinFast VF 7 Eco FWD: Thời gian sạc: 25 phút (từ 10%–70%)"
+        }
+      ],
+      "service_handoff": {
+        "has_app_feature": true,
+        "app_feature_name": "Đặt lịch dịch vụ / Tra cứu",
+        "guide_url": "https://vinfastauto.com/vn_vi"
+      },
+      "safe_guidance": null,
+      "show_emergency_banner": false,
+      "request_location": false,
+      "remaining_guest_messages": null
+    }
+  },
+  {
+    "question": "Thời gian sạc nhanh VF7 Plus là bao lâu?",
+    "expected_language": "vi",
+    "passed": true,
+    "data": {
+      "language": "vi",
+      "nearby_action": null,
+      "vehicle_comparison": false,
+      "vehicle_cards": [
+        {
+          "battery_capacity": "70 kWh",
+          "fast_charge_time": "28 phút",
+          "model": "VF7",
+          "name": "VinFast VF 7 Plus",
+          "image_url": "https://static-cms-prod.vinfastauto.com/statics/car/vf7/hinh-anh-vinfast-vf7-text-logo-banner-desktop.webp",
+          "specs": [
+            {
+              "label": "Số chỗ ngồi",
+              "value": "5 chỗ"
+            },
+            {
+              "label": "Quãng đường",
+              "value": "500,5 km (NEDC)"
+            },
+            {
+              "label": "Công suất tối đa",
+              "value": "150 kW"
+            },
+            {
+              "label": "Thời gian sạc",
+              "value": "28 phút (từ 10%–70%)"
+            }
+          ],
+          "price_label": "Từ 830.000.000 VNĐ",
+          "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+          "verified_at": "2026-10-12",
+          "variant": "plus",
+          "specs_source_url": null,
+          "test_drive_url": "https://shop.vinfastauto.com/vn_vi/dang-ky-lai-thu.html",
+          "rolling_cost_url": "https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh"
+        }
+      ],
+      "emergency_context": null,
+      "safety_status": "unconfirmed",
+      "safety_acknowledged_at": null,
+      "incident_version": null,
+      "visual_evidence": null,
+      "response_type": "FAQ_ANSWER",
+      "message": "Theo tài liệu VinFast:\n\nVinFast VF 7 Plus FWD: Thời gian sạc: 28 phút (từ 10%–70%)",
+      "case_id": null,
+      "status": null,
+      "priority": null,
+      "clarification_turn": null,
+      "max_clarification_turns": null,
+      "suggested_replies": [
+        "Dự toán lăn bánh VinFast VF 7 Plus"
+      ],
+      "citations": [
+        {
+          "fact_scope": {
+            "model": "VF7",
+            "variant": "plus",
+            "model_year": null,
+            "market": "VN",
+            "drivetrain": "FWD",
+            "battery_package": null,
+            "range_standard": "NEDC",
+            "battery_capacity_kwh": 70.0,
+            "year_status": "unknown: product page section does not identify a model year"
+          },
+          "claim_evidence": {
+            "seats": {
+              "value": "5 chỗ",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Plus",
+              "reviewed_at": "2026-10-12"
+            },
+            "range": {
+              "value": "500,5 km (NEDC)",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Plus",
+              "reviewed_at": "2026-10-12"
+            },
+            "power": {
+              "value": "150 kW",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Plus",
+              "reviewed_at": "2026-10-12"
+            },
+            "capacity": {
+              "value": "70 kWh",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Plus",
+              "reviewed_at": "2026-10-12"
+            },
+            "fast_charge": {
+              "value": "28 phút (từ 10%–70%)",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_document_url": "https://static-cms-prod.vinfastauto.com/statics/shared/10042026-Brochur-%20VF-7.pdf",
+              "source_section": "Brochure VF7 10/04/2026 / trang13 / Thời gian nạp pin nhanh nhất / plus",
+              "reviewed_at": "2026-10-19",
+              "reviewer": "Codex/root, official product reading and visual brochure review",
+              "evidence_location": "fixtures/knowledge/source_reviews/vf3-vf7-product-2026-10-19.json"
+            }
+          },
+          "source_section": "Thông số kỹ thuật / VF 7 Plus",
+          "specs_reviewed_at": "2026-10-12",
+          "price_evidence": {
+            "price_vnd": 830000000,
+            "price_type": "list",
+            "reviewed_at": "2026-10-16",
+            "effective_from": null,
+            "valid_until": null,
+            "conditions": "Giá niêm yết trên trang sản phẩm; chưa phải giá lăn bánh hoặc giá sau ưu đãi. Phương án pin và đời xe không được xác nhận riêng trong mục giá.",
+            "source_section": "Giá niêm yết / VF 7 Plus",
+            "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7"
+          },
+          "source_id": "SRC-009",
+          "title": "VinFast VF 7 Plus — thông số kỹ thuật",
+          "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+          "verified_at": "2026-10-16",
+          "status_code": 200,
+          "applicable_models": [
+            "VF7"
+          ],
+          "source_type": "official_catalog",
+          "relevant_snippet": "VinFast VF 7 Plus FWD: Thời gian sạc: 28 phút (từ 10%–70%)"
+        }
+      ],
+      "service_handoff": {
+        "has_app_feature": true,
+        "app_feature_name": "Đặt lịch dịch vụ / Tra cứu",
+        "guide_url": "https://vinfastauto.com/vn_vi"
+      },
+      "safe_guidance": null,
+      "show_emergency_banner": false,
+      "request_location": false,
+      "remaining_guest_messages": null
+    }
+  },
+  {
+    "question": "Thời gian sạc nhanh VF7 Plus AWD là bao lâu?",
+    "expected_language": "vi",
+    "passed": true,
+    "data": {
+      "language": "vi",
+      "nearby_action": null,
+      "vehicle_comparison": false,
+      "vehicle_cards": [
+        {
+          "battery_capacity": "70 kWh",
+          "fast_charge_time": "37 phút",
+          "model": "VF7",
+          "name": "VinFast VF 7 Plus AWD",
+          "image_url": "https://static-cms-prod.vinfastauto.com/statics/car/vf7/hinh-anh-vinfast-vf7-text-logo-banner-desktop.webp",
+          "specs": [
+            {
+              "label": "Số chỗ ngồi",
+              "value": "5 chỗ"
+            },
+            {
+              "label": "Quãng đường",
+              "value": "469 km (NEDC)"
+            },
+            {
+              "label": "Công suất tối đa",
+              "value": "260 kW"
+            },
+            {
+              "label": "Thời gian sạc",
+              "value": "37 phút (từ 10%–70%)"
+            }
+          ],
+          "price_label": "Chưa có giá xác thực",
+          "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+          "verified_at": "2026-10-12",
+          "variant": "plus-awd",
+          "specs_source_url": null,
+          "test_drive_url": "https://shop.vinfastauto.com/vn_vi/dang-ky-lai-thu.html",
+          "rolling_cost_url": "https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh"
+        }
+      ],
+      "emergency_context": null,
+      "safety_status": "unconfirmed",
+      "safety_acknowledged_at": null,
+      "incident_version": null,
+      "visual_evidence": null,
+      "response_type": "FAQ_ANSWER",
+      "message": "Theo tài liệu VinFast:\n\nVinFast VF 7 Plus AWD AWD: Thời gian sạc: 37 phút (từ 10%–70%)",
+      "case_id": null,
+      "status": null,
+      "priority": null,
+      "clarification_turn": null,
+      "max_clarification_turns": null,
+      "suggested_replies": [
+        "Dự toán lăn bánh VinFast VF 7 Plus AWD"
+      ],
+      "citations": [
+        {
+          "fact_scope": {
+            "model": "VF7",
+            "variant": "plus-awd",
+            "model_year": null,
+            "market": "VN",
+            "drivetrain": "AWD",
+            "battery_package": null,
+            "range_standard": "NEDC",
+            "battery_capacity_kwh": 70.0,
+            "year_status": "unknown: product page section does not identify a model year"
+          },
+          "claim_evidence": {
+            "seats": {
+              "value": "5 chỗ",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Plus AWD",
+              "reviewed_at": "2026-10-12"
+            },
+            "range": {
+              "value": "469 km (NEDC)",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Plus AWD",
+              "reviewed_at": "2026-10-12"
+            },
+            "power": {
+              "value": "260 kW",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Plus AWD",
+              "reviewed_at": "2026-10-12"
+            },
+            "capacity": {
+              "value": "70 kWh",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Plus AWD",
+              "reviewed_at": "2026-10-12"
+            },
+            "fast_charge": {
+              "value": "37 phút (từ 10%–70%)",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_document_url": "https://static-cms-prod.vinfastauto.com/statics/shared/10042026-Brochur-%20VF-7.pdf",
+              "source_section": "Brochure VF7 10/04/2026 / trang13 / Thời gian nạp pin nhanh nhất / plus-awd",
+              "reviewed_at": "2026-10-19",
+              "reviewer": "Codex/root, official product reading and visual brochure review",
+              "evidence_location": "fixtures/knowledge/source_reviews/vf3-vf7-product-2026-10-19.json"
+            }
+          },
+          "source_section": "Thông số kỹ thuật / VF 7 Plus AWD",
+          "specs_reviewed_at": "2026-10-12",
+          "price_evidence": {
+            "price_vnd": null,
+            "price_type": "list",
+            "reviewed_at": "2026-10-16",
+            "effective_from": null,
+            "valid_until": null,
+            "conditions": "Giá niêm yết trên trang sản phẩm; chưa phải giá lăn bánh hoặc giá sau ưu đãi. Phương án pin và đời xe không được xác nhận riêng trong mục giá.",
+            "source_section": "Giá niêm yết / VF 7 Plus AWD",
+            "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7"
+          },
+          "source_id": "SRC-009",
+          "title": "VinFast VF 7 Plus AWD — thông số kỹ thuật",
+          "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+          "verified_at": "2026-10-16",
+          "status_code": 200,
+          "applicable_models": [
+            "VF7"
+          ],
+          "source_type": "official_catalog",
+          "relevant_snippet": "VinFast VF 7 Plus AWD AWD: Thời gian sạc: 37 phút (từ 10%–70%)"
+        }
+      ],
+      "service_handoff": {
+        "has_app_feature": true,
+        "app_feature_name": "Đặt lịch dịch vụ / Tra cứu",
+        "guide_url": "https://vinfastauto.com/vn_vi"
+      },
+      "safe_guidance": null,
+      "show_emergency_banner": false,
+      "request_location": false,
+      "remaining_guest_messages": null
+    }
+  },
+  {
+    "question": "What is the published fast-charging time for VF7 Plus AWD?",
+    "expected_language": "en",
+    "passed": true,
+    "data": {
+      "language": "en",
+      "nearby_action": null,
+      "vehicle_comparison": false,
+      "vehicle_cards": [
+        {
+          "battery_capacity": "70 kWh",
+          "fast_charge_time": "37 minutes",
+          "model": "VF7",
+          "name": "VinFast VF 7 Plus AWD",
+          "image_url": "https://static-cms-prod.vinfastauto.com/statics/car/vf7/hinh-anh-vinfast-vf7-text-logo-banner-desktop.webp",
+          "specs": [
+            {
+              "label": "Seats",
+              "value": "5 seats"
+            },
+            {
+              "label": "Range",
+              "value": "469 km (NEDC)"
+            },
+            {
+              "label": "Maximum power",
+              "value": "260 kW"
+            },
+            {
+              "label": "Fast charging",
+              "value": "37 minutes (from 10%–70%)"
+            }
+          ],
+          "price_label": "Price not yet verified",
+          "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+          "verified_at": "2026-10-12",
+          "variant": "plus-awd",
+          "specs_source_url": null,
+          "test_drive_url": "https://shop.vinfastauto.com/vn_vi/dang-ky-lai-thu.html",
+          "rolling_cost_url": "https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh"
+        }
+      ],
+      "emergency_context": null,
+      "safety_status": "unconfirmed",
+      "safety_acknowledged_at": null,
+      "incident_version": null,
+      "visual_evidence": null,
+      "response_type": "FAQ_ANSWER",
+      "message": "According to VinFast documentation:\n\nVinFast VF 7 Plus AWD AWD: Fast charging: 37 minutes (from 10%–70%)",
+      "case_id": null,
+      "status": null,
+      "priority": null,
+      "clarification_turn": null,
+      "max_clarification_turns": null,
+      "suggested_replies": [
+        "Dự toán lăn bánh VinFast VF 7 Plus AWD"
+      ],
+      "citations": [
+        {
+          "fact_scope": {
+            "model": "VF7",
+            "variant": "plus-awd",
+            "model_year": null,
+            "market": "VN",
+            "drivetrain": "AWD",
+            "battery_package": null,
+            "range_standard": "NEDC",
+            "battery_capacity_kwh": 70.0,
+            "year_status": "unknown: product page section does not identify a model year"
+          },
+          "claim_evidence": {
+            "seats": {
+              "value": "5 chỗ",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Plus AWD",
+              "reviewed_at": "2026-10-12"
+            },
+            "range": {
+              "value": "469 km (NEDC)",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Plus AWD",
+              "reviewed_at": "2026-10-12"
+            },
+            "power": {
+              "value": "260 kW",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Plus AWD",
+              "reviewed_at": "2026-10-12"
+            },
+            "capacity": {
+              "value": "70 kWh",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_section": "Thông số kỹ thuật / VF 7 Plus AWD",
+              "reviewed_at": "2026-10-12"
+            },
+            "fast_charge": {
+              "value": "37 phút (từ 10%–70%)",
+              "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+              "source_document_url": "https://static-cms-prod.vinfastauto.com/statics/shared/10042026-Brochur-%20VF-7.pdf",
+              "source_section": "Brochure VF7 10/04/2026 / trang13 / Thời gian nạp pin nhanh nhất / plus-awd",
+              "reviewed_at": "2026-10-19",
+              "reviewer": "Codex/root, official product reading and visual brochure review",
+              "evidence_location": "fixtures/knowledge/source_reviews/vf3-vf7-product-2026-10-19.json"
+            }
+          },
+          "source_section": "Thông số kỹ thuật / VF 7 Plus AWD",
+          "specs_reviewed_at": "2026-10-12",
+          "price_evidence": {
+            "price_vnd": null,
+            "price_type": "list",
+            "reviewed_at": "2026-10-16",
+            "effective_from": null,
+            "valid_until": null,
+            "conditions": "Giá niêm yết trên trang sản phẩm; chưa phải giá lăn bánh hoặc giá sau ưu đãi. Phương án pin và đời xe không được xác nhận riêng trong mục giá.",
+            "source_section": "Giá niêm yết / VF 7 Plus AWD",
+            "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7"
+          },
+          "source_id": "SRC-009",
+          "title": "VinFast VF 7 Plus AWD — thông số kỹ thuật",
+          "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+          "verified_at": "2026-10-16",
+          "status_code": 200,
+          "applicable_models": [
+            "VF7"
+          ],
+          "source_type": "official_catalog",
+          "relevant_snippet": "VinFast VF 7 Plus AWD AWD: Thời gian sạc: 37 phút (từ 10%–70%)"
+        }
+      ],
+      "service_handoff": {
+        "has_app_feature": true,
+        "app_feature_name": "Service booking / Information lookup",
+        "guide_url": "https://vinfastauto.com/vn_vi"
+      },
+      "safe_guidance": null,
+      "show_emergency_banner": false,
+      "request_location": false,
+      "remaining_guest_messages": null
+    }
+  },
+  {
+    "question": "What colors are available for the VF3 Plus?",
+    "expected_language": "en",
+    "passed": true,
+    "data": {
+      "language": "en",
+      "nearby_action": null,
+      "vehicle_comparison": false,
+      "vehicle_cards": [],
+      "emergency_context": null,
+      "safety_status": "unconfirmed",
+      "safety_acknowledged_at": null,
+      "incident_version": null,
+      "visual_evidence": null,
+      "response_type": "FAQ_ANSWER",
+      "message": "According to VinFast documentation:\n\nThe VF3 model page lists Infinity Blanc; Zenith Grey; Solar Ruby; Summer Yellow Body - Infinity Blanc Roof; Sky Blue - Infinity Blanc Roof; Rose Pink - Infinity Blanc Roof; Urban Mint. This is a model-level palette; the source does not allocate colors to Eco/Plus or model years or confirm dealer stock. Confirm the trim and sales location before ordering.",
+      "case_id": null,
+      "status": null,
+      "priority": null,
+      "clarification_turn": null,
+      "max_clarification_turns": null,
+      "suggested_replies": [],
+      "citations": [
+        {
+          "fact_scope": null,
+          "claim_evidence": null,
+          "source_section": "Trang VF3 / Tự do sáng tạo, tỏa sáng chất riêng / bảng màu ngoại thất",
+          "specs_reviewed_at": null,
+          "price_evidence": null,
+          "source_id": "SRC-009",
+          "title": "VinFast official product information",
+          "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf3",
+          "verified_at": "2026-10-16",
+          "status_code": 200,
+          "applicable_models": [
+            "VF3"
+          ],
+          "source_type": "official_catalog",
+          "relevant_snippet": "Màu ngoại thất công bố cho dòng VF3: Infinity Blanc; Zenith Grey; Solar Ruby; Summer Yellow Body - Infinity Blanc Roof; Sky Blue - Infinity Blanc Roof; Rose Pink - Infinity Blanc Roof; Urban Mint. Danh sách ở mức dòng xe; nguồn chưa tách màu theo phiên bản Eco/Plus hoặc đời xe và chưa xác nhận tồn kho tại đại lý. Cần đối chiếu phiên bản và nơi mua trước khi đặt xe."
+        }
+      ],
+      "service_handoff": {
+        "has_app_feature": true,
+        "app_feature_name": "Service booking / Information lookup",
+        "guide_url": "https://vinfastauto.com/vn_vi"
+      },
+      "safe_guidance": null,
+      "show_emergency_banner": false,
+      "request_location": false,
+      "remaining_guest_messages": null
+    }
+  }
+]

@@ -109,12 +109,13 @@
     "key": "vf7_model_colors",
     "model": "VF7",
     "source_id": "SRC-009",
-    "source_section": "Trang VF7 / bảng màu ngoại thất ở mức dòng xe",
-    "relevant_snippet": "Màu ngoại thất công bố cho dòng VF7: Infinity Blanc; Zenith Grey; Jet Black; Solar Ruby; Urban Mint. Nguồn này chưa tách màu theo Eco, Plus hoặc Plus AWD và chưa xác nhận tồn kho. Vì vậy em chưa thể xác nhận riêng VF7 Plus có sẵn từng màu; Quý khách cho biết đời xe và nơi mua để đối chiếu.",
-    "relevant_snippet_en": "The VF7 model page lists Infinity Blanc, Zenith Grey, Jet Black, Solar Ruby and Urban Mint. It does not allocate colors to Eco, Plus or Plus AWD or confirm stock. The listed colors are model-level information; availability for VF7 Plus requires the model year and sales location.",
+    "source_section": "Trang VF7 / bảng màu; brochure10/04/2026 trang12 / Eco, Plus tiêu chuẩn và nâng cao",
+    "relevant_snippet": "Màu ngoại thất công bố cho dòng VF7: Infinity Blanc; Zenith Grey; Jet Black; Solar Ruby; Urban Mint. Theo brochure 10/04/2026, Eco và Plus tiêu chuẩn có Jet Black, Solar Ruby, Infinity Blanc, Zenith Grey; Eco và Plus nâng cao có Urban Mint. Nguồn chưa xác nhận phối màu riêng cho Plus AWD, đời xe cụ thể hoặc tồn kho tại đại lý. Cần đối chiếu gói trang bị và nơi mua trước khi đặt xe.",
+    "relevant_snippet_en": "The VF7 model page lists Infinity Blanc, Zenith Grey, Jet Black, Solar Ruby and Urban Mint. The 10/04/2026 brochure assigns Jet Black, Solar Ruby, Infinity Blanc and Zenith Grey to standard Eco and Plus packages; upgraded Eco and Plus packages list Urban Mint. It does not establish separate Plus AWD color mapping, a specific model year or dealer stock. Confirm the equipment package and sales location before ordering.",
     "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
     "catalog_scope": "model_colors",
-    "answer_status": "partial"
+    "answer_status": "partial",
+    "evidence_location": "fixtures/knowledge/source_reviews/vf3-vf7-product-2026-10-19.json"
   },
   {
     "review_status": "verified",
@@ -131,5 +132,23 @@
     "relevant_snippet_en": "The published VF3 model-level usable battery capacity is 18.64 kWh. The product page and brochure battery table establish the model-level figure; this record does not establish every trim or model year. Provide the trim and model year for a specific confirmation.",
     "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf3",
     "evidence_location": "data/acquired/vinfast-browser-2026-10-19/vf3-brochure.pdf page9;vf3-render-09.png"
+  },
+  {
+    "market": "VN",
+    "model_year": null,
+    "reviewed_at": "2026-10-19",
+    "reviewer": "Codex/root, official product reading and visual brochure review",
+    "review_status": "verified",
+    "status_code": 200,
+    "key": "vf3_model_colors",
+    "model": "VF3",
+    "source_id": "SRC-009",
+    "source_section": "Trang VF3 / Tự do sáng tạo, tỏa sáng chất riêng / bảng màu ngoại thất",
+    "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf3",
+    "catalog_scope": "model_colors",
+    "answer_status": "partial",
+    "evidence_location": "fixtures/knowledge/source_reviews/vf3-vf7-product-2026-10-19.json",
+    "relevant_snippet": "Màu ngoại thất công bố cho dòng VF3: Infinity Blanc; Zenith Grey; Solar Ruby; Summer Yellow Body - Infinity Blanc Roof; Sky Blue - Infinity Blanc Roof; Rose Pink - Infinity Blanc Roof; Urban Mint. Danh sách ở mức dòng xe; nguồn chưa tách màu theo phiên bản Eco/Plus hoặc đời xe và chưa xác nhận tồn kho tại đại lý. Cần đối chiếu phiên bản và nơi mua trước khi đặt xe.",
+    "relevant_snippet_en": "The VF3 model page lists Infinity Blanc; Zenith Grey; Solar Ruby; Summer Yellow Body - Infinity Blanc Roof; Sky Blue - Infinity Blanc Roof; Rose Pink - Infinity Blanc Roof; Urban Mint. This is a model-level palette; the source does not allocate colors to Eco/Plus or model years or confirm dealer stock. Confirm the trim and sales location before ordering."
   }
 ]

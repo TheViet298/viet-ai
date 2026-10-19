@@ -1,0 +1,339 @@
+{
+  "market": "VN",
+  "model_year": null,
+  "reviewed_at": "2026-10-19",
+  "reviewer": "Codex/root, official product reading and visual brochure review",
+  "review_status": "verified",
+  "acquisition": [
+    {
+      "name": "vf7.html",
+      "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+      "status": 403,
+      "sha256": "11f46c4721a6fa5eca3bf1a5b159f6d3bde9852a3f63477546428b6fc97a8024",
+      "acquired_at": "2026-10-19T16:31:49.049Z",
+      "method": "Playwright BrowserContext.request GET"
+    },
+    {
+      "name": "vf3.html",
+      "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf3",
+      "status": 403,
+      "sha256": "11f46c4721a6fa5eca3bf1a5b159f6d3bde9852a3f63477546428b6fc97a8024",
+      "acquired_at": "2026-10-19T16:31:49.167Z",
+      "method": "Playwright BrowserContext.request GET"
+    },
+    {
+      "name": "vf7.pdf",
+      "url": "https://static-cms-prod.vinfastauto.com/statics/shared/10042026-Brochur-%20VF-7.pdf",
+      "status": 200,
+      "sha256": "40cda76a4af50e87b29693cec9e8e6a315502851ae510b0e8ee53e819f63f3fc",
+      "acquired_at": "2026-10-19T16:31:51.743Z",
+      "method": "Playwright BrowserContext.request GET"
+    },
+    {
+      "name": "vf3.pdf",
+      "url": "https://static-cms-prod.vinfastauto.com/statics/shared/16062026-Brochure-VF-3.pdf",
+      "status": 200,
+      "sha256": "f2d6407ec62e052b14bcfadde89c1ad18e2c39bf00fc317ca4b56a61dcf789d9",
+      "acquired_at": "2026-10-19T16:31:52.870Z",
+      "method": "Playwright BrowserContext.request GET"
+    }
+  ],
+  "html_method": "Official page read through web tool after direct Playwright403; only product-body sections used",
+  "brochure_visual_pages": {
+    "VF7": [
+      12,
+      13
+    ],
+    "VF3": [
+      9
+    ]
+  },
+  "models": {
+    "VF7": {
+      "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+      "brochure_url": "https://static-cms-prod.vinfastauto.com/statics/shared/10042026-Brochur-%20VF-7.pdf",
+      "brochure_date": "2026-04-10",
+      "exterior_colors": [
+        "Infinity Blanc",
+        "Zenith Grey",
+        "Jet Black",
+        "Solar Ruby",
+        "Urban Mint"
+      ],
+      "colors_by_package": {
+        "eco-standard": [
+          "Jet Black",
+          "Solar Ruby",
+          "Infinity Blanc",
+          "Zenith Grey"
+        ],
+        "plus-standard": [
+          "Jet Black",
+          "Solar Ruby",
+          "Infinity Blanc",
+          "Zenith Grey"
+        ],
+        "eco-upgraded": [
+          "Urban Mint"
+        ],
+        "plus-upgraded": [
+          "Urban Mint"
+        ]
+      },
+      "interior_pairings": {
+        "eco-standard": {
+          "Jet Black": [
+            "Black",
+            "Beige"
+          ],
+          "Solar Ruby": [
+            "Black",
+            "Beige"
+          ],
+          "Infinity Blanc": [
+            "Black"
+          ],
+          "Zenith Grey": [
+            "Black"
+          ]
+        },
+        "plus-standard": {
+          "Jet Black": [
+            "Mocha Brown",
+            "Beige"
+          ],
+          "Solar Ruby": [
+            "Beige"
+          ],
+          "Infinity Blanc": [
+            "Mocha Brown"
+          ],
+          "Zenith Grey": [
+            "Mocha Brown"
+          ]
+        },
+        "eco-upgraded": {
+          "Urban Mint": [
+            "Black"
+          ]
+        },
+        "plus-upgraded": {
+          "Urban Mint": [
+            "Mocha Brown"
+          ]
+        }
+      },
+      "model_specs": {
+        "length_width_height_mm": [
+          4545,
+          1890,
+          1635.75
+        ],
+        "wheelbase_mm": 2840,
+        "ground_clearance_unladen_mm": 190,
+        "seats": 5,
+        "vehicle_warranty": {
+          "years": 7,
+          "km": 160000,
+          "condition": "whichever first; check applicable purchase policy"
+        }
+      },
+      "variants": {
+        "eco": {
+          "usable_capacity_kwh": 59.6,
+          "range_km": 440,
+          "range_standard": "NEDC",
+          "power_kw": 130,
+          "torque_nm": 250,
+          "drivetrain": "FWD",
+          "onboard_ac_max_kw": 7.2,
+          "dc_max_kw": 100,
+          "fast_charge_minutes": 25,
+          "fast_charge_soc_percent": [
+            10,
+            70
+          ],
+          "wheel_inches": 19,
+          "airbags": 4,
+          "touchscreen_inches": 12.9,
+          "price_vnd": 740000000,
+          "source_sections": {
+            "page": "Thông số kỹ thuật / eco",
+            "brochure": "physical page13 / exact variant column; fast-charge time, wheels, airbags"
+          }
+        },
+        "plus": {
+          "usable_capacity_kwh": 70,
+          "range_km": 500.5,
+          "range_standard": "NEDC",
+          "power_kw": 150,
+          "torque_nm": 310,
+          "drivetrain": "FWD",
+          "onboard_ac_max_kw": 7.2,
+          "dc_max_kw": 110,
+          "fast_charge_minutes": 28,
+          "fast_charge_soc_percent": [
+            10,
+            70
+          ],
+          "wheel_inches": 20,
+          "airbags": 7,
+          "touchscreen_inches": 12.9,
+          "price_vnd": 830000000,
+          "source_sections": {
+            "page": "Thông số kỹ thuật / plus",
+            "brochure": "physical page13 / exact variant column; fast-charge time, wheels, airbags"
+          }
+        },
+        "plus-awd": {
+          "usable_capacity_kwh": 70,
+          "range_km": 469,
+          "range_standard": "NEDC",
+          "power_kw": 260,
+          "torque_nm": 500,
+          "drivetrain": "AWD",
+          "onboard_ac_max_kw": 7.2,
+          "dc_max_kw": 110,
+          "fast_charge_minutes": 37,
+          "fast_charge_soc_percent": [
+            10,
+            70
+          ],
+          "wheel_inches": 20,
+          "airbags": 7,
+          "touchscreen_inches": 12.9,
+          "price_vnd": null,
+          "source_sections": {
+            "page": "Thông số kỹ thuật / plus-awd",
+            "brochure": "physical page13 / exact variant column; fast-charge time, wheels, airbags"
+          }
+        }
+      },
+      "unresolved": [
+        "color package mapping for Plus AWD",
+        "model year",
+        "AWD price",
+        "inventory",
+        "delivery availability"
+      ]
+    },
+    "VF3": {
+      "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf3",
+      "brochure_url": "https://static-cms-prod.vinfastauto.com/statics/shared/16062026-Brochure-VF-3.pdf",
+      "brochure_date": "2026-06-16",
+      "exterior_colors": [
+        "Infinity Blanc",
+        "Zenith Grey",
+        "Solar Ruby",
+        "Summer Yellow Body - Infinity Blanc Roof",
+        "Sky Blue - Infinity Blanc Roof",
+        "Rose Pink - Infinity Blanc Roof",
+        "Urban Mint"
+      ],
+      "model_specs": {
+        "length_width_height_mm": [
+          3190,
+          1679,
+          1652
+        ],
+        "wheelbase_mm": 2075,
+        "ground_clearance_unladen_mm": 175,
+        "turning_radius_m": 4.5,
+        "turning_diameter_m": 9,
+        "torque_nm": 110,
+        "power_kw": 30,
+        "seats": 4,
+        "usable_capacity_kwh": 18.64,
+        "battery_chemistry": "LFP",
+        "range_km": 215,
+        "range_standard": "NEDC",
+        "fast_charge_soc_percent": [
+          10,
+          70
+        ],
+        "fast_charge_minutes": 36,
+        "dc_max_kw": 24,
+        "airbags": 1,
+        "touchscreen_inches": 10,
+        "wheel_inches": 16,
+        "hsa": true,
+        "abs": true,
+        "rear_parking_sensors": true,
+        "drivetrain": "RWD"
+      },
+      "variants": {
+        "eco": {
+          "price_vnd": 285000000
+        },
+        "plus": {
+          "price_vnd": 296000000,
+          "advanced_features": [
+            "power-adjustable and folding mirrors",
+            "rear camera",
+            "wheel covers"
+          ]
+        }
+      },
+      "variant_capacity_verified": false,
+      "unresolved": [
+        "capacity assigned separately to each trim",
+        "colors by trim",
+        "model year",
+        "inventory",
+        "delivery availability"
+      ]
+    }
+  },
+  "source_conflicts": [
+    {
+      "model": "VF7",
+      "field": "Plus and Plus AWD range",
+      "older_brochure": "Cập nhật sau",
+      "current_product_page": {
+        "plus": 500.5,
+        "plus-awd": 469,
+        "unit": "km NEDC"
+      },
+      "decision": "Retain current page values; do not overwrite with older pending placeholder."
+    },
+    {
+      "model": "VF7",
+      "field": "AC power",
+      "product_page_onboard_max_kw": 7.2,
+      "brochure_home_accessory_kw": 7.4,
+      "decision": "Different equipment; do not substitute accessory rating for onboard AC maximum."
+    },
+    {
+      "model": "VF7",
+      "field": "fast charge time",
+      "marketing_highlight": "28 minutes refers to Plus",
+      "table": {
+        "eco": 25,
+        "plus": 28,
+        "plus-awd": 37
+      },
+      "decision": "Use exact variant column and10-70% SOC; never copy Plus time to AWD."
+    },
+    {
+      "model": "VF7",
+      "field": "legacy card charging spec",
+      "legacy_value": "25 phút appeared in Eco/Plus/Plus AWD card fields without separate claim_evidence.fast_charge; replace Plus/AWD values from their brochure columns.",
+      "decision": "Replace legacy field rather than append; exact table values Eco25/Plus28/AWD37, one field per card."
+    }
+  ],
+  "limitations": [
+    "All figures are published reference conditions, not real-world guarantees.",
+    "No inference of stock, current activation or historic model-year coverage.",
+    "Brochure optional/after-sales features are not standard equipment guarantees."
+  ],
+  "independent_review": {
+    "reviewer": "Codex/review_g14",
+    "reviewed_at": "2026-10-19",
+    "result": "No high/medium findings",
+    "scope": [
+      "VF7 physical pages12–13 color/interior matrix and charging times",
+      "VF3 physical page9 equipment/battery table and official page palette",
+      "runtime trim/year/stock limits and documented conflicts"
+    ]
+  }
+}

@@ -30,8 +30,8 @@ def reviewed_gap_answers(query: str, model: str | None) -> list[dict]:
         elif not re.search(r'pin|ac[ -]*quy|gi set|son|lop|phu tung|phu kien|treo|thuong mai|chay dich vu|taxi|kinh doanh van tai|cho thue|grab|be car', body): key = 'vehicle_warranty'
     elif model == 'VF8' and 'adas' in body and not re.search(r'bat|tat|kich hoat|cach|bao loi|loi |activate|enable|turn on|turn off|instructions|configure', body):
         key = 'adas_overview'
-    elif model == 'VF7' and is_color_question(query) and not re.search(r'ton kho|con hang|hom nay|giao ngay|noi that', body):
-        key = 'vf7_model_colors'
+    elif model in {'VF3', 'VF7'} and is_color_question(query) and not re.search(r'ton kho|con hang|hom nay|giao ngay|noi that', body):
+        key = 'vf3_model_colors' if model == 'VF3' else 'vf7_model_colors'
     elif model == 'VF3' and 'dung luong' in body and not re.search(r'\b(?:eco|plus|awd|fwd)\b|danh dinh|nominal', body):
         key = 'vf3_model_capacity'
     if not key:

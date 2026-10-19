@@ -111,12 +111,13 @@
       "year": null,
       "topic": "colors",
       "required_scope": "model/trim/year, model-level colors cannot assert stock",
-      "status": "missing",
+      "status": "partial",
       "source_id": "SRC-009",
-      "evidence_location": null,
-      "blocker": "Source and model/trim scope require acquisition/review",
-      "reviewer": null,
-      "reviewed_at": null
+      "evidence_location": "fixtures/knowledge/source_reviews/vf3-vf7-product-2026-10-19.json",
+      "blocker": "Specific model year, dealer stock and unresolved trim/package mapping remain unknown.",
+      "reviewer": "Codex/root, official product reading and visual brochure review",
+      "reviewed_at": "2026-10-19",
+      "resolution": "Seven model-level exterior combinations verified; no trim allocation."
     },
     {
       "id": "GAP-009",
@@ -156,11 +157,11 @@
       "required_scope": "model/trim/year, model-level colors cannot assert stock",
       "status": "partial",
       "source_id": "SRC-009",
-      "evidence_location": "fixtures/knowledge/source_reviews/answer-gap-14-2026-10-19.json",
-      "blocker": "Year/trim/usage/availability-specific coverage is not established.",
-      "reviewer": "Codex/root (official source and image reading)",
+      "evidence_location": "fixtures/knowledge/source_reviews/vf3-vf7-product-2026-10-19.json",
+      "blocker": "Specific model year, dealer stock and unresolved trim/package mapping remain unknown.",
+      "reviewer": "Codex/root, official product reading and visual brochure review",
       "reviewed_at": "2026-10-19",
-      "resolution": "Verified five model-level exterior colors; no trim or stock mapping."
+      "resolution": "Five exterior colors and Eco/Plus standard/upgraded package mappings visually verified from linked brochure; Plus AWD color mapping remains unknown."
     },
     {
       "id": "GAP-012",
