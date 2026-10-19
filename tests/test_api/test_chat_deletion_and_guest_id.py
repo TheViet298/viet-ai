@@ -8,8 +8,34 @@ from src.main import app
 from src.db import SessionLocal
 from src.models.db_models import User, ChatSession, Message, ChatRequestRecord, Case
 from src.services.auth import create_token, hash_password
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from src.db import Base, get_db
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def isolated_deletion_database(tmp_path, monkeypatch):
+    # This regression suite used a shared, unmigrated local app.db. Test both
+    # the direct SessionLocal calls and API requests against one fresh test DB.
+    engine = create_engine(f'sqlite:///{tmp_path / "deletion.db"}', connect_args={'check_same_thread': False})
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine)
+    monkeypatch.setattr(sys.modules[__name__], 'SessionLocal', factory)
+    previous = app.dependency_overrides.get(get_db)
+    def dependency():
+        with factory() as session:
+            yield session
+    app.dependency_overrides[get_db] = dependency
+    try:
+        yield
+    finally:
+        if previous is None:
+            app.dependency_overrides.pop(get_db, None)
+        else:
+            app.dependency_overrides[get_db] = previous
+        engine.dispose()
 
 
 def test_customer_delete_single_and_all():

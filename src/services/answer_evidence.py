@@ -17,7 +17,7 @@ class AnswerClaim(BaseModel):
     source_ids: list[str] = Field(default_factory=list)
 
 
-QUANTITY = re.compile(r'(\d+(?:[.,]\d+)*(?:\s*[-–]\s*\d+(?:[.,]\d+)*)?)\s*((?:tỷ|triệu)\s*đồng|(?:vnđ|vnd|đồng)(?:/(?:kwh|phút))?|km/h|km|kwh|kw|phút|tháng|năm|%)(?!\w)', re.I)
+QUANTITY = re.compile(r'(?<![\w])(\d+(?:[.,]\d+)*(?:\s*[-–]\s*\d+(?:[.,]\d+)*)?)\s*((?:tỷ|triệu)\s*đồng|(?:vnđ|vnd|đồng)(?:/(?:kwh|phút))?|km/h|km|kwh|kw|phút|tháng|năm|chỗ(?: ngồi)?|seats?|%)(?!\w)', re.I)
 
 
 def canonical_quantity_unit(unit: str) -> str:
@@ -63,7 +63,29 @@ def catalog_fact_sections(citation: dict) -> list[str]:
         sections += [re.sub(r'miễn phí', 'Giá 0 đồng/phút', line, flags=re.I) for line in text.splitlines()
                      if re.match(r'^\s*(?:[-*]\s*)?miễn phí\s+từ phút thứ \d+', line, re.I)]
     if citation.get('source_type') != 'official_catalog':
-        return sections
+        # A policy table often puts the component and usage condition above
+        # its model rows. Attach only those headers, never a neighbouring row's
+        # quantities or model list. New headings replace the previous scope.
+        heading, condition = '', ''
+        scoped = []
+        for raw in text.splitlines():
+            line = raw.strip()
+            if not line:
+                continue
+            is_heading = (not QUANTITY.search(line) and len(line) <= 220
+                          and not re.search(r'[.!?]$', line)
+                          and not re.match(r'^[-*]\s', line))
+            if is_heading:
+                subordinate = heading and (
+                    normalized(line).startswith(normalized(heading).rstrip(':'))
+                    or re.match(r'^(?:dieu kien|su dung|mua theo|xe dang|xe da)\b', normalized(line)))
+                if line.endswith(':') and subordinate:
+                    condition = line
+                else:
+                    heading, condition = line, ''
+            else:
+                scoped.append('\n'.join(value for value in (heading, condition, line) if value))
+        return list(dict.fromkeys([*sections, *scoped]))
     header = text.splitlines()[0] if text else ''
     # Only expand a version-scoped catalog record, never mix facts across trims.
     if not re.search(r'phien ban.*vf\s*(?:e34|[356789]).*\b(?:eco|plus)\b', normalized(header)):
@@ -130,7 +152,7 @@ def validate_answer_claims(claims: list[AnswerClaim], citations: list[dict], pri
     unsupported, conflicts = [], []
     keywords = {'range': ('quang duong', 'mot lan sac', 'pham vi'),
                 'warranty': ('bao hanh',), 'charging_time': ('sac',),
-                'capacity': ('dung luong',), 'power': ('cong suat',), 'price': ('gia',),
+                'capacity': ('dung luong',), 'power': ('cong suat',), 'seats': ('cho', 'seats'), 'price': ('gia',),
                 'soc': ('soc', 'muc pin', 'sac'), 'speed': ('toc do',),
                 'maintenance_interval': ('bao duong',), 'odometer': ('da chay', 'cong to met')}
     for claim in claims:
@@ -220,6 +242,7 @@ def extract_numeric_claims(answer: str, citations: list[dict], subject: str = ''
             value, unit = match.groups()
             key = ('price' if normalized(unit).split('/')[0] in {'vnd', 'dong', 'ty dong', 'trieu dong'} else
                    'capacity' if unit.casefold() == 'kwh' else 'power' if unit.casefold() == 'kw' else
+                   'seats' if normalized(unit) in {'cho', 'cho ngoi', 'seat', 'seats'} else
                    'charging_time' if normalized(unit) == 'phut' else
                    'speed' if unit.casefold() == 'km/h' else
                    'soc' if unit == '%' and re.search(r'sac|soc|muc pin', body) else
@@ -410,6 +433,8 @@ def answer_section(query: str, text: str) -> str:
                 return ""
             if not re.search(r"\d+\s*năm", text, re.I):
                 return ""
-            if "the all new" in text.casefold() and "the all new" not in lower:
+            if "the all new" not in lower and any(
+                    "the all new" in line.casefold() and not normalized(line).startswith("khong ap dung")
+                    for line in text.splitlines()):
                 return ""
     return text

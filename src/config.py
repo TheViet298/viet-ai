@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     rag_context_max_bytes: int = Field(default=6000, gt=0)
     agent_context_max_bytes: int = Field(default=8000, gt=0)
     service_points_file: str = "./fixtures/service_points.demo.json"
+    user_memory_enabled: bool = False
 
     @model_validator(mode="after")
     def validate_context_budgets(self):

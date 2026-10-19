@@ -1,0 +1,431 @@
+{
+  "mode": "live",
+  "scenario": "live-incident",
+  "model_enabled": true,
+  "model": "gpt-4o-mini",
+  "index_identity": {
+    "chroma.sqlite3": "f396075bba02793fc50bcd0470785ab5ce2eb65935a1fa486693b55bf1e35a00",
+    "build-manifest.json": "081ef4aca801c30ea0bc8efb2bda2c0fa179abf5a17ca02249cfb92505335ce3",
+    "parent-map.json": "a835c2016a99fa79232255391afd3067ba35641747bdec3360b5b4d161bf2a6e"
+  },
+  "metrics": {
+    "turns": 7,
+    "answer_status_counts": {
+      "answered": 7
+    },
+    "model_parsed_events": 0,
+    "model_error_events": 0,
+    "factual_certification": "NOT_REVIEWED"
+  },
+  "turns": [
+    {
+      "number": 1,
+      "input": "Xe VF5 của tôi không sạc được, mã lỗi CC01",
+      "response": "Dạ VinFast đã ghi nhận sự cố sạc của xe VF5:\nVị trí trạm: chưa cung cấp\nTrụ sạc: chưa cung cấp\nMã lỗi: CC01\n\nHệ thống đã tự động tạo hồ sơ hỗ trợ (Mã: CASE-20261019-e8c855ec23914917) và chuyển dữ liệu trực tiếp tới Chuyên viên Kỹ thuật trạm sạc. Anh/chị vui lòng theo dõi cập nhật tiến độ giải quyết trực tiếp trên màn hình này ạ.",
+      "latency_ms": 94.0,
+      "fallback_kind": null,
+      "sources": [],
+      "context": {
+        "preferred_language": "vi",
+        "schema_version": 1,
+        "active_goal": "incident",
+        "topic": "",
+        "subject": "VF5",
+        "facts": {
+          "model": {
+            "value": "VF5",
+            "source_turn": 1,
+            "status": "confirmed"
+          },
+          "error_code": {
+            "value": "CC01",
+            "source_turn": 1,
+            "status": "confirmed"
+          }
+        },
+        "pending_question": {
+          "slots": [
+            "station_location",
+            "charger_id"
+          ],
+          "purpose": "Bổ sung thông tin còn thiếu để chuyên viên kiểm tra hồ sơ."
+        },
+        "last_answer": [],
+        "action": {}
+      },
+      "retrieval": {},
+      "searches": [],
+      "llm_outcomes": [],
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "benchmark_id": null,
+      "expected_keywords": [],
+      "keyword_match_only": null
+    },
+    {
+      "number": 2,
+      "input": "Trụ P01 tại Vincom Metropolis",
+      "response": "Hồ sơ CASE-20261019-e8c855ec23914917 hiện có trạng thái Đang chờ nhân viên xem xét. Thông tin đã ghi nhận: VF5, P01, Vincom Metropolis. mã lỗi: CC01. Cần chuyên viên kiểm tra tình trạng vận hành; chưa có xác nhận kỹ thuật viên tiếp nhận hoặc cứu hộ đã xuất phát.",
+      "latency_ms": 47.0,
+      "fallback_kind": null,
+      "sources": [],
+      "context": {
+        "preferred_language": "vi",
+        "schema_version": 1,
+        "active_goal": "incident",
+        "topic": "",
+        "subject": "VF5",
+        "facts": {
+          "model": {
+            "value": "VF5",
+            "source_turn": 1,
+            "status": "confirmed"
+          },
+          "error_code": {
+            "value": "CC01",
+            "source_turn": 1,
+            "status": "confirmed"
+          },
+          "charger_id": {
+            "value": "P01",
+            "source_turn": 2,
+            "status": "confirmed"
+          },
+          "station_location": {
+            "value": "Vincom Metropolis",
+            "source_turn": 2,
+            "status": "confirmed"
+          }
+        },
+        "pending_question": {
+          "slots": [],
+          "purpose": "Bổ sung thông tin còn thiếu để chuyên viên kiểm tra hồ sơ."
+        },
+        "last_answer": [],
+        "action": {}
+      },
+      "retrieval": {},
+      "searches": [],
+      "llm_outcomes": [],
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "benchmark_id": null,
+      "expected_keywords": [],
+      "keyword_match_only": null
+    },
+    {
+      "number": 3,
+      "input": "Xe báo lỗi CC01, pin còn 35%",
+      "response": "Dạ VinFast đã ghi nhận sự cố sạc của xe VF5:\nVị trí trạm: Vincom Metropolis\nTrụ sạc: P01\nMã lỗi: CC01\n\nHệ thống đã tự động tạo hồ sơ hỗ trợ (Mã: CASE-20261019-e8c855ec23914917) và chuyển dữ liệu trực tiếp tới Chuyên viên Kỹ thuật trạm sạc. Anh/chị vui lòng theo dõi cập nhật tiến độ giải quyết trực tiếp trên màn hình này ạ.",
+      "latency_ms": 47.0,
+      "fallback_kind": null,
+      "sources": [],
+      "context": {
+        "preferred_language": "vi",
+        "schema_version": 1,
+        "active_goal": "incident",
+        "topic": "",
+        "subject": "VF5",
+        "facts": {
+          "model": {
+            "value": "VF5",
+            "source_turn": 1,
+            "status": "confirmed"
+          },
+          "error_code": {
+            "value": "CC01",
+            "source_turn": 3,
+            "status": "confirmed"
+          },
+          "charger_id": {
+            "value": "P01",
+            "source_turn": 2,
+            "status": "confirmed"
+          },
+          "station_location": {
+            "value": "Vincom Metropolis",
+            "source_turn": 2,
+            "status": "confirmed"
+          },
+          "soc": {
+            "value": "35%",
+            "source_turn": 3,
+            "status": "confirmed"
+          }
+        },
+        "pending_question": {
+          "slots": [],
+          "purpose": "Bổ sung thông tin còn thiếu để chuyên viên kiểm tra hồ sơ."
+        },
+        "last_answer": [],
+        "action": {}
+      },
+      "retrieval": {},
+      "searches": [],
+      "llm_outcomes": [],
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "benchmark_id": null,
+      "expected_keywords": [],
+      "keyword_match_only": null
+    },
+    {
+      "number": 4,
+      "input": "Tôi đã nói rồi, còn thiếu gì?",
+      "response": "Hồ sơ CASE-20261019-e8c855ec23914917 hiện có trạng thái Đang chờ nhân viên xem xét. Thông tin đã ghi nhận: VF5, P01, Vincom Metropolis. mức pin: 35%. mã lỗi: CC01. Cần chuyên viên kiểm tra tình trạng vận hành; chưa có xác nhận kỹ thuật viên tiếp nhận hoặc cứu hộ đã xuất phát.",
+      "latency_ms": 62.0,
+      "fallback_kind": null,
+      "sources": [],
+      "context": {
+        "preferred_language": "vi",
+        "schema_version": 1,
+        "active_goal": "incident",
+        "topic": "",
+        "subject": "VF5",
+        "facts": {
+          "model": {
+            "value": "VF5",
+            "source_turn": 1,
+            "status": "confirmed"
+          },
+          "error_code": {
+            "value": "CC01",
+            "source_turn": 3,
+            "status": "confirmed"
+          },
+          "charger_id": {
+            "value": "P01",
+            "source_turn": 2,
+            "status": "confirmed"
+          },
+          "station_location": {
+            "value": "Vincom Metropolis",
+            "source_turn": 2,
+            "status": "confirmed"
+          },
+          "soc": {
+            "value": "35%",
+            "source_turn": 3,
+            "status": "confirmed"
+          }
+        },
+        "pending_question": {
+          "slots": [],
+          "purpose": "Bổ sung thông tin còn thiếu để chuyên viên kiểm tra hồ sơ."
+        },
+        "last_answer": [],
+        "action": {}
+      },
+      "retrieval": {},
+      "searches": [],
+      "llm_outcomes": [],
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "benchmark_id": null,
+      "expected_keywords": [],
+      "keyword_match_only": null
+    },
+    {
+      "number": 5,
+      "input": "Không phải trụ P01, trụ P02",
+      "response": "Hồ sơ CASE-20261019-e8c855ec23914917 hiện có trạng thái Đang chờ nhân viên xem xét. Thông tin đã ghi nhận: VF5, P02, Vincom Metropolis. mức pin: 35%. mã lỗi: CC01. Cần chuyên viên kiểm tra tình trạng vận hành; chưa có xác nhận kỹ thuật viên tiếp nhận hoặc cứu hộ đã xuất phát.",
+      "latency_ms": 47.0,
+      "fallback_kind": null,
+      "sources": [],
+      "context": {
+        "preferred_language": "vi",
+        "schema_version": 1,
+        "active_goal": "incident",
+        "topic": "",
+        "subject": "VF5",
+        "facts": {
+          "model": {
+            "value": "VF5",
+            "source_turn": 1,
+            "status": "confirmed"
+          },
+          "error_code": {
+            "value": "CC01",
+            "source_turn": 3,
+            "status": "confirmed"
+          },
+          "charger_id": {
+            "value": "P02",
+            "source_turn": 5,
+            "status": "confirmed"
+          },
+          "station_location": {
+            "value": "Vincom Metropolis",
+            "source_turn": 2,
+            "status": "confirmed"
+          },
+          "soc": {
+            "value": "35%",
+            "source_turn": 3,
+            "status": "confirmed"
+          }
+        },
+        "pending_question": {
+          "slots": [],
+          "purpose": "Bổ sung thông tin còn thiếu để chuyên viên kiểm tra hồ sơ."
+        },
+        "last_answer": [],
+        "action": {}
+      },
+      "retrieval": {},
+      "searches": [],
+      "llm_outcomes": [],
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "benchmark_id": null,
+      "expected_keywords": [],
+      "keyword_match_only": null
+    },
+    {
+      "number": 6,
+      "input": "Xe không còn báo CC01 nữa",
+      "response": "Hồ sơ CASE-20261019-e8c855ec23914917 hiện có trạng thái Đang chờ nhân viên xem xét. Thông tin đã ghi nhận: VF5, P02, Vincom Metropolis. mức pin: 35%. Còn cần vị trí xe và triệu chứng hiện tại. Cần chuyên viên kiểm tra tình trạng vận hành; chưa có xác nhận kỹ thuật viên tiếp nhận hoặc cứu hộ đã xuất phát.",
+      "latency_ms": 47.0,
+      "fallback_kind": null,
+      "sources": [],
+      "context": {
+        "preferred_language": "vi",
+        "schema_version": 1,
+        "active_goal": "incident",
+        "topic": "",
+        "subject": "VF5",
+        "facts": {
+          "model": {
+            "value": "VF5",
+            "source_turn": 1,
+            "status": "confirmed"
+          },
+          "error_code": {
+            "value": null,
+            "source_turn": 6,
+            "status": "retracted"
+          },
+          "charger_id": {
+            "value": "P02",
+            "source_turn": 5,
+            "status": "confirmed"
+          },
+          "station_location": {
+            "value": "Vincom Metropolis",
+            "source_turn": 2,
+            "status": "confirmed"
+          },
+          "soc": {
+            "value": "35%",
+            "source_turn": 3,
+            "status": "confirmed"
+          }
+        },
+        "pending_question": {
+          "slots": [
+            "location",
+            "symptom"
+          ],
+          "purpose": "Bổ sung thông tin còn thiếu để chuyên viên kiểm tra hồ sơ."
+        },
+        "last_answer": [],
+        "action": {}
+      },
+      "retrieval": {},
+      "searches": [],
+      "llm_outcomes": [],
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "benchmark_id": null,
+      "expected_keywords": [],
+      "keyword_match_only": null
+    },
+    {
+      "number": 7,
+      "input": "Tôi đã dừng ở nơi an toàn",
+      "response": "Hồ sơ CASE-20261019-e8c855ec23914917 hiện có trạng thái Đang chờ nhân viên xem xét. Thông tin đã ghi nhận: VF5, P02, Vincom Metropolis. mức pin: 35%. Còn cần vị trí xe và triệu chứng hiện tại. Cần chuyên viên kiểm tra tình trạng vận hành; chưa có xác nhận kỹ thuật viên tiếp nhận hoặc cứu hộ đã xuất phát.",
+      "latency_ms": 47.0,
+      "fallback_kind": null,
+      "sources": [],
+      "context": {
+        "preferred_language": "vi",
+        "schema_version": 1,
+        "active_goal": "incident",
+        "topic": "",
+        "subject": "VF5",
+        "facts": {
+          "model": {
+            "value": "VF5",
+            "source_turn": 1,
+            "status": "confirmed"
+          },
+          "error_code": {
+            "value": null,
+            "source_turn": 6,
+            "status": "retracted"
+          },
+          "charger_id": {
+            "value": "P02",
+            "source_turn": 5,
+            "status": "confirmed"
+          },
+          "station_location": {
+            "value": "Vincom Metropolis",
+            "source_turn": 2,
+            "status": "confirmed"
+          },
+          "soc": {
+            "value": "35%",
+            "source_turn": 3,
+            "status": "confirmed"
+          }
+        },
+        "pending_question": {
+          "slots": [
+            "location",
+            "symptom"
+          ],
+          "purpose": "Bổ sung thông tin còn thiếu để chuyên viên kiểm tra hồ sơ."
+        },
+        "last_answer": [],
+        "action": {}
+      },
+      "retrieval": {},
+      "searches": [],
+      "llm_outcomes": [],
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "benchmark_id": null,
+      "expected_keywords": [],
+      "keyword_match_only": null
+    }
+  ]
+}

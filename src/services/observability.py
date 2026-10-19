@@ -180,24 +180,20 @@ def bind_trace_attributes(*, session_id=None, user_id=None, tags=None, metadata=
 def observation(name: str, *, as_type='span', metadata=None, model=None):
     started = time.monotonic()
     ctx, handle = None, None
-    trace_ctx = None
     parent = _root.get()
     identity_token = _identity.set(dict(_identity.get()))
     merged = {**_validation.get(), **_identity.get(), **(metadata or {})}
     merged.pop('user_id', None)
     if _client is not None:
         try:
-            if parent is None:
-                # No active root trace — create one so this span is visible in Langfuse UI
-                trace_ctx = _client.start_as_current_observation(name=name, as_type='trace',
-                                                                 metadata=mask_telemetry(data=merged))
-                trace_ctx.__enter__()
+            # The SDK creates a trace for a parentless observation. A second
+            # synthetic observation duplicates roots and separates usage/errors
+            # from the generation the caller owns.
             ctx = _client.start_as_current_observation(name=name, as_type=as_type,
                                                        metadata=mask_telemetry(data=merged), model=model)
             handle = ctx.__enter__()
         except Exception:
             ctx = None
-            trace_ctx = None
     root_token = _root.set(handle if parent is None else parent)
     try:
         with bind_trace_attributes():
@@ -217,11 +213,6 @@ def observation(name: str, *, as_type='span', metadata=None, model=None):
         if ctx is not None:
             try:
                 ctx.__exit__(None, None, None)
-            except Exception:
-                pass
-        if trace_ctx is not None:
-            try:
-                trace_ctx.__exit__(None, None, None)
             except Exception:
                 pass
 
@@ -253,7 +244,10 @@ def trace_endpoint(name: str):
                                           user_id=getattr(user, 'id', None))
                 result = await function(*args, **kwargs)
                 data = getattr(result, 'data', result)
-                update_observation(root, output=data.model_dump() if hasattr(data, 'model_dump') else data,
+                personal = getattr(data, '_personal_memory_diagnostics', None)
+                output = ({'personal_memory': personal} if personal is not None else
+                          data.model_dump() if hasattr(data, 'model_dump') else data)
+                update_observation(root, output=output,
                                    metadata={**_validation.get(), 'route': name, 'outcome': 'completed'})
                 return result
         return wrapped

@@ -70,9 +70,9 @@ def user_updates(text: str) -> dict[str, str | None]:
     model = re.search(r'\bvf\s*(e34|[356789])\b', lower)
     if model:
         updates['model'] = 'VF' + model[1].upper()
-    version = re.search(r'\b(plus|eco)\b', lower)
+    version = re.search(r'\b((?:plus|eco)(?:\s+(?:awd|fwd))?)\b', lower)
     if version:
-        updates['version'] = version[1].title()
+        updates['version'] = version[1].title().replace('Awd', 'AWD').replace('Fwd', 'FWD')
     if re.search(r'mua (?:kem|dut|ca|luon) pin|kem pin', lower):
         updates['battery'] = 'mua kèm pin'
     elif 'thue pin' in lower:
@@ -187,12 +187,12 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
         ('test_drive', r'lai thu|chay thu|trai nghiem lai'),
         ('maintenance', r'bao duong|dat lich dich vu|hen kiem tra dinh ky|dat (?:lich|hen).{0,20}sua (?:xe|chua)'),
         ('warranty', r'bao hanh'),
-        ('range', r'quang duong|di duoc|di bao xa|chay duoc bao xa|tam hoat dong|\bkm\b.*(?:dung|hay)|mot lan sac'),
+        ('range', r'quang duong|di duoc|di bao xa|chay duoc bao xa|tam hoat dong|tam di chuyen|\bkm\b.*(?:dung|hay)|mot lan sac'),
         ('charging', r'sac.*(?:bao lau|thoi gian|may phut)|bao lau.*sac|thoi gian (?:sac|nap)|sac nhanh'),
         ('capacity', r'dung luong pin|suc chua|chua duoc.*dien|\bkwh\b'),
         ('appearance', r'\bmau\s+(?:xe|gi|nao|sac|ngoai that|noi that)\b|\bco mau\b|bang mau|tuy chon mau'),
         ('concept', r'\b(?:soh|soc|bms|abs|adas)\b'),
-    ] if re.search(pattern, lower)), None)
+    ] if re.search(pattern, lower) and not (g == 'appearance' and 'mẫu' in text.casefold() and 'màu' not in text.casefold())), None)
     if cost_subject in {'charging', 'battery_rental'}:
         explicit_goal = 'charging_network'
     elif cost_subject in {'repair', 'maintenance'}:
@@ -213,7 +213,7 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
     if is_general_vehicle_advice(text) or (not explicit_goal and is_generic_vehicle_overview(text)):
         explicit_goal = 'overview'
         topic = text[:300]
-    if is_generic_vehicle_comparison(text):
+    if is_generic_vehicle_comparison(text) and not re.search(r'khong phai|dinh chinh', lower):
         explicit_goal = 'overview'
         topic = text[:300]
     move: Move = 'new_question'
@@ -275,6 +275,10 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
     elif move == 'new_question' and not updates:
         goal, topic = None, ''
     subject = updates.get('model') or context.subject
+    if (explicit_goal in {'application', 'charging_network', 'warranty', 'maintenance', 'concept'}
+            and move == 'new_question' and not updates.get('model')
+            and not re.search(r'xe (?:toi|cua toi|nay|do)|cua xe|cua toi', lower)):
+        subject = None
     if 'model' in retracted:
         subject = None
     if move == 'new_incident' and context.active_goal != 'incident':
@@ -282,7 +286,7 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
         subject = updates.get('model')
     query = text
     from src.services.faq_questions import faq_parts
-    if goal and move != 'new_incident' and not is_generic_vehicle_comparison(text) and not faq_parts(text):
+    if goal and move not in {'new_incident', 'new_question'} and not is_generic_vehicle_comparison(text) and not faq_parts(text):
         prefix = {'quote': 'Giá niêm yết và dự toán lăn bánh', 'test_drive': 'Đăng ký lái thử',
                   'maintenance': 'Bảo dưỡng', 'warranty': 'Bảo hành',
                   'range': 'Quãng đường một lần sạc', 'charging': 'Thời gian sạc',

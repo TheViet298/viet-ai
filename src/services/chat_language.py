@@ -57,7 +57,7 @@ def detect_language(text: str, previous: str = 'vi') -> str:
         chosen = next(group for group in choices[-1].groups() if group)
         return 'en' if chosen in {'english', 'tieng anh'} else 'vi'
     # Restore neither accents nor meanings here: this is locale selection only.
-    vi = bool(re.search(r'\b(?:tu van|bao hanh|bao duong|lai thu|gia xe|mau gi|cam on|xin chao|chao ban|co the|ho tro|nhung gi|toi muon|khong|xe toi|co mau|tieng viet)\b', folded))
+    vi = bool(re.search(r'\b(?:cach|huong dan|can thiep|tu van|bao hanh|bao duong|lai thu|gia xe|mau gi|cam on|xin chao|chao ban|co the|ho tro|nhung gi|toi muon|khong|xe toi|co mau|tieng viet)\b', folded))
     english = bool(re.search(r"\b(?:tell me|show me|service records|what|how|where|which|would|please|thank you|thanks|hello|hi|my|the|have|has|is|are|can|could|i am|i'm|tomorrow|compare|costs?|warranty|maintenance|charging|brakes?|smoke|fire)\b", text.casefold()))
     english = english or bool(re.search(r'^\s*(?:do|does|did)\s+(?:i|we|you|they|it|vinfast|the|my|a|an|vf\s*[356789])\b', text, re.I))
     if english and not vi:
@@ -73,6 +73,49 @@ def response_language(text: str, supplied: str | None, previous: str = 'vi') -> 
 
 
 _VEHICLE = r'(?:VinFast\s+)?VF\s*(?:e34|[356789])(?:\s+(?:Eco|Plus)(?:\s+(?:AWD|FWD))?)?'
+
+
+def evidence_intent_query(text: str) -> str | None:
+    """Anchor recognized English evidence requests without rewriting qualifiers.
+
+    Original text is retained in full: model/trim/year/conditions remain available
+    to scope checks. Unrecognized intents continue through normal understanding.
+    """
+    from src.agents.guardrails import evaluate_hard_safety, evaluate_hazardous_intervention
+    if (evaluate_hard_safety(text)[0] or evaluate_hazardous_intervention(text)[0]
+            or evaluate_hazardous_intervention(canonical_query(text))[0]):
+        return None
+    from src.services.faq_questions import canonical_service_clauses
+    if canonical_service_clauses(text) != text:
+        return None  # Existing multi-topic decomposition retains every clause.
+    body = text.casefold()
+    if re.search(r'\bdo not\b|\bdon.t\b|not asking', body):
+        return None
+    anchors = []
+    if re.search(r'flood(?:ing)?|flood damage', body) and re.search(r'warranty|cover', body):
+        anchors.append('Chính sách bảo hành xe bị ngập nước')
+    if re.search(_VEHICLE, text, re.I):
+        for pattern, anchor in [
+            (r'\badas\b.*(?:features|include|have)|(?:features).*\badas\b', 'Tính năng ADAS'),
+            (r'12\s*v.*(?:battery.*warranty|warranty)|(?:battery.*warranty).*12\s*v', 'Bảo hành ắc quy 12V'),
+            (r'\b(?:driving range|published range|range|how far)\b', 'Quãng đường công bố'),
+            (r'\b(?:usable )?battery capacity\b', 'Dung lượng pin khả dụng'),
+            (r'\b(?:seats?|seating positions|seating capacity)\b', 'Số chỗ ngồi'),
+            (r'\bfast[- ]charging time\b|how long.*(?:fast[- ]charg)', 'Thời gian sạc nhanh'),
+            (r'\b(?:first service|maintenance schedule|scheduled maintenance)\b', 'Lịch bảo dưỡng định kỳ'),
+        ]:
+            if re.search(pattern, body):
+                anchors.append(anchor)
+    else:
+        for pattern, anchor in [
+            (r'(?:walk me through|how (?:do|can) i).*charg.*public (?:charging )?station', 'Hướng dẫn cách sạc pin tại trạm sạc công cộng'),
+            (r'charging history.*(?:app|application)|(?:app|application).*charging history', 'Tính năng lịch sử sạc trên ứng dụng VinFast'),
+            (r'(?:high[- ]voltage|auxiliary).*battery warranty.*(?:general|without choosing)', 'Chính sách bảo hành pin cao áp'),
+            (r'(?:in general|generally).*scheduled maintenance', 'Lịch bảo dưỡng định kỳ'),
+        ]:
+            if re.search(pattern, body):
+                anchors.append(anchor)
+    return ' — '.join([*anchors, text]) if anchors else None
 
 
 def canonical_query(text: str) -> str:

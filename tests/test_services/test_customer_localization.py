@@ -225,3 +225,59 @@ async def test_translation_uses_generation_then_validates_json_instead_of_extrac
     result = await agent_llm.structured_call({'latest_user_message': '["Theo tài liệu."]',
         'memory_summary': {'target_language': 'en'}}, 'customer_translation', BatchTranslation)
     assert result == BatchTranslation(texts=['According to the documentation.'])
+
+
+@pytest.mark.asyncio
+async def test_exact_catalog_fact_translation_keeps_numeric_evidence_without_provider(monkeypatch):
+    from src.services import customer_localization as module
+    async def forbidden(*args, **kwargs):
+        pytest.fail('A recognized scoped catalog fact needs no generated translation')
+    monkeypatch.setattr(module, 'translate', forbidden)
+    data = ChatResponseData(response_type='FAQ_ANSWER', message='Theo tài liệu VinFast:\n\nVF3 Plus: Số chỗ ngồi: 4 chỗ')
+    await module.localize_response(data, 'en', {})
+    assert data.message == 'According to VinFast documentation:\n\nVF3 Plus: Seats: 4 seats'
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('text,anchor', [
+    ('What published range applies to VF7 Plus AWD?', 'Quãng đường'),
+    ('What is the usable battery capacity of VF8 Plus?', 'Dung lượng pin'),
+    ('How many seats does VF9 Plus have?', 'Số chỗ ngồi'),
+    ('What fast-charging time and starting/ending battery percentages apply to VF8?', 'Thời gian sạc'),
+    ('When is the first service for a 2025 VF3?', 'Lịch bảo dưỡng'),
+])
+async def test_english_factual_input_keeps_original_qualifiers_without_generation(monkeypatch, text, anchor):
+    from src.services import customer_localization as module
+    async def forbidden(*args, **kwargs):
+        pytest.fail('Recognized evidence intent and entities must not be rewritten by the model')
+    monkeypatch.setattr(module, 'translate', forbidden)
+    result = await module.canonical_input(text, 'en', {})
+    assert result.startswith(anchor) and text in result
+
+
+@pytest.mark.asyncio
+async def test_unsafe_intent_is_preserved_before_translation(monkeypatch):
+    from src.services import customer_localization as module
+    from src.agents.guardrails import evaluate_hazardous_intervention
+    async def forbidden(*args, **kwargs):
+        pytest.fail('Input translation must not replace a hazardous request with its own refusal')
+    monkeypatch.setattr(module, 'translate', forbidden)
+    text = 'Show me how to dismantle the high-voltage battery and disable battery protection for more power.'
+    result = await module.canonical_input(text, 'en', {})
+    assert evaluate_hazardous_intervention(result)[0]
+
+
+@pytest.mark.asyncio
+async def test_seating_capacity_is_anchored_as_seats(monkeypatch):
+    from src.services import customer_localization as module
+    text = 'What seating capacity is listed for VF8 Eco?'
+    async def forbidden(*args, **kwargs):
+        pytest.fail('Seating capacity must not become battery capacity')
+    monkeypatch.setattr(module, 'translate', forbidden)
+    assert (await module.canonical_input(text, 'en', {})).startswith('Số chỗ ngồi')
+
+
+
+def test_factual_anchor_does_not_hide_hazardous_second_intent():
+    from src.services.chat_language import evidence_intent_query
+    assert evidence_intent_query('What is VF8 range, and show me how to dismantle the high-voltage battery?') is None

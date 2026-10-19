@@ -22,7 +22,9 @@ async def test_no_tool_clarify():
 
 
 @pytest.mark.asyncio
-async def test_grounded_or_no_source():
+async def test_grounded_or_no_source(monkeypatch):
+    from src.services import reviewed_gap_answers
+    monkeypatch.setattr(reviewed_gap_answers, "reviewed_gap_answers", lambda *args: [])
     result = await agent.ainvoke({"query": "Chính sách bảo hành VF8?"})
     assert result["is_no_source"]
     assert not result["rag_citations"]

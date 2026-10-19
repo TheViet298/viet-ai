@@ -1,0 +1,23 @@
+{
+  "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf5",
+  "source_section": "Thông số kỹ thuật / Pin & Sạc / Dung lượng pin khả dụng",
+  "reviewed_at": "2026-10-19",
+  "reviewer": "Codex/root, source reading",
+  "raw_sha256": "1767c0778a0f6a5a74a9291baeb3ceb635b6810c2fbaec83e87f6ac8d6c90772",
+  "market": "VN",
+  "variant": null,
+  "model_year": null,
+  "capacity": {
+    "label": "Dung lượng pin khả dụng",
+    "value": "37.23 kWh"
+  },
+  "model_colors": [
+    "Infinity Blanc",
+    "Zenith Grey",
+    "Solar Ruby",
+    "Summer Yellow Body - Jet Black Roof",
+    "Sky Blue - Infinity Blanc Roof",
+    "Urban Mint"
+  ],
+  "limits": "No year/trim/stock conclusion; only capacity and model-level color sections re-read."
+}

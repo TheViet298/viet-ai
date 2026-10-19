@@ -1,0 +1,118 @@
+{
+  "date": "2026-10-19",
+  "implementation_head": "ad5f5f3",
+  "branch": "codex/agent-quality-remediation",
+  "backend": "2145 passed, 47 skipped, 9 warnings, 6 subtests passed in 276.76s (0:04:36)",
+  "frontend_passed": 177,
+  "holdout": {
+    "sha256": "1dd4d42c5f00f302315738758b1361fb703496321d01bccd1a93e86db96f6a81",
+    "answerable_pass": 30,
+    "answerable_total": 30,
+    "boundary_pass": 10,
+    "boundary_total": 10,
+    "model_parsed_events": 7,
+    "model_error_events": 0,
+    "median_latency_ms": 109.5,
+    "p95_latency_ms": 1797.0,
+    "limits": "Frozen regression reused after fixes; not an unseen production accuracy estimate."
+  },
+  "provider63": {
+    "internal_status_counts": {
+      "answered": 48,
+      "needs_data": 14,
+      "external_action_required": 1
+    },
+    "parsed_events": 22,
+    "error_events": 0,
+    "factual_certification": "NOT_REVIEWED"
+  },
+  "memory": {
+    "capabilities": 11,
+    "new_process_per_request": true,
+    "long_sessions": 27,
+    "long_turns": 540,
+    "replays": 36,
+    "interleaved_two_user_turns": 120,
+    "sqlite": "verified",
+    "postgresql": "BLOCKED: user confirmed no dedicated test database",
+    "feature_default_enabled": false
+  },
+  "candidate": {
+    "path": ".test-runs/knowledge-remediation-candidate-v1",
+    "children": 2200,
+    "active_index_changed": false
+  },
+  "release_status": "BLOCKED on PostgreSQL gate; local code and SQLite evidence only",
+  "remaining_measured_questions": [
+    {
+      "question": "Thời hạn bảo hành xe VinFast VF 8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+      "answer_status": "needs_data",
+      "reason": "unsupported_numeric_claim"
+    },
+    {
+      "question": "Thời hạn bảo hành xe VinFast VF 5 là bao nhiêu năm?",
+      "answer_status": "needs_data",
+      "reason": "unsupported_numeric_claim"
+    },
+    {
+      "question": "Chu kỳ bảo dưỡng định kỳ đầu tiên của xe ô tô điện VinFast là ở mốc nào?",
+      "answer_status": "needs_data",
+      "reason": "unsupported_numeric_claim"
+    },
+    {
+      "question": "Hệ thống hỗ trợ người lái ADAS trên xe VF 8 bao gồm những tính năng cơ bản nào?",
+      "answer_status": "needs_data",
+      "reason": "unsupported_textual_claim"
+    },
+    {
+      "question": "VF7 Plus có màu gì?",
+      "answer_status": "needs_data",
+      "reason": "no_eligible_evidence"
+    },
+    {
+      "question": "Bảo hành pin cao áp VF8 bao lâu?",
+      "answer_status": "needs_data",
+      "reason": "unsupported_numeric_claim"
+    },
+    {
+      "question": "Bảo hành ắc quy 12V VF8 bao lâu?",
+      "answer_status": "needs_data",
+      "reason": "unsupported_numeric_claim"
+    },
+    {
+      "question": "VF8 chạy dịch vụ thương mại được bảo hành thế nào?",
+      "answer_status": "needs_data",
+      "reason": "unsupported_numeric_claim"
+    },
+    {
+      "question": "Xe bị ngập nước có được bảo hành không?",
+      "answer_status": "needs_data",
+      "reason": "unsupported_textual_claim"
+    },
+    {
+      "question": "Lịch bảo dưỡng định kỳ VF8 là gì?",
+      "answer_status": "needs_data",
+      "reason": "no_eligible_evidence"
+    },
+    {
+      "question": "VF5 bảo dưỡng mỗi bao nhiêu km?",
+      "answer_status": "needs_data",
+      "reason": "unsupported_numeric_claim"
+    },
+    {
+      "question": "VF8 đi được bao xa một lần sạc?",
+      "answer_status": "needs_data",
+      "reason": "unresolved_catalog_scope"
+    },
+    {
+      "question": "Dung lượng pin VF8 là bao nhiêu?",
+      "answer_status": "needs_data",
+      "reason": "unresolved_catalog_scope"
+    },
+    {
+      "question": "Dung lượng pin VF3 là bao nhiêu?",
+      "answer_status": "needs_data",
+      "reason": "unresolved_catalog_scope"
+    }
+  ]
+}

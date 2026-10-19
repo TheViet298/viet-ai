@@ -78,7 +78,19 @@ async def _run_chat_turn(payload, user, db, handler):
         if record:
             if record.request_hash != fingerprint:
                 raise HTTPException(409, 'request_id đã được dùng cho nội dung khác.')
-            return ApiResponse[ChatResponseData].model_validate(record.response)
+            replay = ApiResponse[ChatResponseData].model_validate(record.response)
+            receipt = record.response.get('_personal_memory')
+            if receipt and user:
+                if user.role != 'CUSTOMER':
+                    raise HTTPException(403, 'Thông tin cá nhân chỉ dành cho tài khoản khách hàng.')
+                from src.services.user_memory import load_user_memory
+                from src.services.user_memory_chat import memory_reply
+                current = load_user_memory(db, user)
+                mode = receipt['mode'] if current.revision == receipt['revision'] else 'stale'
+                if mode in {'recall', 'stale'}:
+                    replay.data.message = memory_reply(mode, current, receipt['language'], keys=receipt['keys'])
+                replay.data._personal_memory_diagnostics = {'mode': mode, 'revision': current.revision, 'replay': True}
+            return replay
         # Durable lease complements the process lock across API workers. Another
         # worker returns 409 rather than compute or create a duplicate incident.
         token = uuid4().hex
@@ -114,32 +126,122 @@ async def _run_chat_turn(payload, user, db, handler):
             language = response_language(payload.message, payload.language, conversation.preferred_language)
             conversation.preferred_language = language
             original = sanitize_pii(payload.message)[0]
-            canonical = await canonical_input(original, input_language, budget)
-            spelling = await normalize_message(canonical, recent_turns=recent, budget=budget)
+            memory_snapshot, memory_changes, personal_mode, memory_result = None, [], None, None
+            selected_personal_model = None
+            personal_subject = bool(snapshot.get('personal_subject_from_memory'))
+            personal_context_stale = False
+            if get_settings().user_memory_enabled:
+                from src.services.user_memory import MemorySnapshot, extract_memory_changes, load_user_memory
+                from src.services.user_memory_chat import memory_mode
+                if user and user.role == 'CUSTOMER':
+                    memory_snapshot = load_user_memory(db, user)
+                    memory_changes = extract_memory_changes(payload.message, memory_snapshot, conversation)
+                    personal_mode = memory_mode(payload.message, memory_changes, memory_snapshot)
+                    if snapshot.get('user_memory_revision') != memory_snapshot.revision and personal_subject and conversation.active_goal != 'incident':
+                        personal_context_stale = True
+                        conversation.subject = None
+                        conversation.facts = {key: fact for key, fact in conversation.facts.items()
+                                              if key not in {'model', 'version', 'year', 'battery', 'city'}}
+                        conversation.last_answer = []
+                        personal_subject = False
+                elif not user:
+                    empty = MemorySnapshot(revision=0)
+                    if memory_mode(payload.message, extract_memory_changes(payload.message, empty, conversation), empty):
+                        personal_mode = 'guest'
+                from src.agents.guardrails import evaluate_hard_safety
+                if payload.attachment_ids or evaluate_hard_safety(payload.message)[0]:
+                    personal_mode = None
+            if personal_mode:
+                from src.services.chat_normalization import NormalizedMessage
+                canonical = original
+                spelling = NormalizedMessage(original_text=original, text=original)
+            else:
+                canonical = await canonical_input(original, input_language, budget)
+                spelling = await normalize_message(canonical, recent_turns=recent, budget=budget)
             spelling.original_text = original
-            if spelling.needs_confirmation:
+            if personal_mode:
+                turn = TurnUnderstanding(move='supply_info', original_text=original, resolved_query=original,
+                                         goal=conversation.active_goal, topic=conversation.topic, subject=conversation.subject)
+            elif spelling.needs_confirmation:
                 turn = TurnUnderstanding(original_text=spelling.original_text, resolved_query=spelling.text,
                                          needs_confirmation=True, goal=conversation.active_goal,
                                          topic=conversation.topic, subject=conversation.subject)
             else:
                 turn = await understand_turn(spelling.text, conversation, recent, budget)
                 turn.original_text = spelling.original_text
+                if memory_snapshot is not None:
+                    from src.services.chat_normalization import fold_text
+                    from src.services.user_memory import resolve_personal_memory
+                    selected = resolve_personal_memory(payload.message, memory_snapshot)
+                    owns = selected.get('owned_vehicle.model')
+                    personal_reference = re.search(r'xe (?:cua )?toi|my (?:car|vehicle)', fold_text(payload.message))
+                    if (owns and personal_reference and not turn.updates.get('model')
+                            and turn.goal in {'warranty', 'maintenance', 'quote', 'range', 'capacity', 'charging', 'appearance'}):
+                        selected_personal_model = owns['value']
+                        turn.subject = selected_personal_model
+                        turn.updates['model'] = selected_personal_model
+                        for memory_key, slot in [('owned_vehicle.version', 'version'), ('owned_vehicle.model_year', 'year'),
+                                                 ('owned_vehicle.battery_plan', 'battery')]:
+                            if memory_key in selected:
+                                value = selected[memory_key]['value']
+                                if slot == 'battery':
+                                    value = {'purchased': 'mua kèm pin', 'subscription': 'thuê pin'}[value]
+                                turn.updates.setdefault(slot, str(value))
+                        personal_subject = True
+                    elif turn.updates.get('model') or turn.goal == 'incident' or turn.subject is None:
+                        personal_subject = False
                 conversation = apply_turn(conversation, turn, before_turn + 1)
             db.info['conversation_turn'] = {'context': conversation.model_dump(), 'understanding': turn.model_dump(),
-                                           'budget': budget, 'normalization': spelling.model_dump()}
+                                           'budget': budget, 'normalization': spelling.model_dump(),
+                                           'personal_memory_mode': personal_mode,
+                                           'personal_memory_model': selected_personal_model,
+                                           'personal_context_stale': personal_context_stale,
+                                           'user_memory_revision': memory_snapshot.revision if memory_snapshot else None,
+                                           'preserved_vehicle_context': snapshot.get('vehicle_context', {})}
             response = await handler(payload, user, db)
             data = response.data
+            if memory_snapshot is not None and memory_changes:
+                from src.services.user_memory import apply_user_memory_changes, load_user_memory
+                memory_result = apply_user_memory_changes(db, user, memory_changes,
+                    expected_revision=memory_snapshot.revision, source_kind='chat',
+                    source_session_id=payload.session_id, source_message_id=db.info.get('chat_turn_customer_id'))
+                memory_snapshot = load_user_memory(db, user)
+                if memory_result.status == 'written' and personal_subject and conversation.active_goal != 'incident':
+                    personal_context_stale = True
+                    conversation.subject = None
+                    conversation.facts = {key: fact for key, fact in conversation.facts.items()
+                                          if key not in {'model', 'version', 'year', 'battery', 'city'}}
+                    conversation.last_answer = []
+                    personal_subject = False
+            if personal_mode == 'recall' and memory_snapshot is not None:
+                from src.services.user_memory import fence_user_memory_revision, load_user_memory
+                memory_snapshot = load_user_memory(db, user)
+                fence = fence_user_memory_revision(db, user, memory_snapshot.revision)
+                if fence.status == 'conflict':
+                    raise HTTPException(409, 'Thông tin ghi nhớ vừa thay đổi. Vui lòng hỏi lại.')
+            if personal_mode:
+                from src.services.user_memory import MemorySnapshot
+                from src.services.user_memory_chat import memory_reply
+                data.message = memory_reply(personal_mode, memory_snapshot or MemorySnapshot(revision=0), language,
+                                            text=payload.message, changes=memory_changes, result=memory_result)
+                data.response_type = 'CLARIFICATION' if personal_mode == 'clarify' else 'FAQ_ANSWER'
+                data.citations, data.vehicle_cards, data.suggested_replies = [], [], []
+                data._personal_memory_diagnostics = {'mode': personal_mode,
+                    'revision': memory_snapshot.revision if memory_snapshot else None,
+                    'status': memory_result.status if memory_result else 'read',
+                    'keys': [change.key for change in memory_changes]}
             from src.services.vehicle_catalog import (
                 is_generic_vehicle_comparison,
                 select_vehicle_cards,
                 vehicle_comparison_reply,
                 vehicle_overview_reply,
             )
-            card_text = '' if spelling.needs_confirmation else spelling.text
-            if not spelling.needs_confirmation and is_generic_vehicle_comparison(turn.resolved_query):
+            card_text = '' if spelling.needs_confirmation or personal_mode else spelling.text
+            if not spelling.needs_confirmation and not personal_mode and is_generic_vehicle_comparison(turn.resolved_query):
                 card_text = turn.resolved_query
             generated_outcome = db.info.pop('conversation_final', {})
             answer_path = ('clarification' if spelling.needs_confirmation else
+                           'personal_memory' if personal_mode else
                            'incident' if turn.goal == 'incident' else
                            'refusal' if data.response_type == 'OOS' else
                            generated_outcome.get('answer_path') or ('rag' if data.citations else 'general'))
@@ -200,7 +302,7 @@ async def _run_chat_turn(payload, user, db, handler):
             from src.services.faq_questions import faq_parts
             compound_help = bool(faq_parts(canonical))
             if (conversation.active_goal == 'test_drive' or
-                conversation.active_goal == 'maintenance' and re.search(r'đặt lịch|đặt hẹn', conversation.topic, re.I)) and not data.show_emergency_banner and not compound_help:
+                conversation.active_goal == 'maintenance' and re.search(r'đặt lịch|đặt hẹn', conversation.topic, re.I)) and not data.show_emergency_banner and not compound_help and not personal_mode:
                 from src.services.conversation_progress import progress_reply
                 booking_progress = derive_progress(conversation, {}, None, None)
                 operational_reply = progress_reply(turn, conversation, booking_progress)
@@ -210,8 +312,15 @@ async def _run_chat_turn(payload, user, db, handler):
                     data.vehicle_cards = []
                     data.suggested_replies = []
                     answer_path = 'operational'
-            await localize_response(data, language, budget, snapshot=answer_path == 'snapshot', operational=booking_progress,
-                                    conversation=conversation)
+            if personal_mode:
+                data.language = language
+            else:
+                await localize_response(data, language, budget, snapshot=answer_path == 'snapshot', operational=booking_progress,
+                                        conversation=conversation)
+                if memory_result:
+                    from src.services.user_memory_chat import memory_reply
+                    data.message += '\n\n' + memory_reply('write', memory_snapshot, language,
+                        changes=memory_changes, result=memory_result)
             agent_message = db.query(Message).filter_by(session_id=payload.session_id, sender_type='AGENT').order_by(Message.created_at.desc(), Message.id.desc()).first()
             if agent_message:
                 agent_message.content = data.message
@@ -221,8 +330,18 @@ async def _run_chat_turn(payload, user, db, handler):
                     'safe_guidance': data.safe_guidance, 'vehicle_comparison': data.vehicle_comparison,
                     'vehicle_cards': [card.model_dump() for card in data.vehicle_cards]}
             if request_key:
+                receipt = response.model_dump(mode='json')
+                if personal_mode:
+                    # Store a receipt reference, not another durable copy of
+                    # recalled fact values. Replays resolve the current revision.
+                    from src.services.user_memory import personal_memory_keys
+                    if personal_mode == 'recall':
+                        receipt['data']['message'] = ''
+                    receipt['_personal_memory'] = {'mode': personal_mode, 'language': language,
+                        'revision': memory_snapshot.revision if memory_snapshot else 0,
+                        'keys': list(personal_memory_keys(payload.message) or [])}
                 db.add(ChatRequestRecord(id=request_key, owner=owner, session_id=payload.session_id,
-                                         request_hash=fingerprint, response=response.model_dump(mode='json')))
+                                         request_hash=fingerprint, response=receipt))
             # Bind a vehicle/incident scope only after the accepted response.
             # A new vehicle awaiting details must stay unbound on its next turn.
             db.flush()
@@ -230,14 +349,27 @@ async def _run_chat_turn(payload, user, db, handler):
             if latest:
                 meta = dict(latest.msg_metadata or {})
                 meta['language'] = language
+                if memory_snapshot is not None:
+                    meta['user_memory_revision'] = memory_snapshot.revision
                 latest.msg_metadata = meta
                 context = dict(meta.get('vehicle_context') or {})
+                if personal_context_stale and not context.get('is_incident'):
+                    context['owned_model'] = None
+                    if not turn.updates.get('model'):
+                        context.update(models=[], target_model=None)
+                    meta['vehicle_context'] = context
+                    latest.msg_metadata = meta
+                    cache = dict((session.memory_states or {}).get(payload.session_id, {}))
+                    cache['captured_fields'] = {key: value for key, value in cache.get('captured_fields', {}).items() if key != 'vehicle_model'}
+                    cache['fact_history'] = [row for row in cache.get('fact_history', []) if row.get('field') != 'vehicle_model']
+                    cache.update(memory_summary='', summary_evidence=[])
+                    session.memory_states = {**(session.memory_states or {}), payload.session_id: cache}
                 if context.get('is_incident'):
                     context['incident_case_id'] = data.case_id
                     meta['vehicle_context'] = context
                     latest.msg_metadata = meta
                 accept_application_memory(session, payload.session_id, latest.content, data, context, before_turn,
-                                          observation_text='' if spelling.needs_confirmation else spelling.text)
+                                          observation_text='' if spelling.needs_confirmation or personal_mode else spelling.text)
             stored = (session.memory_states or {}).get(payload.session_id, {})
             from src.services.auth import scoped_cases
             case = scoped_cases(db, user).filter(Case.id == data.case_id).first() if data.case_id else None
@@ -253,9 +385,20 @@ async def _run_chat_turn(payload, user, db, handler):
             if claims:
                 conversation.last_answer = [*conversation.last_answer, {'turn': before_turn + 1, 'claims': claims}][-3:]
             from src.services.request_diagnostics import final_response_diagnostics
+            answer_status = ('error' if budget.get('presentation_failed') or memory_result and memory_result.status == 'conflict' else
+                             'external_action_required' if personal_mode == 'guest' else
+                             'answered' if answer_path == 'snapshot' else
+                             'needs_clarification' if spelling.needs_confirmation or data.response_type == 'CLARIFICATION' else
+                             'refused' if data.response_type == 'OOS' else
+                             'external_action_required' if booking_progress and booking_progress.state == 'external_action_required' else
+                             generated_outcome.get('answer_status'))
             final_diagnostics = final_response_diagnostics(answer_path=answer_path,
                 successful=not budget.get('presentation_failed') and (answer_path == 'snapshot' or generated_outcome.get('successful', data.response_type not in {'NO_SOURCE', 'ERROR'})),
-                stages=budget.get('stage_outcomes', []))
+                stages=budget.get('stage_outcomes', []), answer_status=answer_status)
+            if agent_message:
+                agent_message.msg_metadata = {**(agent_message.msg_metadata or {}),
+                    'answer_status': final_diagnostics['answer_status'],
+                    'answer_parts': (db.info.get('conversation_retrieval') or {}).get('parts', [])}
             from src.services.tracer import record_trace_step
             try:
                 record_trace_step(payload.session_id, before_turn + 1, 'application', 'final_response',
@@ -264,6 +407,8 @@ async def _run_chat_turn(payload, user, db, handler):
                 pass
             session.memory_states = {**(session.memory_states or {}), payload.session_id: {
                 **stored, 'conversation_context': conversation.model_dump(), 'turn_understanding': turn.model_dump(),
+                **({'user_memory_revision': memory_snapshot.revision,
+                    'personal_subject_from_memory': personal_subject} if memory_snapshot is not None else {}),
                 'conversation_progress': progress.model_dump(),
                 'final_diagnostics': final_diagnostics,
                 'conversation_retrieval': db.info.pop('conversation_retrieval', {}),

@@ -5,6 +5,8 @@ from src.services import rag_service as module
 
 
 def test_other_models_cannot_fill_twenty_candidate_slots(monkeypatch, tmp_path):
+    from src.services import reviewed_gap_answers
+    monkeypatch.setattr(reviewed_gap_answers, 'reviewed_gap_answers', lambda *args: [])
     (tmp_path / 'chroma.sqlite3').touch()
     monkeypatch.setattr(get_settings(), 'chroma_persist_dir', str(tmp_path))
     meta = {**module.source_registry()['SRC-002'], 'source_id': 'SRC-002'}

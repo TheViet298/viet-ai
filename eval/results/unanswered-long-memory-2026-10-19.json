@@ -1,0 +1,817 @@
+{
+  "scope": "Previous27offline-modelsessions;includes insufficient-evidence followups and partial English retrieval, excludes legitimate refusals/action referrals",
+  "total_user_turns": 540,
+  "fallback_turns": 219,
+  "unique_fallback_questions": 30,
+  "initial_simple_pattern_count": 186,
+  "additional_after_manual_review": 33,
+  "cases": [
+    {
+      "question": "Chính sách bảo hành pin và lịch bảo dưỡng định kỳ",
+      "failure_kind": "retrieval_unavailable",
+      "occurrences": 9,
+      "response": "Em chưa tìm được đủ nguồn cho các phần sau:\n\n### Bảo hành pin\n\nEm chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.\n\n### Bảo dưỡng định kỳ\n\nEm chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.\n\nQuý khách cho biết dòng xe, đời xe, số km hiện tại và xe có từng chạy dịch vụ hay không để em đối chiếu thời hạn bảo hành pin và lịch bảo dưỡng đúng xe nhé.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-services-incident-emergency-10-reload",
+          "turn": 4,
+          "goal": "maintenance",
+          "subject": "VF7"
+        },
+        {
+          "session": "long-services-incident-emergency-10-replay",
+          "turn": 4,
+          "goal": "maintenance",
+          "subject": "VF7"
+        },
+        {
+          "session": "long-services-incident-emergency-20-continuous",
+          "turn": 4,
+          "goal": "maintenance",
+          "subject": "VF7"
+        }
+      ]
+    },
+    {
+      "question": "VF8 Plus có màu gì?",
+      "failure_kind": "retrieval_unavailable",
+      "occurrences": 9,
+      "response": "Em chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-services-incident-emergency-10-reload",
+          "turn": 7,
+          "goal": "appearance",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-services-incident-emergency-10-replay",
+          "turn": 7,
+          "goal": "appearance",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-services-incident-emergency-20-continuous",
+          "turn": 7,
+          "goal": "appearance",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "Biểu phí sạc tại trạm sạc công cộng",
+      "failure_kind": "retrieval_unavailable",
+      "occurrences": 15,
+      "response": "Em chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-services-incident-emergency-10-reload",
+          "turn": 8,
+          "goal": "charging_network",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-services-incident-emergency-10-replay",
+          "turn": 8,
+          "goal": "charging_network",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-services-incident-emergency-20-continuous",
+          "turn": 8,
+          "goal": "charging_network",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "Ứng dụng VinFast có tính năng gì?",
+      "failure_kind": "retrieval_unavailable",
+      "occurrences": 15,
+      "response": "Em chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-services-incident-emergency-10-reload",
+          "turn": 9,
+          "goal": "application",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-services-incident-emergency-10-replay",
+          "turn": 9,
+          "goal": "application",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-services-incident-emergency-20-continuous",
+          "turn": 9,
+          "goal": "application",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "Không phải trụ P01, trụ P02",
+      "failure_kind": "retrieval_unavailable",
+      "occurrences": 6,
+      "response": "Em chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-services-incident-emergency-20-continuous",
+          "turn": 18,
+          "goal": "incident",
+          "subject": "VF5"
+        },
+        {
+          "session": "long-services-incident-emergency-20-reload",
+          "turn": 18,
+          "goal": "incident",
+          "subject": "VF5"
+        },
+        {
+          "session": "long-services-incident-emergency-20-replay",
+          "turn": 18,
+          "goal": "incident",
+          "subject": "VF5"
+        }
+      ]
+    },
+    {
+      "question": "Xe không còn báo CC01 nữa",
+      "failure_kind": "retrieval_unavailable",
+      "occurrences": 6,
+      "response": "Em chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-services-incident-emergency-20-continuous",
+          "turn": 19,
+          "goal": "incident",
+          "subject": "VF5"
+        },
+        {
+          "session": "long-services-incident-emergency-20-reload",
+          "turn": 19,
+          "goal": "incident",
+          "subject": "VF5"
+        },
+        {
+          "session": "long-services-incident-emergency-20-replay",
+          "turn": 19,
+          "goal": "incident",
+          "subject": "VF5"
+        }
+      ]
+    },
+    {
+      "question": "Tôi đã dừng ở nơi an toàn",
+      "failure_kind": "retrieval_unavailable",
+      "occurrences": 6,
+      "response": "Em chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-services-incident-emergency-20-continuous",
+          "turn": 20,
+          "goal": "incident",
+          "subject": "VF5"
+        },
+        {
+          "session": "long-services-incident-emergency-20-reload",
+          "turn": 20,
+          "goal": "incident",
+          "subject": "VF5"
+        },
+        {
+          "session": "long-services-incident-emergency-20-replay",
+          "turn": 20,
+          "goal": "incident",
+          "subject": "VF5"
+        }
+      ]
+    },
+    {
+      "question": "Tôi muốn hỏi bảo hành VF8",
+      "failure_kind": "retrieval_unavailable",
+      "occurrences": 3,
+      "response": "Em chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-services-incident-emergency-30-continuous",
+          "turn": 21,
+          "goal": "warranty",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-services-incident-emergency-30-reload",
+          "turn": 21,
+          "goal": "warranty",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-services-incident-emergency-30-replay",
+          "turn": 21,
+          "goal": "warranty",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "Còn VF3 thì sao?",
+      "failure_kind": "insufficient_evidence",
+      "occurrences": 3,
+      "response": "Em chưa có nguồn đủ để xác nhận thông tin cụ thể. Thời hạn phụ thuộc hạng mục, đời xe, phương án pin và điều kiện sử dụng. Cần đối chiếu chính sách đúng xe; Quý khách cho biết đời xe và loại sử dụng nhé.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-services-incident-emergency-30-continuous",
+          "turn": 22,
+          "goal": "warranty",
+          "subject": "VF3"
+        },
+        {
+          "session": "long-services-incident-emergency-30-reload",
+          "turn": 22,
+          "goal": "warranty",
+          "subject": "VF3"
+        },
+        {
+          "session": "long-services-incident-emergency-30-replay",
+          "turn": 22,
+          "goal": "warranty",
+          "subject": "VF3"
+        }
+      ]
+    },
+    {
+      "question": "Lịch bảo dưỡng VF3 là gì?",
+      "failure_kind": "retrieval_unavailable",
+      "occurrences": 3,
+      "response": "Em chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-services-incident-emergency-30-continuous",
+          "turn": 23,
+          "goal": "maintenance",
+          "subject": "VF3"
+        },
+        {
+          "session": "long-services-incident-emergency-30-reload",
+          "turn": 23,
+          "goal": "maintenance",
+          "subject": "VF3"
+        },
+        {
+          "session": "long-services-incident-emergency-30-replay",
+          "turn": 23,
+          "goal": "maintenance",
+          "subject": "VF3"
+        }
+      ]
+    },
+    {
+      "question": "VF7 Plus có màu gì?",
+      "failure_kind": "retrieval_unavailable",
+      "occurrences": 12,
+      "response": "Em chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-bilingual-context-switches-10-continuous",
+          "turn": 5,
+          "goal": "appearance",
+          "subject": "VF7"
+        },
+        {
+          "session": "long-bilingual-context-switches-10-reload",
+          "turn": 5,
+          "goal": "appearance",
+          "subject": "VF7"
+        },
+        {
+          "session": "long-bilingual-context-switches-10-replay",
+          "turn": 5,
+          "goal": "appearance",
+          "subject": "VF7"
+        }
+      ]
+    },
+    {
+      "question": "What colors are available for the VF8 Plus?",
+      "failure_kind": "presentation_failed",
+      "occurrences": 9,
+      "response": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+      "examples": [
+        {
+          "session": "long-bilingual-context-switches-10-continuous",
+          "turn": 6,
+          "goal": "appearance",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-10-reload",
+          "turn": 6,
+          "goal": "appearance",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-10-replay",
+          "turn": 6,
+          "goal": "appearance",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "What is the on-road price of the VF8 Plus?",
+      "failure_kind": "presentation_failed",
+      "occurrences": 9,
+      "response": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+      "examples": [
+        {
+          "session": "long-bilingual-context-switches-10-continuous",
+          "turn": 8,
+          "goal": "quote",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-10-reload",
+          "turn": 8,
+          "goal": "quote",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-10-replay",
+          "turn": 8,
+          "goal": "quote",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "How long is the VF8 warranty?",
+      "failure_kind": "presentation_failed",
+      "occurrences": 9,
+      "response": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+      "examples": [
+        {
+          "session": "long-bilingual-context-switches-10-continuous",
+          "turn": 10,
+          "goal": "warranty",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-10-reload",
+          "turn": 10,
+          "goal": "warranty",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-10-replay",
+          "turn": 10,
+          "goal": "warranty",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "Bảo hành pin cao áp VF8 bao lâu?",
+      "failure_kind": "retrieval_unavailable",
+      "occurrences": 6,
+      "response": "Em chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-bilingual-context-switches-20-continuous",
+          "turn": 11,
+          "goal": "warranty",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-reload",
+          "turn": 11,
+          "goal": "warranty",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-replay",
+          "turn": 11,
+          "goal": "warranty",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "What is the maintenance schedule for the VF8?",
+      "failure_kind": "presentation_failed",
+      "occurrences": 6,
+      "response": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+      "examples": [
+        {
+          "session": "long-bilingual-context-switches-20-continuous",
+          "turn": 12,
+          "goal": "maintenance",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-reload",
+          "turn": 12,
+          "goal": "maintenance",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-replay",
+          "turn": 12,
+          "goal": "maintenance",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "Còn VF5 thì sao?",
+      "failure_kind": "insufficient_evidence",
+      "occurrences": 12,
+      "response": "Em chưa có nguồn đủ để xác nhận thông tin cụ thể. Mốc bảo dưỡng cần đối chiếu sổ bảo dưỡng đúng đời xe và điều kiện sử dụng, không tự chọn một số km chung. Quý khách cho biết đời xe và số km hiện tại nhé.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-bilingual-context-switches-20-continuous",
+          "turn": 13,
+          "goal": "maintenance",
+          "subject": "VF5"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-reload",
+          "turn": 13,
+          "goal": "maintenance",
+          "subject": "VF5"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-replay",
+          "turn": 13,
+          "goal": "maintenance",
+          "subject": "VF5"
+        }
+      ]
+    },
+    {
+      "question": "Please explain battery warranty and scheduled maintenance.",
+      "failure_kind": "presentation_failed",
+      "occurrences": 6,
+      "response": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+      "examples": [
+        {
+          "session": "long-bilingual-context-switches-20-continuous",
+          "turn": 14,
+          "goal": "maintenance",
+          "subject": "VF5"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-reload",
+          "turn": 14,
+          "goal": "maintenance",
+          "subject": "VF5"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-replay",
+          "turn": 14,
+          "goal": "maintenance",
+          "subject": "VF5"
+        }
+      ]
+    },
+    {
+      "question": "How far can the VF8 travel on a full charge?",
+      "failure_kind": "presentation_failed",
+      "occurrences": 6,
+      "response": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+      "examples": [
+        {
+          "session": "long-bilingual-context-switches-20-continuous",
+          "turn": 16,
+          "goal": "range",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-reload",
+          "turn": 16,
+          "goal": "range",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-replay",
+          "turn": 16,
+          "goal": "range",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "Dung lượng pin VF8 là bao nhiêu?",
+      "failure_kind": "insufficient_evidence",
+      "occurrences": 12,
+      "response": "Em chưa tìm được tài liệu chính thức đủ để xác nhận thông tin này. Quý khách có thể liên hệ chuyên viên VinFast để đối chiếu.",
+      "examples": [
+        {
+          "session": "long-bilingual-context-switches-20-continuous",
+          "turn": 17,
+          "goal": "capacity",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-reload",
+          "turn": 17,
+          "goal": "capacity",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-replay",
+          "turn": 17,
+          "goal": "capacity",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "How much does it cost to charge the VF8?",
+      "failure_kind": "presentation_failed",
+      "occurrences": 6,
+      "response": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+      "examples": [
+        {
+          "session": "long-bilingual-context-switches-20-continuous",
+          "turn": 18,
+          "goal": "charging_network",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-reload",
+          "turn": 18,
+          "goal": "charging_network",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-replay",
+          "turn": 18,
+          "goal": "charging_network",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "Please explain public charging, charging fees and VinFast app features.",
+      "failure_kind": "partial_english_retrieval",
+      "occurrences": 6,
+      "response": "According to VinFast documentation:\n\n### Charging at a public station\n\nHow to charge at a public station\n\n1. Step 1: Park in a bay with an available charger.\n2. Step 2: Open the charging-port cover as described in your vehicle's owner's manual.\n3. Step 3: Take the compatible charging connector from the charger.\n4. Step 4: Plug the connector into the vehicle's charging port.\n5. Step 5: Check the charging information and status on the vehicle display.\n\nTo finish: select stop charging on the vehicle display, wait about 10 seconds, then remove the connector as directed in the guide.\n\nThe guide illustrates one vehicle model. Check your model's owner's manual for the location and operation of the charging-port cover.\n\n### Charging fees\n\nI could not retrieve this information. Please try again or contact a VinFast specialist.\n\n### VinFast app features\n\nCharging features in the VinFast app\n\n- Find places and directions: select or search for a destination, then choose a station from the list. The app can show charger information, travel time and estimated remaining battery on arrival.\n- Charging history: open Charging History and select a session to view its time, location, cost and any additional fees.\n\nCheck the menu names and steps against your installed app version; the source is an app guide published in 2022.",
+      "examples": [
+        {
+          "session": "long-bilingual-context-switches-20-continuous",
+          "turn": 19,
+          "goal": "charging_network",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-reload",
+          "turn": 19,
+          "goal": "charging_network",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-replay",
+          "turn": 19,
+          "goal": "charging_network",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "Hướng dẫn cách sạc tại trạm công cộng và biểu phí sạc",
+      "failure_kind": "retrieval_unavailable",
+      "occurrences": 6,
+      "response": "Theo tài liệu VinFast:\n\n### Cách sạc tại trạm công cộng\n\nHướng dẫn sạc ô tô tại trạm công cộng\n\n1. Bước 1: Đưa xe vào khoang đỗ có trụ sạc khả dụng.\n2. Bước 2: Mở nắp cổng sạc theo hướng dẫn sử dụng của mẫu xe.\n3. Bước 3: Lấy súng sạc phù hợp từ trụ.\n4. Bước 4: Cắm súng sạc vào cổng sạc của xe.\n5. Bước 5: Kiểm tra thông tin và trạng thái sạc trên màn hình xe.\n\nKhi kết thúc: chọn dừng sạc trên màn hình xe, chờ khoảng 10 giây rồi rút súng sạc theo hướng dẫn trong cẩm nang.\n\nCẩm nang minh họa thao tác trên một mẫu xe; vị trí và cách mở cổng sạc cần đối chiếu sổ tay đúng mẫu xe.\n\n### Biểu phí sạc\n\nEm chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.",
+      "examples": [
+        {
+          "session": "long-bilingual-context-switches-20-continuous",
+          "turn": 20,
+          "goal": "charging_network",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-reload",
+          "turn": 20,
+          "goal": "charging_network",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-bilingual-context-switches-20-replay",
+          "turn": 20,
+          "goal": "charging_network",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "What will the weather be like tomorrow?",
+      "failure_kind": "presentation_failed",
+      "occurrences": 3,
+      "response": "I could not prepare a reliable English answer to this question. Please try again or contact a VinFast specialist for help.",
+      "examples": [
+        {
+          "session": "long-bilingual-context-switches-30-continuous",
+          "turn": 28,
+          "goal": "out_of_scope",
+          "subject": "VF3"
+        },
+        {
+          "session": "long-bilingual-context-switches-30-reload",
+          "turn": 28,
+          "goal": "out_of_scope",
+          "subject": "VF3"
+        },
+        {
+          "session": "long-bilingual-context-switches-30-replay",
+          "turn": 28,
+          "goal": "out_of_scope",
+          "subject": "VF3"
+        }
+      ]
+    },
+    {
+      "question": "Chính sách bảo hành pin VF8 bao lâu?",
+      "failure_kind": "retrieval_unavailable",
+      "occurrences": 6,
+      "response": "Em chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-sales-services-return-20-continuous",
+          "turn": 11,
+          "goal": "warranty",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-sales-services-return-20-reload",
+          "turn": 11,
+          "goal": "warranty",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-sales-services-return-20-replay",
+          "turn": 11,
+          "goal": "warranty",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "Pin cao áp, không phải ắc quy 12V",
+      "failure_kind": "insufficient_evidence",
+      "occurrences": 6,
+      "response": "Em hiểu Quý khách đang hỏi bảo hành pin cao áp của VF8. Cần đối chiếu chính sách đúng đời xe và phương án pin; em chưa có nguồn đủ để chốt thời hạn. Quý khách cho biết đời xe và pin mua kèm xe hay thay thế riêng nhé.",
+      "examples": [
+        {
+          "session": "long-sales-services-return-20-continuous",
+          "turn": 12,
+          "goal": "warranty",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-sales-services-return-20-reload",
+          "turn": 12,
+          "goal": "warranty",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-sales-services-return-20-replay",
+          "turn": 12,
+          "goal": "warranty",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "Không phải pin cao áp, tôi hỏi ắc quy 12V",
+      "failure_kind": "insufficient_evidence",
+      "occurrences": 6,
+      "response": "Em hiểu Quý khách đang hỏi bảo hành ắc quy 12V của VF8. Cần đối chiếu chính sách đúng đời xe và phương án pin; em chưa có nguồn đủ để chốt thời hạn. Quý khách cho biết đời xe và pin mua kèm xe hay thay thế riêng nhé.",
+      "examples": [
+        {
+          "session": "long-sales-services-return-20-continuous",
+          "turn": 13,
+          "goal": "warranty",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-sales-services-return-20-reload",
+          "turn": 13,
+          "goal": "warranty",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-sales-services-return-20-replay",
+          "turn": 13,
+          "goal": "warranty",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "Lịch bảo dưỡng định kỳ VF8 là gì?",
+      "failure_kind": "retrieval_unavailable",
+      "occurrences": 6,
+      "response": "Em chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-sales-services-return-20-continuous",
+          "turn": 14,
+          "goal": "maintenance",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-sales-services-return-20-reload",
+          "turn": 14,
+          "goal": "maintenance",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-sales-services-return-20-replay",
+          "turn": 14,
+          "goal": "maintenance",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "VF8 sạc bao lâu?",
+      "failure_kind": "retrieval_unavailable",
+      "occurrences": 6,
+      "response": "Em chưa tra cứu được thông tin này. Quý khách vui lòng thử lại hoặc liên hệ chuyên viên VinFast để được hỗ trợ.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "examples": [
+        {
+          "session": "long-sales-services-return-20-continuous",
+          "turn": 18,
+          "goal": "charging",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-sales-services-return-20-reload",
+          "turn": 18,
+          "goal": "charging",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-sales-services-return-20-replay",
+          "turn": 18,
+          "goal": "charging",
+          "subject": "VF8"
+        }
+      ]
+    },
+    {
+      "question": "VF8 đi được bao xa một lần sạc?",
+      "failure_kind": "insufficient_evidence",
+      "occurrences": 6,
+      "response": "Em chưa tìm được tài liệu chính thức đủ để xác nhận thông tin này. Quý khách có thể liên hệ chuyên viên VinFast để đối chiếu.",
+      "examples": [
+        {
+          "session": "long-sales-services-return-20-continuous",
+          "turn": 19,
+          "goal": "range",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-sales-services-return-20-reload",
+          "turn": 19,
+          "goal": "range",
+          "subject": "VF8"
+        },
+        {
+          "session": "long-sales-services-return-20-replay",
+          "turn": 19,
+          "goal": "range",
+          "subject": "VF8"
+        }
+      ]
+    }
+  ],
+  "additional_missing_field_responses": [
+    {
+      "question": "so với VF3",
+      "occurrences": 18,
+      "response": "Dạ, em gửi anh/chị thông tin so sánh giữa VF 8 Eco và VF 3 Eco:\n\n- **Giá bán từ**: VF 8 Eco 898.000.000 VNĐ; VF 3 Eco 285.000.000 VNĐ.\n\n- **Quãng đường mỗi lần sạc**: VF 8 Eco 635 km (NEDC); VF 3 Eco 215 km (NEDC).\n\n- **Dung lượng pin khả dụng**: VF 8 Eco 87,7 kWh; VF 3 Eco Chưa có dữ liệu.\n\n- **Công suất tối đa**: VF 8 Eco 150 kW; VF 3 Eco 30 kW.\n\n- **Thời gian sạc nhanh (10%–70%)**: VF 8 Eco 31 phút; VF 3 Eco 36 phút.\n\n- **Số chỗ ngồi**: VF 8 Eco 5 chỗ; VF 3 Eco 4 chỗ.\n\nQuãng đường thực tế phụ thuộc điều kiện sử dụng. Các chuẩn NEDC/WLTP khác nhau không nên so trực tiếp; giá lăn bánh và ưu đãi cần showroom xác nhận."
+    },
+    {
+      "question": "so bản plus",
+      "occurrences": 21,
+      "response": "Dạ, em gửi anh/chị thông tin so sánh giữa VF 8 Plus và VF 3 Plus:\n\n- **Giá bán từ**: VF 8 Plus 1.079.000.000 VNĐ; VF 3 Plus 296.000.000 VNĐ.\n\n- **Quãng đường mỗi lần sạc**: VF 8 Plus 475 km (NEDC); VF 3 Plus 215 km (NEDC).\n\n- **Dung lượng pin khả dụng**: VF 8 Plus 87,7 kWh; VF 3 Plus Chưa có dữ liệu.\n\n- **Công suất tối đa**: VF 8 Plus 300 kW; VF 3 Plus 30 kW.\n\n- **Thời gian sạc nhanh (10%–70%)**: VF 8 Plus 31 phút; VF 3 Plus 36 phút.\n\n- **Số chỗ ngồi**: VF 8 Plus 5 chỗ; VF 3 Plus 4 chỗ.\n\nQuãng đường thực tế phụ thuộc điều kiện sử dụng. Các chuẩn NEDC/WLTP khác nhau không nên so trực tiếp; giá lăn bánh và ưu đãi cần showroom xác nhận."
+    },
+    {
+      "question": "so bản eco",
+      "occurrences": 9,
+      "response": "Dạ, em gửi anh/chị thông tin so sánh giữa VF 8 Eco và VF 3 Eco:\n\n- **Giá bán từ**: VF 8 Eco 898.000.000 VNĐ; VF 3 Eco 285.000.000 VNĐ.\n\n- **Quãng đường mỗi lần sạc**: VF 8 Eco 635 km (NEDC); VF 3 Eco 215 km (NEDC).\n\n- **Dung lượng pin khả dụng**: VF 8 Eco 87,7 kWh; VF 3 Eco Chưa có dữ liệu.\n\n- **Công suất tối đa**: VF 8 Eco 150 kW; VF 3 Eco 30 kW.\n\n- **Thời gian sạc nhanh (10%–70%)**: VF 8 Eco 31 phút; VF 3 Eco 36 phút.\n\n- **Số chỗ ngồi**: VF 8 Eco 5 chỗ; VF 3 Eco 4 chỗ.\n\nQuãng đường thực tế phụ thuộc điều kiện sử dụng. Các chuẩn NEDC/WLTP khác nhau không nên so trực tiếp; giá lăn bánh và ưu đãi cần showroom xác nhận."
+    },
+    {
+      "question": "Tư vấn VF7",
+      "occurrences": 12,
+      "response": "Anh/chị xem thông tin công bố của VinFast VF 7 Eco, VinFast VF 7 Plus, VinFast VF 7 Plus AWD trong các thẻ trên.\n\n- **VinFast VF 7 Eco**: Từ 740.000.000 VNĐ; số chỗ ngồi: 5 chỗ; quãng đường: 440 km (NEDC); thời gian sạc: 25 phút (từ 10%–70%); công suất tối đa: 130 kW.\n\n- **VinFast VF 7 Plus**: Từ 830.000.000 VNĐ; số chỗ ngồi: 5 chỗ; quãng đường: 500,5 km (NEDC); thời gian sạc: 25 phút (từ 10%–70%); công suất tối đa: 150 kW.\n\n- **VinFast VF 7 Plus AWD**: Chưa có giá xác thực; số chỗ ngồi: 5 chỗ; quãng đường: 469 km (NEDC); thời gian sạc: 25 phút (từ 10%–70%); công suất tối đa: 260 kW.\n\nQuãng đường thực tế phụ thuộc điều kiện sử dụng. Giá bán trên là giá niêm yết chưa phải là giá lăn bánh."
+    },
+    {
+      "question": "so với VF8",
+      "occurrences": 6,
+      "response": "Dạ, em gửi anh/chị thông tin so sánh giữa VF 3 Eco và VF 8 Eco:\n\n- **Giá bán từ**: VF 3 Eco 285.000.000 VNĐ; VF 8 Eco 898.000.000 VNĐ.\n\n- **Quãng đường mỗi lần sạc**: VF 3 Eco 215 km (NEDC); VF 8 Eco 635 km (NEDC).\n\n- **Dung lượng pin khả dụng**: VF 3 Eco Chưa có dữ liệu; VF 8 Eco 87,7 kWh.\n\n- **Công suất tối đa**: VF 3 Eco 30 kW; VF 8 Eco 150 kW.\n\n- **Thời gian sạc nhanh (10%–70%)**: VF 3 Eco 36 phút; VF 8 Eco 31 phút.\n\n- **Số chỗ ngồi**: VF 3 Eco 4 chỗ; VF 8 Eco 5 chỗ.\n\nQuãng đường thực tế phụ thuộc điều kiện sử dụng. Các chuẩn NEDC/WLTP khác nhau không nên so trực tiếp; giá lăn bánh và ưu đãi cần showroom xác nhận."
+    }
+  ]
+}

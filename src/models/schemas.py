@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any, Generic, Literal, TypeVar
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
 T = TypeVar("T")
 
@@ -265,6 +265,7 @@ class VehicleCard(BaseModel):
 
 
 class ChatResponseData(BaseModel):
+    _personal_memory_diagnostics: dict | None = PrivateAttr(default=None)
     language: Literal['vi', 'en'] = 'vi'
     nearby_action: NearbyAction | None = None
     vehicle_comparison: bool = False

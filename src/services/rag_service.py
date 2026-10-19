@@ -229,11 +229,33 @@ class RAGService:
         settings = get_settings()
         from src.services.charging_questions import reviewed_charging_guides
         from src.services.warranty_questions import reviewed_warranty_overviews
-        reviewed = reviewed_charging_guides(query) or reviewed_warranty_overviews(query, vehicle_model)
+        from src.services.reviewed_knowledge import reviewed_maintenance_schedules, reviewed_model_colors
+        from src.services.reviewed_gap_answers import reviewed_gap_answers, foreign_market_request
+        from src.services.answer_evidence import normalized
+        qbody = normalized(query)
+        if 'adas' in qbody and re.search(r'activate|enable|turn (?:on|off)|instructions|configure|kich hoat|bat adas|tat adas', qbody):
+            return self.failure('NO_SOURCE', 'unresolved_adas_procedure')
+        if foreign_market_request(query):
+            return self.failure('NO_SOURCE', 'unresolved_market_scope')
+        if ('bao hanh' in qbody and vehicle_model in {'VF8', 'VF5'}
+                and re.search(r'\b20\d{2}\b|the all new|all-new', qbody)):
+            return self.failure('NO_SOURCE', 'unresolved_policy_scope')
+        if ('bao duong' in qbody and not vehicle_model and not re.search(r'\bvf\s*(?:e34|[356789])\b',qbody)
+                and re.search(r'lan dau|dau tien|bao nhieu km|moc nao|chu ky',qbody)
+                and not re.search(r'tong quat|dua tren|yeu to',qbody)):
+            return self.failure('NO_SOURCE','missing_maintenance_model')
+        reviewed = (reviewed_gap_answers(query,vehicle_model) or reviewed_charging_guides(query) or reviewed_warranty_overviews(query, vehicle_model)
+                    or reviewed_maintenance_schedules(query, vehicle_model) or reviewed_model_colors(query, vehicle_model))
         if reviewed:
             registry = source_registry()
-            citations = [{**registry.get(record['source_id'], {}), **record,
-                          'applicable_models': ['ALL'], 'distance': 0.0} for record in reviewed]
+            citations = []
+            for record in reviewed:
+                source = registry.get(record['source_id'], {})
+                url = record.get('url') or record.get('source_url') or source.get('url')
+                verified_at = source.get('approved_urls', {}).get(url) or (
+                    source.get('verified_at') if url == source.get('url') else None)
+                citations.append({**source, **record, 'url': url, 'verified_at': verified_at,
+                                  'applicable_models': record.get('applicable_models', ['ALL']), 'distance': 0.0})
             citations = [citation for citation in citations if valid_citation(citation, vehicle_model)]
             if citations:
                 return {'status': 'SUCCESS', 'citations': citations, 'best_distance': 0.0,
@@ -244,20 +266,45 @@ class RAGService:
         if cost_subject is None:
             from src.services.conversation_context import cost_subject_for
             cost_subject = cost_subject_for(query)
-        technical_terms = {'range': ('quang duong', 'mot lan sac', 'di duoc', 'nedc', 'wltp'),
-                           'capacity': ('dung luong',), 'power': ('cong suat',)}
+        technical_terms = {'range': ('quang duong', 'mot lan sac', 'di duoc', 'tam hoat dong', 'tam di chuyen', 'di bao xa', 'driving range', 'published range', 'nedc', 'wltp'),
+                           'capacity': ('dung luong', 'battery capacity'), 'power': ('cong suat',),
+                           'seats': ('cho ngoi', 'may cho', 'bao nhieu cho', 'seats', 'seating positions'),
+                           'charging_time': ('thoi gian sac', 'sac nhanh bao lau', 'sac nhanh mat')}
         technical_keys = [key for key, terms in technical_terms.items() if any(term in normalized(query) for term in terms)]
-        if vehicle_model and technical_keys and requested_source_type(query, source_need=source_need) == 'official_catalog':
+        requested_models = {'VF' + model.upper() for model in re.findall(r'\bvf\s*(e34|[356789])\b', normalized(query))}
+        if vehicle_model and technical_keys and requested_models - {vehicle_model}:
+            return self.failure('NO_SOURCE', 'unresolved_catalog_scope')
+        if vehicle_model and technical_keys and re.search(
+                r'real.world|actual range|thuc te|cho day|tai trong|full load|towing|winter|freezing|nhiet do|temperature', normalized(query)):
+            return self.failure('NO_SOURCE', 'unresolved_catalog_conditions')
+        purpose = requested_source_type(query, source_need=source_need)
+        published_charging_time = technical_keys == ['charging_time'] and not re.search(
+            r'huong dan|cach|thao tac|bao loi|khong sac|nguy hiem', normalized(query))
+        if vehicle_model and technical_keys and (purpose == 'official_catalog' or published_charging_time):
             from src.services.vehicle_catalog import catalog_cards, catalog_citations, requested_variants
             variants = requested_variants(normalized(query), vehicle_model, True)
             cards = catalog_cards([vehicle_model])
             if variants:
                 cards = [card for card in cards if card.variant in variants]
-            if not cards or len(cards) > top_k or (len(cards) > 1 and not variants):
+            shared_time = (published_charging_time and cards and all(card.fast_charge_time for card in cards)
+                           and len({card.fast_charge_time for card in cards}) == 1)
+            if not cards or len(cards) > top_k or (len(cards) > 1 and not variants and not shared_time):
                 return self.failure('NO_SOURCE', 'unresolved_catalog_scope')
             citations = []
             for card, citation in zip(cards, catalog_citations(cards), strict=True):
                 scope = citation['fact_scope']
+                requested_cycles = {value.upper() for value in re.findall(r'\b(?:nedc|wltp)\b', normalized(query))}
+                if 'range' in technical_keys and requested_cycles and requested_cycles != {scope.get('range_standard')}:
+                    return self.failure('NO_SOURCE', 'unresolved_catalog_conditions')
+                if 'charging_time' in technical_keys:
+                    requested_soc = re.findall(r'(\d+)\s*%', query)
+                    interval = re.search(r'(?:tu|from)\s*(\d+)\s*%?\s*(?:den|to|[-–])\s*(\d+)\s*%', normalized(query))
+                    if interval:
+                        requested_soc = list(interval.groups())
+                    source_soc = re.findall(r'(\d+)\s*%', card.fast_charge_time or '')
+                    if ((requested_soc and requested_soc != source_soc)
+                            or re.search(r'\d[\d.,]*\s*kw\b', normalized(query))):
+                        return self.failure('NO_SOURCE', 'unresolved_catalog_conditions')
                 if re.search(r'\b20\d{2}\b', query) and str(scope.get('model_year')) not in query:
                     return self.failure('NO_SOURCE', 'unresolved_catalog_scope')
                 fields = [spec.label + ': ' + spec.value for spec in card.specs
@@ -398,6 +445,26 @@ class RAGService:
             if vehicle_model and "ALL" not in models and re.sub(r"\s+", "", vehicle_model).upper() not in models:
                 diagnostics.append({"chunk_id": chunk_id, "reason": "model_mismatch"})
                 continue
+            if meta.get('reviewed_scope_json'):
+                from src.services.answer_evidence import normalized as fold_scope
+                try:
+                    scope = json.loads(meta['reviewed_scope_json'])
+                    if not isinstance(scope, dict):
+                        raise ValueError('Invalid reviewed scope')
+                except (ValueError, TypeError):
+                    diagnostics.append({'chunk_id': chunk_id, 'reason': 'invalid_reviewed_scope'})
+                    continue
+                body = fold_scope(query)
+                years = set(re.findall(r'\b20\d{2}\b', body))
+                trims = set(re.findall(r'\b(?:eco|plus|awd|fwd)\b', body))
+                commercial = bool(re.search(r'thuong mai|chay dich vu', body))
+                severe = 'khac nghiet' in body
+                if ((years and years != {str(scope.get('model_year'))})
+                        or (trims and not trims <= set(str(scope.get('variant') or '').replace('-', ' ').split()))
+                        or (commercial and scope.get('usage') != 'commercial')
+                        or (severe and scope.get('usage') != 'severe')):
+                    diagnostics.append({'chunk_id': chunk_id, 'reason': 'unresolved_reviewed_scope'})
+                    continue
             variant = re.search(r"\b(plus|eco)\b", query, re.I)
             if (meta.get('catalog_scope') == 'model_colors'
                     and re.search(r'nội thất|noi that', query, re.I)

@@ -1,0 +1,175 @@
+{
+  "status": "SUCCESS",
+  "citations": [
+    {
+      "title": "Sổ tay hướng dẫn sử dụng VinFast VF 8 (Owner's Manual)",
+      "url": "https://om.vinfastauto.com/vi_vn/detail?car=VF8&year=2026",
+      "source_type": "official_manual",
+      "status_code": 200,
+      "verified_at": "2026-09-30",
+      "source_id": "SRC-007",
+      "chunk_id": "SRC-007-0473::child:0:23a23368e5d5",
+      "applicable_models": [
+        "VF8"
+      ],
+      "relevant_snippet": "oặc Trợ lái trên cao tốc.\nNhấn nút để kích hoạt Kiểm soát hành trình thích ứng.\nXem > Điều khiển hành trình > Điều khiển hành trình thích ứng .\nNhấn để kích hoạt Trợ lái trên cao tốc.\nXem > Hỗ trợ lái xe & gt; Trợ lái trên cao tốc .\nNhấn để BẬT/TẮT Điều chỉnh tốc độ thông minh hoặc giới hạn tốc độ.\nXem > Điều khiển hành trình > Điều chỉnh tốc độ thông minh\nVới các xe chỉ có tình năng ADAS cơ bản\nDescription\nNhấn để tăng/ giảm tốc độ của xe ô tô 1 mph / km/h khi xe đang ở chế độ Kiểm soát hành trình thích ứng hoặc Trợ lái trên cao tốc.",
+      "distance": 0.2930564641697522,
+      "parent_chunk_id": "SRC-007-0473"
+    },
+    {
+      "title": "Sổ tay hướng dẫn sử dụng VinFast VF 8 (Owner's Manual)",
+      "url": "https://om.vinfastauto.com/vi_vn/detail?car=VF8&year=2026",
+      "source_type": "official_manual",
+      "status_code": 200,
+      "verified_at": "2026-09-30",
+      "source_id": "SRC-007",
+      "chunk_id": "SRC-007-0678::child:0:b6eac9f4ede8",
+      "applicable_models": [
+        "VF8"
+      ],
+      "relevant_snippet": "Cốp điện và Nắp ca-pô mở/đóng\nĐèn pha và đèn hậu\nThao tác sạc và trạng thái sạc\nTính năng ADAS Bật hoặc Hoạt động\nKhu Vực Điều Khiển Xe – Góc Nhìn Theo Xe\nGóc Nhìn Theo Xe sẽ được hiển thị bất cứ khi nào xe đang di chuyển. Tùy thuộc vào các tính năng hoặc chức năng đang được kích hoạt, các thông tin sau đây có thể được hiển thị\nHướng dẫn hỗ trợ làn đường.\nTrạng thái Hệ thống Cảnh báo Va chạm Phía trước và Cài đặt Lỗ hổng.\nTrạng thái Hệ thống điều khiển hành trình thích ứng.\nTrạng thái Hỗ trợ Đường cao tốc và Hỗ trợ Thay đổi Làn đường Tự động.",
+      "distance": 0.24421529289388352,
+      "parent_chunk_id": "SRC-007-0678"
+    },
+    {
+      "title": "Sổ tay hướng dẫn sử dụng VinFast VF 8 (Owner's Manual)",
+      "url": "https://om.vinfastauto.com/vi_vn/detail?car=VF8&year=2026",
+      "source_type": "official_manual",
+      "status_code": 200,
+      "verified_at": "2026-09-30",
+      "source_id": "SRC-007",
+      "chunk_id": "SRC-007-1096::child:0:c79a9b964294",
+      "applicable_models": [
+        "VF8"
+      ],
+      "relevant_snippet": "làm hỏng xe, ví dụ như hỏng cánh hướng gió.\nChăm sóc radar, cảm biến và camera\nĐể Hệ thống hỗ trợ lái nâng cao (ADAS) hoạt động bình thường, camera, radar và cảm biến không được dính bụi bẩn, bùn, băng, tuyết, v.v. và phải được rửa thường xuyên bằng nước và chất tẩy rửa xe ô tô.\nViệc che khuất camera, radar và cảm biến có thể vô hiệu hóa hoặc gây hạn chế chức năng của hệ thống và trong một số trường hợp có thể hiển thị cảnh báo sai.\nLƯU Ý",
+      "distance": 0.3018283757257084,
+      "parent_chunk_id": "SRC-007-1096"
+    }
+  ],
+  "best_distance": 0.24421529289388352,
+  "diagnostics": {
+    "stage": "retrieval",
+    "candidates": [
+      {
+        "chunk_id": "SRC-007-1269::child:0:a09806e5e946",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-0473::child:0:23a23368e5d5",
+        "source_id": "SRC-007",
+        "distance": 0.2930564641697522,
+        "reason": "accepted"
+      },
+      {
+        "chunk_id": "SRC-007-0916::child:0:f922a79a7a28",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-0776::child:0:db52f4ce302c",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-0330::child:0:984945d7940d",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-0285::child:0:579187b759bf",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-0014::child:0:4cdb90c2357f",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-1243::child:0:4c27d0ab2b95",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-1248::child:0:4c27d0ab2b95",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-1053::child:0:d341e6024555",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-0678::child:0:b6eac9f4ede8",
+        "source_id": "SRC-007",
+        "distance": 0.24421529289388352,
+        "reason": "accepted"
+      },
+      {
+        "chunk_id": "SRC-007-0331::child:0:047e755e2f3a",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-0315::child:0:03e113ce7a5b",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-1249::child:0:b45791fac154",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-0384::child:0:4748ef95b710",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-1246::child:0:7d45d290201f",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-0408::child:0:a4dad9f48201",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-1155::child:0:76a0a0a10d4e",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-0407::child:0:d6b6fc35fd3a",
+        "reason": "missing_answer_subject"
+      },
+      {
+        "chunk_id": "SRC-007-1096::child:0:c79a9b964294",
+        "source_id": "SRC-007",
+        "distance": 0.3018283757257084,
+        "reason": "accepted"
+      }
+    ],
+    "candidate_parent_ids": [
+      "SRC-007-1269",
+      "SRC-007-0473",
+      "SRC-007-0916",
+      "SRC-007-0776",
+      "SRC-007-0330",
+      "SRC-007-0285",
+      "SRC-007-0014",
+      "SRC-007-1243",
+      "SRC-007-1248",
+      "SRC-007-1053",
+      "SRC-007-0678",
+      "SRC-007-0331",
+      "SRC-007-0315",
+      "SRC-007-1249",
+      "SRC-007-0384",
+      "SRC-007-1246",
+      "SRC-007-0408",
+      "SRC-007-1155",
+      "SRC-007-0407",
+      "SRC-007-1096"
+    ],
+    "selected_parent_ids": [
+      "SRC-007-0473",
+      "SRC-007-0678",
+      "SRC-007-1096"
+    ],
+    "embedding": "collection-configured",
+    "distance_threshold": 0.7,
+    "category": "success",
+    "context_bytes_used": 2034,
+    "context_bytes_remaining": 3966,
+    "context_max_bytes": 6000
+  }
+}

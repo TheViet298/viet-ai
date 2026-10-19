@@ -51,6 +51,24 @@ def normalize_chat_text(text: str) -> str:
     text = unicodedata.normalize('NFC', text)
     from src.services.chat_language import canonical_english_phrases
     text = canonical_english_phrases(text)
+    # Stable business nouns keep translation paraphrases on the same evidence
+    # route. These substitutions add no vehicle facts or operational receipt.
+    for pattern, canonical in [
+        (r'\b(?:phạm vi|khoảng cách) (?:lái xe|di chuyển|hoạt động)\b', 'quãng đường'),
+        (r'\bphạm vi công bố\b', 'quãng đường công bố'),
+        (r'\bvị trí ngồi\b', 'chỗ ngồi'),
+        (r'\bpin cao thế\b', 'pin cao áp'),
+        (r'\bpin khởi động/kết thúc\b', 'pin đầu/cuối'),
+        (r'\bbảo trì\b', 'bảo dưỡng'),
+        (r'\bđặt bảo dưỡng\b', 'đặt lịch bảo dưỡng'),
+        (r'\bpin phụ\b', 'ắc quy'),
+        (r'\btrụ sạc công cộng\b', 'trạm sạc công cộng'),
+    ]:
+        text = re.sub(pattern, canonical, text, flags=re.I)
+    if re.search(r'bao nhiêu ghế|mấy ghế|số ghế', text, re.I):
+        text = re.sub(r'\bghế\b', 'chỗ ngồi', text, flags=re.I)
+    if re.search(r'\bsạc\b', text, re.I):
+        text = re.sub(r'\btrạm công cộng\b', 'trạm sạc công cộng', text, flags=re.I)
     # Keep line breaks: callers use them to distinguish clauses and OCR evidence.
     text = re.sub(r'[^\S\n]+', ' ', text).strip()
     text = _ALIAS_RE.sub(lambda m: m[0] if m[0] == 'DC' else _ALIASES[m[0].casefold()], text)

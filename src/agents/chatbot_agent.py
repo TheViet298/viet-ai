@@ -151,6 +151,7 @@ async def process_chat_message(
             "is_no_source": saved.get("is_no_source", False),
             "retrieval_diagnostics": saved.get("retrieval_diagnostics", {}),
             "retrieval_status": saved.get("retrieval_status"),
+            "answer_status": saved.get('answer_status') or ('needs_data' if saved.get('is_no_source') else 'answered'),
             "answer_claims": saved.get('answer_claims', []),
             "citations": saved.get("rag_citations", []),
             "suggested_replies": saved.get("suggested_replies", []),

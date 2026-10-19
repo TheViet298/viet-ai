@@ -65,7 +65,7 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
     )
     current_failure_unaccented_regex = (
         r"(?:gap\s+su\s+co|su\s+co\s+ve|sac\s+khong\s+vao|khong\s+vao\s+dien)|"
-        r"(?:xe\s*(?:vf\s*(?:[356789]|e34)|e34)?\s*(?:cua\s*(?:toi|minh|em|nha\s+toi))?\s*(?:dang|bi|vua|bao|hien|gap)|bay gio|dang\s*(?:o|bi|ket|dung|chay))|"
+        r"(?:xe\s*(?:vf\s*(?:[356789]|e34)|e34)?\s*(?:cua\s*(?:toi|minh|em|nha\s+toi))?\s*(?:dang|bi|vua|bao(?!\s+(?:gom|lau|nhieu)\b)|hien|gap)|bay gio|dang\s*(?:o|bi|ket|dung|chay))|"
         r"(?:khong\s+(?:nhan\s*sac|sac duoc|khoi dong|di duoc|chay duoc|chay noi|di chuyen duoc|vao dien|len nguon|mo (?:cua|khoa) duoc))|"
         r"(?:bi|dang|bao)\s+(?:hong|ket|gay|vo|loi|do|den|mo den|ma)|"
         r"(?:bao|hien)\s+(?:(?:ma|loi|code)\s*[a-z0-9_-]{2,10}|(?=[a-z0-9_-]*\d)[a-z0-9_-]{3,10})|"
@@ -143,7 +143,7 @@ def classify_request_kind(text: str) -> Literal["faq", "incident", "complaint", 
         r"(?:chìa khóa|smart key).{0,20}hết pin", lower
     ):
         return "incident"
-    return "faq" if reports_denied else "uncertain"
+    return "faq" if reports_denied or re.search(r'\bbao gom\b|\btinh nang\b', lower_unaccented) else "uncertain"
 
 
 def extract_fields(text: str, *, asserted_only: bool = True) -> dict[str, str]:

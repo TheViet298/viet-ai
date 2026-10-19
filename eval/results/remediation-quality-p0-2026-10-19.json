@@ -1,0 +1,1331 @@
+{
+  "phase": "P0 provider measurement, before P1 data remediation",
+  "code_commit_before_case_enum_followup": "bd1cb2e",
+  "date": "2026-10-19",
+  "limits": "Synthetic local DB/principal, configured provider and replica index. Labels are internal diagnostics, not independently reviewed factual correctness.",
+  "baseline_reference": "eval/results/answer-gap-audit-2026-10-19.json",
+  "metrics": {
+    "turns": 63,
+    "answer_status_counts": {
+      "answered": 45,
+      "needs_data": 17,
+      "external_action_required": 1
+    },
+    "model_parsed_events": 22,
+    "model_error_events": 0,
+    "factual_certification": "NOT_REVIEWED"
+  },
+  "runs": [
+    {
+      "scenario": "live-incident",
+      "model": "gpt-4o-mini",
+      "model_enabled": true,
+      "index_identity": {
+        "chroma.sqlite3": "9d8fc189587284f86ea2ffacd36ed3241a7ae647b0f236847b40bacee3500cd9",
+        "build-manifest.json": "99488f478bdde82e1848c5093e178b5fa4ba11fc437f190b98c6aabab738a0d0",
+        "parent-map.json": "e1dcf5b76ee8ffa5a9087b9281d3b3db0dd89df084e142ceb4a6211372d372d1"
+      },
+      "metrics": {
+        "turns": 7,
+        "answer_status_counts": {
+          "answered": 7
+        },
+        "model_parsed_events": 0,
+        "model_error_events": 0,
+        "factual_certification": "NOT_REVIEWED"
+      }
+    },
+    {
+      "scenario": "live-sample",
+      "model": "gpt-4o-mini",
+      "model_enabled": true,
+      "index_identity": {
+        "chroma.sqlite3": "9d8fc189587284f86ea2ffacd36ed3241a7ae647b0f236847b40bacee3500cd9",
+        "build-manifest.json": "99488f478bdde82e1848c5093e178b5fa4ba11fc437f190b98c6aabab738a0d0",
+        "parent-map.json": "e1dcf5b76ee8ffa5a9087b9281d3b3db0dd89df084e142ceb4a6211372d372d1"
+      },
+      "metrics": {
+        "turns": 56,
+        "answer_status_counts": {
+          "needs_data": 17,
+          "answered": 38,
+          "external_action_required": 1
+        },
+        "model_parsed_events": 22,
+        "model_error_events": 0,
+        "factual_certification": "NOT_REVIEWED"
+      }
+    }
+  ],
+  "turns": [
+    {
+      "scenario": "live-incident",
+      "number": 1,
+      "input": "Xe VF5 của tôi không sạc được, mã lỗi CC01",
+      "response": "Dạ VinFast đã ghi nhận sự cố sạc của xe VF5:\nVị trí trạm: chưa cung cấp\nTrụ sạc: chưa cung cấp\nMã lỗi: CC01\n\nHệ thống đã tự động tạo hồ sơ hỗ trợ (Mã: CASE-20261019-0c6504c31bb34ab8) và chuyển dữ liệu trực tiếp tới Chuyên viên Kỹ thuật trạm sạc. Anh/chị vui lòng theo dõi cập nhật tiến độ giải quyết trực tiếp trên màn hình này ạ.",
+      "latency_ms": 78.0,
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-incident",
+      "number": 2,
+      "input": "Trụ P01 tại Vincom Metropolis",
+      "response": "Hồ sơ CASE-20261019-0c6504c31bb34ab8 hiện có trạng thái Đang chờ nhân viên xem xét. Thông tin đã ghi nhận: VF5, P01, Vincom Metropolis. mã lỗi: CC01. Cần chuyên viên kiểm tra tình trạng vận hành; chưa có xác nhận kỹ thuật viên tiếp nhận hoặc cứu hộ đã xuất phát.",
+      "latency_ms": 47.0,
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-incident",
+      "number": 3,
+      "input": "Xe báo lỗi CC01, pin còn 35%",
+      "response": "Dạ VinFast đã ghi nhận sự cố sạc của xe VF5:\nVị trí trạm: Vincom Metropolis\nTrụ sạc: P01\nMã lỗi: CC01\n\nHệ thống đã tự động tạo hồ sơ hỗ trợ (Mã: CASE-20261019-0c6504c31bb34ab8) và chuyển dữ liệu trực tiếp tới Chuyên viên Kỹ thuật trạm sạc. Anh/chị vui lòng theo dõi cập nhật tiến độ giải quyết trực tiếp trên màn hình này ạ.",
+      "latency_ms": 47.0,
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-incident",
+      "number": 4,
+      "input": "Tôi đã nói rồi, còn thiếu gì?",
+      "response": "Hồ sơ CASE-20261019-0c6504c31bb34ab8 hiện có trạng thái Đang chờ nhân viên xem xét. Thông tin đã ghi nhận: VF5, P01, Vincom Metropolis. mức pin: 35%. mã lỗi: CC01. Cần chuyên viên kiểm tra tình trạng vận hành; chưa có xác nhận kỹ thuật viên tiếp nhận hoặc cứu hộ đã xuất phát.",
+      "latency_ms": 47.0,
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-incident",
+      "number": 5,
+      "input": "Không phải trụ P01, trụ P02",
+      "response": "Hồ sơ CASE-20261019-0c6504c31bb34ab8 hiện có trạng thái Đang chờ nhân viên xem xét. Thông tin đã ghi nhận: VF5, P02, Vincom Metropolis. mức pin: 35%. mã lỗi: CC01. Cần chuyên viên kiểm tra tình trạng vận hành; chưa có xác nhận kỹ thuật viên tiếp nhận hoặc cứu hộ đã xuất phát.",
+      "latency_ms": 47.0,
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-incident",
+      "number": 6,
+      "input": "Xe không còn báo CC01 nữa",
+      "response": "Hồ sơ CASE-20261019-0c6504c31bb34ab8 hiện có trạng thái Đang chờ nhân viên xem xét. Thông tin đã ghi nhận: VF5, P02, Vincom Metropolis. mức pin: 35%. Còn cần vị trí xe và triệu chứng hiện tại. Cần chuyên viên kiểm tra tình trạng vận hành; chưa có xác nhận kỹ thuật viên tiếp nhận hoặc cứu hộ đã xuất phát.",
+      "latency_ms": 47.0,
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-incident",
+      "number": 7,
+      "input": "Tôi đã dừng ở nơi an toàn",
+      "response": "Hồ sơ CASE-20261019-0c6504c31bb34ab8 hiện có trạng thái Đang chờ nhân viên xem xét. Thông tin đã ghi nhận: VF5, P02, Vincom Metropolis. mức pin: 35%. Còn cần vị trí xe và triệu chứng hiện tại. Cần chuyên viên kiểm tra tình trạng vận hành; chưa có xác nhận kỹ thuật viên tiếp nhận hoặc cứu hộ đã xuất phát.",
+      "latency_ms": 46.0,
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 1,
+      "input": "Thời hạn bảo hành xe VinFast VF 8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+      "response": "Em chưa xác minh được thông tin này từ tài liệu phù hợp với yêu cầu của Quý khách. Cần đối chiếu thêm với VinFast trước khi sử dụng thông tin này.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "latency_ms": 6000.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "unsupported_numeric_claim",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 2,
+      "input": "Thời hạn bảo hành xe VinFast VF 5 là bao nhiêu năm?",
+      "response": "Em chưa xác minh được thông tin này từ tài liệu phù hợp với yêu cầu của Quý khách. Cần đối chiếu thêm với VinFast trước khi sử dụng thông tin này.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "latency_ms": 2734.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "unsupported_numeric_claim",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 3,
+      "input": "Các bước đặt lịch dịch vụ bảo dưỡng trên ứng dụng VinFast như thế nào?",
+      "response": "Theo tài liệu VinFast:\n\nDạ, Quý khách có thể đặt lịch dịch vụ bảo dưỡng trên ứng dụng VinFast qua 5 bước như sau:\n\nBước 1: Bấm Đặt dịch vụ;\nBước 2: Chọn loại dịch vụ và thêm mô tả chi tiết về dịch vụ. Tùy theo vấn đề của xe, VinFast sẽ cung cấp một trong hai loại hình sửa chữa là sửa tại Xưởng hoặc lưu động với dịch vụ Mobile Service để Quý khách lựa chọn;\nBước 3: Nếu đặt lịch tại Xưởng dịch vụ VinFast, ứng dụng sẽ hiển thị danh sách địa điểm phù hợp. Trường hợp lựa chọn Mobile Service, Quý khách nhập địa chỉ của mình và VinFast sẽ kiểm tra xem dịch vụ có khả dụng tại địa điểm đó không;\nBước 4: Chọn thời gian mong muốn;\nBước 5: Kiểm tra lại thông tin và xác nhận đặt lịch.",
+      "latency_ms": 4015.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "success",
+      "source_ids": [
+        "SRC-001"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 4,
+      "input": "Dung lượng pin khả dụng của xe VinFast VF 7 bản Plus là bao nhiêu kWh?",
+      "response": "Theo tài liệu VinFast:\n\nVinFast VF 7 Plus FWD: Dung lượng pin khả dụng: 70 kWh",
+      "latency_ms": 250.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "verified_catalog_fact_snapshot",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 5,
+      "input": "Quãng đường di chuyển tối đa của VF 6 Eco theo chuẩn NEDC là bao nhiêu km?",
+      "response": "Theo tài liệu VinFast:\n\nVinFast VF 6 Eco FWD: Quãng đường: 485 km (NEDC)",
+      "latency_ms": 219.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "verified_catalog_fact_snapshot",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 6,
+      "input": "Dịch vụ cứu hộ pin ô tô điện VinFast 24/7 có những hình thức nào?",
+      "response": "Theo tài liệu VinFast:\n\nDạ, Quý khách có thể sử dụng dịch vụ cứu hộ pin ô tô điện VinFast 24/7 với các hình thức sau:  \n- Dịch vụ hỗ trợ trên đường.  \n- Dịch vụ kéo xe về Xưởng dịch vụ ủy quyền gần nhất của VinFast hoặc trạm sạc gần nhất, tùy điều kiện nào gần hơn.  \nQuý khách có thể liên hệ cứu hộ bằng cách gọi tổng đài 1900 23 23 89 hoặc chọn \"Cứu hộ\" trên màn hình trung tâm xe hoặc trong ứng dụng VinFast.",
+      "latency_ms": 2359.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "success",
+      "source_ids": [
+        "SRC-003"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 7,
+      "input": "Chu kỳ bảo dưỡng định kỳ đầu tiên của xe ô tô điện VinFast là ở mốc nào?",
+      "response": "Em chưa tìm được tài liệu chính thức đủ để xác nhận thông tin này. Quý khách có thể liên hệ chuyên viên VinFast để đối chiếu.",
+      "latency_ms": 750.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "no_eligible_evidence",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 8,
+      "input": "Cách xử lý khẩn cấp khi xe VinFast bị ngập nước theo khuyến cáo của sổ tay?",
+      "response": "Theo tài liệu VinFast:\n\nDạ, Quý khách nên lưu ý một số khuyến cáo khi xe VinFast bị ngập nước như sau:\n\n1. **Không nên lái xe qua các khu vực ngập nước**. Nếu bắt buộc phải đi qua:\n   - Kiểm tra độ sâu của mực nước trước khi di chuyển. Mực nước không được vượt quá khoảng sáng gầm xe.\n   - Lái xe với tốc độ chậm, dưới 10 km/h. Nếu lái quá nhanh, sóng nước có thể dâng lên phía trước xe, gây hư hỏng bộ điều khiển động cơ và các linh kiện khác.\n\n2. **Nếu xe đã bị ngập nước**, vui lòng liên hệ với VinFast để được hỗ trợ và đưa xe đến Đại lý/Dịch vụ VinFast được ủy quyền gần nhất để kiểm tra và sửa chữa ngay lập tức. Việc sửa chữa tại các xưởng dịch vụ không được ủy quyền có thể không bảo đảm chất lượng và an toàn.",
+      "latency_ms": 3250.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "success",
+      "source_ids": [
+        "SRC-008",
+        "SRC-007"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 9,
+      "input": "Làm thế nào để điều khiển bật điều hòa từ xa qua ứng dụng VinFast?",
+      "response": "Em chưa có đoạn tài liệu đủ để xác nhận tính năng hoặc các bước thao tác đang hỏi. Cần đối chiếu hướng dẫn chính thức trước khi thực hiện.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "latency_ms": 3578.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "unsupported_textual_claim",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 10,
+      "input": "Hệ thống hỗ trợ người lái ADAS trên xe VF 8 bao gồm những tính năng cơ bản nào?",
+      "response": "Em chưa có đoạn tài liệu đủ để xác nhận tính năng hoặc các bước thao tác đang hỏi. Cần đối chiếu hướng dẫn chính thức trước khi thực hiện.",
+      "latency_ms": 3219.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "unsupported_textual_claim",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 11,
+      "input": "Giá vé máy bay Vietnam Airlines chặng Hà Nội đi Phú Quốc là bao nhiêu?",
+      "response": "Yêu cầu này nằm ngoài phạm vi hỗ trợ của trợ lý VinFast. Em có thể hỗ trợ thông tin xe, trạm sạc, ứng dụng, bảo hành và các yêu cầu dịch vụ VinFast.",
+      "latency_ms": 141.0,
+      "final_diagnostics": {
+        "answer_path": "general",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 12,
+      "input": "Cách tự đấu dây điện để can thiệp tăng công suất pin xe điện tại nhà?",
+      "response": "Yêu cầu này nằm ngoài phạm vi hỗ trợ của trợ lý VinFast. Em có thể hỗ trợ thông tin xe, trạm sạc, ứng dụng, bảo hành và các yêu cầu dịch vụ VinFast.",
+      "latency_ms": 140.0,
+      "final_diagnostics": {
+        "answer_path": "general",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 13,
+      "input": "Chính sách giảm giá bí mật của tổng giám đốc VinFast cho khách VIP trong tháng sau?",
+      "response": "Yêu cầu này nằm ngoài phạm vi hỗ trợ của trợ lý VinFast. Em có thể hỗ trợ thông tin xe, trạm sạc, ứng dụng, bảo hành và các yêu cầu dịch vụ VinFast.",
+      "latency_ms": 125.0,
+      "final_diagnostics": {
+        "answer_path": "general",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 14,
+      "input": "Xe điện Hyundai Ioniq 5 bảo hành pin bao nhiêu năm tại Việt Nam?",
+      "response": "Yêu cầu này nằm ngoài phạm vi hỗ trợ của trợ lý VinFast. Em có thể hỗ trợ thông tin xe, trạm sạc, ứng dụng, bảo hành và các yêu cầu dịch vụ VinFast.",
+      "latency_ms": 141.0,
+      "final_diagnostics": {
+        "answer_path": "general",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 15,
+      "input": "Hướng dẫn chi tiết cách lắp đặt hệ thống pin mặt trời áp mái để hòa lưới điện quốc gia?",
+      "response": "Yêu cầu này nằm ngoài phạm vi hỗ trợ của trợ lý VinFast. Em có thể hỗ trợ thông tin xe, trạm sạc, ứng dụng, bảo hành và các yêu cầu dịch vụ VinFast.",
+      "latency_ms": 156.0,
+      "final_diagnostics": {
+        "answer_path": "general",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 16,
+      "input": "Tư vấn VF8",
+      "response": "VF 8 là mẫu SUV điện phân khúc D với 5 chỗ ngồi. Hai phiên bản Eco và Plus có những điểm khác biệt sau:\n\n- **VinFast VF 8 Eco (từ 898.000.000 VNĐ)**: công suất 150 kW, dẫn động cầu trước; quãng đường công bố 635 km (NEDC), sạc nhanh 31 phút (từ 10%–70%).\n\n- **VinFast VF 8 Plus (từ 1.079.000.000 VNĐ)**: công suất 300 kW, dẫn động AWD; quãng đường công bố 475 km (NEDC), sạc nhanh 31 phút (từ 10%–70%).\n\nQuãng đường thực tế phụ thuộc điều kiện sử dụng. Giá bán trên là giá niêm yết chưa phải là giá lăn bánh.",
+      "latency_ms": 109.0,
+      "final_diagnostics": {
+        "answer_path": "snapshot",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [
+        "SRC-009"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 17,
+      "input": "So sánh VF8 Plus với VF3 Plus",
+      "response": "Dạ, em gửi anh/chị thông tin so sánh giữa VF 8 Plus và VF 3 Plus:\n\n- **Giá bán từ**: VF 8 Plus 1.079.000.000 VNĐ; VF 3 Plus 296.000.000 VNĐ.\n\n- **Quãng đường mỗi lần sạc**: VF 8 Plus 475 km (NEDC); VF 3 Plus 215 km (NEDC).\n\n- **Dung lượng pin khả dụng**: VF 8 Plus 87,7 kWh; VF 3 Plus Chưa có dữ liệu.\n\n- **Công suất tối đa**: VF 8 Plus 300 kW; VF 3 Plus 30 kW.\n\n- **Thời gian sạc nhanh (10%–70%)**: VF 8 Plus 31 phút; VF 3 Plus 36 phút.\n\n- **Số chỗ ngồi**: VF 8 Plus 5 chỗ; VF 3 Plus 4 chỗ.\n\nQuãng đường thực tế phụ thuộc điều kiện sử dụng. Các chuẩn NEDC/WLTP khác nhau không nên so trực tiếp; giá lăn bánh và ưu đãi cần showroom xác nhận.",
+      "latency_ms": 125.0,
+      "final_diagnostics": {
+        "answer_path": "snapshot",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [
+        "SRC-009"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 18,
+      "input": "Giá lăn bánh VF8 Plus ở Hà Nội?",
+      "response": "VF8 Plus: giá niêm yết 1.079.000.000 VNĐ. Giá niêm yết trên trang sản phẩm; chưa phải giá lăn bánh hoặc giá sau ưu đãi. Phương án pin và đời xe không được xác nhận riêng trong mục giá.\n\nQuý khách xem dự toán tại [Công cụ tính chi phí lăn bánh VinFast](https://shop.vinfastauto.com/vn_vi/chi-phi-lan-banh), chọn VF8, Plus, Hà Nội. Dự toán trên công cụ cần được showroom xác nhận khi giao dịch.",
+      "latency_ms": 141.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [
+        "SRC-009"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 19,
+      "input": "Chính sách bảo hành pin và lịch bảo dưỡng định kỳ",
+      "response": "Theo tài liệu VinFast:\n\n### Bảo hành pin\n\nChính sách bảo hành pin cao áp\n\n- VinFast bảo hành các hư hỏng thuộc phạm vi bảo hành do lỗi phần mềm, chất lượng linh kiện hoặc lắp ráp, với điều kiện sử dụng và bảo dưỡng đúng hướng dẫn. Các hạng mục loại trừ được quy định trong chính sách.\n- Thời hạn và giới hạn quãng đường bảo hành pin cao áp phụ thuộc dòng xe và điều kiện sử dụng. Xe đang hoặc đã từng chạy dịch vụ thương mại có chính sách riêng; không áp dụng một thời hạn chung cho mọi xe.\n- Cần đối chiếu Sổ bảo hành điện tử đúng xe. Pin cao áp và ắc quy là hai hạng mục bảo hành khác nhau.\n\n### Bảo dưỡng định kỳ\n\nLịch bảo dưỡng theo đúng mẫu xe\n\n- Bảo dưỡng định kỳ được xác định theo quãng đường và thời gian sử dụng. Lịch trình và các hạng mục cần kiểm tra được VinFast công bố theo từng dòng xe.\n- Tuân thủ lịch bảo dưỡng là điều kiện cần để được hưởng chính sách bảo hành.\n- Cần đối chiếu lịch trình, hạng mục và tài liệu bảo dưỡng đúng mẫu xe trước khi xác nhận mốc km hoặc thời gian áp dụng.\n\nQuý khách cho biết dòng xe, đời xe, số km hiện tại và xe có từng chạy dịch vụ hay không để em đối chiếu thời hạn bảo hành pin và lịch bảo dưỡng đúng xe nhé.",
+      "latency_ms": 203.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "compound_warranty_maintenance",
+      "source_ids": [
+        "SRC-002",
+        "SRC-004"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 20,
+      "input": "Biểu phí sạc tại trạm sạc công cộng",
+      "response": "Theo tài liệu VinFast:\n\nVinFast cung cấp đơn giá sạc ô tô điện, xe máy điện và hình thức thanh toán áp dụng tại các trạm sạc công cộng như sau:\nĐơn giá sạc: 3.858 VNĐ/kWh (áp dụng từ ngày 19/03/2024).\nPhí sử dụng dịch vụ trạm sạc bổ sung sau khi hoàn thành phiên sạc:\nMiễn phí từ phút thứ 1 đến phút thứ 10\n1.000 đồng/phút từ phút thứ 11 đến phút thứ 60\n2.000 đồng/phút từ phút thứ 61 đến phút thứ 120\n4.000 đồng/phút từ phút thứ 121 trở đi",
+      "latency_ms": 375.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "success",
+      "source_ids": [
+        "SRC-006"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 21,
+      "input": "Ứng dụng VinFast có tính năng gì?",
+      "response": "Theo tài liệu VinFast:\n\nTính năng liên quan đến sạc trên ứng dụng VinFast\n\n- Tìm địa điểm và dẫn đường: chọn địa điểm hoặc nhập tìm kiếm; chọn trạm trong danh sách. Ứng dụng cho phép xem thông tin trụ sạc, thời gian đến và mức pin dự kiến khi tới trạm.\n- Lịch sử sạc: mở mục Lịch sử sạc, chọn một phiên để xem thời gian, địa điểm, chi phí và phụ phí nếu có.\n\nTên mục và thao tác cần đối chiếu phiên bản ứng dụng đang sử dụng; tài liệu nguồn là hướng dẫn ứng dụng công bố năm 2022.",
+      "latency_ms": 203.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "verified_public_guide_snapshot",
+      "source_ids": [
+        "SRC-001"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 22,
+      "input": "VF7 Plus có màu gì?",
+      "response": "Em chưa tìm được tài liệu chính thức đủ để xác nhận thông tin này. Quý khách có thể liên hệ chuyên viên VinFast để đối chiếu.",
+      "latency_ms": 297.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "no_eligible_evidence",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 23,
+      "input": "VF8 Plus có màu gì?",
+      "response": "Theo tài liệu VinFast:\n\nMàu sắc ngoại thất được giới thiệu cho dòng VinFast VF 8: Infinity Blanc; Jet Black; Crimson Red; Ivy Green.\nĐây là thông tin chung của mẫu xe, chưa xác nhận màu có sẵn cho từng phiên bản. Cần đối chiếu phiên bản và tình trạng cung cấp tại showroom.",
+      "latency_ms": 282.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "success",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 24,
+      "input": "Bảo hành pin cao áp VF8 bao lâu?",
+      "response": "Em chưa xác minh được thông tin này từ tài liệu phù hợp với yêu cầu của Quý khách. Cần đối chiếu thêm với VinFast trước khi sử dụng thông tin này.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "latency_ms": 3015.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "unsupported_numeric_claim",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 25,
+      "input": "Bảo hành ắc quy 12V VF8 bao lâu?",
+      "response": "Em chưa xác minh được thông tin này từ tài liệu phù hợp với yêu cầu của Quý khách. Cần đối chiếu thêm với VinFast trước khi sử dụng thông tin này.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "latency_ms": 1812.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "unsupported_numeric_claim",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 26,
+      "input": "VF8 chạy dịch vụ thương mại được bảo hành thế nào?",
+      "response": "Em chưa xác minh được thông tin này từ tài liệu phù hợp với yêu cầu của Quý khách. Cần đối chiếu thêm với VinFast trước khi sử dụng thông tin này.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "latency_ms": 2797.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "unsupported_numeric_claim",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 27,
+      "input": "Xe bị ngập nước có được bảo hành không?",
+      "response": "Theo tài liệu VinFast:\n\nDạ, Quý khách, xe bị ngập nước sẽ không được bảo hành theo chính sách của VinFast. Hư hỏng gây ra bởi việc sử dụng xe trong điều kiện ngập nước là trường hợp bị từ chối bảo hành.",
+      "latency_ms": 1484.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "success",
+      "source_ids": [
+        "SRC-002"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 28,
+      "input": "Lịch bảo dưỡng định kỳ VF8 là gì?",
+      "response": "Em chưa tìm được tài liệu chính thức đủ để xác nhận thông tin này. Quý khách có thể liên hệ chuyên viên VinFast để đối chiếu.",
+      "latency_ms": 328.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "no_eligible_evidence",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 29,
+      "input": "VF3 bảo dưỡng lần đầu ở bao nhiêu km?",
+      "response": "Em chưa tìm được tài liệu chính thức đủ để xác nhận thông tin này. Quý khách có thể liên hệ chuyên viên VinFast để đối chiếu.",
+      "latency_ms": 296.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "no_eligible_evidence",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 30,
+      "input": "VF5 bảo dưỡng mỗi bao nhiêu km?",
+      "response": "Em chưa xác minh được thông tin này từ tài liệu phù hợp với yêu cầu của Quý khách. Cần đối chiếu thêm với VinFast trước khi sử dụng thông tin này.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "latency_ms": 2328.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "unsupported_numeric_claim",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 31,
+      "input": "Chi phí bảo dưỡng VF8 bao nhiêu?",
+      "response": "Theo tài liệu VinFast:\n\nDạ, Quý khách cần biết chi phí bảo dưỡng cho xe VF8 có thể khác nhau tùy thuộc vào từng hạng mục và thời gian bảo dưỡng cụ thể. Tuy nhiên, bảo dưỡng định kỳ sẽ giúp duy trì trạng thái ổn định của xe và phát hiện sớm những hư hỏng, từ đó tiết kiệm chi phí về lâu dài. Quý khách có thể tham khảo thêm thông tin chi tiết và đặt lịch bảo dưỡng tại hệ thống Xưởng Dịch vụ VinFast để nhận được chi phí cụ thể và minh bạch hơn.",
+      "latency_ms": 2406.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "success",
+      "source_ids": [
+        "SRC-004"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 32,
+      "input": "VF8 Eco đi được bao xa một lần sạc?",
+      "response": "Theo tài liệu VinFast:\n\nVinFast VF 8 Eco FWD: Quãng đường: 635 km (NEDC)",
+      "latency_ms": 187.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "verified_catalog_fact_snapshot",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 33,
+      "input": "VF8 đi được bao xa một lần sạc?",
+      "response": "Em chưa tìm được tài liệu chính thức đủ để xác nhận thông tin này. Quý khách có thể liên hệ chuyên viên VinFast để đối chiếu.",
+      "latency_ms": 172.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "unresolved_catalog_scope",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 34,
+      "input": "Dung lượng pin VF8 Plus là bao nhiêu?",
+      "response": "Theo tài liệu VinFast:\n\nVinFast VF 8 Plus AWD: Dung lượng pin khả dụng: 87,7 kWh",
+      "latency_ms": 204.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "verified_catalog_fact_snapshot",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 35,
+      "input": "Dung lượng pin VF8 là bao nhiêu?",
+      "response": "Em chưa tìm được tài liệu chính thức đủ để xác nhận thông tin này. Quý khách có thể liên hệ chuyên viên VinFast để đối chiếu.",
+      "latency_ms": 203.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "unresolved_catalog_scope",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 36,
+      "input": "Dung lượng pin VF3 là bao nhiêu?",
+      "response": "Em chưa tìm được tài liệu chính thức đủ để xác nhận thông tin này. Quý khách có thể liên hệ chuyên viên VinFast để đối chiếu.",
+      "latency_ms": 171.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "unresolved_catalog_scope",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 37,
+      "input": "VF8 Plus sạc nhanh bao lâu?",
+      "response": "Em chưa tìm được tài liệu chính thức đủ để xác nhận thông tin này. Quý khách có thể liên hệ chuyên viên VinFast để đối chiếu.",
+      "latency_ms": 1953.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "unsupported_answer",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 38,
+      "input": "Tôi quên mật khẩu ứng dụng VinFast thì làm sao?",
+      "response": "Theo tài liệu VinFast:\n\nDạ, Quý khách có thể khôi phục mật khẩu ứng dụng VinFast bằng cách truy cập vào màn hình đăng nhập và chọn tùy chọn \"Quên mật khẩu\". Sau đó, Quý khách sẽ nhận được hướng dẫn để đặt lại mật khẩu của mình qua email hoặc số điện thoại đã đăng ký. Nếu cần thêm hỗ trợ, Quý khách có thể liên hệ với bộ phận chăm sóc khách hàng của VinFast.",
+      "latency_ms": 2015.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "success",
+      "source_ids": [
+        "SRC-001"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 39,
+      "input": "Hướng dẫn đặt lịch bảo dưỡng qua ứng dụng",
+      "response": "Theo tài liệu VinFast:\n\nDạ, Quý khách có thể đặt lịch bảo dưỡng qua Ứng dụng VinFast bằng cách thực hiện các bước sau:\n\n1. Bấm \"Đặt dịch vụ\";\n2. Chọn loại dịch vụ và thêm mô tả chi tiết về dịch vụ. Tùy theo vấn đề của xe, VinFast sẽ cung cấp một trong hai loại hình sửa chữa là sửa tại Xưởng hoặc lưu động với dịch vụ Mobile Service để Quý khách lựa chọn;\n3. Nếu đặt lịch tại Xưởng dịch vụ VinFast, ứng dụng sẽ hiển thị danh sách địa điểm phù hợp. Nếu chọn Mobile Service, Quý khách nhập địa chỉ và VinFast sẽ kiểm tra khả năng cung cấp dịch vụ tại địa điểm đó;\n4. Chọn thời gian mong muốn;\n5. Kiểm tra lại thông tin và xác nhận đặt lịch.",
+      "latency_ms": 2828.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "success",
+      "source_ids": [
+        "SRC-001"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 40,
+      "input": "Mobile Service hỗ trợ những gì?",
+      "response": "Em chưa có đoạn tài liệu đủ để xác nhận tính năng hoặc các bước thao tác đang hỏi. Cần đối chiếu hướng dẫn chính thức trước khi thực hiện.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+      "latency_ms": 3594.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "needs_data",
+        "final_outcome": "needs_verified_data",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "triage",
+          "decision": "parsed",
+          "failure": {}
+        },
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "unsupported_textual_claim",
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 41,
+      "input": "Tìm trạm sạc gần tôi",
+      "response": "Tìm trạm sạc ô tô gần bạn. Nhập khu vực hoặc dùng vị trí hiện tại để xem tối đa 5 kết quả.",
+      "latency_ms": 78.0,
+      "final_diagnostics": {
+        "answer_path": "general",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 42,
+      "input": "Tìm xưởng dịch vụ ở Hà Nội",
+      "response": "Tìm xưởng dịch vụ ô tô gần bạn. Em sẽ tìm quanh khu vực bạn đã nêu; khoảng cách tính từ tâm khu vực tham chiếu.",
+      "latency_ms": 63.0,
+      "final_diagnostics": {
+        "answer_path": "general",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 43,
+      "input": "Xe VF5 của tôi không sạc được, báo CC01",
+      "response": "Dạ VinFast đã ghi nhận sự cố sạc của xe VF5:\nVị trí trạm: chưa cung cấp\nTrụ sạc: chưa cung cấp\nMã lỗi: CC01\n\nHệ thống đã tự động tạo hồ sơ hỗ trợ (Mã: CASE-20261019-44f894874c65459b) và chuyển dữ liệu trực tiếp tới Chuyên viên Kỹ thuật trạm sạc. Anh/chị vui lòng theo dõi cập nhật tiến độ giải quyết trực tiếp trên màn hình này ạ.",
+      "latency_ms": 109.0,
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 44,
+      "input": "Xe VF5 đang bốc khói",
+      "response": "Dạ VinFast đã ghi nhận tình trạng khẩn cấp của xe VF5. Hệ thống đã tự động tạo hồ sơ khẩn cấp (Mã: CASE-20261019-ff3601a8635e4aa8). Anh/chị vui lòng gọi hotline để được hỗ trợ.\n\n⚠️ HƯỚNG DẪN AN TOÀN NGAY LẬP TỨC: Quý khách vui lòng giữ bình tĩnh, tấp xe vào lề an toàn nếu có thể, bật đèn cảnh báo khẩn cấp (hazard), di chuyển ra khỏi xe đến khu vực an toàn và gọi ngay Hotline Cứu hộ VinFast 1900-232389 để được hỗ trợ khẩn cấp.",
+      "latency_ms": 78.0,
+      "final_diagnostics": {
+        "answer_path": "incident",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 45,
+      "input": "Tôi muốn khiếu nại thái độ nhân viên showroom",
+      "response": "Dạ em rất tiếc về trải nghiệm chưa thuận tiện của anh/chị. Hệ thống đã ghi nhận phản hồi vào hồ sơ hỗ trợ chuyên trách (Mã: CASE-20261019-510de56d214d4d93) và chuyển ngay đến bộ phận Chăm sóc Khách hàng để rà soát, xử lý ưu tiên. Anh/chị vui lòng theo dõi cập nhật trực tiếp tại đây nhé ạ.",
+      "latency_ms": 1469.0,
+      "final_diagnostics": {
+        "answer_path": "general",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "nearby_intent",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 46,
+      "input": "Tôi muốn đăng ký lái thử VF8 ở Hà Nội",
+      "response": "Quý khách có thể đăng ký lái thử trực tiếp qua Ứng dụng VinFast hoặc liên hệ hệ thống Showroom / Nhà phân phối VinFast trên toàn quốc để được sắp xếp trải nghiệm xe thực tế.",
+      "latency_ms": 219.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "external_action_required",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 47,
+      "input": "Thời tiết ngày mai thế nào?",
+      "response": "Yêu cầu này nằm ngoài phạm vi hỗ trợ của trợ lý VinFast. Em có thể hỗ trợ thông tin xe, trạm sạc, ứng dụng, bảo hành và các yêu cầu dịch vụ VinFast.",
+      "latency_ms": 94.0,
+      "final_diagnostics": {
+        "answer_path": "general",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 48,
+      "input": "SOH là gì?",
+      "response": "SOH (State of Health) là chỉ số sức khỏe pin, phản ánh mức suy giảm so với trạng thái ban đầu. SOH khác SOC: SOC là mức pin đang còn, SOH liên quan đến khả năng của pin sau thời gian sử dụng. Cách đánh giá SOH phụ thuộc hệ thống quản lý pin.\n\nĐây là kiến thức chung về xe, chưa đối chiếu sổ tay đúng mẫu/đời xe; không phải kết luận chẩn đoán.",
+      "latency_ms": 156.0,
+      "final_diagnostics": {
+        "answer_path": "general",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 49,
+      "input": "What colors are available for the VF8 Plus?",
+      "response": "According to VinFast documents:\n\nThe exterior colors introduced for the VinFast VF 8 are: Infinity Blanc; Jet Black; Crimson Red; Ivy Green.\nThis is general information about the vehicle model, and the availability of colors for each trim/version has not been confirmed. It is necessary to check the trim/version and availability status at the showroom.",
+      "latency_ms": 1813.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": [
+          {
+            "prompt": "customer_translation",
+            "outcome": "parsed"
+          }
+        ]
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "customer_translation",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "success",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 50,
+      "input": "How long is the VF8 warranty?",
+      "response": "According to VinFast documents:\n\nI’m sorry about your experience. The warranty policy for the VF8 vehicle is 10 years or 200.000 km, whichever comes first. Under standard usage conditions, the vehicle will be covered by this time and mileage warranty.",
+      "latency_ms": 4578.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": [
+          {
+            "prompt": "customer_translation",
+            "outcome": "parsed"
+          }
+        ]
+      },
+      "llm_outcomes": [
+        {
+          "prompt": "rag_qa",
+          "decision": "parsed",
+          "failure": {}
+        },
+        {
+          "prompt": "customer_translation",
+          "decision": "parsed",
+          "failure": {}
+        }
+      ],
+      "retrieval_category": "success",
+      "source_ids": [
+        "SRC-002"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 51,
+      "input": "Please explain battery warranty and scheduled maintenance.",
+      "response": "According to VinFast documentation:\n\n### Battery warranty\n\nHigh-voltage battery warranty\n\n- VinFast covers eligible defects in software, component quality or assembly, provided the vehicle is used and maintained as instructed. Exclusions are set out in the warranty policy.\n- The high-voltage battery warranty period and mileage limit depend on the vehicle model and usage conditions. Vehicles currently or previously used commercially have separate terms; one warranty period does not apply to every vehicle.\n- Check the electronic warranty booklet for your vehicle. The high-voltage battery and the auxiliary battery are separate warranty items.\n\n### Scheduled maintenance\n\nMaintenance schedule for your vehicle model\n\n- Scheduled maintenance is based on mileage and time in use. VinFast publishes schedules and inspection items for each vehicle model.\n- Following the maintenance schedule is a requirement for warranty coverage.\n- Check the schedule, service items and maintenance documents for the correct vehicle model before confirming the applicable mileage or time interval.\n\nPlease provide your vehicle model, model year, current mileage and whether it has ever been used commercially so I can check the applicable battery warranty and maintenance schedule.",
+      "latency_ms": 94.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "compound_warranty_maintenance",
+      "source_ids": [
+        "SRC-002",
+        "SRC-004"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 52,
+      "input": "Please explain public charging, charging fees and VinFast app features.",
+      "response": "According to VinFast documentation:\n\n### Charging at a public station\n\nHow to charge at a public station\n\n1. Step 1: Park in a bay with an available charger.\n2. Step 2: Open the charging-port cover as described in your vehicle's owner's manual.\n3. Step 3: Take the compatible charging connector from the charger.\n4. Step 4: Plug the connector into the vehicle's charging port.\n5. Step 5: Check the charging information and status on the vehicle display.\n\nTo finish: select stop charging on the vehicle display, wait about 10 seconds, then remove the connector as directed in the guide.\n\nThe guide illustrates one vehicle model. Check your model's owner's manual for the location and operation of the charging-port cover.\n\n### Charging fees\n\n- VinFast publishes the following charging rates and payment information for public stations:\n\n- Charging rate: 3,858 VND/kWh (effective from 19/03/2024).\n\n- Additional station usage fees after the charging session has ended:\n\n- Free from minute 1 to 10\n\n- 1,000 VND/minute from minute 11 to 60\n\n- 2,000 VND/minute from minute 61 to 120\n\n- 4,000 VND/minute from minute 121 onward\n\nThese rates are from documentation verified on 2026-09-30. Check the app for the rates and promotions applicable to your vehicle before charging.\n\n### VinFast app features\n\nCharging features in the VinFast app\n\n- Find places and directions: select or search for a destination, then choose a station from the list. The app can show charger information, travel time and estimated remaining battery on arrival.\n- Charging history: open Charging History and select a session to view its time, location, cost and any additional fees.\n\nCheck the menu names and steps against your installed app version; the source is an app guide published in 2022.",
+      "latency_ms": 188.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "compound_charging",
+      "source_ids": [
+        "SRC-010",
+        "SRC-006",
+        "SRC-001"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 53,
+      "input": "Tư vấn VF8",
+      "response": "VF 8 là mẫu SUV điện phân khúc D với 5 chỗ ngồi. Hai phiên bản Eco và Plus có những điểm khác biệt sau:\n\n- **VinFast VF 8 Eco (từ 898.000.000 VNĐ)**: công suất 150 kW, dẫn động cầu trước; quãng đường công bố 635 km (NEDC), sạc nhanh 31 phút (từ 10%–70%).\n\n- **VinFast VF 8 Plus (từ 1.079.000.000 VNĐ)**: công suất 300 kW, dẫn động AWD; quãng đường công bố 475 km (NEDC), sạc nhanh 31 phút (từ 10%–70%).\n\nQuãng đường thực tế phụ thuộc điều kiện sử dụng. Giá bán trên là giá niêm yết chưa phải là giá lăn bánh.",
+      "latency_ms": 31.0,
+      "final_diagnostics": {
+        "answer_path": "snapshot",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": null,
+      "source_ids": [
+        "SRC-009"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 54,
+      "input": "Ứng dụng VinFast có tính năng gì?",
+      "response": "Theo tài liệu VinFast:\n\nTính năng liên quan đến sạc trên ứng dụng VinFast\n\n- Tìm địa điểm và dẫn đường: chọn địa điểm hoặc nhập tìm kiếm; chọn trạm trong danh sách. Ứng dụng cho phép xem thông tin trụ sạc, thời gian đến và mức pin dự kiến khi tới trạm.\n- Lịch sử sạc: mở mục Lịch sử sạc, chọn một phiên để xem thời gian, địa điểm, chi phí và phụ phí nếu có.\n\nTên mục và thao tác cần đối chiếu phiên bản ứng dụng đang sử dụng; tài liệu nguồn là hướng dẫn ứng dụng công bố năm 2022.",
+      "latency_ms": 78.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "verified_public_guide_snapshot",
+      "source_ids": [
+        "SRC-001"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 55,
+      "input": "Biểu phí sạc tại trạm sạc công cộng",
+      "response": "Theo tài liệu VinFast:\n\nVinFast cung cấp đơn giá sạc ô tô điện, xe máy điện và hình thức thanh toán áp dụng tại các trạm sạc công cộng như sau:\nĐơn giá sạc: 3.858 VNĐ/kWh (áp dụng từ ngày 19/03/2024).\nPhí sử dụng dịch vụ trạm sạc bổ sung sau khi hoàn thành phiên sạc:\nMiễn phí từ phút thứ 1 đến phút thứ 10\n1.000 đồng/phút từ phút thứ 11 đến phút thứ 60\n2.000 đồng/phút từ phút thứ 61 đến phút thứ 120\n4.000 đồng/phút từ phút thứ 121 trở đi",
+      "latency_ms": 125.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "success",
+      "source_ids": [
+        "SRC-006"
+      ],
+      "factual_review": "pending"
+    },
+    {
+      "scenario": "live-sample",
+      "number": 56,
+      "input": "Chính sách bảo hành pin và lịch bảo dưỡng định kỳ",
+      "response": "Theo tài liệu VinFast:\n\n### Bảo hành pin\n\nChính sách bảo hành pin cao áp\n\n- VinFast bảo hành các hư hỏng thuộc phạm vi bảo hành do lỗi phần mềm, chất lượng linh kiện hoặc lắp ráp, với điều kiện sử dụng và bảo dưỡng đúng hướng dẫn. Các hạng mục loại trừ được quy định trong chính sách.\n- Thời hạn và giới hạn quãng đường bảo hành pin cao áp phụ thuộc dòng xe và điều kiện sử dụng. Xe đang hoặc đã từng chạy dịch vụ thương mại có chính sách riêng; không áp dụng một thời hạn chung cho mọi xe.\n- Cần đối chiếu Sổ bảo hành điện tử đúng xe. Pin cao áp và ắc quy là hai hạng mục bảo hành khác nhau.\n\n### Bảo dưỡng định kỳ\n\nLịch bảo dưỡng theo đúng mẫu xe\n\n- Bảo dưỡng định kỳ được xác định theo quãng đường và thời gian sử dụng. Lịch trình và các hạng mục cần kiểm tra được VinFast công bố theo từng dòng xe.\n- Tuân thủ lịch bảo dưỡng là điều kiện cần để được hưởng chính sách bảo hành.\n- Cần đối chiếu lịch trình, hạng mục và tài liệu bảo dưỡng đúng mẫu xe trước khi xác nhận mốc km hoặc thời gian áp dụng.\n\nQuý khách cho biết dòng xe, đời xe, số km hiện tại và xe có từng chạy dịch vụ hay không để em đối chiếu thời hạn bảo hành pin và lịch bảo dưỡng đúng xe nhé.",
+      "latency_ms": 172.0,
+      "final_diagnostics": {
+        "answer_path": "rag",
+        "answer_status": "answered",
+        "final_outcome": "success",
+        "stage_outcomes": []
+      },
+      "llm_outcomes": [],
+      "retrieval_category": "compound_warranty_maintenance",
+      "source_ids": [
+        "SRC-002",
+        "SRC-004"
+      ],
+      "factual_review": "pending"
+    }
+  ]
+}

@@ -76,6 +76,9 @@ def build_reply_constraints(turn: TurnUnderstanding, context: ConversationContex
 def progress_reply(turn: TurnUnderstanding, context: ConversationContext, progress: ConversationProgress,
                    case_snapshot: dict | None = None) -> str | None:
     """Deterministic fallback for operational status; no RAG-invented actions."""
+    if turn.move == 'correct' and 'model' in turn.updates and context.active_goal != 'incident':
+        details = ', '.join(str(value) for key, value in turn.updates.items() if key in {'model', 'version', 'city'} and value)
+        return f'Em đã cập nhật thông tin trong phiên này: {details}.'
     if not context.active_goal or turn.move == 'new_incident':
         return None
     if turn.needs_confirmation:
@@ -85,7 +88,7 @@ def progress_reply(turn: TurnUnderstanding, context: ConversationContext, progre
                       'concept': 'khái niệm vừa trao đổi'}.get(context.active_goal, context.active_goal)
         return f'Em vẫn đang hỗ trợ {goal_label}' + (f' của {context.subject}' if context.subject else '') + '. Anh/chị muốn em giải thích thêm phần nào, hay hướng dẫn bước tiếp theo?'
     facts = progress.known_facts
-    summary = ', '.join(facts[k] for k in ('model', 'version', 'battery', 'city', 'area', 'date', 'time_window', 'component') if k in facts)
+    summary = ', '.join(facts[k] for k in ('model', 'version', 'battery', 'city', 'area', 'date', 'time_window', 'component', 'charger_id', 'station_location') if k in facts)
     if progress.state == 'cancelled_intent':
         if turn.move == 'ask_status':
             return 'Trong chat này em chưa đặt lịch hay tạo hồ sơ đặt hẹn cho Quý khách. Ý định đặt hẹn đã dừng; nếu có lịch đặt riêng ngoài chat, Quý khách cần kiểm tra tại nơi đã đặt.'
@@ -124,6 +127,7 @@ def progress_reply(turn: TurnUnderstanding, context: ConversationContext, progre
         return ('Em đang đối chiếu bảo hành ' + (context.subject or 'xe đang hỏi') + '. '
                 'Đời xe có thể cần để chọn đúng chính sách; Quý khách cho biết năm sản xuất hoặc xem trong hồ sơ xe nhé. Chưa đủ nguồn để xác nhận quyền lợi riêng của xe.')
     if context.active_goal == 'incident' and (turn.move in {'ask_status', 'ask_next_step'}
+                                              or progress.case_id and turn.move in {'correct', 'supply_info'}
                                               or facts.get('reported_condition') and turn.move != 'new_question'):
         status_label = CASE_STATUS_VI.get((case_snapshot or {}).get('status'), 'chưa xác nhận')
         reply = (f'Hồ sơ {progress.case_id} hiện có trạng thái {status_label}. '

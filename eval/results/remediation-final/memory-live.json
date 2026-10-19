@@ -1,0 +1,199 @@
+{
+  "provider_configured": true,
+  "process_per_request": true,
+  "model_generation_needed": false,
+  "turns": [
+    {
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "language": "vi",
+          "nearby_action": null,
+          "vehicle_comparison": false,
+          "vehicle_cards": [],
+          "emergency_context": null,
+          "safety_status": "unconfirmed",
+          "safety_acknowledged_at": null,
+          "incident_version": null,
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "Em đã ghi nhớ thông tin cá nhân Quý khách cho phép lưu.",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": [],
+          "citations": [],
+          "service_handoff": null,
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        },
+        "error": null,
+        "meta": {
+          "timestamp": "2026-10-19T14:28:31.526614+00:00"
+        }
+      },
+      "context": {
+        "preferred_language": "vi",
+        "schema_version": 1,
+        "active_goal": null,
+        "topic": "",
+        "subject": null,
+        "facts": {},
+        "pending_question": {
+          "slots": [],
+          "purpose": ""
+        },
+        "last_answer": [],
+        "action": {}
+      },
+      "vehicle_context": {},
+      "persisted_profile_model": "VF8",
+      "memory": {
+        "revision": 1,
+        "facts": {
+          "home_city": {
+            "value": "Hà Nội",
+            "status": "confirmed",
+            "source_kind": "chat",
+            "source_session_id": "live-a",
+            "source_message_id": "af268edc-ca8d-4c0e-9cb9-b9c22bcdd2ea",
+            "updated_at": "2026-10-19T14:28:31.528622Z"
+          },
+          "owned_vehicle.battery_plan": {
+            "value": null,
+            "status": "retracted",
+            "source_kind": "chat",
+            "source_session_id": "live-a",
+            "source_message_id": "af268edc-ca8d-4c0e-9cb9-b9c22bcdd2ea",
+            "updated_at": "2026-10-19T14:28:31.528622Z"
+          },
+          "owned_vehicle.model": {
+            "value": "VF8",
+            "status": "confirmed",
+            "source_kind": "chat",
+            "source_session_id": "live-a",
+            "source_message_id": "af268edc-ca8d-4c0e-9cb9-b9c22bcdd2ea",
+            "updated_at": "2026-10-19T14:28:31.528622Z"
+          },
+          "owned_vehicle.model_year": {
+            "value": null,
+            "status": "retracted",
+            "source_kind": "chat",
+            "source_session_id": "live-a",
+            "source_message_id": "af268edc-ca8d-4c0e-9cb9-b9c22bcdd2ea",
+            "updated_at": "2026-10-19T14:28:31.528622Z"
+          },
+          "owned_vehicle.version": {
+            "value": "Plus",
+            "status": "confirmed",
+            "source_kind": "chat",
+            "source_session_id": "live-a",
+            "source_message_id": "af268edc-ca8d-4c0e-9cb9-b9c22bcdd2ea",
+            "updated_at": "2026-10-19T14:28:31.528622Z"
+          }
+        }
+      }
+    },
+    {
+      "status": 200,
+      "response": {
+        "success": true,
+        "data": {
+          "language": "en",
+          "nearby_action": null,
+          "vehicle_comparison": false,
+          "vehicle_cards": [],
+          "emergency_context": null,
+          "safety_status": "unconfirmed",
+          "safety_acknowledged_at": null,
+          "incident_version": null,
+          "visual_evidence": null,
+          "response_type": "FAQ_ANSWER",
+          "message": "You previously provided: Owned vehicle: VF8; Version: Plus; Home city: Hanoi.",
+          "case_id": null,
+          "status": null,
+          "priority": null,
+          "clarification_turn": null,
+          "max_clarification_turns": null,
+          "suggested_replies": [],
+          "citations": [],
+          "service_handoff": null,
+          "safe_guidance": null,
+          "show_emergency_banner": false,
+          "request_location": false,
+          "remaining_guest_messages": null
+        },
+        "error": null,
+        "meta": {
+          "timestamp": "2026-10-19T14:28:34.482975+00:00"
+        }
+      },
+      "context": {
+        "preferred_language": "en",
+        "schema_version": 1,
+        "active_goal": null,
+        "topic": "",
+        "subject": null,
+        "facts": {},
+        "pending_question": {
+          "slots": [],
+          "purpose": ""
+        },
+        "last_answer": [],
+        "action": {}
+      },
+      "vehicle_context": {},
+      "persisted_profile_model": "VF8",
+      "memory": {
+        "revision": 1,
+        "facts": {
+          "home_city": {
+            "value": "Hà Nội",
+            "status": "confirmed",
+            "source_kind": "chat",
+            "source_session_id": "live-a",
+            "source_message_id": "af268edc-ca8d-4c0e-9cb9-b9c22bcdd2ea",
+            "updated_at": "2026-10-19T14:28:31.528622Z"
+          },
+          "owned_vehicle.battery_plan": {
+            "value": null,
+            "status": "retracted",
+            "source_kind": "chat",
+            "source_session_id": "live-a",
+            "source_message_id": "af268edc-ca8d-4c0e-9cb9-b9c22bcdd2ea",
+            "updated_at": "2026-10-19T14:28:31.528622Z"
+          },
+          "owned_vehicle.model": {
+            "value": "VF8",
+            "status": "confirmed",
+            "source_kind": "chat",
+            "source_session_id": "live-a",
+            "source_message_id": "af268edc-ca8d-4c0e-9cb9-b9c22bcdd2ea",
+            "updated_at": "2026-10-19T14:28:31.528622Z"
+          },
+          "owned_vehicle.model_year": {
+            "value": null,
+            "status": "retracted",
+            "source_kind": "chat",
+            "source_session_id": "live-a",
+            "source_message_id": "af268edc-ca8d-4c0e-9cb9-b9c22bcdd2ea",
+            "updated_at": "2026-10-19T14:28:31.528622Z"
+          },
+          "owned_vehicle.version": {
+            "value": "Plus",
+            "status": "confirmed",
+            "source_kind": "chat",
+            "source_session_id": "live-a",
+            "source_message_id": "af268edc-ca8d-4c0e-9cb9-b9c22bcdd2ea",
+            "updated_at": "2026-10-19T14:28:31.528622Z"
+          }
+        }
+      }
+    }
+  ]
+}

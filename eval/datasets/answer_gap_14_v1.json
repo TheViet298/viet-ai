@@ -1,0 +1,211 @@
+[
+  {
+    "id": "G14-1",
+    "question": "Thời hạn bảo hành xe VinFast VF 8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+    "expected_status": "answered",
+    "required": [
+      "10 năm",
+      "200.000"
+    ],
+    "question_en": "What is the standard-use vehicle warranty for the VinFast VF8 in years or kilometers?",
+    "required_en": [
+      "10 years",
+      "200,000"
+    ]
+  },
+  {
+    "id": "G14-2",
+    "question": "Thời hạn bảo hành xe VinFast VF 5 là bao nhiêu năm?",
+    "expected_status": "answered",
+    "required": [
+      "7 năm",
+      "160.000"
+    ],
+    "question_en": "How many years is the vehicle warranty for the VinFast VF5?",
+    "required_en": [
+      "7 years",
+      "160,000"
+    ]
+  },
+  {
+    "id": "G14-3",
+    "question": "Chu kỳ bảo dưỡng định kỳ đầu tiên của xe ô tô điện VinFast là ở mốc nào?",
+    "expected_status": "needs_clarification",
+    "required": [
+      "dòng xe",
+      "đời xe"
+    ],
+    "question_en": "When is the first scheduled maintenance interval for a VinFast electric car?",
+    "required_en": [
+      "model"
+    ]
+  },
+  {
+    "id": "G14-4",
+    "question": "Hệ thống hỗ trợ người lái ADAS trên xe VF 8 bao gồm những tính năng cơ bản nào?",
+    "expected_status": "answered",
+    "required": [
+      "ADAS",
+      "2026",
+      "hành trình"
+    ],
+    "question_en": "What basic driver assistance ADAS features does the VF8 have?",
+    "required_en": [
+      "adaptive cruise",
+      "manual"
+    ]
+  },
+  {
+    "id": "G14-5",
+    "question": "VF7 Plus có màu gì?",
+    "expected_status": "partial",
+    "required": [
+      "Infinity Blanc",
+      "Zenith Grey",
+      "Plus"
+    ],
+    "question_en": "What colors are available for the VF7 Plus?",
+    "required_en": [
+      "Infinity Blanc",
+      "model"
+    ]
+  },
+  {
+    "id": "G14-6",
+    "question": "Bảo hành pin cao áp VF8 bao lâu?",
+    "expected_status": "answered",
+    "required": [
+      "10 năm",
+      "200.000",
+      "3 năm",
+      "100.000",
+      "4 năm",
+      "80.000"
+    ],
+    "question_en": "How long is the VF8 high-voltage battery warranty?",
+    "required_en": [
+      "10 years",
+      "3 years",
+      "4 years"
+    ]
+  },
+  {
+    "id": "G14-7",
+    "question": "Bảo hành ắc quy 12V VF8 bao lâu?",
+    "expected_status": "answered",
+    "required": [
+      "1 năm",
+      "không giới hạn"
+    ],
+    "question_en": "How long is the VF8 12V battery warranty?",
+    "required_en": [
+      "1 year",
+      "unlimited"
+    ]
+  },
+  {
+    "id": "G14-8",
+    "question": "VF8 chạy dịch vụ thương mại được bảo hành thế nào?",
+    "expected_status": "answered",
+    "required": [
+      "3 năm",
+      "100.000",
+      "thương mại"
+    ],
+    "question_en": "What warranty applies to a commercially used VF8?",
+    "required_en": [
+      "3 years",
+      "100,000"
+    ]
+  },
+  {
+    "id": "G14-9",
+    "question": "Xe bị ngập nước có được bảo hành không?",
+    "expected_status": "answered",
+    "required": [
+      "hư hỏng",
+      "ngập nước",
+      "xưởng"
+    ],
+    "question_en": "Is flood damage covered under the vehicle warranty?",
+    "required_en": [
+      "damage",
+      "flood"
+    ]
+  },
+  {
+    "id": "G14-10",
+    "question": "Lịch bảo dưỡng định kỳ VF8 là gì?",
+    "expected_status": "answered",
+    "required": [
+      "15.000",
+      "12 tháng",
+      "đời xe"
+    ],
+    "question_en": "What is the scheduled maintenance interval for the VF8?",
+    "required_en": [
+      "15,000",
+      "12 months"
+    ]
+  },
+  {
+    "id": "G14-11",
+    "question": "VF5 bảo dưỡng mỗi bao nhiêu km?",
+    "expected_status": "answered",
+    "required": [
+      "15.000",
+      "12 tháng",
+      "đời xe"
+    ],
+    "question_en": "How many kilometers between scheduled maintenance visits for the VF5?",
+    "required_en": [
+      "15,000",
+      "12 months"
+    ]
+  },
+  {
+    "id": "G14-12",
+    "question": "VF8 đi được bao xa một lần sạc?",
+    "expected_status": "needs_clarification",
+    "required": [
+      "Eco",
+      "Plus"
+    ],
+    "question_en": "How far can the VF8 travel on one charge?",
+    "required_en": [
+      "Eco",
+      "Plus",
+      "year"
+    ]
+  },
+  {
+    "id": "G14-13",
+    "question": "Dung lượng pin VF8 là bao nhiêu?",
+    "expected_status": "needs_clarification",
+    "required": [
+      "Eco",
+      "Plus"
+    ],
+    "question_en": "What is the battery capacity of the VF8?",
+    "required_en": [
+      "Eco",
+      "Plus",
+      "year"
+    ]
+  },
+  {
+    "id": "G14-14",
+    "question": "Dung lượng pin VF3 là bao nhiêu?",
+    "expected_status": "answered",
+    "required": [
+      "18,64",
+      "kWh",
+      "phiên bản"
+    ],
+    "question_en": "What is the battery capacity of the VF3?",
+    "required_en": [
+      "18.64",
+      "kWh"
+    ]
+  }
+]

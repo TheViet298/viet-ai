@@ -1,0 +1,24 @@
+{
+  "dataset": "eval/datasets/answer_quality_holdout_v1.jsonl",
+  "sha256": "1dd4d42c5f00f302315738758b1361fb703496321d01bccd1a93e86db96f6a81",
+  "review_status": "verified",
+  "reviewer": "Codex/final_remediation_review (independent source review)",
+  "reviewed_at": "2026-10-19",
+  "case_count": 40,
+  "language_counts": {
+    "vi": 20,
+    "en": 20
+  },
+  "category_counts": {
+    "answerable": 30,
+    "boundary": 10
+  },
+  "basis": "Independent local source review; no candidate/provider outputs consulted. Each expected_concepts item is required; a list item supplies alternatives. Case insensitive and accent insensitive matching is acceptable; factual semantics and scope still require human review.",
+  "source_sha256": {
+    "data/verified/vehicle_facts.json": "c08066e004c8f2205782a54481c2765e78bc122a94504f81161d62c2de6438ed",
+    "docs/superpowers/specs/2026-10-19-answer-quality-and-user-memory-design.md": "347ce678a73d1bf6fa25eb55f7cc085fc1c714b1f33078a5a469fb5828cee794",
+    "fixtures/knowledge/charging_guides.json": "91d8e6738925031c287b94a32d3c379a33800203f28d1b76bbb90ddcd92c8dd1",
+    "fixtures/knowledge/maintenance_schedules.json": "d2e48c926b28ddee001ba48fb115304a9c55b0773739649f0c062444b87452c8",
+    "fixtures/knowledge/warranty_maintenance.json": "b17b05ce9fcb26d2687fc3d5c3567750b732b1156240cf585f0d408f7e74c29e"
+  }
+}

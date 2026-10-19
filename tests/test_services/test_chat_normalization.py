@@ -284,3 +284,15 @@ async def test_google_model_requires_direct_key_or_gateway(monkeypatch):
 def test_unicode_outside_vietnamese_does_not_shift_replacement_offsets():
     from src.services.chat_normalization import normalize_chat_text
     assert normalize_chat_text('Straße khong sac duoc CC01') == 'Straße không sạc được CC01'
+
+
+@pytest.mark.parametrize('text,required', [
+    ('Phạm vi lái xe đã công bố của VF8 Eco?', 'quãng đường'),
+    ('Khoảng cách lái xe VF5 theo tiêu chuẩn nào?', 'quãng đường'),
+    ('Số vị trí ngồi của VF3 Plus?', 'chỗ ngồi'),
+    ('Kiểm tra lịch bảo trì định kỳ?', 'bảo dưỡng'),
+    ('Các bước sạc ô tô ở trạm công cộng?', 'trạm sạc công cộng'),
+])
+def test_translated_business_terms_keep_canonical_intent(text, required):
+    from src.services.chat_normalization import normalize_chat_text
+    assert required in normalize_chat_text(text).casefold()
