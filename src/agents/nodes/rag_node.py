@@ -174,7 +174,8 @@ async def rag_node(state: AgentState) -> dict:
         claim_check = validate_answer_claims(answer_claims, citations, prior)
         if not claim_check['supported']:
             citations = []
-            numeric_failure = any(c['claim_key'] not in {'features', 'feature', 'procedure', 'steps', 'instruction', 'instructions'}
+            from src.services.answer_evidence import numeric_value
+            numeric_failure = any(numeric_value(c['value']) is not None or bool(c.get('unit'))
                                   for c in claim_check['unsupported_claims'])
             reply = ('Em chưa xác minh được thông tin này từ tài liệu phù hợp với yêu cầu của Quý khách. Cần đối chiếu thêm với VinFast trước khi sử dụng thông tin này.'
                      if numeric_failure else 'Em chưa có đoạn tài liệu đủ để xác nhận tính năng hoặc các bước thao tác đang hỏi. Cần đối chiếu hướng dẫn chính thức trước khi thực hiện.')

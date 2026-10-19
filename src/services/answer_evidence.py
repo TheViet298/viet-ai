@@ -63,7 +63,29 @@ def catalog_fact_sections(citation: dict) -> list[str]:
         sections += [re.sub(r'miễn phí', 'Giá 0 đồng/phút', line, flags=re.I) for line in text.splitlines()
                      if re.match(r'^\s*(?:[-*]\s*)?miễn phí\s+từ phút thứ \d+', line, re.I)]
     if citation.get('source_type') != 'official_catalog':
-        return sections
+        # A policy table often puts the component and usage condition above
+        # its model rows. Attach only those headers, never a neighbouring row's
+        # quantities or model list. New headings replace the previous scope.
+        heading, condition = '', ''
+        scoped = []
+        for raw in text.splitlines():
+            line = raw.strip()
+            if not line:
+                continue
+            is_heading = (not QUANTITY.search(line) and len(line) <= 220
+                          and not re.search(r'[.!?]$', line)
+                          and not re.match(r'^[-*]\s', line))
+            if is_heading:
+                subordinate = heading and (
+                    normalized(line).startswith(normalized(heading).rstrip(':'))
+                    or re.match(r'^(?:dieu kien|su dung|mua theo|xe dang|xe da)\b', normalized(line)))
+                if line.endswith(':') and subordinate:
+                    condition = line
+                else:
+                    heading, condition = line, ''
+            else:
+                scoped.append('\n'.join(value for value in (heading, condition, line) if value))
+        return list(dict.fromkeys([*sections, *scoped]))
     header = text.splitlines()[0] if text else ''
     # Only expand a version-scoped catalog record, never mix facts across trims.
     if not re.search(r'phien ban.*vf\s*(?:e34|[356789]).*\b(?:eco|plus)\b', normalized(header)):
