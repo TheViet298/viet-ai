@@ -6,6 +6,25 @@ from src.config import Settings, get_settings
 from src.services.rag_service import RAGService, source_registry
 
 
+def test_app_procedure_keeps_complete_4811_bytes_after_car_history():
+    from src.agents.context_manager import build_7_layer_context, load_prompt, utf8_size
+    start = 'Quên mật khẩu ứng dụng\nBước 1: Chọn Quên mật khẩu.\nBước 2: Nhập mã xác nhận.\n'
+    end = '\nChỉ áp dụng cho tài khoản đã xác minh.'
+    document = start + 'x' * (4811 - utf8_size(start + end)) + end
+    assert utf8_size(document) == 4811
+    layers = build_7_layer_context({
+        'latest_user_message': 'Cách lấy lại mật khẩu ứng dụng?',
+        'memory_summary': 'Tư vấn VF8. ' * 700,
+        'rag_citations': [{'source_id': 'SRC-001', 'relevant_snippet': document}],
+    }, load_prompt('rag_qa'))
+    messages = trim_context_layers(layers, max_bytes=8000)
+    rendered = '\n'.join(str(message.content) for message in messages)
+    assert document in rendered
+    assert layers.system_context in rendered and layers.policy_context in rendered
+    assert 'Tư vấn VF8.' not in rendered
+    assert sum(utf8_size(str(message.content)) for message in messages) <= 8000
+
+
 def evidence(text):
     meta = {**source_registry()['SRC-002'], 'source_id': 'SRC-002', 'applicable_models': 'ALL'}
     return {'documents': [[text]], 'metadatas': [[meta]], 'distances': [[0.2]], 'ids': [['p1']]}
