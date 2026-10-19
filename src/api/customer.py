@@ -559,6 +559,12 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         )
         if not target_model and ctx and ctx.vehicle_model:
             target_model = ctx.vehicle_model
+        if (turn_understanding.move == 'new_question' and not conversation.subject
+                and conversation.active_goal in {'application', 'charging_network', 'warranty', 'maintenance', 'concept'}):
+            target_model = None
+            vehicle_context['resolved_query'] = turn_understanding.resolved_query
+            vehicle_context['target_model'] = None
+            vehicle_context['models'] = []
         vehicle_model = target_model
         vehicle_source = "user_stated" if target_model else None
 
@@ -598,6 +604,12 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                     captured.pop("error_code", None)
                 if d.get("charger_id") and str(captured.get("charger_id", "")).upper() == str(d.get("charger_id", "")).upper():
                     captured.pop("charger_id", None)
+            if conversation.active_goal == 'incident':
+                for key in turn_understanding.retracted_fields:
+                    captured.pop(key, None)
+                captured.update({key: value for key, value in turn_understanding.updates.items()
+                                 if key in {'charger_id', 'station_location', 'current_location', 'soc', 'error_code', 'reported_condition'}
+                                 and value is not None})
             brief.captured_fields = captured
             db.flush()
 

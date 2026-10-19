@@ -57,7 +57,7 @@ def detect_language(text: str, previous: str = 'vi') -> str:
         chosen = next(group for group in choices[-1].groups() if group)
         return 'en' if chosen in {'english', 'tieng anh'} else 'vi'
     # Restore neither accents nor meanings here: this is locale selection only.
-    vi = bool(re.search(r'\b(?:tu van|bao hanh|bao duong|lai thu|gia xe|mau gi|cam on|xin chao|chao ban|co the|ho tro|nhung gi|toi muon|khong|xe toi|co mau|tieng viet)\b', folded))
+    vi = bool(re.search(r'\b(?:cach|huong dan|can thiep|tu van|bao hanh|bao duong|lai thu|gia xe|mau gi|cam on|xin chao|chao ban|co the|ho tro|nhung gi|toi muon|khong|xe toi|co mau|tieng viet)\b', folded))
     english = bool(re.search(r"\b(?:tell me|show me|service records|what|how|where|which|would|please|thank you|thanks|hello|hi|my|the|have|has|is|are|can|could|i am|i'm|tomorrow|compare|costs?|warranty|maintenance|charging|brakes?|smoke|fire)\b", text.casefold()))
     english = english or bool(re.search(r'^\s*(?:do|does|did)\s+(?:i|we|you|they|it|vinfast|the|my|a|an|vf\s*[356789])\b', text, re.I))
     if english and not vi:

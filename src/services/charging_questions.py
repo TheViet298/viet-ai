@@ -21,7 +21,7 @@ def reviewed_charging_guides(query: str) -> list[dict]:
     from src.services.faq_questions import generic_help_query
     text = strip_accents(query.casefold())
     scope = 'public_charging' if is_public_charging_procedure(query) else (
-        'charging_app' if 'tinh nang' in text and 'sac' in text and re.search(r'\bapp\b|ung dung', text) else None)
+        'charging_app' if 'tinh nang' in text and re.search(r'\bapp\b|ung dung', text) else None)
     if scope is None:
         return []
     vocabulary = ('huong dan cach sac pin tai tram cong cong o to dien vinfast cho toi vui long xin hay cac buoc '

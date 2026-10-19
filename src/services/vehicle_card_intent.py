@@ -40,6 +40,8 @@ def classify_vehicle_card_intent(text: str, *, active_goal: str | None = None,
     if not lower:
         return None
     if understanding is not None:
+        if understanding.move == 'correct' and not re.search(r'\bso sanh\b', lower):
+            return None
         if understanding.request_kind in {'incident', 'complaint', 'oos'} or understanding.goal in {
                 'incident', 'complaint', 'out_of_scope', 'warranty', 'maintenance', 'application', 'charging_network', 'concept', 'appearance'}:
             return None
