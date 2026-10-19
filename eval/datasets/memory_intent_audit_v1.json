@@ -1,0 +1,19 @@
+[
+  {"id":"overview","intent":"Sales/General Info","goal":"overview","seed":"Tư vấn VF8","followup":"Còn VF5 thì sao?","model":"VF5"},
+  {"id":"quote","intent":"Sales/General Info","goal":"quote","seed":"Giá lăn bánh VF8 Plus mua kèm pin tại Hà Nội?","followup":"VF8 Eco, mua kèm pin, đăng ký ở Đà Nẵng","model":"VF8","facts":{"version":"Eco","city":"Đà Nẵng"}},
+  {"id":"test-drive","intent":"Sales/General Info","goal":"test_drive","seed":"Tôi muốn đăng ký lái thử VF8 ở Hà Nội","followup":"Chiều ngày mai","model":"VF8","facts":{"city":"Hà Nội","time_window":"chiều"}},
+  {"id":"warranty","intent":"Charging/Battery","goal":"warranty","seed":"Bảo hành pin VF8 bao lâu?","followup":"Còn VF5 thì sao?","model":"VF5"},
+  {"id":"maintenance","intent":"Service/Incident","goal":"maintenance","seed":"Lịch bảo dưỡng định kỳ VF8 là gì?","followup":"Còn VF5 thì sao?","model":"VF5"},
+  {"id":"maintenance-booking","intent":"Service/Incident","goal":"maintenance","seed":"Tôi muốn đặt lịch bảo dưỡng VF8","followup":"Ở Đà Nẵng vào chiều ngày mai","model":"VF8","facts":{"city":"Đà Nẵng","time_window":"chiều"}},
+  {"id":"range","intent":"Sales/General Info","goal":"range","seed":"VF8 đi được bao xa một lần sạc?","followup":"Còn VF5 thì sao?","model":"VF5"},
+  {"id":"charging-time","intent":"Charging/Battery","goal":"charging","seed":"VF8 sạc bao lâu?","followup":"Còn VF5 thì sao?","model":"VF5"},
+  {"id":"capacity","intent":"Charging/Battery","goal":"capacity","seed":"Dung lượng pin VF8 là bao nhiêu?","followup":"Còn VF5 thì sao?","model":"VF5"},
+  {"id":"appearance","intent":"Sales/General Info","goal":"appearance","seed":"VF8 Plus có màu gì?","followup":"Còn VF5 thì sao?","model":"VF5"},
+  {"id":"concept","intent":"Sales/General Info","goal":"concept","seed":"SOH là gì?","followup":"SOC là gì?","model":null},
+  {"id":"application","intent":"Sales/General Info","goal":"application","seed":"Ứng dụng VinFast có tính năng gì?","followup":"Giải thích cụ thể hơn được không?","model":null},
+  {"id":"charging-network","intent":"Charging/Battery","goal":"charging_network","seed":"Biểu phí sạc tại trạm sạc công cộng","followup":"Giải thích cụ thể hơn được không?","model":null},
+  {"id":"complaint","intent":"Complaint/Feedback","goal":"complaint","seed":"Tôi muốn khiếu nại thái độ nhân viên showroom","followup":"Tôi ở Hà Nội","model":null,"facts":{"city":"Hà Nội"}},
+  {"id":"incident","intent":"Service/Incident","goal":"incident","seed":"Xe VF8 của tôi không sạc được, mã lỗi CC01","followup":"Trụ P02 tại Vincom Metropolis","model":"VF8"},
+  {"id":"emergency","intent":"Service/Incident","goal":"incident","seed":"Xe VF8 của tôi đang bốc khói","followup":"Tôi đã ở nơi an toàn","model":"VF8","emergency":true},
+  {"id":"out-of-scope","intent":"Out_of_Scope","goal":"out_of_scope","seed":"Thời tiết ngày mai thế nào?","followup":"Tư vấn VF5","final_goal":"overview","model":"VF5"}
+]

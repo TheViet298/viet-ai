@@ -11,8 +11,8 @@ async def test_web_remembers_vehicle_and_topic_without_ui_context(client, custom
 
     calls = []
 
-    async def answer(text, **kwargs):
-        calls.append((text, kwargs["client_context"].get("vehicle_model")))
+    async def answer(text, model=None, session_id=None, **kwargs):
+        calls.append((text, kwargs.get("client_context", {}).get("vehicle_model", model)))
         return {"reply": "Thông tin kiểm thử", "citations": []}
 
     monkeypatch.setattr(api, "process_chat_message", answer)
