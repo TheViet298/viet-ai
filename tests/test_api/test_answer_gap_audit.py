@@ -2,6 +2,7 @@
 import copy
 import json
 import os
+import time
 from pathlib import Path
 
 import pytest
@@ -11,7 +12,7 @@ from src.models.db_models import ChatSession
 from src.services.rag_service import RAGService
 
 pytest_plugins = ['tests.test_api.test_customer_chat_regressions']
-pytestmark = pytest.mark.skipif(os.getenv('ANSWER_GAP_AUDIT') != '1', reason='Explicit answer-quality audit only')
+audit_only = pytest.mark.skipif(os.getenv('ANSWER_GAP_AUDIT') != '1', reason='Explicit answer-quality audit only')
 ROOT = Path(__file__).resolve().parents[2]
 LONG = json.loads((ROOT / 'eval/datasets/long_multitopic_memory_v1.json').read_text(encoding='utf-8'))
 RAG = [json.loads(line) for line in (ROOT / 'eval/datasets/rag_test_v1.jsonl').read_text(encoding='utf-8').splitlines()]
@@ -56,6 +57,7 @@ def fallback_kind(message):
 
 
 @pytest.mark.asyncio
+@audit_only
 @pytest.mark.parametrize('mode', ['isolated', 'indexed'])
 @pytest.mark.parametrize('scenario', ['broad', *[case['id'] for case in LONG]])
 async def test_measure_answer_coverage(client, customer_db, tmp_path, monkeypatch, mode, scenario):
@@ -63,12 +65,14 @@ async def test_measure_answer_coverage(client, customer_db, tmp_path, monkeypatc
 
 
 @pytest.mark.asyncio
+@audit_only
 @pytest.mark.skipif(os.getenv('ANSWER_GAP_LIVE') != '1', reason='Live provider audit requires explicit opt-in')
 async def test_measure_configured_provider_sample(client, customer_db, tmp_path, monkeypatch):
     await measure(client, customer_db, tmp_path, monkeypatch, 'live', 'live-sample')
 
 
 @pytest.mark.asyncio
+@audit_only
 @pytest.mark.skipif(os.getenv('ANSWER_GAP_LIVE') != '1', reason='Explicit provider audit only')
 async def test_measure_configured_incident(client, customer_db, tmp_path, monkeypatch):
     await measure(client, customer_db, tmp_path, monkeypatch, 'live', 'live-incident')
@@ -95,10 +99,11 @@ async def test_semantic_output_contract(client, customer_db, case, tmp_path):
 
 async def measure(client, db, tmp_path, monkeypatch, mode, scenario):
     settings = get_settings()
+    from eval.answer_quality import audit_config_file, audit_index_dir, index_identity, summarize_outputs
     if mode in {'indexed', 'live'}:
-        monkeypatch.setattr(settings, 'chroma_persist_dir', str(ROOT / '.test-runs/answer-gap-index'))
+        monkeypatch.setattr(settings, 'chroma_persist_dir', str(audit_index_dir()))
     if mode == 'live':
-        configured = Settings(_env_file=Path('D:/142.AI20K/P-142/.env'))
+        configured = Settings(_env_file=audit_config_file())
         for name in ('openai_api_key', 'openai_base_url', 'google_api_key', 'model_name', 'normalization_model',
                      'agent_turn_timeout_s', 'agent_llm_timeout_s', 'normalization_timeout_s',
                      'rag_retrieval_timeout_s', 'rag_max_distance', 'rag_context_max_bytes', 'agent_context_max_bytes'):
@@ -154,13 +159,15 @@ async def measure(client, db, tmp_path, monkeypatch, mode, scenario):
         payload = {'session_id': session, 'message': step['message']}
         if step.get('language'):
             payload['language'] = 'en' if step['language'] == 'vi' else 'vi'
+        started = time.monotonic()
         result = await client.post('/api/v1/customer/chat', json=payload)
+        latency_ms = round((time.monotonic() - started) * 1000, 2)
         assert result.status_code == 200, result.text
         data = result.json()['data']
         db.expire_all()
         state = db.get(ChatSession, session).memory_states[session]
         keywords = step.get('expected_keywords', [])
-        rows.append({'number': number, 'input': step['message'], 'response': data['message'],
+        rows.append({'number': number, 'input': step['message'], 'response': data['message'], 'latency_ms': latency_ms,
                      'fallback_kind': fallback_kind(data['message']), 'sources': data.get('citations') or [],
                      'context': state.get('conversation_context'), 'retrieval': state.get('conversation_retrieval'),
                      'searches': copy.deepcopy(searches), 'llm_outcomes': copy.deepcopy(outcomes),
@@ -168,5 +175,7 @@ async def measure(client, db, tmp_path, monkeypatch, mode, scenario):
                      'benchmark_id': step.get('benchmark_id'), 'expected_keywords': keywords,
                      'keyword_match_only': all(k.casefold() in data['message'].casefold() for k in keywords) if keywords else None})
         (tmp_path / 'answer-coverage.json').write_text(json.dumps({'mode': mode, 'scenario': scenario,
-            'model_enabled': settings.agent_llm_enabled, 'turns': rows}, ensure_ascii=False, indent=2), encoding='utf-8')
+            'model_enabled': settings.agent_llm_enabled, 'model': settings.model_name,
+            'index_identity': index_identity(Path(settings.chroma_persist_dir)),
+            'metrics': summarize_outputs(rows), 'turns': rows}, ensure_ascii=False, indent=2), encoding='utf-8')
     assert len(rows) == len(steps)

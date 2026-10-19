@@ -88,6 +88,9 @@ async def test_long_multitopic_session_checks_each_turn(client, customer_db, tmp
                      'case_id': data['case_id'], 'emergency': data['show_emergency_banner'],
                      'buffer_messages': len(state['messages']),
                      'summary_evidence_count': len(state.get('summary_evidence', []))})
+        rows[-1].update(final_diagnostics=state.get('final_diagnostics', {}),
+                        retrieval=state.get('conversation_retrieval', {}),
+                        sources=data.get('citations') or [])
         (tmp_path / 'transcript.json').write_text(json.dumps({'session': session_id, 'turns': rows}, ensure_ascii=False, indent=2), encoding='utf-8')
         label = f"{session_id} turn {number} ({step['message']}): {context}"
         assert context['active_goal'] == step['goal'], label
@@ -104,6 +107,19 @@ async def test_long_multitopic_session_checks_each_turn(client, customer_db, tmp
             assert cards == step['cards'], label
         if 'comparison' in step:
             assert data['vehicle_comparison'] is step['comparison'], label
+        if data['vehicle_comparison']:
+            # Shared comparison output must actually name both displayed models.
+            compact_reply = data['message'].replace(' ', '').casefold()
+            assert all(card['model'].replace(' ', '').casefold() in compact_reply for card in data['vehicle_cards']), label
+        if step.get('case_group') and 'P02' in step['message']:
+            assert 'P02' in data['message'] and not data['citations'], label
+        if step.get('case_group') and 'không còn báo CC01' in step['message']:
+            assert 'mã lỗi: CC01' not in data['message'] and not data['citations'], label
+        if state.get('final_diagnostics', {}).get('answer_status') == 'partial':
+            parts = state.get('conversation_retrieval', {}).get('parts', [])
+            assert any(part['status'] == 'SUCCESS' for part in parts), label
+            assert any(part['status'] != 'SUCCESS' for part in parts), label
+            assert data['citations'], label
         if step.get('language'):
             assert data['language'] == step['language'], label
         if step.get('progress'):

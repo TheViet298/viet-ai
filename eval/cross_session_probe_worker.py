@@ -17,11 +17,12 @@ async def run(spec):
     settings.chroma_persist_dir = spec['empty_index']
     if spec.get('live'):
         from src.config import Settings
-        configured = Settings(_env_file=Path('D:/142.AI20K/P-142/.env'))
+        from eval.answer_quality import audit_config_file, audit_index_dir
+        configured = Settings(_env_file=audit_config_file())
         for name in ('openai_api_key', 'openai_base_url', 'google_api_key', 'model_name', 'normalization_model'):
             setattr(settings, name, getattr(configured, name))
         settings.agent_llm_enabled = True
-        settings.chroma_persist_dir = str(Path(__file__).resolve().parents[1] / '.test-runs/answer-gap-index')
+        settings.chroma_persist_dir = str(audit_index_dir())
     from sqlalchemy import create_engine
     from sqlalchemy.orm import Session
     from httpx import ASGITransport, AsyncClient
