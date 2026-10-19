@@ -173,6 +173,10 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
         if re.search(r'\b(?:chu khong phai|khong phai|khong)\s+'
                      r'(?:(?:doi|nam san xuat|xe nam)\s+)?' + value + r'\b', lower):
             retracted.append(key)
+    denied_code = re.search(r'(?:khong con|khong phai|het).*?\b(cc\d{2}|e\d{3}|p\d{4}|bms_\d{3})\b', lower)
+    if denied_code and context.facts.get('error_code') and context.facts['error_code'].value == denied_code[1].upper():
+        if 'error_code' not in retracted:
+            retracted.append('error_code')
     goal = context.active_goal
     topic = context.topic
     cost_subject = cost_subject_for(text)
@@ -241,9 +245,12 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
         elif explicit_goal and explicit_goal != context.active_goal:
             # A named model/trim in a new question is not a quote slot answer.
             move = 'new_question'
+        elif (context.active_goal == 'incident' and not explicit_goal
+              and re.fullmatch(r'(?:toi|minh|em|xe)?\s*da\s+(?:dung(?: xe)?|do(?: xe)?|o)\s+(?:o\s+)?noi an toan[.!?\s]*', lower)):
+            move = 'supply_info'
         elif re.search(r'\b(?:sao|vi sao|tai sao)\b|giai thich|cach tinh|vi du|cu the hon', lower):
             move = 'elaborate'
-        elif updates and goal:
+        elif (updates or retracted) and goal:
             if re.search(r'\b(?:nhu the nao|nhu nao|la dong|la xe gi|la xe nhu the nao)\b', lower):
                 move = 'new_question'
                 goal = None
@@ -292,9 +299,6 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
         query = f'{prefix} {subject or ""} {details}. {text}'[:1000]
         if goal == 'concept':
             query = (f'{context.topic}. {text}' if move != 'new_question' and context.active_goal == 'concept' else text)[:1000]
-    denied_code = re.search(r'(?:khong con|khong phai|het).*?\b(cc\d{2}|e\d{3}|p\d{4}|bms_\d{3})\b', lower)
-    if denied_code and context.facts.get('error_code') and context.facts['error_code'].value == denied_code[1].upper():
-        retracted.append('error_code')
     source_need = ('guide' if goal == 'application' or re.search(r'huong dan|cach (?:dat|su dung|tim)', lower)
                    else 'policy' if goal in {'warranty', 'charging_network'} or cost_subject in {'maintenance', 'repair'}
                    else 'manual' if goal in {'charging', 'incident'} or re.search(r'adas|canh bao', lower) and updates.get('model')
