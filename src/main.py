@@ -9,6 +9,7 @@ from src.api.agent_customer import router as agent_customer_router
 from src.api.auth import router as auth_router
 from src.api.cases import router as cases_router
 from src.api.customer import router as customer_router
+from src.api.customer_memory import router as customer_memory_router
 from src.api.public import router as public_router
 from src.api.routes import router
 from src.api.staff import router as staff_router
@@ -85,6 +86,7 @@ app.include_router(agent_customer_router, prefix="/api/v1/agent")
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(public_router, prefix="/api/v1")
 app.include_router(customer_router, prefix="/api/v1")
+app.include_router(customer_memory_router, prefix="/api/v1")
 app.include_router(staff_router, prefix="/api/v1")
 app.include_router(cases_router, prefix="/api/v1")
 app.include_router(router, prefix="/api/v1")

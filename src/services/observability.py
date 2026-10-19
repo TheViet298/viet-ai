@@ -244,7 +244,10 @@ def trace_endpoint(name: str):
                                           user_id=getattr(user, 'id', None))
                 result = await function(*args, **kwargs)
                 data = getattr(result, 'data', result)
-                update_observation(root, output=data.model_dump() if hasattr(data, 'model_dump') else data,
+                personal = getattr(data, '_personal_memory_diagnostics', None)
+                output = ({'personal_memory': personal} if personal is not None else
+                          data.model_dump() if hasattr(data, 'model_dump') else data)
+                update_observation(root, output=output,
                                    metadata={**_validation.get(), 'route': name, 'outcome': 'completed'})
                 return result
         return wrapped

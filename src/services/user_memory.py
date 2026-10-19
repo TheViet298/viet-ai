@@ -193,6 +193,11 @@ def extract_memory_changes(text: str, snapshot: MemorySnapshot, context: Convers
     if '```' in text or re.search(r'^(?:tai lieu|the document|according to|assistant|system)\b', fold_text(text)):
         return []
     direct = re.sub(r'"[^"\n]*"|“[^”\n]*”|`[^`\n]*`', '', text)
+    # Conditional statements do not assert facts. Keep only independent facts
+    # before the conditional scope (including a comma after an if-clause).
+    conditional = re.search(r'\b(?:neu|gia su|if|suppose)\b', fold_text(direct))
+    if conditional:
+        direct = direct[:conditional.start()]
     body = fold_text(direct)
     forget = re.match(r'^(?:(?:hay|vui long|please)\s+)?(?:quen|xoa|forget|delete)\b', body.strip())
     if forget:
@@ -214,6 +219,8 @@ def extract_memory_changes(text: str, snapshot: MemorySnapshot, context: Convers
     owner = bool(re.search(r'\bxe (?:cua )?toi\b|\btoi (?:so huu|su dung)\b|\bmy (?:car|vehicle)\b|\bi (?:own|drive)\b', body))
     if re.search(r'toi khong (?:so huu|co xe|su dung)|i do not own|i don.t own|not my (?:car|vehicle)', body):
         owner = False
+    if re.search(r'\b(?:might|may|would|maybe|co the|du dinh|dinh mua|muon mua|lai thu|test drive)\b', body):
+        owner = False
     affirmative = re.sub(r'\b(?:chu khong phai|khong phai|not)\s+(?:vf\s*(?:e34|[356789])(?:\s+(?:eco|plus))?|eco|plus)\b', '', body)
     affirmative = re.sub(r'\bkhong\s+(?:mua kem pin|mua dut pin|thue pin)\b', '', affirmative)
     values = {}
@@ -234,9 +241,9 @@ def extract_memory_changes(text: str, snapshot: MemorySnapshot, context: Convers
             elif re.search(r'thue pin|battery subscription|leased battery', affirmative):
                 values['owned_vehicle.battery_plan'] = 'subscription'
     city_patterns = {'home_city': r'\b(?:toi (?:song|cu tru) (?:o|tai)|nha toi (?:o|tai)|toi (?:o|tai)|i live in|my home city is)\s+',
-                     'registration_city': r'\b(?:dang ky(?: bien so)?(?: xe)?(?: o| tai)?|registration city(?: is)?|registered(?: my car)? in)\s+'}
+                     'registration_city': r'\b(?:dang ky (?:bien so|xe)(?: o| tai)?|registration city(?: is)?|registered my (?:car|vehicle) in)\s+'}
     for key, pattern in city_patterns.items():
-        if key == 'home_city' and re.search(r'toi dang|hien tai|bay gio|tram sac|xuong|showroom|currently|right now', body):
+        if key == 'home_city' and re.search(r'toi dang|hien tai|bay gio|tram sac|xuong|showroom|currently|right now|ngay mai|hom nay|tomorrow|tonight', body):
             continue
         match = re.search(pattern, body)
         if match:
@@ -257,17 +264,18 @@ def extract_memory_changes(text: str, snapshot: MemorySnapshot, context: Convers
 
 def personal_memory_keys(text: str) -> tuple[str, ...] | None:
     body = fold_text(text)
-    if re.search(r'dang ky|registration', body) and re.search(r'toi|my|previous|truoc', body):
-        return ('registration_city',)
-    if re.search(r'thanh pho|song o dau|noi o|home city|where do i live|city', body) and re.search(r'toi|my|i |truoc|previous', body):
-        return ('home_city',)
-    if re.search(r'xe (?:cua )?toi|my (?:car|vehicle)|toi (?:su dung|so huu).*xe|what (?:car|vehicle).*i|which model', body):
-        return KEYS[:4]
-    if re.search(r'phien ban.*(?:toi|truoc)|(?:trim|version).*(?:i |my|previous)', body):
-        return KEYS[:2]
     if re.search(r'nhac lai thong tin|thong tin.*(?:khai bao|da luu)|remember about me', body):
         return KEYS
-    return None
+    selected = []
+    if re.search(r'dang ky (?:bien so|xe)|noi dang ky|registration city|registered my (?:car|vehicle)', body) and re.search(r'toi|my|previous|truoc', body):
+        selected.append('registration_city')
+    if re.search(r'thanh pho|song o dau|noi o|home city|where do i live|city', body) and re.search(r'toi|my|i |truoc|previous', body):
+        selected.append('home_city')
+    if re.search(r'xe (?:cua )?toi|my (?:car|vehicle)|toi (?:su dung|so huu).*xe|(?:what|which) (?:car|vehicle).*i|which model', body):
+        selected.extend(KEYS[:4])
+    if re.search(r'phien ban.*(?:toi|truoc)|(?:trim|version).*(?:i |my|previous)', body):
+        selected.extend(KEYS[:2])
+    return tuple(key for key in KEYS if key in selected) or None
 
 
 def resolve_personal_memory(text: str, snapshot: MemorySnapshot) -> dict:
@@ -276,3 +284,27 @@ def resolve_personal_memory(text: str, snapshot: MemorySnapshot) -> dict:
         return {}
     return {key: snapshot.facts[key].model_dump(mode='json') for key in selected
             if key in snapshot.facts and snapshot.facts[key].status == 'confirmed'}
+
+
+def fence_user_memory_revision(db: Session, user: User, expected_revision: int, *, advance: bool = False) -> MemoryWriteResult:
+    """Fence source deletion even when an old in-flight turn has not saved facts yet."""
+    identity = _principal(user)
+    revision = expected_revision + int(advance)
+    claim = db.execute(update(User).where(User.id == identity, User.role == 'CUSTOMER',
+        User.memory_revision == expected_revision).values(memory_revision=revision),
+        execution_options={'synchronize_session': False})
+    if claim.rowcount != 1:
+        current = db.execute(select(User.memory_revision).where(User.id == identity)).scalar_one()
+        return MemoryWriteResult(status='conflict', revision=current)
+    db.expire(user, ['memory_revision'])
+    return MemoryWriteResult(status='written' if advance else 'unchanged', revision=revision)
+
+
+def retract_chat_memory_sources(db: Session, user: User, session_ids: list[str] | None) -> MemoryWriteResult:
+    snapshot = load_user_memory(db, user)
+    keys = [key for key, fact in snapshot.facts.items() if fact.source_kind == 'chat'
+            and fact.status != 'retracted' and (session_ids is None or fact.source_session_id in session_ids)]
+    if not keys:
+        return fence_user_memory_revision(db, user, snapshot.revision, advance=True)
+    return apply_user_memory_changes(db, user, [MemoryChange(key=key, value=None, status='retracted') for key in keys],
+        expected_revision=snapshot.revision, source_kind='profile', source_session_id=None, source_message_id=None)

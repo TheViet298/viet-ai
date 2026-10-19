@@ -62,6 +62,12 @@ def test_explicit_remember_records_only_consented_facts_and_provenance(memory_db
     'Giá lăn bánh VF8 Plus tại Hà Nội?',
     'Quên mật khẩu ứng dụng VinFast', 'Forget password', 'Xóa lỗi CC01 giúp tôi',
     'Xóa lịch sử sạc trên App',
+    'Nhớ giúp tôi đăng ký lái thử ở Hà Nội',
+    'Hãy nhớ tôi muốn đăng ký bảo dưỡng ở Hà Nội',
+    'Hãy nhớ tôi ở Hà Nội ngày mai', 'Remember I live in Hanoi tomorrow',
+    'Hãy nhớ nếu tôi sở hữu VF8 thì tôi ở Hà Nội',
+    'Remember if I own VF8, I live in Hanoi',
+    'Remember my car might be VF8',
 ])
 def test_product_interest_quotes_and_transient_location_are_not_memory(text):
     from src.services.user_memory import extract_memory_changes, MemorySnapshot
@@ -238,3 +244,9 @@ def test_explicit_forget_even_empty_memory_creates_a_revision_fence(memory_db):
     assert save(memory_db, user, changes, 0).revision == 1
     memory_db.commit()
     assert all(fact.status == 'retracted' for fact in load_user_memory(memory_db, user).facts.values())
+
+
+def test_booking_location_is_not_personal_registration_city():
+    from src.services.user_memory import MemorySnapshot
+    from src.services.user_memory_chat import memory_mode
+    assert memory_mode('Tôi đã đăng ký lái thử ở đâu?', [], MemorySnapshot(revision=0)) is None

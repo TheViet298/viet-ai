@@ -449,6 +449,22 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         db.info['chat_turn_customer_id'] = customer_message.id
         return ApiResponse(success=True, data=ChatResponseData(response_type='CLARIFICATION', message=reply,
                            remaining_guest_messages=remaining_guest_msgs), error=None)
+    if understood.get('personal_memory_mode') and not payload.attachment_ids:
+        # The wrapper writes consented facts and replaces this pending text only
+        # after a successful revision check, within the same turn transaction.
+        customer_message = Message(created_at=customer_created_at, id=str(uuid.uuid4()), session_id=payload.session_id,
+            sender_type='CUSTOMER', content=original_text,
+            msg_metadata={'user_id': user_id, 'guest_session_id': payload.guest_session_id,
+                          'vehicle_context': understood.get('preserved_vehicle_context', {})})
+        db.add(customer_message)
+        db.add(Message(created_at=reply_created_at, id=str(uuid.uuid4()), session_id=payload.session_id,
+            sender_type='AGENT', content='Đang xử lý yêu cầu thông tin cá nhân.',
+            msg_metadata={'response_type': 'FAQ_ANSWER', 'user_id': user_id}))
+        db.info['chat_turn_customer_id'] = customer_message.id
+        db.info['conversation_route'] = 'personal_memory'
+        db.flush()
+        return ApiResponse(data=ChatResponseData(response_type='FAQ_ANSWER', message='Đang xử lý yêu cầu thông tin cá nhân.',
+                           case_id=active_case_id, remaining_guest_messages=remaining_guest_msgs))
     mock_cust_id = (current_user.mock_customer_id if current_user and current_user.mock_customer_id else
                     (ctx.mock_customer_id if ctx and ctx.mock_customer_id else f"GUEST_{(payload.guest_session_id or '')[:8]}"))
     user_is_demo = is_demo_user(db, current_user)
@@ -459,6 +475,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         Message.session_id == payload.session_id,
         Message.sender_type == SenderType.CUSTOMER.value,
     ).order_by(Message.created_at.desc(), Message.id.desc()).all()
+    metadata = {}
     for prior in prior_customer_messages:
         metadata = prior.msg_metadata or {}
         if metadata.get("user_id") == user_id and metadata.get("guest_session_id") == payload.guest_session_id:
@@ -466,6 +483,12 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             dashboard_image_context = metadata.get("dashboard_image_context", {})
             exterior_image_context = metadata.get("exterior_image_context", {})
             break
+    if (understood.get('user_memory_revision') is not None
+            and metadata.get('user_memory_revision', -1) < understood['user_memory_revision']
+            and not previous_context.get('is_incident')):
+        previous_context = {**previous_context, 'owned_model': None}
+        if understood.get('personal_context_stale'):
+            previous_context.update(models=[], target_model=None)
     prior_agent_messages = db.query(Message).filter(
         Message.session_id == payload.session_id,
         Message.sender_type == SenderType.AGENT.value,
@@ -476,6 +499,11 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     turn_understanding = TurnUnderstanding.model_validate(understood.get('understanding') or {
         'original_text': text, 'resolved_query': text,
     })
+    if (understood.get('personal_memory_model') and classification.request_kind != 'incident'
+            and not classification.is_critical and turn_understanding.goal != 'incident'):
+        vehicle_context.update(models=[understood['personal_memory_model']], target_model=understood['personal_memory_model'],
+                               is_incident=False, customer_vehicle_incident=False,
+                               resolved_query=turn_understanding.resolved_query)
     if (turn_understanding.move in {'correct', 'verify_claim'} and conversation.active_goal != 'incident'
             and not classification.is_critical):
         vehicle_context['is_incident'] = False
@@ -3324,7 +3352,20 @@ def update_chat_session_title(
 
 @router.delete("/sessions/{session_id}", response_model=ApiResponse[dict])
 @router.delete("/chat/sessions/{session_id}", response_model=ApiResponse[dict], deprecated=True, include_in_schema=False)
-def delete_chat_session(
+async def delete_chat_session(
+    session_id: str,
+    guest_session_id: str | None = Query(None),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    x_guest_id: str | None = Header(None, alias="X-Guest-Id"),
+    current_user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    from src.services.sqlite_admission import chat_writer
+    async with chat_writer(db):
+        return _delete_chat_session(session_id, guest_session_id, x_session_id, x_guest_id, current_user, db)
+
+
+def _delete_chat_session(
     session_id: str,
     guest_session_id: str | None = Query(None),
     x_session_id: str | None = Header(None, alias="X-Session-Id"),
@@ -3333,7 +3374,7 @@ def delete_chat_session(
     db: Session = Depends(get_db),
 ):
     """Xóa một phiên trò chuyện và các tin nhắn liên quan. Trả 404 nếu không tìm thấy hoặc không thuộc sở hữu."""
-    session = scoped_sessions(db, current_user).filter(ChatSession.id == session_id).first()
+    session = scoped_sessions(db, current_user).filter(ChatSession.id == session_id).with_for_update().first()
     if not session:
         raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
 
@@ -3349,6 +3390,7 @@ def delete_chat_session(
         if not is_owner:
             raise HTTPException(status_code=404, detail="Không tìm thấy phiên trò chuyện.")
 
+    _invalidate_deleted_chat_memory(db, session.owner, [session_id])
     db.query(Message).filter(Message.session_id == session_id).delete(synchronize_session=False)
     db.query(ChatRequestRecord).filter(ChatRequestRecord.session_id == session_id).delete(synchronize_session=False)
     db.delete(session)
@@ -3358,7 +3400,19 @@ def delete_chat_session(
 
 @router.delete("/sessions", response_model=ApiResponse[dict])
 @router.delete("/chat/sessions", response_model=ApiResponse[dict], deprecated=True, include_in_schema=False)
-def delete_all_chat_sessions(
+async def delete_all_chat_sessions(
+    guest_session_id: str | None = Query(None),
+    x_session_id: str | None = Header(None, alias="X-Session-Id"),
+    x_guest_id: str | None = Header(None, alias="X-Guest-Id"),
+    current_user: User | None = Depends(get_optional_user),
+    db: Session = Depends(get_db),
+):
+    from src.services.sqlite_admission import chat_writer
+    async with chat_writer(db):
+        return _delete_all_chat_sessions(guest_session_id, x_session_id, x_guest_id, current_user, db)
+
+
+def _delete_all_chat_sessions(
     guest_session_id: str | None = Query(None),
     x_session_id: str | None = Header(None, alias="X-Session-Id"),
     x_guest_id: str | None = Header(None, alias="X-Guest-Id"),
@@ -3368,7 +3422,7 @@ def delete_all_chat_sessions(
     """Xóa toàn bộ lịch sử trò chuyện của người dùng hiện tại (chỉ xóa đúng owner hiện tại)."""
     if current_user:
         owner = f"user:{current_user.id}"
-        sessions = scoped_sessions(db, current_user).filter(ChatSession.owner == owner).all()
+        sessions = scoped_sessions(db, current_user).filter(ChatSession.owner == owner).order_by(ChatSession.id).with_for_update().all()
     else:
         provided_guest = x_guest_id or guest_session_id or x_session_id
         if not provided_guest:
@@ -3381,11 +3435,30 @@ def delete_all_chat_sessions(
 
     deleted_count = len(sessions)
     session_ids = [s.id for s in sessions]
+    _invalidate_deleted_chat_memory(db, owner, None)
     if session_ids:
         db.query(Message).filter(Message.session_id.in_(session_ids)).delete(synchronize_session=False)
         db.query(ChatRequestRecord).filter(ChatRequestRecord.session_id.in_(session_ids)).delete(synchronize_session=False)
         for s in sessions:
             db.delete(s)
-        db.commit()
+    db.commit()
 
     return ApiResponse(success=True, data={"deleted_sessions_count": deleted_count})
+
+
+def _invalidate_deleted_chat_memory(db: Session, owner: str, session_ids: list[str] | None) -> None:
+    """The owner is derived from an authorized session deletion, never a body ID."""
+    if not owner.startswith('user:'):
+        return
+    from src.config import get_settings
+    from src.models.db_models import UserMemoryFact
+    from src.services.user_memory import retract_chat_memory_sources
+    user = db.get(User, owner.removeprefix('user:'))
+    if not user or user.role != 'CUSTOMER':
+        return
+    if not get_settings().user_memory_enabled and not db.query(UserMemoryFact).filter_by(user_id=user.id, source_kind='chat').first():
+        return
+    result = retract_chat_memory_sources(db, user, session_ids)
+    if result.status == 'conflict':
+        db.rollback()
+        raise HTTPException(409, 'Thông tin đã thay đổi ở phiên khác. Vui lòng thử lại.')
