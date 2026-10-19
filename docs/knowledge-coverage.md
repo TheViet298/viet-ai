@@ -1,5 +1,11 @@
 # Knowledge coverage inventory and data acceptance
 
+## Remediation inventory — 2026-10-19
+
+Fresh inventory on the 2,196-chunk replica is saved in `eval/results/knowledge-remediation/coverage-before-2026-10-19.json`. It is not the historical 85/162 count or a factual answer score. The 20 scoped acquisition gaps are in `data/verified/knowledge_gap_register.json`.
+
+Acquired candidates include the current VN VF5 product page (usable capacity and model-level colors), the app guide page and a web extraction of the maintenance page's VF3 table. Direct requests for schedule images and some pages returned HTTP403. Record this as an access/review blocker; do not label those images content-free. Review model/year/header/footnotes before normalizing any intervals. The PHP/Philippines VF3 launch specification cannot resolve VN Eco/Plus capacity. Exact service prices and availability still need an authoritative integration/source. Candidate acquisition does not change the active index.
+
 `python scripts/audit_knowledge_coverage.py --index data/chroma-catalog-colors-v1 --output <report.json>` is read-only. The active index remains unchanged. Inventory availability does not certify retrieval or answer correctness.
 
 The previous 189-cell/111-missing matrix is withdrawn: it assumed Eco/Plus for every model and excluded official_service maintenance/charging sources. The matrix now uses reviewed product applicability: VF3 Eco/Plus; VF5 unspecified (no named trim verified); VF6 Eco/Plus; VF7 Eco/Plus/Plus AWD; VF8 Eco/Plus; VF9 Eco/Plus; e34 unspecified. Unspecified cells remain useful for general services. A named trim in a chunk is still required for a trim-specific cell; general service coverage does not establish trim-specific technical facts.

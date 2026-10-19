@@ -1,0 +1,1659 @@
+{
+  "index": ".test-runs/answer-gap-index",
+  "chunks": 2196,
+  "rows": [
+    {
+      "model": "VF3",
+      "trim": "unspecified",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "unspecified",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "unspecified",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "unspecified",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "unspecified",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "unspecified",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "available",
+      "source_ids": [
+        "SRC-002"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "unspecified",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "available",
+      "source_ids": [
+        "SRC-004",
+        "SRC-006"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "unspecified",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "available",
+      "source_ids": [
+        "SRC-001"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "unspecified",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "available",
+      "source_ids": [
+        "SRC-001",
+        "SRC-003",
+        "SRC-006"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Eco",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Eco",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Eco",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Eco",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Eco",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Eco",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Eco",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Eco",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Eco",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Plus",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Plus",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Plus",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Plus",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Plus",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Plus",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Plus",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Plus",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF3",
+      "trim": "Plus",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF5",
+      "trim": "unspecified",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF5",
+      "trim": "unspecified",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF5",
+      "trim": "unspecified",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF5",
+      "trim": "unspecified",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF5",
+      "trim": "unspecified",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF5",
+      "trim": "unspecified",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "available",
+      "source_ids": [
+        "SRC-002"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF5",
+      "trim": "unspecified",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "available",
+      "source_ids": [
+        "SRC-004",
+        "SRC-006",
+        "SRC-008"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF5",
+      "trim": "unspecified",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "available",
+      "source_ids": [
+        "SRC-001"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF5",
+      "trim": "unspecified",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "available",
+      "source_ids": [
+        "SRC-001",
+        "SRC-003",
+        "SRC-006"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "unspecified",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "unspecified",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "unspecified",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "unspecified",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "unspecified",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "unspecified",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "available",
+      "source_ids": [
+        "SRC-002"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "unspecified",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "available",
+      "source_ids": [
+        "SRC-004",
+        "SRC-006"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "unspecified",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "available",
+      "source_ids": [
+        "SRC-001"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "unspecified",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "available",
+      "source_ids": [
+        "SRC-001",
+        "SRC-003",
+        "SRC-006"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Eco",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Eco",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Eco",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Eco",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Eco",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Eco",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Eco",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Eco",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Eco",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Plus",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Plus",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Plus",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Plus",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Plus",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Plus",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Plus",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Plus",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF6",
+      "trim": "Plus",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "unspecified",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "unspecified",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "unspecified",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "unspecified",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "unspecified",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "unspecified",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "available",
+      "source_ids": [
+        "SRC-002"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "unspecified",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "available",
+      "source_ids": [
+        "SRC-004",
+        "SRC-006"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "unspecified",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "available",
+      "source_ids": [
+        "SRC-001"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "unspecified",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "available",
+      "source_ids": [
+        "SRC-001",
+        "SRC-003",
+        "SRC-006"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Eco",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Eco",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Eco",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Eco",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Eco",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Eco",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Eco",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Eco",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Eco",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus AWD",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus AWD",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus AWD",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus AWD",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus AWD",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus AWD",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus AWD",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus AWD",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF7",
+      "trim": "Plus AWD",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "unspecified",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "unspecified",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "unspecified",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "unspecified",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "unspecified",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "unspecified",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "available",
+      "source_ids": [
+        "SRC-002"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "unspecified",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "available",
+      "source_ids": [
+        "SRC-004",
+        "SRC-006",
+        "SRC-007"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "unspecified",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "available",
+      "source_ids": [
+        "SRC-001"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "unspecified",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "available",
+      "source_ids": [
+        "SRC-001",
+        "SRC-003",
+        "SRC-006"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Eco",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Eco",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Eco",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Eco",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Eco",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Eco",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Eco",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Eco",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Eco",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Plus",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Plus",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Plus",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Plus",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Plus",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Plus",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Plus",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Plus",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF8",
+      "trim": "Plus",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "unspecified",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "unspecified",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "unspecified",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "unspecified",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "unspecified",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "unspecified",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "available",
+      "source_ids": [
+        "SRC-002"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "unspecified",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "available",
+      "source_ids": [
+        "SRC-004",
+        "SRC-006"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "unspecified",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "available",
+      "source_ids": [
+        "SRC-001"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "unspecified",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "available",
+      "source_ids": [
+        "SRC-001",
+        "SRC-003",
+        "SRC-006"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Eco",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Eco",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Eco",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Eco",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Eco",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Eco",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Eco",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Eco",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Eco",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Plus",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Plus",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Plus",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Plus",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Plus",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Plus",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Plus",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Plus",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "VF9",
+      "trim": "Plus",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "e34",
+      "trim": "unspecified",
+      "domain": "overview",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "e34",
+      "trim": "unspecified",
+      "domain": "range",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "e34",
+      "trim": "unspecified",
+      "domain": "capacity",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "e34",
+      "trim": "unspecified",
+      "domain": "colors",
+      "source_need": "catalog",
+      "status": "missing",
+      "source_ids": [],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "e34",
+      "trim": "unspecified",
+      "domain": "price",
+      "source_need": "catalog",
+      "status": "available",
+      "source_ids": [
+        "SRC-009"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "e34",
+      "trim": "unspecified",
+      "domain": "warranty",
+      "source_need": "policy",
+      "status": "available",
+      "source_ids": [
+        "SRC-002"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "e34",
+      "trim": "unspecified",
+      "domain": "maintenance",
+      "source_need": "manual",
+      "status": "available",
+      "source_ids": [
+        "SRC-004",
+        "SRC-006"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "e34",
+      "trim": "unspecified",
+      "domain": "application",
+      "source_need": "guide",
+      "status": "available",
+      "source_ids": [
+        "SRC-001"
+      ],
+      "unverified_source_ids": []
+    },
+    {
+      "model": "e34",
+      "trim": "unspecified",
+      "domain": "charging_network",
+      "source_need": "guide",
+      "status": "available",
+      "source_ids": [
+        "SRC-001",
+        "SRC-003",
+        "SRC-006"
+      ],
+      "unverified_source_ids": []
+    }
+  ],
+  "conflicts": "NOT_MEASURED: differing values require condition/applicability review",
+  "available_means": "verified source inventory only, not successful retrieval or correct answers"
+}

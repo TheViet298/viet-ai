@@ -1,5 +1,14 @@
 # Danh mục Nguồn Dữ liệu Chính thức (Knowledge Base - Nhóm A)
 
+## Thu nguồn cho remediation ngày 19/10/2026
+
+- Coverage mới: `eval/results/knowledge-remediation/coverage-before-2026-10-19.json`, bản sao index 2.196 chunks; đây là inventory, không phải độ đúng câu trả lời.
+- Gap register: `data/verified/knowledge_gap_register.json`, gồm 20 ô ưu tiên có phạm vi và blocker. Trạng thái trong register không tự trở thành runtime authority.
+- Đã lấy raw trang VF5 và hướng dẫn App bằng HTTP 200 trước khi các lần tải lại bị HTTP 403. Raw và hash được lưu trong `data/acquired/remediation-2026-10-19/`; không tự gia hạn ngày review từ lần fetch.
+- Trang bảo dưỡng chính thức đọc qua công cụ web có bảng VF3 và liên kết ảnh cho các mẫu khác. Bản trích có dòng/header/footnote được giữ riêng. Tải ảnh trực tiếp bị HTTP 403; chưa kết luận ảnh không có dữ liệu.
+- VF3 ra mắt tại Philippines có thông số pin trong bài chính thức, nhưng không dùng nó để điền capacity của VF3 Eco/Plus thị trường Việt Nam.
+- Những bản đọc mới chưa chứng minh model year, tồn kho màu, lịch trống hay receipt đặt lịch. Active index chưa thay đổi.
+
 Tài liệu này quản lý toàn bộ các nguồn dữ liệu chính thức phục vụ xây dựng Knowledge Base cho RAG MVP 1 theo quy định tại [`data-workplan-mvp.md`](file:///d:/142.AI20K/P-142/docs/data-workplan-mvp.md) (Mục 2.1 & 2.2).
 
 > **Nguyên tắc cốt lõi (Mục 2.2)**: 
