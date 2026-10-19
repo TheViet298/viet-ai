@@ -1445,13 +1445,15 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         reply_constraints = build_reply_constraints(turn_understanding, conversation, progress)
         reply = progress_reply(turn_understanding, conversation, progress, case_snapshot)
         if reply:
+            progress_response_type = ('CASE_CREATED' if active_case_id and conversation.active_goal == 'incident'
+                                      and turn_understanding.move in {'supply_info', 'correct'} else 'FAQ_ANSWER')
             db.info['conversation_route'] = 'progress'
             db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
                            sender_type=SenderType.AGENT.value, content=reply, created_at=reply_created_at,
-                           msg_metadata={'user_id': user_id, 'response_type': 'FAQ_ANSWER'}))
+                           msg_metadata={'user_id': user_id, 'response_type': progress_response_type}))
             db.flush()
             return ApiResponse(success=True, data=ChatResponseData(
-                response_type='FAQ_ANSWER', message=reply, case_id=active_case_id,
+                response_type=progress_response_type, message=reply, case_id=active_case_id,
                 remaining_guest_messages=remaining_guest_msgs,
             ), error=None)
         if conversation.active_goal in {'quote', 'test_drive', 'maintenance', 'warranty', 'range', 'charging', 'capacity', 'concept', 'overview', 'appearance', 'application', 'charging_network', 'out_of_scope'}:
