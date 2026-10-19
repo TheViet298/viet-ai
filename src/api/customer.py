@@ -1517,6 +1517,9 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     # NHÓM B: TƯ VẤN BÁN HÀNG, LÁI THỬ & GIÁ XE (SALES & SERVICES)
     # --------------------------------------------------------------------------
     knowledge_parts = sales_parts(resolved_text, vehicle_model, turn_understanding=turn_understanding.model_dump()) if not is_technical_incident else []
+    from src.services.faq_questions import faq_parts
+    if faq_parts(resolved_text):
+        knowledge_parts = []
     if conversation.active_goal and conversation.active_goal not in {'quote', 'test_drive', 'overview'} and turn_understanding.move != 'new_question':
         knowledge_parts = []
 

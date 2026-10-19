@@ -17,10 +17,18 @@ def test_vietnamese_accents_are_not_english_grammar(query):
     assert chat_language.detect_language(query, 'vi') == 'vi'
 
 
-def test_requested_output_locale_does_not_change_input_understanding():
-    assert chat_language.response_language('Xe VF8 có màu gì?', 'en', 'vi') == 'en'
-    assert chat_language.response_language('Tell me about VF7', 'vi', 'en') == 'vi'
-    assert chat_language.response_language('Please answer in English. VF8?', 'vi', 'vi') == 'en'
+@pytest.mark.parametrize('text,selected,previous,expected', [
+    ('Xe VF8 có màu gì?', 'en', 'en', 'vi'),
+    ('Tell me about VF7', 'vi', 'vi', 'en'),
+    ('tu van vf7', 'en', 'en', 'vi'),
+    ('Please answer in English. VF8?', 'vi', 'vi', 'en'),
+    ('Vui lòng trả lời bằng tiếng Việt. VF8?', 'en', 'en', 'vi'),
+    ('VF8?', 'en', 'vi', 'en'),
+    ('Plus?', 'vi', 'en', 'vi'),
+    ('VF8?', None, 'en', 'en'),
+])
+def test_message_language_wins_over_selected_locale(text, selected, previous, expected):
+    assert chat_language.response_language(text, selected, previous) == expected
 
 
 @pytest.mark.parametrize('text,previous,expected', [

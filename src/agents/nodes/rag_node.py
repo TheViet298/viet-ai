@@ -26,7 +26,48 @@ class GroundedAnswer(BaseModel):
 
 async def rag_node(state: AgentState) -> dict:
     query = state.get("resolved_query") or state.get("latest_user_message", "")
-    unsupported = any(term in query.lower() for term in ("bí mật", "nội bộ", "tháng sau", "không công khai", "chưa công khai"))
+    from src.services.faq_questions import faq_parts, vehicle_models
+    from src.services.agent_llm import new_turn_budget
+    from src.agents.guardrails import strip_accents
+    state.setdefault('llm_budget', new_turn_budget(time.monotonic() + get_settings().agent_turn_timeout_s))
+    unsupported = any(term in strip_accents(query.casefold()) for term in (
+        'bi mat', 'noi bo', 'thang sau', 'khong cong khai', 'chua cong khai'))
+    parts = [] if unsupported or state.get('_faq_subquestion') else faq_parts(query)
+    warranty_parts = any(label == 'Bảo hành pin' for label, _, _ in parts)
+    if parts:
+        sections, results, citations = [], [], []
+        for label, subquery, source_need in parts:
+            understanding = {**(state.get('turn_understanding') or {}), 'source_need': source_need,
+                             'cost_subject': 'charging' if label == 'Biểu phí sạc' else None}
+            local_models = vehicle_models(subquery)
+            part_model = local_models[0] if len(local_models) == 1 else (
+                None if len(vehicle_models(query)) > 1 else state.get('vehicle_model'))
+            result = await rag_node({**state, 'resolved_query': subquery, 'turn_understanding': understanding,
+                                     'vehicle_model': part_model, '_faq_subquestion': True})
+            results.append(result)
+            body = result.get('response', '').removeprefix('Theo tài liệu VinFast:\n\n')
+            if label == 'Biểu phí sạc' and result.get('rag_citations'):
+                body = '\n\n'.join('- ' + line for line in body.splitlines() if line.strip())
+                dates = sorted({c['verified_at'] for c in result['rag_citations']})
+                body += '\n\nĐây là mức phí trong tài liệu đã xác minh ngày ' + ', '.join(dates) + '. Cần kiểm tra biểu phí và ưu đãi áp dụng cho xe trên ứng dụng trước khi sạc.'
+            sections.append(f'### {label}\n\n{body}')
+            for citation in result.get('rag_citations', []):
+                if citation not in citations:
+                    citations.append(citation)
+        prefix = 'Theo tài liệu VinFast:' if citations else 'Em chưa tìm được đủ nguồn cho các phần sau:'
+        reply = prefix + '\n\n' + '\n\n'.join(sections)
+        if warranty_parts:
+            reply += ('\n\nQuý khách cho biết dòng xe, đời xe, số km hiện tại và xe có từng chạy dịch vụ hay không '
+                      'để em đối chiếu thời hạn bảo hành pin và lịch bảo dưỡng đúng xe nhé.')
+        return {'is_no_source': not bool(citations), 'is_rag_query': True,
+                'retrieval_status': ('PARTIAL' if any(r.get('is_no_source') for r in results) else 'SUCCESS') if citations else 'NO_SOURCE',
+                'retrieval_diagnostics': {'category': 'compound_warranty_maintenance' if warranty_parts else 'compound_charging', 'parts': [
+                    {'label': part[0], 'diagnostics': result.get('retrieval_diagnostics', {})}
+                    for part, result in zip(parts, results, strict=True)]},
+                'rag_citations': citations, 'rag_context': [c['relevant_snippet'] for c in citations],
+                'answer_claims': [claim for result in results for claim in result.get('answer_claims', [])],
+                'needs_staff_review': any(result.get('is_no_source') for result in results),
+                'response_type': 'FAQ_ANSWER', 'response': reply, 'final_response': reply}
     remaining = state.get("llm_budget", {}).get("deadline", time.monotonic() + get_settings().agent_turn_timeout_s) - time.monotonic()
     retrieval = RAGService.failure("NO_SOURCE", "unsupported_request") if unsupported else RAGService.failure("TIMEOUT", "deadline_exhausted")
     if not unsupported and remaining > 0:
@@ -81,7 +122,7 @@ async def rag_node(state: AgentState) -> dict:
     generated = None
     if citations and state.get("confidence_score", 0) >= 0.60:
         public_snapshot = bool(color_snapshot or tariff_snapshot) or retrieval.get('diagnostics', {}).get('category') in {
-            'verified_public_price_snapshot', 'verified_catalog_fact_snapshot'}
+            'verified_public_price_snapshot', 'verified_catalog_fact_snapshot', 'verified_public_guide_snapshot'}
         generated = None if public_snapshot else await structured_call({**state, "rag_citations": citations}, "rag_qa", GroundedAnswer)
         if generated is None and get_settings().agent_llm_enabled and not public_snapshot:
             citations = []

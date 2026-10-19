@@ -134,8 +134,16 @@ def cost_subject_for(text: str) -> str | None:
 async def understand_turn(text: str, context: ConversationContext, recent_turns: list[dict], budget: dict) -> TurnUnderstanding:
     original_text = text
     text = normalize_chat_text(text)
+    from src.services.vehicle_catalog import is_generic_vehicle_comparison
+    trim_comparison = re.fullmatch(r'\s*so(?: sanh)? (?:phien )?ban (plus|eco)\s*[.!?]?\s*', normalized(text))
+    if trim_comparison and context.active_goal == 'overview':
+        version = trim_comparison[1].title()
+        if is_generic_vehicle_comparison(context.topic):
+            models = re.findall(r'\bvf\s*[356789]\b', normalized(context.topic))
+            if len(set(model.replace(' ', '') for model in models)) == 2:
+                text = 'So sánh ' + ' với '.join(f'{model.upper()} {version}' for model in models)
     # Resolve the comparison before replacing the previous subject.
-    comparison = re.fullmatch(r'\s*so sanh(?:\s+(?:xe nay|xe do|voi))?\s+(vf\s*[356789])\s*[.!?]?\s*', normalized(text))
+    comparison = re.fullmatch(r'\s*(?:so sanh(?:\s+(?:xe nay|xe do|voi))?|so voi)\s+(vf\s*[356789])\s*[.!?]?\s*', normalized(text))
     if (comparison and context.subject and context.active_goal in {'overview', 'quote', 'range', 'capacity', 'test_drive'}
             and comparison[1].replace(' ', '').upper() != context.subject):
         text = f'So sánh {context.subject} với {comparison[1].upper()}'
@@ -169,9 +177,10 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
     from src.services.vehicle_card_intent import is_generic_vehicle_overview, is_general_vehicle_advice
     if is_general_vehicle_advice(text) or (not explicit_goal and is_generic_vehicle_overview(text)):
         explicit_goal = 'overview'
-    from src.services.vehicle_catalog import is_generic_vehicle_comparison
+        topic = text[:300]
     if is_generic_vehicle_comparison(text):
         explicit_goal = 'overview'
+        topic = text[:300]
     move: Move = 'new_question'
     ambiguous_reference = False
     actual_failure = classification.request_kind == 'incident'
@@ -232,7 +241,8 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
         # Interest in a car does not identify the vehicle reporting an incident.
         subject = updates.get('model')
     query = text
-    if goal and move != 'new_incident' and not is_generic_vehicle_comparison(text):
+    from src.services.faq_questions import faq_parts
+    if goal and move != 'new_incident' and not is_generic_vehicle_comparison(text) and not faq_parts(text):
         prefix = {'quote': 'Giá niêm yết và dự toán lăn bánh', 'test_drive': 'Đăng ký lái thử',
                   'maintenance': 'Bảo dưỡng', 'warranty': 'Bảo hành',
                   'range': 'Quãng đường một lần sạc', 'charging': 'Thời gian sạc',

@@ -68,9 +68,8 @@ def detect_language(text: str, previous: str = 'vi') -> str:
 
 
 def response_language(text: str, supplied: str | None, previous: str = 'vi') -> str:
-    from src.services.chat_normalization import fold_text
-    explicit = re.search(r'\b(?:in (?:english|vietnamese)|(?:bang )?tieng (?:anh|viet))\b', fold_text(text))
-    return detect_language(text, previous) if explicit else supplied or detect_language(text, previous)
+    # The UI locale only resolves language-neutral messages such as "VF8?".
+    return detect_language(text, supplied or previous)
 
 
 _VEHICLE = r'(?:VinFast\s+)?VF\s*(?:e34|[356789])(?:\s+(?:Eco|Plus)(?:\s+(?:AWD|FWD))?)?'
@@ -84,6 +83,12 @@ def canonical_query(text: str) -> str:
     """
     text = re.sub(r'(?:please\s+)?(?:answer|reply|respond)\s+in\s+(?:English|Vietnamese)[.!:]?\s*', '', text, flags=re.I)
     text = re.sub(r'\s+in English[.!?]?\s*$', '', text, flags=re.I)
+    from src.services.help_localization import HELP_INPUTS
+    quick_reply = HELP_INPUTS.get(re.sub(r'\s+', ' ', text).strip().rstrip('.!?').casefold())
+    if quick_reply:
+        return quick_reply
+    from src.services.faq_questions import canonical_service_clauses
+    text = canonical_service_clauses(text)
     text = re.sub(r'^Can you\s+(?=tư vấn)', '', text, flags=re.I)
     # Move entity-bearing phrases as a unit so qualifiers stay with their model.
     rules = [

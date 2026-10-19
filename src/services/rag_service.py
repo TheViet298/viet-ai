@@ -227,6 +227,17 @@ class RAGService:
 
     def retrieve(self, query: str, top_k: int = 3, vehicle_model: str | None = None, *, cost_subject: str | None = None, source_need: str | None = None) -> dict:
         settings = get_settings()
+        from src.services.charging_questions import reviewed_charging_guides
+        from src.services.warranty_questions import reviewed_warranty_overviews
+        reviewed = reviewed_charging_guides(query) or reviewed_warranty_overviews(query, vehicle_model)
+        if reviewed:
+            registry = source_registry()
+            citations = [{**registry.get(record['source_id'], {}), **record,
+                          'applicable_models': ['ALL'], 'distance': 0.0} for record in reviewed]
+            citations = [citation for citation in citations if valid_citation(citation, vehicle_model)]
+            if citations:
+                return {'status': 'SUCCESS', 'citations': citations, 'best_distance': 0.0,
+                        'diagnostics': {'stage': 'retrieval', 'category': 'verified_public_guide_snapshot'}}
         # The same reviewed facts supply cards and quotes. Unknown/expired prices
         # cannot fall back to an older differently scoped index price.
         from src.services.answer_evidence import normalized

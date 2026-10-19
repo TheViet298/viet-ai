@@ -159,7 +159,10 @@ async def _run_chat_turn(payload, user, db, handler):
                     data.suggested_replies = ['Dự toán lăn bánh ' + card.name for card in data.vehicle_cards]
                 if data.vehicle_comparison:
                     if is_generic_vehicle_comparison(card_text):
+                        from src.models.schemas import Citation
+                        from src.services.vehicle_catalog import catalog_citations
                         data.message = vehicle_comparison_reply(data.vehicle_cards)
+                        data.citations = [Citation(**item) for item in catalog_citations(data.vehicle_cards)]
                         data.response_type = 'FAQ_ANSWER'
                         answer_path = 'snapshot'
                     data.suggested_replies = []
@@ -194,8 +197,10 @@ async def _run_chat_turn(payload, user, db, handler):
                 data.show_emergency_banner = bool(data.show_emergency_banner or data.emergency_context)
             # Booking capability is a server fact, never a model-generated receipt.
             booking_progress = None
+            from src.services.faq_questions import faq_parts
+            compound_help = bool(faq_parts(canonical))
             if (conversation.active_goal == 'test_drive' or
-                conversation.active_goal == 'maintenance' and re.search(r'đặt lịch|đặt hẹn', conversation.topic, re.I)) and not data.show_emergency_banner:
+                conversation.active_goal == 'maintenance' and re.search(r'đặt lịch|đặt hẹn', conversation.topic, re.I)) and not data.show_emergency_banner and not compound_help:
                 from src.services.conversation_progress import progress_reply
                 booking_progress = derive_progress(conversation, {}, None, None)
                 operational_reply = progress_reply(turn, conversation, booking_progress)

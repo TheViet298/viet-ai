@@ -53,6 +53,57 @@ async def test_product_followup_keeps_cards_and_previous_comparison_model(client
     assert history.json()['data']['messages'][-1]['vehicle_cards'] == data['vehicle_cards']
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize('followup', [
+    'so với VF3', 'So với VF 3?', 'so voi vf3', 'So sánh với VF3',
+])
+async def test_short_comparison_keeps_previously_advised_model(client, customer_db, followup):
+    session = 'short-comparison-followup'
+    for message in ['tư vấn VF8', followup]:
+        response = await client.post('/api/v1/customer/chat', json={
+            'session_id': session, 'message': message})
+        assert response.status_code == 200
+    data = response.json()['data']
+    assert data['vehicle_comparison'] is True
+    assert [card['model'] for card in data['vehicle_cards']] == ['VF8', 'VF3']
+    assert len(data['vehicle_cards']) == 2
+    history = (await client.get(f'/api/v1/customer/sessions/{session}/history')).json()['data']['messages']
+    assert history[-1]['vehicle_comparison'] is True
+    assert history[-1]['vehicle_cards'] == data['vehicle_cards']
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('followup', ['so bản plus', 'So sánh bản Plus?', 'so ban plus'])
+async def test_comparison_trim_followup_keeps_both_models(client, customer_db, followup):
+    session = 'comparison-trim-followup'
+    for message in ['tư vấn VF8', 'so với VF3', followup, 'so bản eco']:
+        response = await client.post('/api/v1/customer/chat', json={
+            'session_id': session, 'message': message})
+        assert response.status_code == 200
+        if message in {followup, 'so bản eco'}:
+            data = response.json()['data']
+            expected = 'eco' if message == 'so bản eco' else 'plus'
+            assert data['vehicle_comparison'] is True
+            assert [(c['model'], c['variant']) for c in data['vehicle_cards']] == [
+                ('VF8', expected), ('VF3', expected)]
+            assert len(data['citations']) == 2
+            assert all(expected in c['title'].casefold() for c in data['citations'])
+    history = (await client.get(f'/api/v1/customer/sessions/{session}/history')).json()['data']['messages']
+    assert history[-1]['vehicle_cards'] == data['vehicle_cards']
+    assert history[-1]['citations'] == data['citations']
+
+
+@pytest.mark.asyncio
+async def test_new_model_overview_clears_previous_comparison_for_trim_followup(client, customer_db):
+    for message in ['tư vấn VF8', 'so với VF3', 'tư vấn VF7', 'so bản plus']:
+        response = await client.post('/api/v1/customer/chat', json={
+            'session_id': 'comparison-reset', 'message': message})
+        assert response.status_code == 200
+    data = response.json()['data']
+    assert not any(c['model'] in {'VF8', 'VF3'} for c in data['vehicle_cards'])
+    assert data['vehicle_comparison'] is False
+
+
 @pytest.mark.parametrize('model,variants', [('VF3', ['eco', 'plus']), ('VF5', [None]),
     ('VF6', ['eco', 'plus']), ('VF7', ['eco', 'plus', 'plus-awd']),
     ('VF8', ['eco', 'plus']), ('VF9', ['eco', 'plus'])])

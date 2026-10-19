@@ -1,0 +1,18 @@
+[
+  {
+    "scope": "battery_warranty",
+    "relevant_snippet_en": "High-voltage battery warranty\n\n- VinFast covers eligible defects in software, component quality or assembly, provided the vehicle is used and maintained as instructed. Exclusions are set out in the warranty policy.\n- The high-voltage battery warranty period and mileage limit depend on the vehicle model and usage conditions. Vehicles currently or previously used commercially have separate terms; one warranty period does not apply to every vehicle.\n- Check the electronic warranty booklet for your vehicle. The high-voltage battery and the auxiliary battery are separate warranty items.",
+    "source_id": "SRC-002",
+    "source_section": "Phạm vi bảo hành; Phụ tùng xe mới bảo hành giới hạn — Pin cao áp",
+    "reviewed_at": "2026-10-18",
+    "relevant_snippet": "Chính sách bảo hành pin cao áp\n\n- VinFast bảo hành các hư hỏng thuộc phạm vi bảo hành do lỗi phần mềm, chất lượng linh kiện hoặc lắp ráp, với điều kiện sử dụng và bảo dưỡng đúng hướng dẫn. Các hạng mục loại trừ được quy định trong chính sách.\n- Thời hạn và giới hạn quãng đường bảo hành pin cao áp phụ thuộc dòng xe và điều kiện sử dụng. Xe đang hoặc đã từng chạy dịch vụ thương mại có chính sách riêng; không áp dụng một thời hạn chung cho mọi xe.\n- Cần đối chiếu Sổ bảo hành điện tử đúng xe. Pin cao áp và ắc quy là hai hạng mục bảo hành khác nhau."
+  },
+  {
+    "scope": "maintenance_overview",
+    "relevant_snippet_en": "Maintenance schedule for your vehicle model\n\n- Scheduled maintenance is based on mileage and time in use. VinFast publishes schedules and inspection items for each vehicle model.\n- Following the maintenance schedule is a requirement for warranty coverage.\n- Check the schedule, service items and maintenance documents for the correct vehicle model before confirming the applicable mileage or time interval.",
+    "source_id": "SRC-004",
+    "source_section": "Dịch vụ bảo dưỡng; Lịch trình & Hạng mục bảo dưỡng",
+    "reviewed_at": "2026-10-18",
+    "relevant_snippet": "Lịch bảo dưỡng theo đúng mẫu xe\n\n- Bảo dưỡng định kỳ được xác định theo quãng đường và thời gian sử dụng. Lịch trình và các hạng mục cần kiểm tra được VinFast công bố theo từng dòng xe.\n- Tuân thủ lịch bảo dưỡng là điều kiện cần để được hưởng chính sách bảo hành.\n- Cần đối chiếu lịch trình, hạng mục và tài liệu bảo dưỡng đúng mẫu xe trước khi xác nhận mốc km hoặc thời gian áp dụng."
+  }
+]
