@@ -30,7 +30,7 @@ def test_vf3_schedule_keeps_model_operation_months_and_footnote():
 
 
 @pytest.mark.parametrize('query,model', [
-    ('VF8 bảo dưỡng định kỳ lần đầu ở bao nhiêu km?', 'VF8'),
+    ('VF8 đời 2025 bảo dưỡng định kỳ lần đầu ở bao nhiêu km?', 'VF8'),
     ('VF3 đời 2025 bảo dưỡng định kỳ khi nào?', 'VF3'),
     ('VF3 chạy dịch vụ thương mại bảo dưỡng định kỳ khi nào?', 'VF3'),
     ('VF3 cần thay dung dịch làm mát định kỳ khi nào?', 'VF3'),

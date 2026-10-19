@@ -20,5 +20,7 @@ def test_gap_register_keeps_scope_and_honest_acquisition_state():
         if gap['status'] in {'blocked', 'partial'}:
             assert gap['blocker']
     vf3_capacity = next(gap for gap in gaps if gap['model'] == 'VF3' and gap['topic'] == 'battery_capacity')
-    assert vf3_capacity['status'] == 'blocked'
-    assert 'Philippines' in vf3_capacity['blocker']
+    assert vf3_capacity['status'] == 'partial'
+    assert '18.64' in vf3_capacity['resolution']
+    assert 'trim' in vf3_capacity['blocker']
+    assert vf3_capacity['variant'] is None and vf3_capacity['year'] is None

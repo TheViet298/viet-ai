@@ -19,6 +19,8 @@ HELP_LABELS = {
     '### Tính năng trên App VinFast': '### VinFast app features',
     '### Bảo hành pin': '### Battery warranty',
     '### Bảo dưỡng định kỳ': '### Scheduled maintenance',
+    '### Dung lượng pin': '### Battery capacity',
+    '### Quãng đường công bố': '### Published range',
     '### Bảo hành xe': '### Vehicle warranty',
     '### Đặt lịch bảo dưỡng': '### Maintenance booking instructions',
     '### Câu hỏi khác': '### Other question',
@@ -46,7 +48,16 @@ HELP_SOURCE_TITLES = {
     'SRC-001': 'VinFast app user guide',
     'SRC-002': 'VinFast vehicle warranty policy',
     'SRC-004': 'VinFast maintenance services',
+    'SRC-007': 'VinFast VF8 owner manual',
+    'SRC-009': 'VinFast official product information',
 }
+
+
+def english_help_chip(chip: str) -> str | None:
+    if chip in HELP_CHIPS:
+        return HELP_CHIPS[chip]
+    match = re.fullmatch(r'(?:Giá lăn bánh|Dự toán lăn bánh) ((?:VinFast )?VF\s*(?:e34|[356789])(?:\s+(?:Eco|Plus|AWD|FWD))*)', chip)
+    return 'On-road price for ' + match[1] if match else None
 
 
 def english_help_answer(message: str) -> str | None:
@@ -59,9 +70,9 @@ def english_help_answer(message: str) -> str | None:
         return token
     translated = message
     root = Path(__file__).resolve().parents[2] / 'fixtures/knowledge'
-    for name in ('charging_guides.json', 'warranty_maintenance.json'):
+    for name in ('charging_guides.json', 'warranty_maintenance.json','answer_gap_sections.json','maintenance_schedules.json'):
         for record in json.loads((root / name).read_text(encoding='utf-8')):
-            if record['relevant_snippet'] in translated:
+            if record.get('relevant_snippet_en') and record['relevant_snippet'] in translated:
                 translated = translated.replace(record['relevant_snippet'], fragment(record['relevant_snippet_en']))
     for original, english in HELP_LABELS.items():
         if original in translated:
@@ -99,11 +110,11 @@ def english_help_answer(message: str) -> str | None:
 
 def localize_help_response(data) -> bool:
     translated = english_help_answer(data.message) if not data.safe_guidance else None
-    if (not translated or any(chip not in HELP_CHIPS for chip in data.suggested_replies or [])
+    if (not translated or any(english_help_chip(chip) is None for chip in data.suggested_replies or [])
             or any(c.source_id not in HELP_SOURCE_TITLES for c in data.citations or [])):
         return False
     data.message = translated
-    data.suggested_replies = [HELP_CHIPS[chip] for chip in data.suggested_replies or []]
+    data.suggested_replies = [english_help_chip(chip) for chip in data.suggested_replies or []]
     for citation in data.citations or []:
         citation.title = HELP_SOURCE_TITLES.get(citation.source_id, citation.title)
     return True

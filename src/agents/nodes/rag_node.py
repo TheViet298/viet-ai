@@ -30,7 +30,8 @@ async def rag_node(state: AgentState) -> dict:
     from src.services.agent_llm import new_turn_budget
     from src.agents.guardrails import strip_accents
     state.setdefault('llm_budget', new_turn_budget(time.monotonic() + get_settings().agent_turn_timeout_s))
-    unsupported = any(term in strip_accents(query.casefold()) for term in (
+    from src.services.reviewed_gap_answers import foreign_market_request
+    unsupported = foreign_market_request(query) or any(term in strip_accents(query.casefold()) for term in (
         'bi mat', 'noi bo', 'thang sau', 'khong cong khai', 'chua cong khai'))
     parts = [] if unsupported or state.get('_faq_subquestion') else faq_parts(query)
     warranty_parts = any(label == 'Bảo hành pin' for label, _, _ in parts)
@@ -59,16 +60,16 @@ async def rag_node(state: AgentState) -> dict:
         if warranty_parts:
             reply += ('\n\nQuý khách cho biết dòng xe, đời xe, số km hiện tại và xe có từng chạy dịch vụ hay không '
                       'để em đối chiếu thời hạn bảo hành pin và lịch bảo dưỡng đúng xe nhé.')
-        statuses = [('SUCCESS' if not result.get('is_no_source') else
+        statuses = [('PARTIAL' if result.get('answer_status') == 'partial' else 'SUCCESS' if not result.get('is_no_source') else
                      'TIMEOUT' if result.get('retrieval_status') == 'TIMEOUT' else
                      'ERROR' if result.get('retrieval_status') in {'ERROR', 'UNAVAILABLE'} else 'NO_SOURCE')
                     for result in results]
-        answer_status = ('answered' if all(status == 'SUCCESS' for status in statuses) else
-                         'partial' if any(status == 'SUCCESS' for status in statuses) else
+        answer_status = ('answered' if all(result.get('answer_status') == 'answered' for result in results) else
+                         'partial' if any(status in {'SUCCESS', 'PARTIAL'} for status in statuses) else
                          'error' if any(status in {'ERROR', 'TIMEOUT'} for status in statuses) else 'needs_data')
         return {'is_no_source': not bool(citations), 'is_rag_query': True,
                 'answer_status': answer_status,
-                'retrieval_status': ('PARTIAL' if any(r.get('is_no_source') for r in results) else 'SUCCESS') if citations else 'NO_SOURCE',
+                'retrieval_status': ('PARTIAL' if any(r.get('is_no_source') or r.get('answer_status') == 'partial' for r in results) else 'SUCCESS') if citations else 'NO_SOURCE',
                 'retrieval_diagnostics': {'category': 'compound_warranty_maintenance' if warranty_parts else 'compound_charging', 'parts': [
                     {'label': part[0], 'status': status,
                      'source_ids': list(dict.fromkeys(c['source_id'] for c in result.get('rag_citations', []))),
@@ -213,9 +214,16 @@ async def rag_node(state: AgentState) -> dict:
             }
             if goal in reasons:
                 reply = 'Em chưa có nguồn đủ để xác nhận thông tin cụ thể. ' + reasons[goal]
+        category = retrieval.get('diagnostics',{}).get('category')
+        clarification = category in {'missing_maintenance_model','unresolved_catalog_scope'}
+        if category=='missing_maintenance_model':
+            reply='Quý khách cho biết dòng xe và đời xe để em đối chiếu lịch bảo dưỡng lần đầu; không có một mốc km/tháng chung cho mọi xe VinFast.'
+        elif category=='unresolved_catalog_scope':
+            model=state.get('vehicle_model') or 'xe'
+            reply=f'Quý khách đang hỏi {model} phiên bản Eco hay Plus (hoặc cấu hình khác), đời xe nào? Em cần đúng phiên bản và đời xe để đối chiếu thông số, không tự chọn một con số chung.'
         return {
             "is_no_source": True,
-            "answer_status": 'error' if retrieval.get('status') in {'ERROR', 'UNAVAILABLE', 'TIMEOUT'} else 'needs_data',
+            "answer_status": 'needs_clarification' if clarification else 'error' if retrieval.get('status') in {'ERROR', 'UNAVAILABLE', 'TIMEOUT'} else 'needs_data',
             "retrieval_status": retrieval.get("status", "NO_SOURCE"),
             "retrieval_diagnostics": retrieval.get("diagnostics", {}),
             "rag_citations": [],
@@ -240,7 +248,7 @@ async def rag_node(state: AgentState) -> dict:
         "is_no_source": False,
         'answer_claims': [c.model_dump() for c in answer_claims],
         "retrieval_status": "SUCCESS",
-        "answer_status": "answered",
+        "answer_status": "partial" if any(c.get("answer_status")=="partial" for c in citations) else "answered",
         "retrieval_diagnostics": retrieval.get("diagnostics", {}),
         "is_rag_query": True,
         "rag_citations": citations,

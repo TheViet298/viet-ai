@@ -6,8 +6,8 @@ import pytest
 def test_candidate_records_keep_source_scope_and_no_inferred_vf3_capacity():
     from scripts.build_remediation_candidate import reviewed_records
     records = reviewed_records()
-    assert len(records) == 3
-    assert len({record['id'] for record in records}) == 3
+    assert len(records) == 5
+    assert len({record['id'] for record in records}) == 5
     for record in records:
         scope = json.loads(record['metadata']['reviewed_scope_json'])
         assert scope['model_year'] is None and scope['variant'] is None

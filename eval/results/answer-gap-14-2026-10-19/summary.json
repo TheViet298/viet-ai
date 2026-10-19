@@ -1,0 +1,66 @@
+{
+  "scope": "Exact 14 previously needs_data queries, VI and EN; current local remediation branch only",
+  "languages": {
+    "vi": {
+      "cases": 14,
+      "passed": 14,
+      "status_counts": {
+        "answered": 10,
+        "needs_clarification": 3,
+        "partial": 1
+      }
+    },
+    "en": {
+      "cases": 14,
+      "passed": 14,
+      "status_counts": {
+        "answered": 10,
+        "needs_clarification": 3,
+        "partial": 1
+      }
+    }
+  },
+  "frozen_holdout_sha256": "1dd4d42c5f00f302315738758b1361fb703496321d01bccd1a93e86db96f6a81",
+  "postgresql_gate": "BLOCKED: no dedicated TEST_POSTGRES_URL; user acknowledged",
+  "active_index_changed": false,
+  "deployment": "not performed",
+  "full_backend": {
+    "passed": 2181,
+    "skipped": 49,
+    "warnings": 9,
+    "subtests_passed": 6,
+    "duration_s": 515.07,
+    "log": ".test-runs/g14-release-backend.log"
+  },
+  "holdout": {
+    "answerable_pass": 30,
+    "boundary_pass": 10
+  },
+  "broad_measurement": {
+    "cases": 63,
+    "status_counts": {
+      "answered": 55,
+      "error": 1,
+      "needs_clarification": 3,
+      "needs_data": 2,
+      "partial": 1,
+      "external_action_required": 1
+    },
+    "factual_certification": "NOT_REVIEWED",
+    "provider_errors": 1
+  },
+  "frontend_unit": {
+    "passed": 177,
+    "failed": 0,
+    "log": ".test-runs/g14-frontend-final.log"
+  },
+  "targeted_regressions": {
+    "passed": 123,
+    "log": ".test-runs/g14-reviewed-core.log"
+  },
+  "contract_gate": {
+    "pytest_tests_passed": 3,
+    "cases": 68,
+    "log": ".test-runs/g14-release-contract.log"
+  }
+}

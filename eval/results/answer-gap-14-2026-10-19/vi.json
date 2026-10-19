@@ -1,0 +1,563 @@
+[
+  {
+    "id": "G14-1",
+    "question": "Thời hạn bảo hành xe VinFast VF 8 tiêu chuẩn là bao nhiêu năm hoặc bao nhiêu km?",
+    "question_en": "What is the standard-use vehicle warranty for the VinFast VF8 in years or kilometers?",
+    "expected_status": "answered",
+    "actual_status": "answered",
+    "required": [
+      "10 năm",
+      "200.000"
+    ],
+    "required_en": [
+      "10 years",
+      "200,000"
+    ],
+    "response": "Theo tài liệu VinFast:\n\nVF8: bảo hành xe trong điều kiện sử dụng tiêu chuẩn là 10 năm hoặc 200.000 km, tùy điều kiện nào đến trước.\nĐây là chính sách công bố hiện tại; xe mua trước ngày hiệu lực cần đối chiếu chính sách và Sổ bảo hành tại thời điểm mua.\nKhông áp dụng hàng này cho xe từng chạy dịch vụ thương mại hoặc VF8 The All New.",
+    "language": "vi",
+    "sources": [
+      {
+        "fact_scope": null,
+        "claim_evidence": null,
+        "source_section": "Thời hạn bảo hành Ô tô / điều kiện sử dụng tiêu chuẩn",
+        "specs_reviewed_at": null,
+        "price_evidence": null,
+        "source_id": "SRC-002",
+        "title": "Chính sách bảo hành xe ô tô VinFast",
+        "url": "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto",
+        "verified_at": "2026-09-30",
+        "status_code": 200,
+        "applicable_models": [
+          "VF8"
+        ],
+        "source_type": "official_policy",
+        "relevant_snippet": "VF8: bảo hành xe trong điều kiện sử dụng tiêu chuẩn là 10 năm hoặc 200.000 km, tùy điều kiện nào đến trước.\nĐây là chính sách công bố hiện tại; xe mua trước ngày hiệu lực cần đối chiếu chính sách và Sổ bảo hành tại thời điểm mua.\nKhông áp dụng hàng này cho xe từng chạy dịch vụ thương mại hoặc VF8 The All New."
+      }
+    ],
+    "diagnostics": {
+      "answer_path": "rag",
+      "answer_status": "answered",
+      "final_outcome": "success",
+      "stage_outcomes": []
+    },
+    "passed": true
+  },
+  {
+    "id": "G14-2",
+    "question": "Thời hạn bảo hành xe VinFast VF 5 là bao nhiêu năm?",
+    "question_en": "How many years is the vehicle warranty for the VinFast VF5?",
+    "expected_status": "answered",
+    "actual_status": "answered",
+    "required": [
+      "7 năm",
+      "160.000"
+    ],
+    "required_en": [
+      "7 years",
+      "160,000"
+    ],
+    "response": "Theo tài liệu VinFast:\n\nVF5: bảo hành xe trong điều kiện sử dụng tiêu chuẩn là 7 năm hoặc 160.000 km, tùy điều kiện nào đến trước.\nĐây là chính sách công bố hiện tại; xe mua trước ngày hiệu lực cần đối chiếu chính sách và Sổ bảo hành tại thời điểm mua.\nKhông áp dụng hàng này cho xe từng chạy dịch vụ thương mại.",
+    "language": "vi",
+    "sources": [
+      {
+        "fact_scope": null,
+        "claim_evidence": null,
+        "source_section": "Thời hạn bảo hành Ô tô / điều kiện sử dụng tiêu chuẩn",
+        "specs_reviewed_at": null,
+        "price_evidence": null,
+        "source_id": "SRC-002",
+        "title": "Chính sách bảo hành xe ô tô VinFast",
+        "url": "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto",
+        "verified_at": "2026-09-30",
+        "status_code": 200,
+        "applicable_models": [
+          "VF5"
+        ],
+        "source_type": "official_policy",
+        "relevant_snippet": "VF5: bảo hành xe trong điều kiện sử dụng tiêu chuẩn là 7 năm hoặc 160.000 km, tùy điều kiện nào đến trước.\nĐây là chính sách công bố hiện tại; xe mua trước ngày hiệu lực cần đối chiếu chính sách và Sổ bảo hành tại thời điểm mua.\nKhông áp dụng hàng này cho xe từng chạy dịch vụ thương mại."
+      }
+    ],
+    "diagnostics": {
+      "answer_path": "rag",
+      "answer_status": "answered",
+      "final_outcome": "success",
+      "stage_outcomes": []
+    },
+    "passed": true
+  },
+  {
+    "id": "G14-3",
+    "question": "Chu kỳ bảo dưỡng định kỳ đầu tiên của xe ô tô điện VinFast là ở mốc nào?",
+    "question_en": "When is the first scheduled maintenance interval for a VinFast electric car?",
+    "expected_status": "needs_clarification",
+    "actual_status": "needs_clarification",
+    "required": [
+      "dòng xe",
+      "đời xe"
+    ],
+    "required_en": [
+      "model"
+    ],
+    "response": "Quý khách cho biết dòng xe và đời xe để em đối chiếu lịch bảo dưỡng lần đầu; không có một mốc km/tháng chung cho mọi xe VinFast.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+    "language": "vi",
+    "sources": [],
+    "diagnostics": {
+      "answer_path": "rag",
+      "answer_status": "needs_clarification",
+      "final_outcome": "needs_clarification",
+      "stage_outcomes": []
+    },
+    "passed": true
+  },
+  {
+    "id": "G14-4",
+    "question": "Hệ thống hỗ trợ người lái ADAS trên xe VF 8 bao gồm những tính năng cơ bản nào?",
+    "question_en": "What basic driver assistance ADAS features does the VF8 have?",
+    "expected_status": "answered",
+    "actual_status": "answered",
+    "required": [
+      "ADAS",
+      "2026",
+      "hành trình"
+    ],
+    "required_en": [
+      "adaptive cruise",
+      "manual"
+    ],
+    "response": "Theo tài liệu VinFast:\n\nSổ tay VF8 năm 2026 mô tả các nhóm ADAS như kiểm soát hành trình thích ứng, trợ lái trên cao tốc, hỗ trợ làn đường, hỗ trợ thay đổi làn đường tự động và cảnh báo va chạm phía trước. Đây là danh mục mô tả trong sổ tay, không xác nhận mọi phiên bản đều được trang bị hoặc đã kích hoạt tất cả tính năng. Cần đối chiếu phiên bản, đời xe và phần mềm; ADAS chỉ hỗ trợ người lái, không thay thế trách nhiệm điều khiển xe.",
+    "language": "vi",
+    "sources": [
+      {
+        "fact_scope": null,
+        "claim_evidence": null,
+        "source_section": "Sổ tay VF8 2026 / điều khiển hành trình và hỗ trợ lái / trạng thái hệ thống",
+        "specs_reviewed_at": null,
+        "price_evidence": null,
+        "source_id": "SRC-007",
+        "title": "Sổ tay hướng dẫn sử dụng VinFast VF 8 (Owner's Manual)",
+        "url": "https://om.vinfastauto.com/vi_vn/detail?car=VF8&year=2026",
+        "verified_at": "2026-09-30",
+        "status_code": 200,
+        "applicable_models": [
+          "VF8"
+        ],
+        "source_type": "official_manual",
+        "relevant_snippet": "Sổ tay VF8 năm 2026 mô tả các nhóm ADAS như kiểm soát hành trình thích ứng, trợ lái trên cao tốc, hỗ trợ làn đường, hỗ trợ thay đổi làn đường tự động và cảnh báo va chạm phía trước. Đây là danh mục mô tả trong sổ tay, không xác nhận mọi phiên bản đều được trang bị hoặc đã kích hoạt tất cả tính năng. Cần đối chiếu phiên bản, đời xe và phần mềm; ADAS chỉ hỗ trợ người lái, không thay thế trách nhiệm điều khiển xe."
+      }
+    ],
+    "diagnostics": {
+      "answer_path": "rag",
+      "answer_status": "answered",
+      "final_outcome": "success",
+      "stage_outcomes": []
+    },
+    "passed": true
+  },
+  {
+    "id": "G14-5",
+    "question": "VF7 Plus có màu gì?",
+    "question_en": "What colors are available for the VF7 Plus?",
+    "expected_status": "partial",
+    "actual_status": "partial",
+    "required": [
+      "Infinity Blanc",
+      "Zenith Grey",
+      "Plus"
+    ],
+    "required_en": [
+      "Infinity Blanc",
+      "model"
+    ],
+    "response": "Theo tài liệu VinFast:\n\nMàu ngoại thất công bố cho dòng VF7: Infinity Blanc; Zenith Grey; Jet Black; Solar Ruby; Urban Mint. Nguồn này chưa tách màu theo Eco, Plus hoặc Plus AWD và chưa xác nhận tồn kho. Vì vậy em chưa thể xác nhận riêng VF7 Plus có sẵn từng màu; Quý khách cho biết đời xe và nơi mua để đối chiếu.",
+    "language": "vi",
+    "sources": [
+      {
+        "fact_scope": null,
+        "claim_evidence": null,
+        "source_section": "Trang VF7 / bảng màu ngoại thất ở mức dòng xe",
+        "specs_reviewed_at": null,
+        "price_evidence": null,
+        "source_id": "SRC-009",
+        "title": "Danh mục thông số kỹ thuật & phiên bản thương mại",
+        "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+        "verified_at": "2026-10-16",
+        "status_code": 200,
+        "applicable_models": [
+          "VF7"
+        ],
+        "source_type": "official_catalog",
+        "relevant_snippet": "Màu ngoại thất công bố cho dòng VF7: Infinity Blanc; Zenith Grey; Jet Black; Solar Ruby; Urban Mint. Nguồn này chưa tách màu theo Eco, Plus hoặc Plus AWD và chưa xác nhận tồn kho. Vì vậy em chưa thể xác nhận riêng VF7 Plus có sẵn từng màu; Quý khách cho biết đời xe và nơi mua để đối chiếu."
+      }
+    ],
+    "diagnostics": {
+      "answer_path": "rag",
+      "answer_status": "partial",
+      "final_outcome": "partial",
+      "stage_outcomes": []
+    },
+    "passed": true
+  },
+  {
+    "id": "G14-6",
+    "question": "Bảo hành pin cao áp VF8 bao lâu?",
+    "question_en": "How long is the VF8 high-voltage battery warranty?",
+    "expected_status": "answered",
+    "actual_status": "answered",
+    "required": [
+      "10 năm",
+      "200.000",
+      "3 năm",
+      "100.000",
+      "4 năm",
+      "80.000"
+    ],
+    "required_en": [
+      "10 years",
+      "3 years",
+      "4 years"
+    ],
+    "response": "Theo tài liệu VinFast:\n\nBảo hành pin cao áp VF8 phụ thuộc trường hợp mua và sử dụng:\nVF8 pin cao áp mua theo xe mới, dùng tiêu chuẩn: 10 năm hoặc 200.000 km, tùy điều kiện nào đến trước.\nVF8 pin cao áp mua theo xe mới, xe đang hoặc đã từng dùng thương mại: 3 năm hoặc 100.000 km, tùy điều kiện nào đến trước; chuyển chủ không làm mất điều kiện thương mại.\nVF8 pin cao áp mua và lắp tại xưởng VinFast sau khi giao xe: 4 năm hoặc 80.000 km, tùy điều kiện nào đến trước, tính từ ngày mua pin.\nCần đối chiếu Sổ bảo hành đúng xe và phương án pin; không lấy thời hạn pin thay thế làm thời hạn pin mua theo xe mới.",
+    "language": "vi",
+    "sources": [
+      {
+        "fact_scope": null,
+        "claim_evidence": null,
+        "source_section": "Phụ tùng xe mới bảo hành giới hạn / Pin cao áp; Bảo hành phụ tùng / Pin cao áp",
+        "specs_reviewed_at": null,
+        "price_evidence": null,
+        "source_id": "SRC-002",
+        "title": "Chính sách bảo hành xe ô tô VinFast",
+        "url": "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto",
+        "verified_at": "2026-09-30",
+        "status_code": 200,
+        "applicable_models": [
+          "VF8"
+        ],
+        "source_type": "official_policy",
+        "relevant_snippet": "Bảo hành pin cao áp VF8 phụ thuộc trường hợp mua và sử dụng:\nVF8 pin cao áp mua theo xe mới, dùng tiêu chuẩn: 10 năm hoặc 200.000 km, tùy điều kiện nào đến trước.\nVF8 pin cao áp mua theo xe mới, xe đang hoặc đã từng dùng thương mại: 3 năm hoặc 100.000 km, tùy điều kiện nào đến trước; chuyển chủ không làm mất điều kiện thương mại.\nVF8 pin cao áp mua và lắp tại xưởng VinFast sau khi giao xe: 4 năm hoặc 80.000 km, tùy điều kiện nào đến trước, tính từ ngày mua pin.\nCần đối chiếu Sổ bảo hành đúng xe và phương án pin; không lấy thời hạn pin thay thế làm thời hạn pin mua theo xe mới."
+      }
+    ],
+    "diagnostics": {
+      "answer_path": "rag",
+      "answer_status": "answered",
+      "final_outcome": "success",
+      "stage_outcomes": []
+    },
+    "passed": true
+  },
+  {
+    "id": "G14-7",
+    "question": "Bảo hành ắc quy 12V VF8 bao lâu?",
+    "question_en": "How long is the VF8 12V battery warranty?",
+    "expected_status": "answered",
+    "actual_status": "answered",
+    "required": [
+      "1 năm",
+      "không giới hạn"
+    ],
+    "required_en": [
+      "1 year",
+      "unlimited"
+    ],
+    "response": "Theo tài liệu VinFast:\n\nBảo hành ắc quy 12V VF8 (ô tô điện): 1 năm, không giới hạn quãng đường sử dụng. Đây là hạng mục riêng với pin cao áp. Cần đối chiếu Sổ bảo hành đúng xe và thời điểm mua/thay thế; không dùng thời hạn ắc quy của xe xăng cho xe điện.",
+    "language": "vi",
+    "sources": [
+      {
+        "fact_scope": null,
+        "claim_evidence": null,
+        "source_section": "Ắc - quy / Ô tô điện; Bảo hành phụ tùng / Ắc quy 12V",
+        "specs_reviewed_at": null,
+        "price_evidence": null,
+        "source_id": "SRC-002",
+        "title": "Chính sách bảo hành xe ô tô VinFast",
+        "url": "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto",
+        "verified_at": "2026-09-30",
+        "status_code": 200,
+        "applicable_models": [
+          "VF8"
+        ],
+        "source_type": "official_policy",
+        "relevant_snippet": "Bảo hành ắc quy 12V VF8 (ô tô điện): 1 năm, không giới hạn quãng đường sử dụng. Đây là hạng mục riêng với pin cao áp. Cần đối chiếu Sổ bảo hành đúng xe và thời điểm mua/thay thế; không dùng thời hạn ắc quy của xe xăng cho xe điện."
+      }
+    ],
+    "diagnostics": {
+      "answer_path": "rag",
+      "answer_status": "answered",
+      "final_outcome": "success",
+      "stage_outcomes": []
+    },
+    "passed": true
+  },
+  {
+    "id": "G14-8",
+    "question": "VF8 chạy dịch vụ thương mại được bảo hành thế nào?",
+    "question_en": "What warranty applies to a commercially used VF8?",
+    "expected_status": "answered",
+    "actual_status": "answered",
+    "required": [
+      "3 năm",
+      "100.000",
+      "thương mại"
+    ],
+    "required_en": [
+      "3 years",
+      "100,000"
+    ],
+    "response": "Theo tài liệu VinFast:\n\nBảo hành VF8 đang hoặc đã từng dùng dịch vụ thương mại:\nVF8 xe dùng thương mại: 3 năm hoặc 100.000 km, tùy điều kiện nào đến trước.\nVF8 pin cao áp mua theo xe mới dùng thương mại: 3 năm hoặc 100.000 km, tùy điều kiện nào đến trước.\nĐiều kiện thương mại tiếp tục áp dụng sau chuyển nhượng hoặc khi xe không còn chạy dịch vụ. Phụ tùng và hạng mục giới hạn có chính sách riêng; cần đối chiếu Sổ bảo hành và thời điểm mua, không áp dụng thời hạn sử dụng tiêu chuẩn thay thế.",
+    "language": "vi",
+    "sources": [
+      {
+        "fact_scope": null,
+        "claim_evidence": null,
+        "source_section": "Thời hạn bảo hành Ô tô / dịch vụ thương mại; Pin cao áp mua theo xe mới / thương mại",
+        "specs_reviewed_at": null,
+        "price_evidence": null,
+        "source_id": "SRC-002",
+        "title": "Chính sách bảo hành xe ô tô VinFast",
+        "url": "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto",
+        "verified_at": "2026-09-30",
+        "status_code": 200,
+        "applicable_models": [
+          "VF8"
+        ],
+        "source_type": "official_policy",
+        "relevant_snippet": "Bảo hành VF8 đang hoặc đã từng dùng dịch vụ thương mại:\nVF8 xe dùng thương mại: 3 năm hoặc 100.000 km, tùy điều kiện nào đến trước.\nVF8 pin cao áp mua theo xe mới dùng thương mại: 3 năm hoặc 100.000 km, tùy điều kiện nào đến trước.\nĐiều kiện thương mại tiếp tục áp dụng sau chuyển nhượng hoặc khi xe không còn chạy dịch vụ. Phụ tùng và hạng mục giới hạn có chính sách riêng; cần đối chiếu Sổ bảo hành và thời điểm mua, không áp dụng thời hạn sử dụng tiêu chuẩn thay thế."
+      }
+    ],
+    "diagnostics": {
+      "answer_path": "rag",
+      "answer_status": "answered",
+      "final_outcome": "success",
+      "stage_outcomes": []
+    },
+    "passed": true
+  },
+  {
+    "id": "G14-9",
+    "question": "Xe bị ngập nước có được bảo hành không?",
+    "question_en": "Is flood damage covered under the vehicle warranty?",
+    "expected_status": "answered",
+    "actual_status": "answered",
+    "required": [
+      "hư hỏng",
+      "ngập nước",
+      "xưởng"
+    ],
+    "required_en": [
+      "damage",
+      "flood"
+    ],
+    "response": "Theo tài liệu VinFast:\n\nChính sách VinFast loại trừ hư hỏng có nguyên nhân do tai nạn hoặc sử dụng xe trong điều kiện ngập nước. Không thể từ câu mô tả ngắn kết luận mọi hư hỏng của cả xe đều bị từ chối bảo hành. Xưởng dịch vụ cần kiểm tra nguyên nhân, hạng mục bị ảnh hưởng và Sổ bảo hành đúng xe để xác định trường hợp cụ thể.",
+    "language": "vi",
+    "sources": [
+      {
+        "fact_scope": null,
+        "claim_evidence": null,
+        "source_section": "Các hạng mục không thuộc phạm vi bảo hành / hư hỏng do sử dụng trong điều kiện ngập nước",
+        "specs_reviewed_at": null,
+        "price_evidence": null,
+        "source_id": "SRC-002",
+        "title": "Chính sách bảo hành xe ô tô VinFast",
+        "url": "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto",
+        "verified_at": "2026-09-30",
+        "status_code": 200,
+        "applicable_models": [
+          "ALL"
+        ],
+        "source_type": "official_policy",
+        "relevant_snippet": "Chính sách VinFast loại trừ hư hỏng có nguyên nhân do tai nạn hoặc sử dụng xe trong điều kiện ngập nước. Không thể từ câu mô tả ngắn kết luận mọi hư hỏng của cả xe đều bị từ chối bảo hành. Xưởng dịch vụ cần kiểm tra nguyên nhân, hạng mục bị ảnh hưởng và Sổ bảo hành đúng xe để xác định trường hợp cụ thể."
+      }
+    ],
+    "diagnostics": {
+      "answer_path": "rag",
+      "answer_status": "answered",
+      "final_outcome": "success",
+      "stage_outcomes": []
+    },
+    "passed": true
+  },
+  {
+    "id": "G14-10",
+    "question": "Lịch bảo dưỡng định kỳ VF8 là gì?",
+    "question_en": "What is the scheduled maintenance interval for the VF8?",
+    "expected_status": "answered",
+    "actual_status": "answered",
+    "required": [
+      "15.000",
+      "12 tháng",
+      "đời xe"
+    ],
+    "required_en": [
+      "15,000",
+      "12 months"
+    ],
+    "response": "Theo tài liệu VinFast:\n\nLịch bảo dưỡng VF8\nVF8 bảo dưỡng định kỳ ở mốc 15.000 km hoặc 12 tháng đầu tiên, tùy điều kiện nào đến trước. Bảng lịch bảo dưỡng tiếp tục theo các mốc cách nhau 15.000 km hoặc 1 năm.\nNguồn không xác định đời xe; cần đối chiếu sổ bảo dưỡng đúng xe trước khi áp dụng, nhất là xe dùng thương mại hoặc điều kiện khắc nghiệt. Các hạng mục thay dầu phanh, pin T-BOX hay dung dịch làm mát có lịch riêng; không dùng lịch thay một hạng mục làm chu kỳ toàn xe.",
+    "language": "vi",
+    "sources": [
+      {
+        "fact_scope": null,
+        "claim_evidence": null,
+        "source_section": "Lịch trình & Hạng mục bảo dưỡng / ảnh lịch VF8 / cột Km và Năm",
+        "specs_reviewed_at": null,
+        "price_evidence": null,
+        "source_id": "SRC-004",
+        "title": "Dịch vụ và quy trình bảo dưỡng ô tô VinFast",
+        "url": "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
+        "verified_at": "2026-09-30",
+        "status_code": 200,
+        "applicable_models": [
+          "VF8"
+        ],
+        "source_type": "official_service",
+        "relevant_snippet": "Lịch bảo dưỡng VF8\nVF8 bảo dưỡng định kỳ ở mốc 15.000 km hoặc 12 tháng đầu tiên, tùy điều kiện nào đến trước. Bảng lịch bảo dưỡng tiếp tục theo các mốc cách nhau 15.000 km hoặc 1 năm.\nNguồn không xác định đời xe; cần đối chiếu sổ bảo dưỡng đúng xe trước khi áp dụng, nhất là xe dùng thương mại hoặc điều kiện khắc nghiệt. Các hạng mục thay dầu phanh, pin T-BOX hay dung dịch làm mát có lịch riêng; không dùng lịch thay một hạng mục làm chu kỳ toàn xe."
+      }
+    ],
+    "diagnostics": {
+      "answer_path": "rag",
+      "answer_status": "answered",
+      "final_outcome": "success",
+      "stage_outcomes": []
+    },
+    "passed": true
+  },
+  {
+    "id": "G14-11",
+    "question": "VF5 bảo dưỡng mỗi bao nhiêu km?",
+    "question_en": "How many kilometers between scheduled maintenance visits for the VF5?",
+    "expected_status": "answered",
+    "actual_status": "answered",
+    "required": [
+      "15.000",
+      "12 tháng",
+      "đời xe"
+    ],
+    "required_en": [
+      "15,000",
+      "12 months"
+    ],
+    "response": "Theo tài liệu VinFast:\n\nLịch bảo dưỡng VF5\nVF5 bảo dưỡng định kỳ ở mốc 15.000 km hoặc 12 tháng đầu tiên, tùy điều kiện nào đến trước. Bảng lịch bảo dưỡng tiếp tục theo các mốc cách nhau 15.000 km hoặc 1 năm.\nNguồn không xác định đời xe; cần đối chiếu sổ bảo dưỡng đúng xe trước khi áp dụng, nhất là xe dùng thương mại hoặc điều kiện khắc nghiệt. Các hạng mục thay dầu phanh, pin T-BOX hay dung dịch làm mát có lịch riêng; không dùng lịch thay một hạng mục làm chu kỳ toàn xe.",
+    "language": "vi",
+    "sources": [
+      {
+        "fact_scope": null,
+        "claim_evidence": null,
+        "source_section": "Lịch trình & Hạng mục bảo dưỡng / ảnh lịch VF5 / cột Km và Năm",
+        "specs_reviewed_at": null,
+        "price_evidence": null,
+        "source_id": "SRC-004",
+        "title": "Dịch vụ và quy trình bảo dưỡng ô tô VinFast",
+        "url": "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
+        "verified_at": "2026-09-30",
+        "status_code": 200,
+        "applicable_models": [
+          "VF5"
+        ],
+        "source_type": "official_service",
+        "relevant_snippet": "Lịch bảo dưỡng VF5\nVF5 bảo dưỡng định kỳ ở mốc 15.000 km hoặc 12 tháng đầu tiên, tùy điều kiện nào đến trước. Bảng lịch bảo dưỡng tiếp tục theo các mốc cách nhau 15.000 km hoặc 1 năm.\nNguồn không xác định đời xe; cần đối chiếu sổ bảo dưỡng đúng xe trước khi áp dụng, nhất là xe dùng thương mại hoặc điều kiện khắc nghiệt. Các hạng mục thay dầu phanh, pin T-BOX hay dung dịch làm mát có lịch riêng; không dùng lịch thay một hạng mục làm chu kỳ toàn xe."
+      }
+    ],
+    "diagnostics": {
+      "answer_path": "rag",
+      "answer_status": "answered",
+      "final_outcome": "success",
+      "stage_outcomes": []
+    },
+    "passed": true
+  },
+  {
+    "id": "G14-12",
+    "question": "VF8 đi được bao xa một lần sạc?",
+    "question_en": "How far can the VF8 travel on one charge?",
+    "expected_status": "needs_clarification",
+    "actual_status": "needs_clarification",
+    "required": [
+      "Eco",
+      "Plus"
+    ],
+    "required_en": [
+      "Eco",
+      "Plus",
+      "year"
+    ],
+    "response": "Quý khách đang hỏi VF8 phiên bản Eco hay Plus (hoặc cấu hình khác), đời xe nào? Em cần đúng phiên bản và đời xe để đối chiếu thông số, không tự chọn một con số chung.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+    "language": "vi",
+    "sources": [],
+    "diagnostics": {
+      "answer_path": "rag",
+      "answer_status": "needs_clarification",
+      "final_outcome": "needs_clarification",
+      "stage_outcomes": []
+    },
+    "passed": true
+  },
+  {
+    "id": "G14-13",
+    "question": "Dung lượng pin VF8 là bao nhiêu?",
+    "question_en": "What is the battery capacity of the VF8?",
+    "expected_status": "needs_clarification",
+    "actual_status": "needs_clarification",
+    "required": [
+      "Eco",
+      "Plus"
+    ],
+    "required_en": [
+      "Eco",
+      "Plus",
+      "year"
+    ],
+    "response": "Quý khách đang hỏi VF8 phiên bản Eco hay Plus (hoặc cấu hình khác), đời xe nào? Em cần đúng phiên bản và đời xe để đối chiếu thông số, không tự chọn một con số chung.\n\nQuý khách có thể liên hệ chuyên viên để đối chiếu; chat chưa xác nhận yêu cầu đã được chuyển hay có lịch phản hồi.",
+    "language": "vi",
+    "sources": [],
+    "diagnostics": {
+      "answer_path": "rag",
+      "answer_status": "needs_clarification",
+      "final_outcome": "needs_clarification",
+      "stage_outcomes": []
+    },
+    "passed": true
+  },
+  {
+    "id": "G14-14",
+    "question": "Dung lượng pin VF3 là bao nhiêu?",
+    "question_en": "What is the battery capacity of the VF3?",
+    "expected_status": "answered",
+    "actual_status": "answered",
+    "required": [
+      "18,64",
+      "kWh",
+      "phiên bản"
+    ],
+    "required_en": [
+      "18.64",
+      "kWh"
+    ],
+    "response": "Theo tài liệu VinFast:\n\nDung lượng pin khả dụng công bố ở mức dòng VF3: 18,64 kWh. Trang sản phẩm và bảng PIN trong brochure xác nhận thông số này ở mức dòng xe; chưa dùng bản ghi này để xác nhận riêng mọi phiên bản hoặc đời xe. Quý khách có thể cung cấp phiên bản và đời xe để đối chiếu chính xác.",
+    "language": "vi",
+    "sources": [
+      {
+        "fact_scope": null,
+        "claim_evidence": null,
+        "source_section": "Trang VF3 Pin & Sạc; brochure 16/06/2026 trang9 / PIN",
+        "specs_reviewed_at": null,
+        "price_evidence": null,
+        "source_id": "SRC-009",
+        "title": "Danh mục thông số kỹ thuật & phiên bản thương mại",
+        "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf3",
+        "verified_at": "2026-10-16",
+        "status_code": 200,
+        "applicable_models": [
+          "VF3"
+        ],
+        "source_type": "official_catalog",
+        "relevant_snippet": "Dung lượng pin khả dụng công bố ở mức dòng VF3: 18,64 kWh. Trang sản phẩm và bảng PIN trong brochure xác nhận thông số này ở mức dòng xe; chưa dùng bản ghi này để xác nhận riêng mọi phiên bản hoặc đời xe. Quý khách có thể cung cấp phiên bản và đời xe để đối chiếu chính xác."
+      }
+    ],
+    "diagnostics": {
+      "answer_path": "rag",
+      "answer_status": "answered",
+      "final_outcome": "success",
+      "stage_outcomes": []
+    },
+    "passed": true
+  }
+]

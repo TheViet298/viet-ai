@@ -230,7 +230,21 @@ class RAGService:
         from src.services.charging_questions import reviewed_charging_guides
         from src.services.warranty_questions import reviewed_warranty_overviews
         from src.services.reviewed_knowledge import reviewed_maintenance_schedules, reviewed_model_colors
-        reviewed = (reviewed_charging_guides(query) or reviewed_warranty_overviews(query, vehicle_model)
+        from src.services.reviewed_gap_answers import reviewed_gap_answers, foreign_market_request
+        from src.services.answer_evidence import normalized
+        qbody = normalized(query)
+        if 'adas' in qbody and re.search(r'activate|enable|turn (?:on|off)|instructions|configure|kich hoat|bat adas|tat adas', qbody):
+            return self.failure('NO_SOURCE', 'unresolved_adas_procedure')
+        if foreign_market_request(query):
+            return self.failure('NO_SOURCE', 'unresolved_market_scope')
+        if ('bao hanh' in qbody and vehicle_model in {'VF8', 'VF5'}
+                and re.search(r'\b20\d{2}\b|the all new|all-new', qbody)):
+            return self.failure('NO_SOURCE', 'unresolved_policy_scope')
+        if ('bao duong' in qbody and not vehicle_model and not re.search(r'\bvf\s*(?:e34|[356789])\b',qbody)
+                and re.search(r'lan dau|dau tien|bao nhieu km|moc nao|chu ky',qbody)
+                and not re.search(r'tong quat|dua tren|yeu to',qbody)):
+            return self.failure('NO_SOURCE','missing_maintenance_model')
+        reviewed = (reviewed_gap_answers(query,vehicle_model) or reviewed_charging_guides(query) or reviewed_warranty_overviews(query, vehicle_model)
                     or reviewed_maintenance_schedules(query, vehicle_model) or reviewed_model_colors(query, vehicle_model))
         if reviewed:
             registry = source_registry()

@@ -92,8 +92,12 @@ def evidence_intent_query(text: str) -> str | None:
     if re.search(r'\bdo not\b|\bdon.t\b|not asking', body):
         return None
     anchors = []
+    if re.search(r'flood(?:ing)?|flood damage', body) and re.search(r'warranty|cover', body):
+        anchors.append('Chính sách bảo hành xe bị ngập nước')
     if re.search(_VEHICLE, text, re.I):
         for pattern, anchor in [
+            (r'\badas\b.*(?:features|include|have)|(?:features).*\badas\b', 'Tính năng ADAS'),
+            (r'12\s*v.*(?:battery.*warranty|warranty)|(?:battery.*warranty).*12\s*v', 'Bảo hành ắc quy 12V'),
             (r'\b(?:driving range|published range|range|how far)\b', 'Quãng đường công bố'),
             (r'\b(?:usable )?battery capacity\b', 'Dung lượng pin khả dụng'),
             (r'\b(?:seats?|seating positions|seating capacity)\b', 'Số chỗ ngồi'),

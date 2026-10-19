@@ -17,7 +17,7 @@ class AnswerClaim(BaseModel):
     source_ids: list[str] = Field(default_factory=list)
 
 
-QUANTITY = re.compile(r'(\d+(?:[.,]\d+)*(?:\s*[-–]\s*\d+(?:[.,]\d+)*)?)\s*((?:tỷ|triệu)\s*đồng|(?:vnđ|vnd|đồng)(?:/(?:kwh|phút))?|km/h|km|kwh|kw|phút|tháng|năm|chỗ(?: ngồi)?|seats?|%)(?!\w)', re.I)
+QUANTITY = re.compile(r'(?<![\w])(\d+(?:[.,]\d+)*(?:\s*[-–]\s*\d+(?:[.,]\d+)*)?)\s*((?:tỷ|triệu)\s*đồng|(?:vnđ|vnd|đồng)(?:/(?:kwh|phút))?|km/h|km|kwh|kw|phút|tháng|năm|chỗ(?: ngồi)?|seats?|%)(?!\w)', re.I)
 
 
 def canonical_quantity_unit(unit: str) -> str:
@@ -433,6 +433,8 @@ def answer_section(query: str, text: str) -> str:
                 return ""
             if not re.search(r"\d+\s*năm", text, re.I):
                 return ""
-            if "the all new" in text.casefold() and "the all new" not in lower:
+            if "the all new" not in lower and any(
+                    "the all new" in line.casefold() and not normalized(line).startswith("khong ap dung")
+                    for line in text.splitlines()):
                 return ""
     return text

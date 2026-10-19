@@ -9,6 +9,8 @@ TOPICS = {
     'tariff': ('Biểu phí sạc', 'Biểu phí sạc tại trạm sạc công cộng VinFast', 'policy'),
     'app': ('Tính năng trên App VinFast', 'Tính năng sạc trên ứng dụng VinFast', 'guide'),
     'warranty': ('Bảo hành pin', 'Chính sách bảo hành pin VinFast', 'policy'),
+    'capacity': ('Dung lượng pin', 'Dung lượng pin khả dụng', 'catalog'),
+    'range': ('Quãng đường công bố', 'Quãng đường công bố', 'catalog'),
     'maintenance': ('Bảo dưỡng định kỳ', 'Lịch bảo dưỡng định kỳ VinFast', 'manual'),
 }
 CHARGING_TOPICS = ('charging', 'tariff', 'app')
@@ -53,6 +55,10 @@ def topic_flags(query: str) -> set[str]:
         found.add('warranty')
     if 'bao duong' in text:
         found.add('maintenance')
+    if re.search(r'dung luong|battery capacity', text):
+        found.add('capacity')
+    if re.search(r'tam hoat dong|tam di chuyen|quang duong (?:cong bo|toi da|mot lan sac|khi sac)|di duoc bao xa|driving range', text):
+        found.add('range')
     return found
 
 
@@ -93,7 +99,7 @@ def faq_parts(query: str, keys=tuple(TOPICS)) -> list[tuple[str, str, str | None
     inherited = []
     if len(vehicle_models(query)) == 1:
         inherited = re.findall(
-            r'\bVF\s*(?:e34|[356789])\b|\b20\d{2}\b|\b\d[\d.,]*\s*(?:km|tháng|năm)\b|'
+            r'\bVF\s*(?:e34|[356789])(?:\s+(?:Eco|Plus)(?:\s+(?:AWD|FWD))?)?\b|\b20\d{2}\b|\b\d[\d.,]*\s*(?:km|tháng|năm)\b|'
             r'\b(?:(?:không|chưa|đã từng|đang)\s+)*(?:chạy dịch vụ|dịch vụ thương mại|cá nhân|thuê pin|mua pin)\b', query, re.I)
     parts = []
     for key in chosen:

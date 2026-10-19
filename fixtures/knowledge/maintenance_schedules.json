@@ -7,7 +7,11 @@
     "operation": "scheduled_maintenance",
     "interval_km": 15000,
     "interval_months": 12,
-    "conditions": ["Tùy điều kiện quãng đường hoặc thời gian đến trước", "Trang nguồn không xác định đời xe", "Không xác nhận lịch sử dụng khắc nghiệt hoặc thương mại"],
+    "conditions": [
+      "Tùy điều kiện quãng đường hoặc thời gian đến trước",
+      "Trang nguồn không xác định đời xe",
+      "Không xác nhận lịch sử dụng khắc nghiệt hoặc thương mại"
+    ],
     "source_id": "SRC-004",
     "source_section": "Lịch trình & Hạng mục bảo dưỡng / Bảo dưỡng xe VF3 / cột Km và Năm",
     "source_url": "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
@@ -19,5 +23,57 @@
     "reviewed_at": "2026-10-19",
     "verified_at": "2026-10-19",
     "relevant_snippet": "Lịch bảo dưỡng VF3\nVF3 bảo dưỡng định kỳ ở mốc 15.000 km hoặc 12 tháng đầu tiên, tùy điều kiện nào đến trước. Bảng lịch bảo dưỡng tiếp tục theo các mốc cách nhau 15.000 km hoặc 1 năm.\nNguồn không xác định đời xe; cần đối chiếu sổ bảo dưỡng đúng xe trước khi áp dụng, nhất là xe dùng thương mại hoặc điều kiện khắc nghiệt. Các hạng mục thay dầu phanh, pin T-BOX hay dung dịch làm mát có lịch riêng; không dùng lịch thay một hạng mục làm chu kỳ toàn xe."
+  },
+  {
+    "model": "VF5",
+    "variant": null,
+    "model_year": null,
+    "market": "VN",
+    "operation": "scheduled_maintenance",
+    "interval_km": 15000,
+    "interval_months": 12,
+    "conditions": [
+      "Tùy điều kiện quãng đường hoặc thời gian đến trước",
+      "Trang nguồn không xác định đời xe",
+      "Không xác nhận lịch sử dụng khắc nghiệt hoặc thương mại"
+    ],
+    "source_id": "SRC-004",
+    "source_section": "Lịch trình & Hạng mục bảo dưỡng / ảnh lịch VF5 / cột Km và Năm",
+    "source_url": "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
+    "url": "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
+    "source_image_url": "https://static-cms-prod.vinfastauto.com/lich-bao-duong-vf5_2.PNG",
+    "evidence_location": "data/acquired/vinfast-browser-2026-10-19/vf5-schedule.png",
+    "review_status": "verified",
+    "reviewer": "Codex/root, visual table/header/footnote reading",
+    "reviewed_at": "2026-10-19",
+    "verified_at": "2026-10-19",
+    "relevant_snippet": "Lịch bảo dưỡng VF5\nVF5 bảo dưỡng định kỳ ở mốc 15.000 km hoặc 12 tháng đầu tiên, tùy điều kiện nào đến trước. Bảng lịch bảo dưỡng tiếp tục theo các mốc cách nhau 15.000 km hoặc 1 năm.\nNguồn không xác định đời xe; cần đối chiếu sổ bảo dưỡng đúng xe trước khi áp dụng, nhất là xe dùng thương mại hoặc điều kiện khắc nghiệt. Các hạng mục thay dầu phanh, pin T-BOX hay dung dịch làm mát có lịch riêng; không dùng lịch thay một hạng mục làm chu kỳ toàn xe.",
+    "relevant_snippet_en": "VF5 published maintenance table: first scheduled service at 15,000 km or 12 months, whichever comes first, then corresponding 15,000-km/year steps. The source does not identify the model year or trim. Check the vehicle booklet, particularly for commercial or severe use. Individual fluid and component replacement schedules are separate."
+  },
+  {
+    "model": "VF8",
+    "variant": null,
+    "model_year": null,
+    "market": "VN",
+    "operation": "scheduled_maintenance",
+    "interval_km": 15000,
+    "interval_months": 12,
+    "conditions": [
+      "Tùy điều kiện quãng đường hoặc thời gian đến trước",
+      "Trang nguồn không xác định đời xe",
+      "Không xác nhận lịch sử dụng khắc nghiệt hoặc thương mại"
+    ],
+    "source_id": "SRC-004",
+    "source_section": "Lịch trình & Hạng mục bảo dưỡng / ảnh lịch VF8 / cột Km và Năm",
+    "source_url": "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
+    "url": "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
+    "source_image_url": "https://static-cms-prod.vinfastauto.com/lich-bao-duong-vf6-7-8-e34_2.PNG",
+    "evidence_location": "data/acquired/vinfast-browser-2026-10-19/vf8-schedule.png",
+    "review_status": "verified",
+    "reviewer": "Codex/root, visual table/header/footnote reading",
+    "reviewed_at": "2026-10-19",
+    "verified_at": "2026-10-19",
+    "relevant_snippet": "Lịch bảo dưỡng VF8\nVF8 bảo dưỡng định kỳ ở mốc 15.000 km hoặc 12 tháng đầu tiên, tùy điều kiện nào đến trước. Bảng lịch bảo dưỡng tiếp tục theo các mốc cách nhau 15.000 km hoặc 1 năm.\nNguồn không xác định đời xe; cần đối chiếu sổ bảo dưỡng đúng xe trước khi áp dụng, nhất là xe dùng thương mại hoặc điều kiện khắc nghiệt. Các hạng mục thay dầu phanh, pin T-BOX hay dung dịch làm mát có lịch riêng; không dùng lịch thay một hạng mục làm chu kỳ toàn xe.",
+    "relevant_snippet_en": "VF8 published maintenance table: first scheduled service at 15,000 km or 12 months, whichever comes first, then corresponding 15,000-km/year steps. The source does not identify the model year or trim. Check the vehicle booklet, particularly for commercial or severe use. Individual fluid and component replacement schedules are separate."
   }
 ]

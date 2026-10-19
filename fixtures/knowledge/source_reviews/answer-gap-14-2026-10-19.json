@@ -1,0 +1,83 @@
+{
+  "reviewed_at": "2026-10-19",
+  "reviewer": "Codex/root",
+  "browser_pages": "403; see manifest.json",
+  "assets": [
+    {
+      "path": "data\\acquired\\vinfast-browser-2026-10-19\\vf5-schedule.png",
+      "url": "https://static-cms-prod.vinfastauto.com/lich-bao-duong-vf5_2.PNG",
+      "sha256": "0b1e6a9f5d1f63f407d33218de2cf8fa444b030cb3dc829937071d5880b68822",
+      "method": "Playwright BrowserContext.request GET",
+      "status": 200,
+      "visually_reviewed": true
+    },
+    {
+      "path": "data\\acquired\\vinfast-browser-2026-10-19\\vf8-schedule.png",
+      "url": "https://static-cms-prod.vinfastauto.com/lich-bao-duong-vf6-7-8-e34_2.PNG",
+      "sha256": "bac53d20d21c50b198de2cf901cbfdbff9d114fabc2454f1fa09e6e218b09c2e",
+      "method": "Playwright BrowserContext.request GET",
+      "status": 200,
+      "visually_reviewed": true
+    },
+    {
+      "path": "data\\acquired\\vinfast-browser-2026-10-19\\vf3-brochure.pdf",
+      "url": "https://static-cms-prod.vinfastauto.com/statics/shared/16062026-Brochure-VF-3.pdf",
+      "sha256": "f2d6407ec62e052b14bcfadde89c1ad18e2c39bf00fc317ca4b56a61dcf789d9",
+      "method": "Playwright BrowserContext.request GET",
+      "status": 200,
+      "visually_reviewed": true
+    }
+  ],
+  "web_source_readings": [
+    {
+      "url": "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto",
+      "sections": "vehicle/standard and commercial; new battery; auxiliary; replacement battery; flood exclusions"
+    },
+    {
+      "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+      "sections": "model-level five swatches; no trim/stock mapping"
+    },
+    {
+      "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf3",
+      "sections": "usable capacity18.64; unit checked against linked brochure"
+    }
+  ],
+  "scope_review": "Independent review_g14: foreign-market inheritance, taxi use and ADAS activation repros fixed; no remaining critical/important introduced defects in final review.",
+  "acquisition_script": "scripts/acquire_vinfast_gap_assets.cjs",
+  "page_requests": [
+    {
+      "id": "warranty",
+      "url": "https://vinfastauto.com/vn_vi/chinh-sach-bao-hanh-oto",
+      "captured_at": "2026-10-19T15:35:54.619Z",
+      "method": "Playwright Microsoft Edge headless",
+      "status": 403
+    },
+    {
+      "id": "maintenance",
+      "url": "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
+      "captured_at": "2026-10-19T15:35:55.105Z",
+      "method": "Playwright Microsoft Edge headless",
+      "status": 403
+    },
+    {
+      "id": "vf7",
+      "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
+      "captured_at": "2026-10-19T15:35:55.378Z",
+      "method": "Playwright Microsoft Edge headless",
+      "status": 403
+    },
+    {
+      "id": "vf3",
+      "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf3",
+      "captured_at": "2026-10-19T15:35:55.563Z",
+      "method": "Playwright Microsoft Edge headless",
+      "status": 403
+    }
+  ],
+  "adas_evidence": {
+    "location": "fixtures/knowledge/source_reviews/adas-vf8-2026.json",
+    "method": "Read approved manual excerpts retrieved from the isolated candidate index; not a fresh Playwright manual capture",
+    "url": "https://om.vinfastauto.com/vi_vn/detail?car=VF8&year=2026",
+    "source_verified_at": "2026-09-30"
+  }
+}

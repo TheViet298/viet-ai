@@ -54,3 +54,19 @@ def test_reviewed_english_snippets_preserve_every_number():
     for name in ('charging_guides.json', 'warranty_maintenance.json'):
         for record in json.loads((root / name).read_text(encoding='utf-8')):
             assert re.findall(r'\d+', record['relevant_snippet']) == re.findall(r'\d+', record['relevant_snippet_en'])
+
+
+@pytest.mark.asyncio
+async def test_reviewed_capacity_with_catalog_chips_uses_reviewed_english(monkeypatch):
+    import json
+    from pathlib import Path
+    from src.services import customer_localization as module
+    async def no_translation(*args, **kwargs):
+        pytest.fail('Exact reviewed source text must not require translation')
+    monkeypatch.setattr(module, 'translate', no_translation)
+    record = next(r for r in json.loads((Path(__file__).resolve().parents[2] / 'fixtures/knowledge/answer_gap_sections.json').read_text(encoding='utf-8')) if r['key'] == 'vf3_model_capacity')
+    data = ChatResponseData(response_type='FAQ_ANSWER', message='Theo tài liệu VinFast:\n\n' + record['relevant_snippet'],
+                           suggested_replies=['Dự toán lăn bánh VinFast VF 3 Eco', 'Dự toán lăn bánh VinFast VF 3 Plus'])
+    await localize_response(data, 'en', {})
+    assert '18.64 kWh' in data.message
+    assert data.suggested_replies == ['On-road price for VinFast VF 3 Eco', 'On-road price for VinFast VF 3 Plus']

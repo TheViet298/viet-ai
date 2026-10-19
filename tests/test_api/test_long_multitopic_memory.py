@@ -117,8 +117,14 @@ async def test_long_multitopic_session_checks_each_turn(client, customer_db, tmp
             assert 'mã lỗi: CC01' not in data['message'] and not data['citations'], label
         if state.get('final_diagnostics', {}).get('answer_status') == 'partial':
             parts = state.get('conversation_retrieval', {}).get('parts', [])
-            assert any(part['status'] == 'SUCCESS' for part in parts), label
-            assert any(part['status'] != 'SUCCESS' for part in parts), label
+            if parts:
+                assert any(part['status'] in {'SUCCESS', 'PARTIAL'} for part in parts), label
+                assert any(part['status'] != 'SUCCESS' for part in parts), label
+            else:
+                # A single color question can have model-only evidence and an
+                # explicit unresolved trim/stock scope, without decomposition.
+                assert 'chưa tách màu' in data['message'], label
+                assert 'tồn kho' in data['message'], label
             assert data['citations'], label
         if step.get('language'):
             assert data['language'] == step['language'], label

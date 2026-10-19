@@ -25,12 +25,13 @@
       "year": null,
       "topic": "maintenance_schedule",
       "required_scope": "model/year/operation/km/months/whichever first/severe-use footnotes",
-      "status": "blocked",
+      "status": "partial",
       "source_id": "SRC-004",
-      "evidence_location": "data/acquired/remediation-2026-10-19/maintenance-web-excerpt.json",
-      "blocker": "Official page links model schedule image; local image fetch HTTP403, visual/header/footnote review still required",
-      "reviewer": null,
-      "reviewed_at": null
+      "evidence_location": "fixtures/knowledge/source_reviews/answer-gap-14-2026-10-19.json",
+      "blocker": "Year/trim/usage/availability-specific coverage is not established.",
+      "reviewer": "Codex/root (official source and image reading)",
+      "reviewed_at": "2026-10-19",
+      "resolution": "Verified model-level 15000 km/12-month maintenance, whichever first."
     },
     {
       "id": "GAP-003",
@@ -67,12 +68,13 @@
       "year": null,
       "topic": "maintenance_schedule",
       "required_scope": "model/year/operation/km/months/whichever first/severe-use footnotes",
-      "status": "blocked",
+      "status": "partial",
       "source_id": "SRC-004",
-      "evidence_location": "data/acquired/remediation-2026-10-19/maintenance-web-excerpt.json",
-      "blocker": "Official page links model schedule image; local image fetch HTTP403, visual/header/footnote review still required",
-      "reviewer": null,
-      "reviewed_at": null
+      "evidence_location": "fixtures/knowledge/source_reviews/answer-gap-14-2026-10-19.json",
+      "blocker": "Year/trim/usage/availability-specific coverage is not established.",
+      "reviewer": "Codex/root (official source and image reading)",
+      "reviewed_at": "2026-10-19",
+      "resolution": "Verified model-level 15000 km/12-month maintenance, whichever first."
     },
     {
       "id": "GAP-006",
@@ -152,12 +154,13 @@
       "year": null,
       "topic": "colors",
       "required_scope": "model/trim/year, model-level colors cannot assert stock",
-      "status": "missing",
+      "status": "partial",
       "source_id": "SRC-009",
-      "evidence_location": null,
-      "blocker": "Source and model/trim scope require acquisition/review",
-      "reviewer": null,
-      "reviewed_at": null
+      "evidence_location": "fixtures/knowledge/source_reviews/answer-gap-14-2026-10-19.json",
+      "blocker": "Year/trim/usage/availability-specific coverage is not established.",
+      "reviewer": "Codex/root (official source and image reading)",
+      "reviewed_at": "2026-10-19",
+      "resolution": "Verified five model-level exterior colors; no trim or stock mapping."
     },
     {
       "id": "GAP-012",
@@ -194,12 +197,13 @@
       "year": null,
       "topic": "battery_capacity",
       "required_scope": "VN market / Eco and Plus / usable vs nominal kWh",
-      "status": "blocked",
+      "status": "partial",
       "source_id": "SRC-009",
-      "evidence_location": null,
-      "blocker": "VN product page HTTP403 locally; Philippines launch capacity cannot be substituted for VN variants",
-      "reviewer": null,
-      "reviewed_at": null
+      "evidence_location": "fixtures/knowledge/source_reviews/answer-gap-14-2026-10-19.json",
+      "blocker": "Year/trim/usage/availability-specific coverage is not established.",
+      "reviewer": "Codex/root (official source and image reading)",
+      "reviewed_at": "2026-10-19",
+      "resolution": "Verified VN model-level usable capacity 18.64 kWh; canonical Eco/Plus records remain unknown."
     },
     {
       "id": "GAP-015",
