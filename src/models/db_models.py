@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime
 from enum import StrEnum
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, JSON, String, Text, false
+from sqlalchemy import Boolean, CheckConstraint, DateTime, Float, ForeignKey, Integer, JSON, String, Text, false, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db import Base
@@ -163,11 +163,33 @@ class User(Base):
     full_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     vehicle_model: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    memory_revision: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text('0'))
     mock_customer_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
     is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=false(), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     cases: Mapped[list["Case"]] = relationship(back_populates="user")
+
+
+class UserMemoryFact(Base):
+    """Current consented facts only; retractions erase values, not the revision fence."""
+
+    __tablename__ = 'user_memory_facts'
+    __table_args__ = (
+        CheckConstraint("key IN ('owned_vehicle.model','owned_vehicle.version','owned_vehicle.model_year','owned_vehicle.battery_plan','home_city','registration_city')", name='ck_user_memory_key'),
+        CheckConstraint("status IN ('confirmed','unknown','retracted')", name='ck_user_memory_status'),
+        CheckConstraint("source_kind IN ('chat','profile')", name='ck_user_memory_source'),
+        CheckConstraint("(status = 'confirmed' AND value IS NOT NULL) OR (status IN ('unknown','retracted') AND value IS NULL)", name='ck_user_memory_value_status'),
+    )
+
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str | int | None] = mapped_column(JSON(none_as_null=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    source_kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    source_session_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    source_message_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, server_default=text('CURRENT_TIMESTAMP'))
 
 
 class Case(Base):
