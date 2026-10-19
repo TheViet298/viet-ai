@@ -217,6 +217,7 @@ async def _run_chat_turn(payload, user, db, handler):
                 agent_message.content = data.message
                 agent_message.msg_metadata = {**(agent_message.msg_metadata or {}), 'language': language,
                     'response_type': data.response_type, 'suggested_replies': data.suggested_replies or [],
+                    'citations': [citation.model_dump(mode='json') for citation in (data.citations or [])],
                     'safe_guidance': data.safe_guidance, 'vehicle_comparison': data.vehicle_comparison,
                     'vehicle_cards': [card.model_dump() for card in data.vehicle_cards]}
             if request_key:

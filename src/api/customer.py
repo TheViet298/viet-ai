@@ -393,6 +393,16 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     active_case_id = active_case.id if active_case else None
     # Never reuse a resolved/closed ID from a stale browser.
     payload = payload.model_copy(update={"case_id": active_case_id})
+    # Keep every turn ordered even if the wall clock stalls or moves backwards.
+    previous_message = db.query(Message).filter(Message.session_id == payload.session_id).order_by(
+        Message.created_at.desc(), Message.id.desc()).first()
+    customer_created_at = datetime.now(UTC)
+    if previous_message and previous_message.created_at:
+        previous_at = previous_message.created_at
+        if previous_at.tzinfo is None:
+            previous_at = previous_at.replace(tzinfo=UTC)
+        customer_created_at = max(customer_created_at, previous_at + timedelta(milliseconds=1))
+    reply_created_at = customer_created_at + timedelta(milliseconds=1)
     classification = classify_chat_context(text)
     remaining_guest_msgs: int | None = None
     if not current_user:
@@ -406,10 +416,10 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         logger.info(f"[CHAT TRACE] Guest session='{payload.session_id}', guest_count={guest_count}, remaining={remaining_guest_msgs}")
         if classification.is_critical:
             reply = EMERGENCY_SAFE_GUIDANCE + " Vui lòng đăng nhập để tạo và theo dõi hồ sơ hỗ trợ."
-            emergency_message = Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='CUSTOMER', content=original_text,
+            emergency_message = Message(created_at=customer_created_at, id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='CUSTOMER', content=original_text,
                                         msg_metadata={'user_id': None, 'guest_session_id': payload.guest_session_id})
             db.add(emergency_message)
-            db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='AGENT', content=reply))
+            db.add(Message(created_at=reply_created_at, id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='AGENT', content=reply))
             db.info['chat_turn_customer_id'] = emergency_message.id
             return ApiResponse(success=True, data=ChatResponseData(
                 response_type="FAQ_ANSWER", message=reply,
@@ -421,20 +431,20 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             raise HTTPException(403, {'code': 'GUEST_LIMIT_REACHED', 'message': 'Quý khách đã hết lượt sử dụng, cần phải đăng nhập để sử dụng tiếp dịch vụ'})
     if re.fullmatch(r'(?:cảm ơn|cám ơn)(?:\s+(?:bạn|em|anh|chị))?(?:[,!.\s]*(?:tôi|em|mình)?\s*(?:đã )?(?:hiểu rồi|hiểu|rõ rồi))?[!.\s]*', text, re.I):
         reply = 'Dạ, rất vui được hỗ trợ Quý khách. Khi cần thêm thông tin, Quý khách cứ nhắn em nhé.'
-        customer_message = Message(id=str(uuid.uuid4()), session_id=payload.session_id,
+        customer_message = Message(created_at=customer_created_at, id=str(uuid.uuid4()), session_id=payload.session_id,
             sender_type='CUSTOMER', content=original_text,
             msg_metadata={'user_id': user_id, 'guest_session_id': payload.guest_session_id})
         db.add(customer_message)
-        db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='AGENT', content=reply))
+        db.add(Message(created_at=reply_created_at, id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='AGENT', content=reply))
         db.info['chat_turn_customer_id'] = customer_message.id
         return ApiResponse(data=ChatResponseData(response_type='FAQ_ANSWER', message=reply,
                            remaining_guest_messages=remaining_guest_msgs))
     if spelling.get('needs_confirmation'):
         reply = clarification_for(text)
-        customer_message = Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='CUSTOMER',
+        customer_message = Message(created_at=customer_created_at, id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='CUSTOMER',
                                    content=original_text, msg_metadata={'user_id': user_id, 'guest_session_id': payload.guest_session_id})
         db.add(customer_message)
-        db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='AGENT', content=reply,
+        db.add(Message(created_at=reply_created_at, id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='AGENT', content=reply,
                        msg_metadata={'response_type': 'CLARIFICATION', 'user_id': user_id}))
         db.info['chat_turn_customer_id'] = customer_message.id
         return ApiResponse(success=True, data=ChatResponseData(response_type='CLARIFICATION', message=reply,
@@ -654,6 +664,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
 
     # 1. Lưu tin nhắn của Khách hàng vào bảng messages
     cust_msg = Message(
+        created_at=customer_created_at,
         id=str(uuid.uuid4()),
         case_id=active_case_id or payload.case_id,
         session_id=payload.session_id,
@@ -679,7 +690,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         action = NearbyAction(**nearby_request, request_id=str(uuid.uuid4()), turn_id=cust_msg.id)
         reply = action.reason + (" Nhập khu vực hoặc dùng vị trí hiện tại để xem tối đa 5 kết quả." if action.requires_location
                                  else " Em sẽ tìm quanh khu vực bạn đã nêu; khoảng cách tính từ tâm khu vực tham chiếu.")
-        db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
+        db.add(Message(created_at=reply_created_at, id=str(uuid.uuid4()), session_id=payload.session_id, case_id=active_case_id,
                        sender_type="AGENT", content=reply, msg_metadata={"nearby_action": action.model_dump()}))
         return ApiResponse(success=True, data=ChatResponseData(response_type="FAQ_ANSWER", message=reply,
                            case_id=active_case_id, nearby_action=action, request_location=action.requires_location,
@@ -687,7 +698,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
 
     if not current_user and classification.request_kind in {'incident', 'complaint'}:
         reply = "Anh/chị vui lòng đăng nhập để tạo và theo dõi hồ sơ chuyên viên hỗ trợ. " + STANDARD_SAFE_GUIDANCE
-        db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='AGENT', content=reply))
+        db.add(Message(created_at=reply_created_at, id=str(uuid.uuid4()), session_id=payload.session_id, sender_type='AGENT', content=reply))
         return ApiResponse(success=True, data=ChatResponseData(response_type='FAQ_ANSWER', message=reply,
             remaining_guest_messages=remaining_guest_msgs), error=None)
 
@@ -697,16 +708,6 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         Message.session_id == payload.session_id,
         Message.sender_type == SenderType.AGENT.value,
     ).order_by(Message.created_at.desc(), Message.id.desc()).all()
-    reply_created_at = datetime.now(UTC)
-    if cust_msg.created_at:
-        cust_at = cust_msg.created_at if cust_msg.created_at.tzinfo else cust_msg.created_at.replace(tzinfo=UTC)
-        reply_created_at = max(reply_created_at, cust_at + timedelta(microseconds=1000))
-    if history:
-        previous_reply_at = history[0].created_at
-        if previous_reply_at.tzinfo is None:
-            previous_reply_at = previous_reply_at.replace(tzinfo=UTC)
-        # UUIDs do not preserve turn order when the system clock returns a tie.
-        reply_created_at = max(reply_created_at, previous_reply_at + timedelta(microseconds=1000))
     for message in history:
         if vehicle_context.get('scope_changed'):
             break
@@ -917,6 +918,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         )
 
         agent_msg = Message(
+
+            created_at=reply_created_at,
             id=str(uuid.uuid4()),
             case_id=case.id,
             session_id=payload.session_id,
@@ -1237,7 +1240,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
                 is_edited_by_staff=False))
         cust_msg.case_id = case.id
         reply = f"Đã ghi nhận yêu cầu chuyên viên hỗ trợ. Mã hồ sơ: {case.id}. Anh/chị có thể theo dõi cập nhật tại đây."
-        db.add(Message(id=str(uuid.uuid4()), session_id=payload.session_id, case_id=case.id, sender_type="AGENT", content=reply))
+        db.add(Message(created_at=reply_created_at, id=str(uuid.uuid4()), session_id=payload.session_id, case_id=case.id, sender_type="AGENT", content=reply))
         db.flush()
         return ApiResponse(success=True, data=ChatResponseData(response_type="CASE_CREATED", message=reply,
             case_id=case.id, status=case.status, priority=case.priority), error=None)
@@ -1255,6 +1258,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             "Em có thể hỗ trợ thông tin xe, trạm sạc, ứng dụng, bảo hành và các yêu cầu dịch vụ VinFast."
         )
         agent_msg = Message(
+            created_at=reply_created_at,
             id=str(uuid.uuid4()),
             case_id=active_case_id,
             session_id=payload.session_id,
@@ -1337,6 +1341,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         )
 
         agent_msg = Message(
+
+            created_at=reply_created_at,
             id=str(uuid.uuid4()),
             case_id=case.id,
             session_id=payload.session_id,
@@ -1488,6 +1494,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             "Báo sự cố kỹ thuật",
         ]
         agent_msg = Message(
+            created_at=reply_created_at,
             id=str(uuid.uuid4()),
             case_id=active_case_id,
             session_id=payload.session_id,
@@ -1560,6 +1567,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             "Cách khắc phục tạm thời",
         ]
         agent_msg = Message(
+            created_at=reply_created_at,
             id=str(uuid.uuid4()),
             case_id=active_case_id or payload.case_id,
             session_id=payload.session_id,
@@ -1594,6 +1602,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         is_recall, recall_reply = detect_memory_recall_query(text, vehicle_context)
         if is_recall and recall_reply:
             agent_msg = Message(
+                created_at=reply_created_at,
                 id=str(uuid.uuid4()),
                 case_id=active_case_id,
                 session_id=payload.session_id,
@@ -1979,6 +1988,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             )
 
         agent_msg = Message(
+
+            created_at=reply_created_at,
             id=str(uuid.uuid4()),
             case_id=case.id,
             session_id=payload.session_id,
@@ -2010,6 +2021,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     is_hazardous, hazard_warning = evaluate_hazardous_intervention(text)
     if is_hazardous and hazard_warning:
         agent_msg = Message(
+            created_at=reply_created_at,
             id=str(uuid.uuid4()),
             case_id=active_case_id,
             session_id=payload.session_id,
@@ -2056,6 +2068,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
             )
 
         agent_msg = Message(
+
+            created_at=reply_created_at,
             id=str(uuid.uuid4()),
             case_id=active_case_id,
             session_id=payload.session_id,
@@ -2145,6 +2159,8 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     )
 
     agent_msg = Message(
+
+        created_at=reply_created_at,
         id=str(uuid.uuid4()),
         case_id=case.id,
         session_id=payload.session_id,

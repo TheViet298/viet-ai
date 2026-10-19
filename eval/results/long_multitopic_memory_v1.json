@@ -1,0 +1,266 @@
+{
+  "date": "2026-10-19",
+  "environment": "ASGI API, isolated SQLite, synthetic authenticated user, external model disabled",
+  "pytest": "31 passed",
+  "sessions": [
+    {
+      "session": "long-bilingual-context-switches-10-continuous",
+      "accepted_user_messages": 10,
+      "passed": true,
+      "final_goal": "warranty",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 12
+    },
+    {
+      "session": "long-bilingual-context-switches-10-reload",
+      "accepted_user_messages": 10,
+      "passed": true,
+      "final_goal": "warranty",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 12
+    },
+    {
+      "session": "long-bilingual-context-switches-10-replay",
+      "accepted_user_messages": 10,
+      "passed": true,
+      "final_goal": "warranty",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 12
+    },
+    {
+      "session": "long-bilingual-context-switches-20-continuous",
+      "accepted_user_messages": 20,
+      "passed": true,
+      "final_goal": "charging_network",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-bilingual-context-switches-20-reload",
+      "accepted_user_messages": 20,
+      "passed": true,
+      "final_goal": "charging_network",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-bilingual-context-switches-20-replay",
+      "accepted_user_messages": 20,
+      "passed": true,
+      "final_goal": "charging_network",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-bilingual-context-switches-30-continuous",
+      "accepted_user_messages": 30,
+      "passed": true,
+      "final_goal": "overview",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-bilingual-context-switches-30-reload",
+      "accepted_user_messages": 30,
+      "passed": true,
+      "final_goal": "overview",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-bilingual-context-switches-30-replay",
+      "accepted_user_messages": 30,
+      "passed": true,
+      "final_goal": "overview",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-sales-services-return-10-continuous",
+      "accepted_user_messages": 10,
+      "passed": true,
+      "final_goal": "quote",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 12
+    },
+    {
+      "session": "long-sales-services-return-10-reload",
+      "accepted_user_messages": 10,
+      "passed": true,
+      "final_goal": "quote",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 12
+    },
+    {
+      "session": "long-sales-services-return-10-replay",
+      "accepted_user_messages": 10,
+      "passed": true,
+      "final_goal": "quote",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 12
+    },
+    {
+      "session": "long-sales-services-return-20-continuous",
+      "accepted_user_messages": 20,
+      "passed": true,
+      "final_goal": "capacity",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-sales-services-return-20-reload",
+      "accepted_user_messages": 20,
+      "passed": true,
+      "final_goal": "capacity",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-sales-services-return-20-replay",
+      "accepted_user_messages": 20,
+      "passed": true,
+      "final_goal": "capacity",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-sales-services-return-30-continuous",
+      "accepted_user_messages": 30,
+      "passed": true,
+      "final_goal": "overview",
+      "final_subject": "VF3",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-sales-services-return-30-reload",
+      "accepted_user_messages": 30,
+      "passed": true,
+      "final_goal": "overview",
+      "final_subject": "VF3",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-sales-services-return-30-replay",
+      "accepted_user_messages": 30,
+      "passed": true,
+      "final_goal": "overview",
+      "final_subject": "VF3",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-services-incident-emergency-10-continuous",
+      "accepted_user_messages": 10,
+      "passed": true,
+      "final_goal": "test_drive",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 12
+    },
+    {
+      "session": "long-services-incident-emergency-10-reload",
+      "accepted_user_messages": 10,
+      "passed": true,
+      "final_goal": "test_drive",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 12
+    },
+    {
+      "session": "long-services-incident-emergency-10-replay",
+      "accepted_user_messages": 10,
+      "passed": true,
+      "final_goal": "test_drive",
+      "final_subject": "VF8",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 12
+    },
+    {
+      "session": "long-services-incident-emergency-20-continuous",
+      "accepted_user_messages": 20,
+      "passed": true,
+      "final_goal": "incident",
+      "final_subject": "VF5",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-services-incident-emergency-20-reload",
+      "accepted_user_messages": 20,
+      "passed": true,
+      "final_goal": "incident",
+      "final_subject": "VF5",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-services-incident-emergency-20-replay",
+      "accepted_user_messages": 20,
+      "passed": true,
+      "final_goal": "incident",
+      "final_subject": "VF5",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-services-incident-emergency-30-continuous",
+      "accepted_user_messages": 30,
+      "passed": true,
+      "final_goal": "incident",
+      "final_subject": "VF5",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-services-incident-emergency-30-reload",
+      "accepted_user_messages": 30,
+      "passed": true,
+      "final_goal": "incident",
+      "final_subject": "VF5",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    },
+    {
+      "session": "long-services-incident-emergency-30-replay",
+      "accepted_user_messages": 30,
+      "passed": true,
+      "final_goal": "incident",
+      "final_subject": "VF5",
+      "max_buffer_messages": 10,
+      "max_summary_evidence": 20
+    }
+  ],
+  "accepted_user_messages": 540,
+  "assistant_responses": 540,
+  "duplicate_replays": 36,
+  "scope": "Memory, routing, persistence and response metadata contracts; not live-model factual quality",
+  "dataset_sha256": "bf75b0999d5f111de34665b25b31dcf0b58ecf31b1519eb2ab6f5318dcdbff84",
+  "verification_log": ".test-runs/long-memory-final.log",
+  "backend_regression": {
+    "passed": 1947,
+    "failed": 7,
+    "skipped": 4,
+    "failed_tests_match_prior_baseline": true
+  },
+  "frontend_regression": {
+    "passed": 177,
+    "failed": 0
+  }
+}
