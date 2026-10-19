@@ -1,0 +1,471 @@
+{
+  "market": "VN",
+  "reviewed_at": "2026-10-19",
+  "reviewer": "Codex/root, official page reading and visual brochure review",
+  "review_status": "verified",
+  "html_method": "Official pages read with web tool; linked PDFs acquired with Playwright. Only product-body data used.",
+  "acquisition": [
+    {
+      "name": "vf8.pdf",
+      "url": "https://storage.googleapis.com/vinfast-data-01/brochure/VF8_Brochure_03022026.pdf",
+      "status": 200,
+      "sha256": "b7736a7c1705b7e6a98de67f161e30c10301565e3d42926bc4a5804b58e75737",
+      "acquired_at": "2026-10-19T16:52:44.359Z",
+      "method": "Playwright BrowserContext.request GET"
+    },
+    {
+      "name": "vf8-all-new.pdf",
+      "url": "https://static-cms-prod.vinfastauto.com/brochure/26052026/VF%208%20The%20he%20moi_Brochure_final%2020.05.pdf",
+      "status": 200,
+      "sha256": "aea323d56530112205a74ad58e07c7d47b08c30a0620e91640592cf949e07ff2",
+      "acquired_at": "2026-10-19T16:52:48.320Z",
+      "method": "Playwright BrowserContext.request GET"
+    },
+    {
+      "name": "vf9.pdf",
+      "url": "https://storage.googleapis.com/vinfast-data-01/brochure/VF%209_%20Brochure.pdf",
+      "status": 200,
+      "sha256": "9b720899fe5df5df3f2bc97b17f1a14d8bb382d4b83573ae10c6900cf739fc8f",
+      "acquired_at": "2026-10-19T16:52:48.881Z",
+      "method": "Playwright BrowserContext.request GET"
+    },
+    {
+      "name": "vf6.pdf",
+      "url": "https://storage.googleapis.com/vinfast-data-01/brochure/14052026/VF%206_Brochure_Final_130526%20%2812AM%29_compressed.pdf",
+      "status": 200,
+      "sha256": "c0d32299e68489b9c74427c877beb3bbc4826732e8b29fa3cda2b23538343fba",
+      "acquired_at": "2026-10-19T16:52:51.751Z",
+      "method": "Playwright BrowserContext.request GET"
+    },
+    {
+      "name": "vf5.pdf",
+      "url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/raisinghands/documents/VF5Brochure.pdf",
+      "status": 200,
+      "sha256": "d27e24591cd47ecfd2b3cef9f36656f6b9dd2fbffbaa023bdf5071f9561e632a",
+      "acquired_at": "2026-10-19T16:52:52.918Z",
+      "method": "Playwright BrowserContext.request GET"
+    }
+  ],
+  "models": {
+    "VF5": {
+      "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf5",
+      "source_document_url": "https://shop.vinfastauto.com/on/demandware.static/-/Sites-app_vinfast_vn-Library/default/raisinghands/documents/VF5Brochure.pdf",
+      "visual_brochure_pages": [
+        1
+      ],
+      "model_year": null,
+      "exterior_colors": [
+        "Infinity Blanc",
+        "Zenith Grey",
+        "Solar Ruby",
+        "Summer Yellow Body - Jet Black Roof",
+        "Sky Blue - Infinity Blanc Roof",
+        "Urban Mint"
+      ],
+      "color_scope": "Published model-level palette; trim/year/dealer stock not established.",
+      "runtime_status": "existing_catalog_and_reviewed_colors",
+      "model_specs": {
+        "dimensions_mm": [
+          3967,
+          1723,
+          1579
+        ],
+        "wheelbase_mm": 2514,
+        "seats": 5,
+        "power_kw": 100,
+        "torque_nm": 135,
+        "usable_capacity_kwh": 37.23,
+        "range_km": 326,
+        "range_standard": "NEDC",
+        "ac_max_kw": 6.6,
+        "dc_max_kw": {
+          "value": 50,
+          "approximate": true
+        },
+        "airbags": 6,
+        "screen_inches": 8,
+        "vehicle_warranty_page": {
+          "years": 7,
+          "km": 160000,
+          "whichever_first": true
+        },
+        "source_sections": [
+          "Thông số sản phẩm / Kích thước / Pin & Sạc / Công nghệ trang bị",
+          "Giá niêm yết; bảng màu"
+        ]
+      },
+      "variants": {
+        "null": {
+          "usable_capacity_kwh": 37.23,
+          "range_km": 326,
+          "range_standard": "NEDC",
+          "price_vnd": 496000000,
+          "price_type": "list",
+          "price_scope": "Page list price only; on-road price, offers, battery package and model year not established.",
+          "source_section": "Giá niêm yết / VF 5; Thông số sản phẩm",
+          "fast_charge": {
+            "minutes": 33,
+            "soc_from_percent": 10,
+            "soc_to_percent": 70
+          }
+        }
+      }
+    },
+    "VF6": {
+      "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf6",
+      "source_document_url": "https://storage.googleapis.com/vinfast-data-01/brochure/14052026/VF%206_Brochure_Final_130526%20%2812AM%29_compressed.pdf",
+      "visual_brochure_pages": [
+        11
+      ],
+      "model_year": null,
+      "exterior_colors": [
+        "Infinity Blanc",
+        "Zenith Grey",
+        "Jet Black",
+        "Urban Mint",
+        "Solar Ruby"
+      ],
+      "color_scope": "Published model-level palette; trim/year/dealer stock not established.",
+      "runtime_status": "existing_catalog_and_reviewed_colors",
+      "model_specs": {
+        "dimensions_mm": [
+          4241,
+          1834,
+          1580
+        ],
+        "wheelbase_mm": 2730,
+        "seats": 5,
+        "usable_capacity_kwh": 59.6,
+        "ac_max_kw": 7.2,
+        "dc_max_kw": 100,
+        "screen_inches": 12.9,
+        "vehicle_warranty_page": {
+          "years": 7,
+          "km": 160000,
+          "whichever_first": true
+        },
+        "source_sections": [
+          "Thông số sản phẩm; bảng màu; brochure trang11"
+        ]
+      },
+      "variants": {
+        "eco": {
+          "usable_capacity_kwh": 59.6,
+          "range_km": 485,
+          "range_standard": "NEDC",
+          "price_vnd": 646000000,
+          "price_type": "list",
+          "price_scope": "Page list price only; on-road price, offers, battery package and model year not established.",
+          "source_section": "Giá niêm yết / VF 6 Eco; Thông số sản phẩm",
+          "fast_charge": {
+            "minutes": 25,
+            "soc_from_percent": 10,
+            "soc_to_percent": 70
+          },
+          "power_kw": 130,
+          "torque_nm": 250,
+          "airbags": 4,
+          "wheel_inches": 17,
+          "drivetrain": "FWD"
+        },
+        "plus": {
+          "usable_capacity_kwh": 59.6,
+          "range_km": 460,
+          "range_standard": "NEDC",
+          "price_vnd": 699000000,
+          "price_type": "list",
+          "price_scope": "Page list price only; on-road price, offers, battery package and model year not established.",
+          "source_section": "Giá niêm yết / VF 6 Plus; Thông số sản phẩm",
+          "fast_charge": {
+            "minutes": 25,
+            "soc_from_percent": 10,
+            "soc_to_percent": 70
+          },
+          "power_kw": 150,
+          "torque_nm": 310,
+          "airbags": 7,
+          "wheel_inches": 18,
+          "drivetrain": "FWD"
+        }
+      }
+    },
+    "VF8": {
+      "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf8",
+      "source_document_url": "https://storage.googleapis.com/vinfast-data-01/brochure/VF8_Brochure_03022026.pdf",
+      "visual_brochure_pages": [
+        18
+      ],
+      "model_year": null,
+      "exterior_colors": [
+        "Infinity Blanc",
+        "Jet Black",
+        "Crimson Red",
+        "Ivy Green"
+      ],
+      "color_scope": "Published model-level palette; trim/year/dealer stock not established.",
+      "runtime_status": "existing_catalog_and_reviewed_colors",
+      "model_specs": {
+        "dimensions_mm": [
+          4750,
+          1934,
+          1667
+        ],
+        "wheelbase_mm": 2950,
+        "seats": 5,
+        "usable_capacity_kwh": 87.7,
+        "ac_max_kw": {
+          "single_phase": 6.6,
+          "three_phase": 11
+        },
+        "dc_max_kw": 149,
+        "airbags": 11,
+        "screen_inches": 15.6,
+        "vehicle_warranty_page": {
+          "years": 10,
+          "km": 200000,
+          "whichever_first": true
+        },
+        "source_sections": [
+          "Thông số sản phẩm; bảng màu; brochure trang18 (quãng đường khác trang web)"
+        ]
+      },
+      "variants": {
+        "eco": {
+          "usable_capacity_kwh": 87.7,
+          "range_km": 635,
+          "range_standard": "NEDC",
+          "price_vnd": 898000000,
+          "price_type": "list",
+          "price_scope": "Page list price only; on-road price, offers, battery package and model year not established.",
+          "source_section": "Giá niêm yết / VF 8 Eco; Thông số sản phẩm",
+          "fast_charge": {
+            "minutes": 31,
+            "soc_from_percent": 10,
+            "soc_to_percent": 70
+          },
+          "power_kw": 150,
+          "torque_nm": 310,
+          "drivetrain": "FWD"
+        },
+        "plus": {
+          "usable_capacity_kwh": 87.7,
+          "range_km": 475,
+          "range_standard": "NEDC",
+          "price_vnd": 1079000000,
+          "price_type": "list",
+          "price_scope": "Page list price only; on-road price, offers, battery package and model year not established.",
+          "source_section": "Giá niêm yết / VF 8 Plus; Thông số sản phẩm",
+          "fast_charge": {
+            "minutes": 31,
+            "soc_from_percent": 10,
+            "soc_to_percent": 70
+          },
+          "power_kw": 300,
+          "torque_nm": 620,
+          "drivetrain": "AWD"
+        }
+      }
+    },
+    "VF8_THE_ALL_NEW_2026": {
+      "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf8-the-all-new-2026",
+      "source_document_url": "https://static-cms-prod.vinfastauto.com/brochure/26052026/VF%208%20The%20he%20moi_Brochure_final%2020.05.pdf",
+      "visual_brochure_pages": [
+        6
+      ],
+      "model_year": null,
+      "exterior_colors": [
+        "Infinity Blanc",
+        "Starburst Blue",
+        "Jet Black",
+        "Solar Ruby",
+        "Solar Ruby Body - Jet Black Roof",
+        "Vitality Orange Body - Jet Black Roof",
+        "Starburst Blue Body - Infinity Blanc Roof",
+        "Mysterioso Purple Body - Stealth Gray Roof",
+        "Jet Black Body - Stealth Gray Roof",
+        "Vitality Orange Body - Infinity Blanc Roof",
+        "Vitality Orange",
+        "Mysterioso Purple"
+      ],
+      "color_scope": "Published model-level palette; trim/year/dealer stock not established.",
+      "runtime_status": "archived_separate_generation",
+      "model_specs": {
+        "dimensions_mm": [
+          4701,
+          1872,
+          1670
+        ],
+        "wheelbase_mm": 2840,
+        "seats": 5,
+        "power_kw": 170,
+        "torque_nm": 330,
+        "usable_capacity_kwh": 60.13,
+        "range_km": 480,
+        "range_standard": "NEDC",
+        "ac_max_kw": 7.2,
+        "dc_max_kw": 100,
+        "fast_charge": {
+          "minutes": 30,
+          "operator": "<",
+          "soc_from_percent": 10,
+          "soc_to_percent": 70,
+          "station_kw": 250,
+          "source": "brochure page6"
+        },
+        "drivetrain": "FWD",
+        "airbags": 6,
+        "screen_inches": 12.9,
+        "vehicle_warranty_page": {
+          "years": 7,
+          "km": 160000,
+          "whichever_first": true
+        },
+        "source_sections": [
+          "Thông số kỹ thuật; Giá niêm yết; bảng màu; brochure trang6"
+        ]
+      },
+      "variants": {},
+      "generation": "The All New 2026",
+      "price_vnd": 899000000,
+      "price_type": "list",
+      "price_scope": "Single published model price; no Eco/Plus mapping or on-road price established."
+    },
+    "VF9": {
+      "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf9",
+      "source_document_url": "https://storage.googleapis.com/vinfast-data-01/brochure/VF%209_%20Brochure.pdf",
+      "visual_brochure_pages": [
+        14
+      ],
+      "model_year": null,
+      "exterior_colors": [
+        "Infinity Blanc",
+        "Zenith Grey",
+        "Jet Black",
+        "Urban Mint",
+        "Crimson Red",
+        "Ivy Green",
+        "Desat Silver"
+      ],
+      "color_scope": "Published model-level palette; trim/year/dealer stock not established.",
+      "runtime_status": "existing_catalog_and_reviewed_colors",
+      "model_specs": {
+        "dimensions_mm": [
+          5119,
+          2254,
+          1697
+        ],
+        "wheelbase_mm": 3149,
+        "dimensions_source": "brochure page14, published width definition not separately established",
+        "usable_capacity_kwh": 123,
+        "ac_max_kw": {
+          "single_phase": 6.6,
+          "three_phase": 11
+        },
+        "dc_max_kw": null,
+        "airbags": 11,
+        "screen_inches": 15.6,
+        "vehicle_warranty_page": {
+          "years": 10,
+          "km": 200000,
+          "whichever_first": true
+        },
+        "source_sections": [
+          "Thông số sản phẩm; bảng màu; brochure trang14"
+        ]
+      },
+      "variants": {
+        "eco": {
+          "usable_capacity_kwh": 123.0,
+          "range_km": 626,
+          "range_standard": "WLTP",
+          "price_vnd": 1348000000,
+          "price_type": "list",
+          "price_scope": "Page list price only; on-road price, offers, battery package and model year not established.",
+          "source_section": "Giá niêm yết / VF 9 Eco; Thông số sản phẩm",
+          "fast_charge": {
+            "minutes": 35,
+            "soc_from_percent": 10,
+            "soc_to_percent": 70
+          },
+          "power_kw": 300,
+          "torque_nm": 620,
+          "drivetrain": "AWD",
+          "seats_page": 7
+        },
+        "plus": {
+          "usable_capacity_kwh": 123.0,
+          "range_km": 602,
+          "range_standard": "WLTP",
+          "price_vnd": 1529000000,
+          "price_type": "list",
+          "price_scope": "Page list price only; on-road price, offers, battery package and model year not established.",
+          "source_section": "Giá niêm yết / VF 9 Plus; Thông số sản phẩm",
+          "fast_charge": {
+            "minutes": 35,
+            "soc_from_percent": 10,
+            "soc_to_percent": 70
+          },
+          "power_kw": 300,
+          "torque_nm": 620,
+          "drivetrain": "AWD",
+          "seats_page": 7,
+          "brochure_seat_configurations": [
+            7,
+            6
+          ],
+          "seat_scope": "Brochure lists both; no confirmation that 6-seat option is currently orderable or same-priced."
+        }
+      }
+    }
+  },
+  "source_conflicts": [
+    {
+      "model": "VF8",
+      "field": "range",
+      "page": {
+        "eco": "635 km NEDC",
+        "plus": "475 km NEDC"
+      },
+      "brochure_page18": {
+        "eco": "562 km NEDC",
+        "plus": "457 km WLTP"
+      },
+      "decision": "Retain existing canonical product-page values; archive brochure observations separately. Do not convert cycles or infer same configuration."
+    },
+    {
+      "model": "VF9",
+      "field": "power",
+      "page_plus_raw": "402hp /300hp",
+      "brochure_page14": "402 hp / 300 kW",
+      "decision": "300 kW confirmed in brochure; do not interpret typo as a second hp figure."
+    },
+    {
+      "model": "VF9",
+      "field": "range_standard",
+      "page_rows": "WLTP",
+      "page_generic_footnote": "NEDC",
+      "brochure_page14": "WLTP",
+      "decision": "Use explicitly labeled WLTP variant rows, supported by brochure. No NEDC conversion."
+    },
+    {
+      "model": "VF5",
+      "field": "dimensions_and_range",
+      "page": "3967 x1723 x1579 mm;326 km NEDC",
+      "brochure_page1": "3967 x1723 x1578 mm;326.4 km (cycle not specified in paragraph)",
+      "decision": "Store current product-page values; retain brochure observations without silently merging."
+    },
+    {
+      "model": "VF8_THE_ALL_NEW_2026",
+      "field": "range",
+      "page": "480 km NEDC",
+      "brochure_page6": "480-500 km NEDC; depending on version",
+      "decision": "Store page figure480; do not invent named trims or assert500km for every car."
+    }
+  ],
+  "limits": [
+    "No dealer stock, VIN, appointment availability, service tariff or model-year maintenance schedule supplied.",
+    "Website warranty headlines are archived product observations, not new battery/commercial/exclusion policy records.",
+    "All New2026 is a distinct archived generation; not aliased to legacy Eco/Plus and not enabled as a runtime card.",
+    "Extra dimensions, torque, AC/DC and equipment remain structured archival data; runtime gains reviewed model colors only."
+  ]
+}

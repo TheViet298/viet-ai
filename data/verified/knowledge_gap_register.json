@@ -141,12 +141,13 @@
       "year": null,
       "topic": "colors",
       "required_scope": "model/trim/year, model-level colors cannot assert stock",
-      "status": "missing",
+      "status": "partial",
       "source_id": "SRC-009",
-      "evidence_location": null,
-      "blocker": "Source and model/trim scope require acquisition/review",
-      "reviewer": null,
-      "reviewed_at": null
+      "evidence_location": "fixtures/knowledge/source_reviews/vf5-vf6-vf8-vf9-product-2026-10-19.json",
+      "blocker": "Specific trim/year allocation and dealer stock remain unknown.",
+      "reviewer": "Codex/root, official page reading and visual brochure review",
+      "reviewed_at": "2026-10-19",
+      "resolution": "Verified 5 published model-level exterior colors from requested official product page."
     },
     {
       "id": "GAP-011",
@@ -170,12 +171,13 @@
       "year": null,
       "topic": "colors",
       "required_scope": "model/trim/year, model-level colors cannot assert stock",
-      "status": "missing",
+      "status": "partial",
       "source_id": "SRC-009",
-      "evidence_location": null,
-      "blocker": "Source and model/trim scope require acquisition/review",
-      "reviewer": null,
-      "reviewed_at": null
+      "evidence_location": "fixtures/knowledge/source_reviews/vf5-vf6-vf8-vf9-product-2026-10-19.json",
+      "blocker": "Specific trim/year allocation and dealer stock remain unknown.",
+      "reviewer": "Codex/root, official page reading and visual brochure review",
+      "reviewed_at": "2026-10-19",
+      "resolution": "Verified 7 published model-level exterior colors from requested official product page."
     },
     {
       "id": "GAP-013",
