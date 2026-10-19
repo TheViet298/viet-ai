@@ -253,9 +253,19 @@ async def _run_chat_turn(payload, user, db, handler):
             if claims:
                 conversation.last_answer = [*conversation.last_answer, {'turn': before_turn + 1, 'claims': claims}][-3:]
             from src.services.request_diagnostics import final_response_diagnostics
+            answer_status = ('error' if budget.get('presentation_failed') else
+                             'answered' if answer_path == 'snapshot' else
+                             'needs_clarification' if spelling.needs_confirmation or data.response_type == 'CLARIFICATION' else
+                             'refused' if data.response_type == 'OOS' else
+                             'external_action_required' if booking_progress and booking_progress.state == 'external_action_required' else
+                             generated_outcome.get('answer_status'))
             final_diagnostics = final_response_diagnostics(answer_path=answer_path,
                 successful=not budget.get('presentation_failed') and (answer_path == 'snapshot' or generated_outcome.get('successful', data.response_type not in {'NO_SOURCE', 'ERROR'})),
-                stages=budget.get('stage_outcomes', []))
+                stages=budget.get('stage_outcomes', []), answer_status=answer_status)
+            if agent_message:
+                agent_message.msg_metadata = {**(agent_message.msg_metadata or {}),
+                    'answer_status': final_diagnostics['answer_status'],
+                    'answer_parts': (db.info.get('conversation_retrieval') or {}).get('parts', [])}
             from src.services.tracer import record_trace_step
             try:
                 record_trace_step(payload.session_id, before_turn + 1, 'application', 'final_response',

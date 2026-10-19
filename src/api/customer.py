@@ -1689,6 +1689,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         db.info['conversation_claims'] = ai_res.get('answer_claims', [])
         db.info['conversation_retrieval'] = ai_res.get('retrieval_diagnostics', {})
         db.info['conversation_final'] = {'answer_path': ai_res.get('answer_path') or ('rag' if ai_res.get('citations') or ai_res.get('is_no_source') else 'general'),
+                                         'answer_status': ai_res.get('answer_status'),
                                          'successful': not ai_res.get('is_no_source', False)}
         if isinstance(agent_reply, list):
             agent_reply = "".join(

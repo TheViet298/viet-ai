@@ -59,11 +59,21 @@ async def rag_node(state: AgentState) -> dict:
         if warranty_parts:
             reply += ('\n\nQuý khách cho biết dòng xe, đời xe, số km hiện tại và xe có từng chạy dịch vụ hay không '
                       'để em đối chiếu thời hạn bảo hành pin và lịch bảo dưỡng đúng xe nhé.')
+        statuses = [('SUCCESS' if not result.get('is_no_source') else
+                     'TIMEOUT' if result.get('retrieval_status') == 'TIMEOUT' else
+                     'ERROR' if result.get('retrieval_status') in {'ERROR', 'UNAVAILABLE'} else 'NO_SOURCE')
+                    for result in results]
+        answer_status = ('answered' if all(status == 'SUCCESS' for status in statuses) else
+                         'partial' if any(status == 'SUCCESS' for status in statuses) else
+                         'error' if any(status in {'ERROR', 'TIMEOUT'} for status in statuses) else 'needs_data')
         return {'is_no_source': not bool(citations), 'is_rag_query': True,
+                'answer_status': answer_status,
                 'retrieval_status': ('PARTIAL' if any(r.get('is_no_source') for r in results) else 'SUCCESS') if citations else 'NO_SOURCE',
                 'retrieval_diagnostics': {'category': 'compound_warranty_maintenance' if warranty_parts else 'compound_charging', 'parts': [
-                    {'label': part[0], 'diagnostics': result.get('retrieval_diagnostics', {})}
-                    for part, result in zip(parts, results, strict=True)]},
+                    {'label': part[0], 'status': status,
+                     'source_ids': list(dict.fromkeys(c['source_id'] for c in result.get('rag_citations', []))),
+                     'diagnostics': result.get('retrieval_diagnostics', {})}
+                    for part, result, status in zip(parts, results, statuses, strict=True)]},
                 'rag_citations': citations, 'rag_context': [c['relevant_snippet'] for c in citations],
                 'answer_claims': [claim for result in results for claim in result.get('answer_claims', [])],
                 'needs_staff_review': any(result.get('is_no_source') for result in results),
@@ -205,6 +215,7 @@ async def rag_node(state: AgentState) -> dict:
                 reply = 'Em chưa có nguồn đủ để xác nhận thông tin cụ thể. ' + reasons[goal]
         return {
             "is_no_source": True,
+            "answer_status": 'error' if retrieval.get('status') in {'ERROR', 'UNAVAILABLE', 'TIMEOUT'} else 'needs_data',
             "retrieval_status": retrieval.get("status", "NO_SOURCE"),
             "retrieval_diagnostics": retrieval.get("diagnostics", {}),
             "rag_citations": [],
@@ -229,6 +240,7 @@ async def rag_node(state: AgentState) -> dict:
         "is_no_source": False,
         'answer_claims': [c.model_dump() for c in answer_claims],
         "retrieval_status": "SUCCESS",
+        "answer_status": "answered",
         "retrieval_diagnostics": retrieval.get("diagnostics", {}),
         "is_rag_query": True,
         "rag_citations": citations,

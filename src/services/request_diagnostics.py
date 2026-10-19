@@ -7,8 +7,14 @@ from contextlib import asynccontextmanager
 import httpx
 
 
-def final_response_diagnostics(*, answer_path: str, successful: bool, stages: list[dict]) -> dict:
-    return {'answer_path': answer_path, 'final_outcome': 'success' if successful else 'needs_verified_data',
+def final_response_diagnostics(*, answer_path: str, successful: bool, stages: list[dict], answer_status: str | None = None) -> dict:
+    status = answer_status or ('answered' if successful else 'needs_data')
+    outcomes = {'answered': 'success', 'refused': 'success', 'external_action_required': 'success',
+                'partial': 'partial', 'needs_clarification': 'needs_clarification',
+                'needs_data': 'needs_verified_data', 'error': 'error'}
+    if status not in outcomes:
+        raise ValueError('Unknown answer status')
+    return {'answer_path': answer_path, 'answer_status': status, 'final_outcome': outcomes[status],
             'stage_outcomes': [{key: stage[key] for key in ('prompt', 'outcome') if key in stage} for stage in stages]}
 
 

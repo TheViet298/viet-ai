@@ -59,6 +59,7 @@ async def intake_node(state: AgentState) -> dict:
         **consume_cardd_signal({**state, 'cardd_evidence': None} if context.get('scope_changed') else state, state.get('turn',0)+1, text),
         "llm_budget": state.get('llm_budget') if state.get('llm_budget') is not None else new_turn_budget(time.monotonic() + get_settings().agent_turn_timeout_s),
         "retrieval_diagnostics": {},
+        "answer_status": None,
         "query": text,
         "resolved_query": (state.get('turn_understanding') or {}).get('resolved_query') or (faq_query if faq_query != text else context["resolved_query"]),
         "vehicle_context": context,

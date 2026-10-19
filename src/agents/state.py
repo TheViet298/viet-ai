@@ -170,6 +170,7 @@ class AgentState(TypedDict, total=False):
     rag_distance: float | None
     retrieval_diagnostics: dict
     retrieval_status: str
+    answer_status: str
     llm_budget: dict
     fact_history: list[dict[str, Any]]
     memory_summary: str
