@@ -128,5 +128,15 @@
     "Original build completed before CLI Unicode printing failed; ASCII CLI fixed. Existing manifest and token bound revalidated without rebuilding a nonempty directory.",
     "Candidate remains inactive pending independent holdout and release gates. Unresolved gap IDs reflect build-time register, not newly inferred data."
   ],
-  "rollback": "Keep current CHROMA_PERSIST_DIR unchanged. If a later approved switch occurs, restore previous CHROMA_PERSIST_DIR and restart; never overwrite the original index."
+  "rollback": "Keep current CHROMA_PERSIST_DIR unchanged. If a later approved switch occurs, restore previous CHROMA_PERSIST_DIR and restart; never overwrite the original index.",
+  "post_build_verification": {
+    "implementation_head": "ad5f5f3",
+    "holdout_sha256": "1dd4d42c5f00f302315738758b1361fb703496321d01bccd1a93e86db96f6a81",
+    "answerable_pass": "30/30",
+    "boundary_pass": "10/10",
+    "backend": "2145 passed,47 skipped,6 subtests",
+    "frontend": "177 passed",
+    "provider_probes": 63,
+    "deployment": "inactive; PostgreSQL release gate BLOCKED"
+  }
 }
