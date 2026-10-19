@@ -13,6 +13,7 @@ async def run(spec):
     from src.config import get_settings
     settings = get_settings()
     settings.agent_llm_enabled = False
+    settings.user_memory_enabled = bool(spec.get('user_memory_enabled', False))
     settings.database_url = spec['database_url']
     settings.chroma_persist_dir = spec['empty_index']
     if spec.get('live'):
@@ -48,6 +49,9 @@ async def run(spec):
                   'context': snapshot.get('conversation_context', {}),
                   'vehicle_context': snapshot.get('vehicle_context', {}),
                   'persisted_profile_model': db.get(User, user.id).vehicle_model}
+        if settings.user_memory_enabled:
+            from src.services.user_memory import load_user_memory
+            result['memory'] = load_user_memory(db, db.get(User, user.id)).model_dump(mode='json')
     engine.dispose()
     return result
 

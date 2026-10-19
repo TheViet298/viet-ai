@@ -250,3 +250,49 @@ def test_booking_location_is_not_personal_registration_city():
     from src.services.user_memory import MemorySnapshot
     from src.services.user_memory_chat import memory_mode
     assert memory_mode('Tôi đã đăng ký lái thử ở đâu?', [], MemorySnapshot(revision=0)) is None
+
+
+@pytest.mark.parametrize('text,key', [
+    ('Forget my car model year', 'owned_vehicle.model_year'),
+    ('Forget my battery subscription', 'owned_vehicle.battery_plan'),
+    ('Quên phiên bản xe tôi đã lưu', 'owned_vehicle.version'),
+])
+def test_forget_specific_attribute_never_erases_other_keys(text, key):
+    from src.services.user_memory import extract_memory_changes, MemorySnapshot
+    changes = extract_memory_changes(text, MemorySnapshot(revision=0), ConversationContext())
+    assert [change.key for change in changes] == [key]
+
+
+@pytest.mark.parametrize('text', ['Actually my car is not VF8', 'Actually I no longer own my VF8',
+                                 'Đính chính tôi không còn sở hữu VF8'])
+def test_explicit_ownership_retraction_clears_previously_consented_model(memory_db, text):
+    from src.services.user_memory import MemoryChange, extract_memory_changes, load_user_memory
+    user = memory_db.get(User, 'u1')
+    save(memory_db, user, [MemoryChange(key='owned_vehicle.model', value='VF8')], 0)
+    changes = extract_memory_changes(text, load_user_memory(memory_db, user), ConversationContext())
+    assert any(c.key == 'owned_vehicle.model' and c.status == 'retracted' for c in changes)
+
+
+def test_conflicting_ownership_requires_clarification():
+    from src.services.user_memory import extract_memory_changes, MemorySnapshot
+    from src.services.user_memory_chat import memory_mode
+    text = 'Remember my car is VF8 and my car is VF5'
+    snapshot = MemorySnapshot(revision=0)
+    changes = extract_memory_changes(text, snapshot, ConversationContext())
+    assert not changes and memory_mode(text, changes, snapshot) == 'clarify'
+
+
+def test_profile_edit_with_flag_off_keeps_existing_facts_consistent(memory_db, monkeypatch):
+    from src.api.auth import update_me
+    from src.config import get_settings
+    from src.models.schemas import UpdateProfileRequest
+    from src.services.user_memory import MemoryChange, load_user_memory
+    user = memory_db.get(User, 'u1')
+    save(memory_db, user, [MemoryChange(key='owned_vehicle.model', value='VF8'),
+        MemoryChange(key='owned_vehicle.version', value='Plus')], 0)
+    memory_db.commit()
+    monkeypatch.setattr(get_settings(), 'user_memory_enabled', False)
+    update_me(UpdateProfileRequest(vehicle_model='VF5'), current_user=user, db=memory_db)
+    snapshot = load_user_memory(memory_db, user)
+    assert snapshot.revision == 2 and snapshot.facts['owned_vehicle.model'].value == user.vehicle_model == 'VF5'
+    assert snapshot.facts['owned_vehicle.version'].status == 'retracted'

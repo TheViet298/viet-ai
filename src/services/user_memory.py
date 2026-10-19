@@ -206,9 +206,13 @@ def extract_memory_changes(text: str, snapshot: MemorySnapshot, context: Convers
                                     r'xe (?:cua )?toi|thanh pho.*toi|noi o|toan bo thong tin|quen het', body)
         if not personal_target or re.search(r'mat khau|password|ma loi|\bloi\s+[a-z]*\d|lich su sac', body):
             return []
-        keys = (['registration_city'] if re.search(r'dang ky|registration', body) else
+        keys = (['owned_vehicle.model_year'] if re.search(r'model year|doi xe|nam san xuat', body) else
+                ['owned_vehicle.version'] if re.search(r'phien ban|trim|version', body) else
+                ['owned_vehicle.battery_plan'] if re.search(r'battery|phuong an pin|thue pin|mua kem pin', body) else
+                ['registration_city'] if re.search(r'dang ky|registration', body) else
                 ['home_city'] if re.search(r'thanh pho|noi o|city|nha toi', body) else
-                list(KEYS[:4]) if re.search(r'\bxe\b|vehicle|car', body) else list(KEYS))
+                list(KEYS[:4]) if re.search(r'\bxe\b|vehicle|car', body) else
+                list(KEYS) if re.search(r'ghi nho|memory|memories|everything|about me|het|toan bo|thong tin', body) else [])
         return [MemoryChange(key=key, value=None, status='retracted') for key in keys]
     if re.search(r'dung (?:ghi )?nho|khong (?:muon|cho phep|can).{0,20}nho|do not remember|don.t remember', body):
         return []
@@ -223,6 +227,16 @@ def extract_memory_changes(text: str, snapshot: MemorySnapshot, context: Convers
         owner = False
     affirmative = re.sub(r'\b(?:chu khong phai|khong phai|not)\s+(?:vf\s*(?:e34|[356789])(?:\s+(?:eco|plus))?|eco|plus)\b', '', body)
     affirmative = re.sub(r'\bkhong\s+(?:mua kem pin|mua dut pin|thue pin)\b', '', affirmative)
+    models = set(re.findall(r'\bvf\s*(e34|[356789])\b', affirmative))
+    if owner and len(models) > 1:
+        return []  # Multiple asserted vehicles need an explicit choice.
+    previous = snapshot.facts.get('owned_vehicle.model')
+    ownership_denial = re.search(r'(?:my (?:car|vehicle) is not|i (?:no longer|do not|don.t) own|toi khong (?:con )?(?:so huu|su dung)|xe (?:cua )?toi khong phai)\s+(?:my )?(vf\s*(?:e34|[356789]))', body)
+    if correction and previous and previous.status == 'confirmed' and ownership_denial:
+        denied = re.sub(r'\s+', '', ownership_denial[1]).upper()
+        replacement = models - {denied[2:].lower()}
+        if denied == previous.value and not replacement:
+            return [MemoryChange(key='owned_vehicle.model', value=None, status='retracted')]
     values = {}
     if owner:
         match = re.search(r'\bvf\s*(e34|[356789])\b', affirmative)

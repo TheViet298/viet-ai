@@ -297,7 +297,9 @@ def update_me(
         current_user.phone = payload.phone.strip() or None
     if payload.vehicle_model is not None:
         model = payload.vehicle_model.strip() or None
-        if get_settings().user_memory_enabled and current_user.role == UserRole.CUSTOMER.value:
+        from src.models.db_models import UserMemoryFact
+        has_memory = db.query(UserMemoryFact.user_id).filter(UserMemoryFact.user_id == current_user.id).first() is not None
+        if current_user.role == UserRole.CUSTOMER.value and (get_settings().user_memory_enabled or has_memory):
             _sync_profile_vehicle_memory(db, current_user, model)
         else:
             current_user.vehicle_model = model
