@@ -33,6 +33,22 @@ from src.services.auth import (
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+
+def _sync_profile_vehicle_memory(db: Session, user: User, value: str | None) -> None:
+    from src.services.user_memory import MemoryChange, apply_user_memory_changes, load_user_memory
+    try:
+        snapshot = load_user_memory(db, user)
+        change = MemoryChange(key='owned_vehicle.model', value=value,
+                              status='confirmed' if value else 'retracted')
+        result = apply_user_memory_changes(db, user, [change], expected_revision=snapshot.revision,
+            source_kind='profile', source_session_id=None, source_message_id=None)
+    except ValueError as error:
+        db.rollback()
+        raise HTTPException(400, 'Dòng xe chưa hợp lệ để lưu trong hồ sơ.') from error
+    if result.status == 'conflict':
+        db.rollback()
+        raise HTTPException(409, 'Thông tin đã thay đổi ở phiên khác. Vui lòng thử lại.')
+
 _LOGIN_WINDOW_SECONDS = 300
 _LOGIN_MAX_FAILURES = 20
 _login_failures: dict[str, deque[float]] = defaultdict(deque)
@@ -210,6 +226,8 @@ def register(payload: RegisterRequest, request: Request, db: Session = Depends(g
     )
     db.add(new_user)
     db.flush()
+    if get_settings().user_memory_enabled and new_user.vehicle_model:
+        _sync_profile_vehicle_memory(db, new_user, new_user.vehicle_model)
 
     # Gộp session guest (nếu có) vào tài khoản mới tạo trong cùng transaction
     raw_claim = (payload.guest_session_id or payload.session_id or request.headers.get("x-guest-id") or request.headers.get("x-session-id") or "").strip()
@@ -278,7 +296,11 @@ def update_me(
     if payload.phone is not None:
         current_user.phone = payload.phone.strip() or None
     if payload.vehicle_model is not None:
-        current_user.vehicle_model = payload.vehicle_model.strip() or None
+        model = payload.vehicle_model.strip() or None
+        if get_settings().user_memory_enabled and current_user.role == UserRole.CUSTOMER.value:
+            _sync_profile_vehicle_memory(db, current_user, model)
+        else:
+            current_user.vehicle_model = model
 
     db.commit()
     db.refresh(current_user)
