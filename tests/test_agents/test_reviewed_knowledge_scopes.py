@@ -74,3 +74,15 @@ async def test_reviewed_data_can_be_delivered_with_claim_validation(monkeypatch,
     assert result['answer_status'] == 'answered'
     assert all(term in result['response'] for term in required)
     assert result['rag_citations']
+
+
+@pytest.mark.parametrize('question', ['Lịch bảo dưỡng VF3 đời 2025 là gì?',
+                                   'Lịch bảo dưỡng VF3 chạy dịch vụ thương mại là gì?'])
+def test_index_fallback_cannot_bypass_reviewed_scope(question):
+    from src.services.rag_service import source_registry
+    source = source_registry()['SRC-004']
+    meta = {**source, 'source_id': 'SRC-004', 'applicable_models': 'VF3',
+            'reviewed_scope_json': json.dumps({'model': 'VF3', 'model_year': None, 'variant': None, 'usage': None})}
+    rows = {'documents': [['Lịch bảo dưỡng VF3\nVF3 bảo dưỡng định kỳ mỗi 15.000 km hoặc 12 tháng tùy điều kiện nào đến trước.']],
+            'metadatas': [[meta]], 'distances': [[.1]], 'ids': [['reviewed-schedule']]}
+    assert RAGService().filter_results(rows, 'VF3', question)['status'] == 'NO_SOURCE'

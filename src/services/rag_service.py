@@ -406,6 +406,26 @@ class RAGService:
             if vehicle_model and "ALL" not in models and re.sub(r"\s+", "", vehicle_model).upper() not in models:
                 diagnostics.append({"chunk_id": chunk_id, "reason": "model_mismatch"})
                 continue
+            if meta.get('reviewed_scope_json'):
+                from src.services.answer_evidence import normalized as fold_scope
+                try:
+                    scope = json.loads(meta['reviewed_scope_json'])
+                    if not isinstance(scope, dict):
+                        raise ValueError('Invalid reviewed scope')
+                except (ValueError, TypeError):
+                    diagnostics.append({'chunk_id': chunk_id, 'reason': 'invalid_reviewed_scope'})
+                    continue
+                body = fold_scope(query)
+                years = set(re.findall(r'\b20\d{2}\b', body))
+                trims = set(re.findall(r'\b(?:eco|plus|awd|fwd)\b', body))
+                commercial = bool(re.search(r'thuong mai|chay dich vu', body))
+                severe = 'khac nghiet' in body
+                if ((years and years != {str(scope.get('model_year'))})
+                        or (trims and not trims <= set(str(scope.get('variant') or '').replace('-', ' ').split()))
+                        or (commercial and scope.get('usage') != 'commercial')
+                        or (severe and scope.get('usage') != 'severe')):
+                    diagnostics.append({'chunk_id': chunk_id, 'reason': 'unresolved_reviewed_scope'})
+                    continue
             variant = re.search(r"\b(plus|eco)\b", query, re.I)
             if (meta.get('catalog_scope') == 'model_colors'
                     and re.search(r'nội thất|noi that', query, re.I)
