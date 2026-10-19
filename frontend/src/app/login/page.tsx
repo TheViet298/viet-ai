@@ -96,9 +96,7 @@ export default function LoginPage() {
               <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#1E40AF] text-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
                 <ProductMark className="h-5 w-5 text-white" />
               </div>
-              <span className="text-[19px] font-bold tracking-tight text-[#0F172A] font-display">
-                VF <span className="text-[#1E40AF]">Serv</span>
-              </span>
+              <span className="text-[19px] font-bold tracking-tight text-[#1E40AF] font-display">VFServ</span>
             </Link>
             <h1 className="mt-3 text-[20px] font-bold text-[#0F172A]">
               {t("Đăng nhập hệ thống")}</h1>
