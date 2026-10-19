@@ -17,7 +17,7 @@ class AnswerClaim(BaseModel):
     source_ids: list[str] = Field(default_factory=list)
 
 
-QUANTITY = re.compile(r'(\d+(?:[.,]\d+)*(?:\s*[-–]\s*\d+(?:[.,]\d+)*)?)\s*((?:tỷ|triệu)\s*đồng|(?:vnđ|vnd|đồng)(?:/(?:kwh|phút))?|km/h|km|kwh|kw|phút|tháng|năm|%)(?!\w)', re.I)
+QUANTITY = re.compile(r'(\d+(?:[.,]\d+)*(?:\s*[-–]\s*\d+(?:[.,]\d+)*)?)\s*((?:tỷ|triệu)\s*đồng|(?:vnđ|vnd|đồng)(?:/(?:kwh|phút))?|km/h|km|kwh|kw|phút|tháng|năm|chỗ(?: ngồi)?|seats?|%)(?!\w)', re.I)
 
 
 def canonical_quantity_unit(unit: str) -> str:
@@ -152,7 +152,7 @@ def validate_answer_claims(claims: list[AnswerClaim], citations: list[dict], pri
     unsupported, conflicts = [], []
     keywords = {'range': ('quang duong', 'mot lan sac', 'pham vi'),
                 'warranty': ('bao hanh',), 'charging_time': ('sac',),
-                'capacity': ('dung luong',), 'power': ('cong suat',), 'price': ('gia',),
+                'capacity': ('dung luong',), 'power': ('cong suat',), 'seats': ('cho', 'seats'), 'price': ('gia',),
                 'soc': ('soc', 'muc pin', 'sac'), 'speed': ('toc do',),
                 'maintenance_interval': ('bao duong',), 'odometer': ('da chay', 'cong to met')}
     for claim in claims:
@@ -242,6 +242,7 @@ def extract_numeric_claims(answer: str, citations: list[dict], subject: str = ''
             value, unit = match.groups()
             key = ('price' if normalized(unit).split('/')[0] in {'vnd', 'dong', 'ty dong', 'trieu dong'} else
                    'capacity' if unit.casefold() == 'kwh' else 'power' if unit.casefold() == 'kw' else
+                   'seats' if normalized(unit) in {'cho', 'cho ngoi', 'seat', 'seats'} else
                    'charging_time' if normalized(unit) == 'phut' else
                    'speed' if unit.casefold() == 'km/h' else
                    'soc' if unit == '%' and re.search(r'sac|soc|muc pin', body) else

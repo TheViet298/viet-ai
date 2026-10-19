@@ -70,9 +70,9 @@ def user_updates(text: str) -> dict[str, str | None]:
     model = re.search(r'\bvf\s*(e34|[356789])\b', lower)
     if model:
         updates['model'] = 'VF' + model[1].upper()
-    version = re.search(r'\b(plus|eco)\b', lower)
+    version = re.search(r'\b((?:plus|eco)(?:\s+(?:awd|fwd))?)\b', lower)
     if version:
-        updates['version'] = version[1].title()
+        updates['version'] = version[1].title().replace('Awd', 'AWD').replace('Fwd', 'FWD')
     if re.search(r'mua (?:kem|dut|ca|luon) pin|kem pin', lower):
         updates['battery'] = 'mua kèm pin'
     elif 'thue pin' in lower:
@@ -187,7 +187,7 @@ async def understand_turn(text: str, context: ConversationContext, recent_turns:
         ('test_drive', r'lai thu|chay thu|trai nghiem lai'),
         ('maintenance', r'bao duong|dat lich dich vu|hen kiem tra dinh ky|dat (?:lich|hen).{0,20}sua (?:xe|chua)'),
         ('warranty', r'bao hanh'),
-        ('range', r'quang duong|di duoc|di bao xa|chay duoc bao xa|tam hoat dong|\bkm\b.*(?:dung|hay)|mot lan sac'),
+        ('range', r'quang duong|di duoc|di bao xa|chay duoc bao xa|tam hoat dong|tam di chuyen|\bkm\b.*(?:dung|hay)|mot lan sac'),
         ('charging', r'sac.*(?:bao lau|thoi gian|may phut)|bao lau.*sac|thoi gian (?:sac|nap)|sac nhanh'),
         ('capacity', r'dung luong pin|suc chua|chua duoc.*dien|\bkwh\b'),
         ('appearance', r'\bmau\s+(?:xe|gi|nao|sac|ngoai that|noi that)\b|\bco mau\b|bang mau|tuy chon mau'),

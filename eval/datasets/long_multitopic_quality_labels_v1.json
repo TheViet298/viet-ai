@@ -1,0 +1,4004 @@
+{
+  "version": 1,
+  "limits": "Annotations cover all90 authored scenario turns. Existing API suite asserts exact business state/content. Broad accepted classes are scope instructions, not factual accuracy scoring; frozen independent40case oracle is separate. Source IDs denote where evidence must be obtained, not proof that a requested field exists.",
+  "cases": [
+    {
+      "id": "sales-services-return:1",
+      "scenario": "sales-services-return",
+      "turn": 1,
+      "question": "Tư vấn VF8",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": []
+    },
+    {
+      "id": "sales-services-return:2",
+      "scenario": "sales-services-return",
+      "turn": 2,
+      "question": "so với VF3",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1
+      ]
+    },
+    {
+      "id": "sales-services-return:3",
+      "scenario": "sales-services-return",
+      "turn": 3,
+      "question": "so bản plus",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "sales-services-return:4",
+      "scenario": "sales-services-return",
+      "turn": 4,
+      "question": "so bản eco",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "sales-services-return:5",
+      "scenario": "sales-services-return",
+      "turn": 5,
+      "question": "Giá lăn bánh VF8 Plus ở Hà Nội?",
+      "goal": "quote",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": "Plus",
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "sales-services-return:6",
+      "scenario": "sales-services-return",
+      "turn": 6,
+      "question": "Không phải Plus, tôi chọn Eco",
+      "goal": "quote",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": "Eco",
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "sales-services-return:7",
+      "scenario": "sales-services-return",
+      "turn": 7,
+      "question": "Không phải Hà Nội, đăng ký ở Đà Nẵng",
+      "goal": "quote",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": "Eco",
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "id": "sales-services-return:8",
+      "scenario": "sales-services-return",
+      "turn": 8,
+      "question": "Tôi chưa biết phiên bản",
+      "goal": "quote",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "id": "sales-services-return:9",
+      "scenario": "sales-services-return",
+      "turn": 9,
+      "question": "VF8 Plus, mua kèm pin, Đà Nẵng",
+      "goal": "quote",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": "Plus",
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "id": "sales-services-return:10",
+      "scenario": "sales-services-return",
+      "turn": 10,
+      "question": "Tôi đã nói rồi, còn thiếu gì?",
+      "goal": "quote",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": "Plus",
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "id": "sales-services-return:11",
+      "scenario": "sales-services-return",
+      "turn": 11,
+      "question": "Chính sách bảo hành pin VF8 bao lâu?",
+      "goal": "warranty",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-002"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "id": "sales-services-return:12",
+      "scenario": "sales-services-return",
+      "turn": 12,
+      "question": "Pin cao áp, không phải ắc quy 12V",
+      "goal": "warranty",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": "pin cao áp"
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-002"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "id": "sales-services-return:13",
+      "scenario": "sales-services-return",
+      "turn": 13,
+      "question": "Không phải pin cao áp, tôi hỏi ắc quy 12V",
+      "goal": "warranty",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": "ắc quy 12V"
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-002"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ]
+    },
+    {
+      "id": "sales-services-return:14",
+      "scenario": "sales-services-return",
+      "turn": 14,
+      "question": "Lịch bảo dưỡng định kỳ VF8 là gì?",
+      "goal": "maintenance",
+      "expected_answer_classes": [
+        "needs_data",
+        "partial"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-004"
+        ],
+        "basis": "Exact model/year schedule not acquired; supported general guidance may remain with explicit missing scope."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ]
+    },
+    {
+      "id": "sales-services-return:15",
+      "scenario": "sales-services-return",
+      "turn": 15,
+      "question": "Còn VF5 thì sao?",
+      "goal": "maintenance",
+      "expected_answer_classes": [
+        "needs_data",
+        "partial"
+      ],
+      "scope": {
+        "model": "VF5",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-004"
+        ],
+        "basis": "Exact model/year schedule not acquired; supported general guidance may remain with explicit missing scope."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ]
+    },
+    {
+      "id": "sales-services-return:16",
+      "scenario": "sales-services-return",
+      "turn": 16,
+      "question": "Ứng dụng VinFast có tính năng gì?",
+      "goal": "application",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-001"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "id": "sales-services-return:17",
+      "scenario": "sales-services-return",
+      "turn": 17,
+      "question": "Biểu phí sạc tại trạm sạc công cộng",
+      "goal": "charging_network",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-006",
+          "SRC-010"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ]
+    },
+    {
+      "id": "sales-services-return:18",
+      "scenario": "sales-services-return",
+      "turn": 18,
+      "question": "VF8 sạc bao lâu?",
+      "goal": "charging",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ]
+    },
+    {
+      "id": "sales-services-return:19",
+      "scenario": "sales-services-return",
+      "turn": 19,
+      "question": "VF8 đi được bao xa một lần sạc?",
+      "goal": "range",
+      "expected_answer_classes": [
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Do not collapse variant-specific facts into one unspecified value."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "id": "sales-services-return:20",
+      "scenario": "sales-services-return",
+      "turn": 20,
+      "question": "Dung lượng pin VF8 là bao nhiêu?",
+      "goal": "capacity",
+      "expected_answer_classes": [
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Do not collapse variant-specific facts into one unspecified value."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ]
+    },
+    {
+      "id": "sales-services-return:21",
+      "scenario": "sales-services-return",
+      "turn": 21,
+      "question": "Tôi muốn đặt lịch bảo dưỡng VF8",
+      "goal": "maintenance",
+      "expected_answer_classes": [
+        "external_action_required"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-004"
+        ],
+        "basis": "No booking integration or receipt; explicitly state that confirmation is external."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ]
+    },
+    {
+      "id": "sales-services-return:22",
+      "scenario": "sales-services-return",
+      "turn": 22,
+      "question": "Ở Đà Nẵng vào chiều ngày mai",
+      "goal": "maintenance",
+      "expected_answer_classes": [
+        "external_action_required"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-004"
+        ],
+        "basis": "No booking integration or receipt; explicitly state that confirmation is external."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ]
+    },
+    {
+      "id": "sales-services-return:23",
+      "scenario": "sales-services-return",
+      "turn": 23,
+      "question": "Thôi không đặt nữa",
+      "goal": "maintenance",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-004"
+        ],
+        "basis": "Cancel chat intent only, not an external appointment."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ]
+    },
+    {
+      "id": "sales-services-return:24",
+      "scenario": "sales-services-return",
+      "turn": 24,
+      "question": "Tư vấn VF7 Eco",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": "VF7",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ]
+    },
+    {
+      "id": "sales-services-return:25",
+      "scenario": "sales-services-return",
+      "turn": 25,
+      "question": "VF7 Plus có màu gì?",
+      "goal": "appearance",
+      "expected_answer_classes": [
+        "needs_data"
+      ],
+      "scope": {
+        "model": "VF7",
+        "variant": "Plus",
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "No reviewed scoped VF7 color list; do not borrow VF8 colors."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ]
+    },
+    {
+      "id": "sales-services-return:26",
+      "scenario": "sales-services-return",
+      "turn": 26,
+      "question": "Tôi muốn khiếu nại thái độ nhân viên showroom",
+      "goal": "complaint",
+      "expected_answer_classes": [
+        "answered",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Authorized synthetic business records; never infer rescue dispatch or safety clearance from acknowledgement."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25
+      ]
+    },
+    {
+      "id": "sales-services-return:27",
+      "scenario": "sales-services-return",
+      "turn": 27,
+      "question": "Tôi ở Hà Nội",
+      "goal": "complaint",
+      "expected_answer_classes": [
+        "answered",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Authorized synthetic business records; never infer rescue dispatch or safety clearance from acknowledgement."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26
+      ]
+    },
+    {
+      "id": "sales-services-return:28",
+      "scenario": "sales-services-return",
+      "turn": 28,
+      "question": "Thời tiết ngày mai thế nào?",
+      "goal": "out_of_scope",
+      "expected_answer_classes": [
+        "refused"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Refuse unsupported topic and state the VinFast support scope."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27
+      ]
+    },
+    {
+      "id": "sales-services-return:29",
+      "scenario": "sales-services-return",
+      "turn": 29,
+      "question": "Tư vấn VF3",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": "VF3",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28
+      ]
+    },
+    {
+      "id": "sales-services-return:30",
+      "scenario": "sales-services-return",
+      "turn": 30,
+      "question": "so với VF8",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ]
+    },
+    {
+      "id": "services-incident-emergency:1",
+      "scenario": "services-incident-emergency",
+      "turn": 1,
+      "question": "Tư vấn VF7",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": "VF7",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": []
+    },
+    {
+      "id": "services-incident-emergency:2",
+      "scenario": "services-incident-emergency",
+      "turn": 2,
+      "question": "Giá VF7 Plus ở Hà Nội?",
+      "goal": "quote",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF7",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1
+      ]
+    },
+    {
+      "id": "services-incident-emergency:3",
+      "scenario": "services-incident-emergency",
+      "turn": 3,
+      "question": "Hướng dẫn cách sạc tại trạm công cộng và tính năng trên App VinFast",
+      "goal": "application",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-001"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "services-incident-emergency:4",
+      "scenario": "services-incident-emergency",
+      "turn": 4,
+      "question": "Chính sách bảo hành pin và lịch bảo dưỡng định kỳ",
+      "goal": "maintenance",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-004"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "services-incident-emergency:5",
+      "scenario": "services-incident-emergency",
+      "turn": 5,
+      "question": "SOH là gì?",
+      "goal": "concept",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-007",
+          "SRC-008"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "services-incident-emergency:6",
+      "scenario": "services-incident-emergency",
+      "turn": 6,
+      "question": "SOC là gì?",
+      "goal": "concept",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-007",
+          "SRC-008"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "services-incident-emergency:7",
+      "scenario": "services-incident-emergency",
+      "turn": 7,
+      "question": "VF8 Plus có màu gì?",
+      "goal": "appearance",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "id": "services-incident-emergency:8",
+      "scenario": "services-incident-emergency",
+      "turn": 8,
+      "question": "Biểu phí sạc tại trạm sạc công cộng",
+      "goal": "charging_network",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-006",
+          "SRC-010"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "id": "services-incident-emergency:9",
+      "scenario": "services-incident-emergency",
+      "turn": 9,
+      "question": "Ứng dụng VinFast có tính năng gì?",
+      "goal": "application",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-001"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "id": "services-incident-emergency:10",
+      "scenario": "services-incident-emergency",
+      "turn": 10,
+      "question": "Tôi muốn đăng ký lái thử VF8 ở Hà Nội",
+      "goal": "test_drive",
+      "expected_answer_classes": [
+        "external_action_required"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "No booking integration or receipt; explicitly state that confirmation is external."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "id": "services-incident-emergency:11",
+      "scenario": "services-incident-emergency",
+      "turn": 11,
+      "question": "Chiều ngày mai",
+      "goal": "test_drive",
+      "expected_answer_classes": [
+        "external_action_required"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "No booking integration or receipt; explicitly state that confirmation is external."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "id": "services-incident-emergency:12",
+      "scenario": "services-incident-emergency",
+      "turn": 12,
+      "question": "Thôi không đặt nữa",
+      "goal": "test_drive",
+      "expected_answer_classes": [
+        "external_action_required"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "No booking integration or receipt; explicitly state that confirmation is external."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "id": "services-incident-emergency:13",
+      "scenario": "services-incident-emergency",
+      "turn": 13,
+      "question": "Xe của tôi không sạc được",
+      "goal": "incident",
+      "expected_answer_classes": [
+        "needs_clarification",
+        "answered",
+        "external_action_required"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Ask for missing current-incident facts or acknowledge an authorized case; no external action without receipt."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ]
+    },
+    {
+      "id": "services-incident-emergency:14",
+      "scenario": "services-incident-emergency",
+      "turn": 14,
+      "question": "VF5",
+      "goal": "incident",
+      "expected_answer_classes": [
+        "needs_clarification",
+        "answered",
+        "external_action_required"
+      ],
+      "scope": {
+        "model": "VF5",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Ask for missing current-incident facts or acknowledge an authorized case; no external action without receipt."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ]
+    },
+    {
+      "id": "services-incident-emergency:15",
+      "scenario": "services-incident-emergency",
+      "turn": 15,
+      "question": "Trụ P01 tại Vincom Metropolis",
+      "goal": "incident",
+      "expected_answer_classes": [
+        "answered",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF5",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Authorized synthetic business records; never infer rescue dispatch or safety clearance from acknowledgement."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ]
+    },
+    {
+      "id": "services-incident-emergency:16",
+      "scenario": "services-incident-emergency",
+      "turn": 16,
+      "question": "Xe báo lỗi CC01, pin còn 35%",
+      "goal": "incident",
+      "expected_answer_classes": [
+        "answered",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Authorized synthetic business records; never infer rescue dispatch or safety clearance from acknowledgement."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "id": "services-incident-emergency:17",
+      "scenario": "services-incident-emergency",
+      "turn": 17,
+      "question": "Tôi đã nói rồi, còn thiếu gì?",
+      "goal": "incident",
+      "expected_answer_classes": [
+        "answered",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Authorized synthetic business records; never infer rescue dispatch or safety clearance from acknowledgement."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ]
+    },
+    {
+      "id": "services-incident-emergency:18",
+      "scenario": "services-incident-emergency",
+      "turn": 18,
+      "question": "Không phải trụ P01, trụ P02",
+      "goal": "incident",
+      "expected_answer_classes": [
+        "answered",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Authorized synthetic business records; never infer rescue dispatch or safety clearance from acknowledgement."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ]
+    },
+    {
+      "id": "services-incident-emergency:19",
+      "scenario": "services-incident-emergency",
+      "turn": 19,
+      "question": "Xe không còn báo CC01 nữa",
+      "goal": "incident",
+      "expected_answer_classes": [
+        "answered",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Authorized synthetic business records; never infer rescue dispatch or safety clearance from acknowledgement."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "id": "services-incident-emergency:20",
+      "scenario": "services-incident-emergency",
+      "turn": 20,
+      "question": "Tôi đã dừng ở nơi an toàn",
+      "goal": "incident",
+      "expected_answer_classes": [
+        "answered",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Authorized synthetic business records; never infer rescue dispatch or safety clearance from acknowledgement."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ]
+    },
+    {
+      "id": "services-incident-emergency:21",
+      "scenario": "services-incident-emergency",
+      "turn": 21,
+      "question": "Tôi muốn hỏi bảo hành VF8",
+      "goal": "warranty",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-002"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ]
+    },
+    {
+      "id": "services-incident-emergency:22",
+      "scenario": "services-incident-emergency",
+      "turn": 22,
+      "question": "Còn VF3 thì sao?",
+      "goal": "warranty",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF3",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-002"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ]
+    },
+    {
+      "id": "services-incident-emergency:23",
+      "scenario": "services-incident-emergency",
+      "turn": 23,
+      "question": "Lịch bảo dưỡng VF3 là gì?",
+      "goal": "maintenance",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF3",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-004"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ]
+    },
+    {
+      "id": "services-incident-emergency:24",
+      "scenario": "services-incident-emergency",
+      "turn": 24,
+      "question": "Tư vấn VF8",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ]
+    },
+    {
+      "id": "services-incident-emergency:25",
+      "scenario": "services-incident-emergency",
+      "turn": 25,
+      "question": "Xe VF5 của tôi đang bốc khói",
+      "goal": "incident",
+      "expected_answer_classes": [
+        "answered",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF5",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Authorized synthetic business records; never infer rescue dispatch or safety clearance from acknowledgement."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ]
+    },
+    {
+      "id": "services-incident-emergency:26",
+      "scenario": "services-incident-emergency",
+      "turn": 26,
+      "question": "Tôi đã ở nơi an toàn",
+      "goal": "incident",
+      "expected_answer_classes": [
+        "answered",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Authorized synthetic business records; never infer rescue dispatch or safety clearance from acknowledgement."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25
+      ]
+    },
+    {
+      "id": "services-incident-emergency:27",
+      "scenario": "services-incident-emergency",
+      "turn": 27,
+      "question": "Tư vấn VF7",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF7",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Authorized synthetic business records; never infer rescue dispatch or safety clearance from acknowledgement."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26
+      ]
+    },
+    {
+      "id": "services-incident-emergency:28",
+      "scenario": "services-incident-emergency",
+      "turn": 28,
+      "question": "Xe VF5 của tôi lại bốc khói",
+      "goal": "incident",
+      "expected_answer_classes": [
+        "answered",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF5",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Authorized synthetic business records; never infer rescue dispatch or safety clearance from acknowledgement."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27
+      ]
+    },
+    {
+      "id": "services-incident-emergency:29",
+      "scenario": "services-incident-emergency",
+      "turn": 29,
+      "question": "Tôi đã ở nơi an toàn",
+      "goal": "incident",
+      "expected_answer_classes": [
+        "answered",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Authorized synthetic business records; never infer rescue dispatch or safety clearance from acknowledgement."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28
+      ]
+    },
+    {
+      "id": "services-incident-emergency:30",
+      "scenario": "services-incident-emergency",
+      "turn": 30,
+      "question": "Bạn đã gửi cứu hộ chưa?",
+      "goal": "incident",
+      "expected_answer_classes": [
+        "answered",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Authorized synthetic business records; never infer rescue dispatch or safety clearance from acknowledgement."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:1",
+      "scenario": "bilingual-context-switches",
+      "turn": 1,
+      "question": "Tell me about the VF8",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "en",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": []
+    },
+    {
+      "id": "bilingual-context-switches:2",
+      "scenario": "bilingual-context-switches",
+      "turn": 2,
+      "question": "so với VF3",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:3",
+      "scenario": "bilingual-context-switches",
+      "turn": 3,
+      "question": "so bản plus",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:4",
+      "scenario": "bilingual-context-switches",
+      "turn": 4,
+      "question": "Tell me about the VF7",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": "VF7",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "en",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:5",
+      "scenario": "bilingual-context-switches",
+      "turn": 5,
+      "question": "VF7 Plus có màu gì?",
+      "goal": "appearance",
+      "expected_answer_classes": [
+        "needs_data"
+      ],
+      "scope": {
+        "model": "VF7",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "No reviewed scoped VF7 color list; do not borrow VF8 colors."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:6",
+      "scenario": "bilingual-context-switches",
+      "turn": 6,
+      "question": "What colors are available for the VF8 Plus?",
+      "goal": "appearance",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "en",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:7",
+      "scenario": "bilingual-context-switches",
+      "turn": 7,
+      "question": "Giá VF8 Plus ở Hà Nội?",
+      "goal": "quote",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": "Plus",
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:8",
+      "scenario": "bilingual-context-switches",
+      "turn": 8,
+      "question": "What is the on-road price of the VF8 Plus?",
+      "goal": "quote",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": "Plus",
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "en",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:9",
+      "scenario": "bilingual-context-switches",
+      "turn": 9,
+      "question": "Không phải Hà Nội, đăng ký ở Đà Nẵng",
+      "goal": "quote",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:10",
+      "scenario": "bilingual-context-switches",
+      "turn": 10,
+      "question": "How long is the VF8 warranty?",
+      "goal": "warranty",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-002"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "en",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:11",
+      "scenario": "bilingual-context-switches",
+      "turn": 11,
+      "question": "Bảo hành pin cao áp VF8 bao lâu?",
+      "goal": "warranty",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": "pin cao áp"
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-002"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:12",
+      "scenario": "bilingual-context-switches",
+      "turn": 12,
+      "question": "What is the maintenance schedule for the VF8?",
+      "goal": "maintenance",
+      "expected_answer_classes": [
+        "needs_data",
+        "partial"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-004"
+        ],
+        "basis": "Exact model/year schedule not acquired; supported general guidance may remain with explicit missing scope."
+      },
+      "allowed_abstention": true,
+      "language": "en",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:13",
+      "scenario": "bilingual-context-switches",
+      "turn": 13,
+      "question": "Còn VF5 thì sao?",
+      "goal": "maintenance",
+      "expected_answer_classes": [
+        "needs_data",
+        "partial"
+      ],
+      "scope": {
+        "model": "VF5",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-004"
+        ],
+        "basis": "Exact model/year schedule not acquired; supported general guidance may remain with explicit missing scope."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:14",
+      "scenario": "bilingual-context-switches",
+      "turn": 14,
+      "question": "Please explain battery warranty and scheduled maintenance.",
+      "goal": "maintenance",
+      "expected_answer_classes": [
+        "needs_data",
+        "partial"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-004"
+        ],
+        "basis": "Exact model/year schedule not acquired; supported general guidance may remain with explicit missing scope."
+      },
+      "allowed_abstention": true,
+      "language": "en",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:15",
+      "scenario": "bilingual-context-switches",
+      "turn": 15,
+      "question": "SOH là gì?",
+      "goal": "concept",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-007",
+          "SRC-008"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:16",
+      "scenario": "bilingual-context-switches",
+      "turn": 16,
+      "question": "How far can the VF8 travel on a full charge?",
+      "goal": "range",
+      "expected_answer_classes": [
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Do not collapse variant-specific facts into one unspecified value."
+      },
+      "allowed_abstention": true,
+      "language": "en",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:17",
+      "scenario": "bilingual-context-switches",
+      "turn": 17,
+      "question": "Dung lượng pin VF8 là bao nhiêu?",
+      "goal": "capacity",
+      "expected_answer_classes": [
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Do not collapse variant-specific facts into one unspecified value."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:18",
+      "scenario": "bilingual-context-switches",
+      "turn": 18,
+      "question": "How much does it cost to charge the VF8?",
+      "goal": "charging_network",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-006",
+          "SRC-010"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "en",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:19",
+      "scenario": "bilingual-context-switches",
+      "turn": 19,
+      "question": "Please explain public charging, charging fees and VinFast app features.",
+      "goal": "charging_network",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-006",
+          "SRC-010"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "en",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:20",
+      "scenario": "bilingual-context-switches",
+      "turn": 20,
+      "question": "Hướng dẫn cách sạc tại trạm công cộng và biểu phí sạc",
+      "goal": "charging_network",
+      "expected_answer_classes": [
+        "answered",
+        "partial",
+        "needs_data",
+        "needs_clarification"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-006",
+          "SRC-010"
+        ],
+        "basis": "Answer supported sections with source and full conditions; withhold only unresolved scope. These broad annotations are not a factual acceptance oracle."
+      },
+      "allowed_abstention": true,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:21",
+      "scenario": "bilingual-context-switches",
+      "turn": 21,
+      "question": "I would like to book a test drive for the VF8 in Hanoi",
+      "goal": "test_drive",
+      "expected_answer_classes": [
+        "external_action_required"
+      ],
+      "scope": {
+        "model": "VF8",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "No booking integration or receipt; explicitly state that confirmation is external."
+      },
+      "allowed_abstention": false,
+      "language": "en",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:22",
+      "scenario": "bilingual-context-switches",
+      "turn": 22,
+      "question": "Chiều ngày mai",
+      "goal": "test_drive",
+      "expected_answer_classes": [
+        "external_action_required"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "No booking integration or receipt; explicitly state that confirmation is external."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:23",
+      "scenario": "bilingual-context-switches",
+      "turn": 23,
+      "question": "Has my booking been confirmed?",
+      "goal": "test_drive",
+      "expected_answer_classes": [
+        "external_action_required"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "No booking integration or receipt; explicitly state that confirmation is external."
+      },
+      "allowed_abstention": false,
+      "language": "en",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:24",
+      "scenario": "bilingual-context-switches",
+      "turn": 24,
+      "question": "Thôi không đặt nữa",
+      "goal": "test_drive",
+      "expected_answer_classes": [
+        "external_action_required"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "No booking integration or receipt; explicitly state that confirmation is external."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:25",
+      "scenario": "bilingual-context-switches",
+      "turn": 25,
+      "question": "Tell me about the VF3",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": "VF3",
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "en",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:26",
+      "scenario": "bilingual-context-switches",
+      "turn": 26,
+      "question": "so với VF8",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:27",
+      "scenario": "bilingual-context-switches",
+      "turn": 27,
+      "question": "so bản plus",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:28",
+      "scenario": "bilingual-context-switches",
+      "turn": 28,
+      "question": "What will the weather be like tomorrow?",
+      "goal": "out_of_scope",
+      "expected_answer_classes": [
+        "refused"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [],
+        "basis": "Refuse unsupported topic and state the VinFast support scope."
+      },
+      "allowed_abstention": false,
+      "language": "en",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:29",
+      "scenario": "bilingual-context-switches",
+      "turn": 29,
+      "question": "Tư vấn VF7 Plus",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "vi",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28
+      ]
+    },
+    {
+      "id": "bilingual-context-switches:30",
+      "scenario": "bilingual-context-switches",
+      "turn": 30,
+      "question": "Tell me about the VF8",
+      "goal": "overview",
+      "expected_answer_classes": [
+        "answered"
+      ],
+      "scope": {
+        "model": null,
+        "variant": null,
+        "year": null,
+        "component": null
+      },
+      "evidence": {
+        "source_ids": [
+          "SRC-009"
+        ],
+        "basis": "Exact requested models/variants and reviewed catalog facts."
+      },
+      "allowed_abstention": false,
+      "language": "en",
+      "review_status": "annotated_by_root",
+      "reviewed_at": "2026-10-19",
+      "scope_basis": "Explicit assertions in authored step; null is unspecified here, not an instruction to erase prior context.",
+      "requires_prior_turns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ]
+    }
+  ]
+}

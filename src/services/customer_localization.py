@@ -80,9 +80,13 @@ async def canonical_input(text: str, language: str, budget: dict) -> str:
     from src.services.chat_language import canonical_query, needs_semantic_translation
     if language != 'en':
         return text
+    from src.services.chat_language import evidence_intent_query
+    anchored = evidence_intent_query(text)
+    if anchored:
+        return anchored
     mapped = canonical_query(text)
-    from src.agents.guardrails import evaluate_hard_safety
-    if evaluate_hard_safety(text)[0] or not needs_semantic_translation(mapped):
+    from src.agents.guardrails import evaluate_hard_safety, evaluate_hazardous_intervention
+    if evaluate_hard_safety(text)[0] or evaluate_hazardous_intervention(mapped)[0] or not needs_semantic_translation(mapped):
         return mapped
     # Fail closed on an untranslated intent; do not send an unknown English
     # question down the ungrounded general-generation branch.
@@ -115,6 +119,29 @@ def english_spec(value: str) -> str:
                             ('phút', 'minutes'), ('từ ', 'from '), ('chỗ', 'seats')]:
         value = value.replace(source, target)
     return value
+
+
+def english_catalog_fact(message: str) -> str | None:
+    """Relabel only exact catalog lines; values and scope stay byte-for-byte facts."""
+    prefix = 'Theo tài liệu VinFast:\n\n'
+    if not message.startswith(prefix):
+        return None
+    labels = {'Số chỗ ngồi': 'Seats', 'Quãng đường': 'Range',
+              'Thời gian sạc': 'Fast charging', 'Công suất tối đa': 'Maximum power',
+              'Dung lượng pin khả dụng': 'Usable battery capacity'}
+    lines = []
+    for line in message[len(prefix):].splitlines():
+        if not line.strip():
+            lines.append('')
+            continue
+        match = re.fullmatch(r'((?:VinFast )?VF\s*(?:e34|[356789])(?:\s+(?:Eco|Plus|AWD|FWD))*): ([^:]+): (.+)', line)
+        if not match or match[2] not in labels:
+            return None
+        value = english_spec(match[3])
+        if not re.fullmatch(r'[\d\s.,()%–:/-]*(?:(?:km|kWh|kW|NEDC|WLTP|minutes|seats|from)[\d\s.,()%–:/-]*)*', value):
+            return None
+        lines.append(f'{match[1]}: {labels[match[2]]}: {value}')
+    return 'According to VinFast documentation:\n\n' + '\n'.join(lines) if lines else None
 
 
 async def localize_response(data, language: str, budget: dict, *, snapshot: bool = False, operational=None, conversation=None):
@@ -195,6 +222,8 @@ async def localize_response(data, language: str, budget: dict, *, snapshot: bool
     elif data.message == 'Dạ, rất vui được hỗ trợ Quý khách. Khi cần thêm thông tin, Quý khách cứ nhắn em nhé.':
         data.message = 'You’re welcome. Feel free to ask if you need any more help.'
         data.suggested_replies = []
+    elif english_catalog_fact(data.message) is not None:
+        data.message = english_catalog_fact(data.message)
     elif localize_help_response(data):
         pass
     else:

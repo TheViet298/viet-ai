@@ -48,3 +48,22 @@ def load_reviewed_holdout(path: Path) -> list[dict]:
     if not manifest.is_file() or json.loads(manifest.read_text(encoding='utf-8')).get('sha256') != sha256(path.read_bytes()).hexdigest():
         raise ValueError('Holdout requires a frozen manifest matching the reviewed bytes')
     return rows
+
+
+def grade_holdout_row(case: dict, output: dict) -> dict:
+    """Conservative concept/status/source gate, not an unrestricted factual judge."""
+    from src.services.chat_normalization import fold_text
+    body = fold_text(output.get('response', ''))
+    groups = case.get('expected_concepts', [])
+    missing = [group for group in groups if not any(fold_text(term) in body
+        for term in (group if isinstance(group, list) else [group]))]
+    forbidden = [term for term in case.get('forbidden_concepts', []) if fold_text(term) in body]
+    expected_status = case.get('allowed_statuses', [case['expected_status']])
+    status_ok = output.get('answer_status') in expected_status
+    language_ok = output.get('language') == case['language']
+    expected_sources = {item['source_id'] for item in case.get('evidence', []) if item.get('source_id')}
+    actual_sources = {item.get('source_id') for item in output.get('sources', [])}
+    source_ok = case['category'] != 'answerable' or bool(actual_sources & expected_sources)
+    return {'passed': not missing and not forbidden and status_ok and language_ok and source_ok,
+            'missing_concepts': missing, 'forbidden_found': forbidden,
+            'status_ok': status_ok, 'language_ok': language_ok, 'source_ok': source_ok}

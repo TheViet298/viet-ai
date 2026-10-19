@@ -252,20 +252,45 @@ class RAGService:
         if cost_subject is None:
             from src.services.conversation_context import cost_subject_for
             cost_subject = cost_subject_for(query)
-        technical_terms = {'range': ('quang duong', 'mot lan sac', 'di duoc', 'nedc', 'wltp'),
-                           'capacity': ('dung luong',), 'power': ('cong suat',)}
+        technical_terms = {'range': ('quang duong', 'mot lan sac', 'di duoc', 'tam hoat dong', 'tam di chuyen', 'di bao xa', 'driving range', 'published range', 'nedc', 'wltp'),
+                           'capacity': ('dung luong', 'battery capacity'), 'power': ('cong suat',),
+                           'seats': ('cho ngoi', 'may cho', 'bao nhieu cho', 'seats', 'seating positions'),
+                           'charging_time': ('thoi gian sac', 'sac nhanh bao lau', 'sac nhanh mat')}
         technical_keys = [key for key, terms in technical_terms.items() if any(term in normalized(query) for term in terms)]
-        if vehicle_model and technical_keys and requested_source_type(query, source_need=source_need) == 'official_catalog':
+        requested_models = {'VF' + model.upper() for model in re.findall(r'\bvf\s*(e34|[356789])\b', normalized(query))}
+        if vehicle_model and technical_keys and requested_models - {vehicle_model}:
+            return self.failure('NO_SOURCE', 'unresolved_catalog_scope')
+        if vehicle_model and technical_keys and re.search(
+                r'real.world|actual range|thuc te|cho day|tai trong|full load|towing|winter|freezing|nhiet do|temperature', normalized(query)):
+            return self.failure('NO_SOURCE', 'unresolved_catalog_conditions')
+        purpose = requested_source_type(query, source_need=source_need)
+        published_charging_time = technical_keys == ['charging_time'] and not re.search(
+            r'huong dan|cach|thao tac|bao loi|khong sac|nguy hiem', normalized(query))
+        if vehicle_model and technical_keys and (purpose == 'official_catalog' or published_charging_time):
             from src.services.vehicle_catalog import catalog_cards, catalog_citations, requested_variants
             variants = requested_variants(normalized(query), vehicle_model, True)
             cards = catalog_cards([vehicle_model])
             if variants:
                 cards = [card for card in cards if card.variant in variants]
-            if not cards or len(cards) > top_k or (len(cards) > 1 and not variants):
+            shared_time = (published_charging_time and cards and all(card.fast_charge_time for card in cards)
+                           and len({card.fast_charge_time for card in cards}) == 1)
+            if not cards or len(cards) > top_k or (len(cards) > 1 and not variants and not shared_time):
                 return self.failure('NO_SOURCE', 'unresolved_catalog_scope')
             citations = []
             for card, citation in zip(cards, catalog_citations(cards), strict=True):
                 scope = citation['fact_scope']
+                requested_cycles = {value.upper() for value in re.findall(r'\b(?:nedc|wltp)\b', normalized(query))}
+                if 'range' in technical_keys and requested_cycles and requested_cycles != {scope.get('range_standard')}:
+                    return self.failure('NO_SOURCE', 'unresolved_catalog_conditions')
+                if 'charging_time' in technical_keys:
+                    requested_soc = re.findall(r'(\d+)\s*%', query)
+                    interval = re.search(r'(?:tu|from)\s*(\d+)\s*%?\s*(?:den|to|[-–])\s*(\d+)\s*%', normalized(query))
+                    if interval:
+                        requested_soc = list(interval.groups())
+                    source_soc = re.findall(r'(\d+)\s*%', card.fast_charge_time or '')
+                    if ((requested_soc and requested_soc != source_soc)
+                            or re.search(r'\d[\d.,]*\s*kw\b', normalized(query))):
+                        return self.failure('NO_SOURCE', 'unresolved_catalog_conditions')
                 if re.search(r'\b20\d{2}\b', query) and str(scope.get('model_year')) not in query:
                     return self.failure('NO_SOURCE', 'unresolved_catalog_scope')
                 fields = [spec.label + ': ' + spec.value for spec in card.specs

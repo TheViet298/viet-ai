@@ -75,6 +75,45 @@ def response_language(text: str, supplied: str | None, previous: str = 'vi') -> 
 _VEHICLE = r'(?:VinFast\s+)?VF\s*(?:e34|[356789])(?:\s+(?:Eco|Plus)(?:\s+(?:AWD|FWD))?)?'
 
 
+def evidence_intent_query(text: str) -> str | None:
+    """Anchor recognized English evidence requests without rewriting qualifiers.
+
+    Original text is retained in full: model/trim/year/conditions remain available
+    to scope checks. Unrecognized intents continue through normal understanding.
+    """
+    from src.agents.guardrails import evaluate_hard_safety, evaluate_hazardous_intervention
+    if (evaluate_hard_safety(text)[0] or evaluate_hazardous_intervention(text)[0]
+            or evaluate_hazardous_intervention(canonical_query(text))[0]):
+        return None
+    from src.services.faq_questions import canonical_service_clauses
+    if canonical_service_clauses(text) != text:
+        return None  # Existing multi-topic decomposition retains every clause.
+    body = text.casefold()
+    if re.search(r'\bdo not\b|\bdon.t\b|not asking', body):
+        return None
+    anchors = []
+    if re.search(_VEHICLE, text, re.I):
+        for pattern, anchor in [
+            (r'\b(?:driving range|published range|range|how far)\b', 'Quãng đường công bố'),
+            (r'\b(?:usable )?battery capacity\b', 'Dung lượng pin khả dụng'),
+            (r'\b(?:seats?|seating positions|seating capacity)\b', 'Số chỗ ngồi'),
+            (r'\bfast[- ]charging time\b|how long.*(?:fast[- ]charg)', 'Thời gian sạc nhanh'),
+            (r'\b(?:first service|maintenance schedule|scheduled maintenance)\b', 'Lịch bảo dưỡng định kỳ'),
+        ]:
+            if re.search(pattern, body):
+                anchors.append(anchor)
+    else:
+        for pattern, anchor in [
+            (r'(?:walk me through|how (?:do|can) i).*charg.*public (?:charging )?station', 'Hướng dẫn cách sạc pin tại trạm sạc công cộng'),
+            (r'charging history.*(?:app|application)|(?:app|application).*charging history', 'Tính năng lịch sử sạc trên ứng dụng VinFast'),
+            (r'(?:high[- ]voltage|auxiliary).*battery warranty.*(?:general|without choosing)', 'Chính sách bảo hành pin cao áp'),
+            (r'(?:in general|generally).*scheduled maintenance', 'Lịch bảo dưỡng định kỳ'),
+        ]:
+            if re.search(pattern, body):
+                anchors.append(anchor)
+    return ' — '.join([*anchors, text]) if anchors else None
+
+
 def canonical_query(text: str) -> str:
     """Translate recognized intent phrases, never generate product facts or actions.
 

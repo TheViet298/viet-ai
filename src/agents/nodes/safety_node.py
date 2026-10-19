@@ -33,6 +33,7 @@ async def safety_node(state: AgentState) -> dict:
             "priority": "HIGH",
             "policy_blocked": True,
             "response_type": "SAFETY_REFUSAL",
+            "answer_status": "refused",
             "intent": "Service/Incident",
             "response": reply,
             "final_response": reply,

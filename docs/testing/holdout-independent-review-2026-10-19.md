@@ -71,3 +71,12 @@ The giant historical measurement artifacts were treated as reports and sampled f
 PostgreSQL migration/concurrency gate: **BLOCKED**. No dedicated PostgreSQL test database is available, and the user explicitly requested that this gate remain blocked. SQLite behavior and source inspection do not certify PostgreSQL behavior. Provider acceptance and production deployment are not certified by this document.
 
 No Critical finding was confirmed. The Important findings above need remediation before claiming the memory contract complete. No style-only findings are raised.
+
+
+## Coordinator follow-up (implementation evidence, not a new independent approval)
+
+The four memory findings were reproduced by8 failing SQLite tests, fixed in43a08b7 and verified with76API/service passes (19 PostgreSQL skips). The same reviewer inspected the fixes and reported no further Important memory finding.
+
+The follow-up semantic review identified two Important issues: multiple model technical questions could bind every aspect to one model, and catalog snapshots ignored requested cycle/SOC/power. Both reproduced in direct retrieval. New regression tests now reject cross-model requests and unsupported operating conditions before SUCCESS; existing year guards remain. Three direct RAG-node controls also confirmed needs_data and empty citations for wrong model/cycle/SOC. Relevant compound/bilingual/scope suite149passed. Unresolved technical multi-model requests are withheld, not presented as a complete per-model answer.
+
+Final independently frozen40case regression passed30/30answerable and10/10boundary without changing golden bytes. PostgreSQL remainsBLOCKED; this follow-up does not claim PostgreSQL certification or production readiness.

@@ -2063,6 +2063,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
     from src.agents.guardrails import evaluate_hazardous_intervention
     is_hazardous, hazard_warning = evaluate_hazardous_intervention(text)
     if is_hazardous and hazard_warning:
+        db.info['conversation_final'] = {'answer_status': 'refused', 'answer_path': 'refusal', 'successful': False}
         agent_msg = Message(
             created_at=reply_created_at,
             id=str(uuid.uuid4()),

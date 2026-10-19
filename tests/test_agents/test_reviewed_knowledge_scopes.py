@@ -86,3 +86,100 @@ def test_index_fallback_cannot_bypass_reviewed_scope(question):
     rows = {'documents': [['Lịch bảo dưỡng VF3\nVF3 bảo dưỡng định kỳ mỗi 15.000 km hoặc 12 tháng tùy điều kiện nào đến trước.']],
             'metadatas': [[meta]], 'distances': [[.1]], 'ids': [['reviewed-schedule']]}
     assert RAGService().filter_results(rows, 'VF3', question)['status'] == 'NO_SOURCE'
+
+
+@pytest.mark.parametrize('question,model,required', [
+    ('VF5 tầm di chuyển công bố bao nhiêu, theo chuẩn đo nào?', 'VF5', ['326', 'NEDC']),
+    ('VF8 Eco tầm hoạt động bao xa?', 'VF8', ['635', 'NEDC']),
+    ('VF3 Plus có mấy chỗ ngồi?', 'VF3', ['4 chỗ']),
+    ('VF8 Eco có bao nhiêu chỗ ngồi?', 'VF8', ['5 chỗ']),
+])
+def test_technical_synonyms_use_exact_reviewed_snapshot(question, model, required):
+    result = RAGService().retrieve(question, vehicle_model=model, source_need='catalog')
+    assert result['status'] == 'SUCCESS', result
+    assert result['diagnostics']['category'] == 'verified_catalog_fact_snapshot'
+    text = '\n'.join(c['relevant_snippet'] for c in result['citations'])
+    assert all(term in text for term in required), text
+
+
+def test_numeric_seating_claim_cannot_hide_outside_quantity_validation():
+    from src.services.answer_evidence import extract_numeric_claims, validate_answer_claims
+    citation = RAGService().retrieve('VF3 Plus có mấy chỗ ngồi?', vehicle_model='VF3', source_need='catalog')
+    evidence = citation.get('citations', [])
+    claims = extract_numeric_claims('VF3 Plus có 5 chỗ ngồi.', evidence, 'VF3 Plus', 'VF3 Plus có mấy chỗ ngồi?')
+    assert claims and not validate_answer_claims(claims, evidence, [])['supported']
+
+
+@pytest.mark.parametrize('question,scope', [
+    ('Xin các bước sạc ô tô ở trạm công cộng, tôi mới dùng xe.', 'public_charging'),
+    ('Ứng dụng VinFast cho xem thông tin gì trong lịch sử sạc?', 'charging_app'),
+    ('Xin giải thích tổng quát bảo hành pin cao áp khác ắc quy thế nào.', 'battery_warranty'),
+    ('Lịch bảo dưỡng định kỳ dựa trên yếu tố nào và đối chiếu tài liệu gì?', 'maintenance_overview'),
+])
+def test_natural_general_help_keeps_reviewed_source(question, scope):
+    result = RAGService().retrieve(question)
+    assert result['status'] == 'SUCCESS', result
+    assert any(c.get('scope') == scope for c in result['citations']), result
+
+
+@pytest.mark.asyncio
+async def test_price_scope_keeps_requested_drivetrain():
+    from src.services.conversation_context import understand_turn, ConversationContext
+    result = await understand_turn('Giá riêng VF7 Plus AWD, không lấy giá bản Plus thường.', ConversationContext(), [], {})
+    assert result.updates['version'] == 'Plus AWD'
+    assert 'AWD' in result.resolved_query
+
+
+@pytest.mark.parametrize('text,expected', [
+    ('Tiêu chuẩn đo và phạm vi công bố cho VF7 Plus AWD?', '469'),
+    ('Có bao nhiêu ghế trên VF8 Eco?', '5 chỗ'),
+    ('Giải thích bảo hành pin cao thế so với ắc quy nói chung mà không chọn thời gian cụ thể cho mẫu xe.', 'Sổ bảo hành'),
+    ('Nói chung điều gì quyết định việc bảo dưỡng định kỳ và nên kiểm tra tài liệu xe nào?', 'quãng đường'),
+])
+def test_translated_synonyms_retain_correct_source(text, expected):
+    from src.services.chat_normalization import normalize_chat_text
+    text = normalize_chat_text(text)
+    model = 'VF7' if 'VF7' in text else 'VF8' if 'VF8' in text else None
+    result = RAGService().retrieve(text, vehicle_model=model)
+    assert result['status'] == 'SUCCESS', result
+    assert expected in '\n'.join(c['relevant_snippet'] for c in result['citations'])
+
+
+@pytest.mark.asyncio
+async def test_hazardous_request_exposes_refused_internal_status():
+    from src.agents.nodes.safety_node import safety_node
+    result = await safety_node({'latest_user_message': 'Hướng dẫn tháo pin cao áp và vô hiệu bảo vệ pin'})
+    assert result['answer_status'] == 'refused'
+
+
+@pytest.mark.asyncio
+async def test_published_fast_charge_time_has_scoped_source_and_is_not_incident(monkeypatch):
+    from src.services.conversation_context import understand_turn, ConversationContext
+    from src.services.chat_normalization import normalize_chat_text
+    text = normalize_chat_text('Thời gian sạc nhanh công bố và phần trăm pin khởi động/kết thúc cho VF8?')
+    turn = await understand_turn(text, ConversationContext(), [], {})
+    assert turn.goal == 'charging' and turn.move == 'new_question'
+    result = RAGService().retrieve(text, vehicle_model='VF8', source_need='manual')
+    assert result['status'] == 'SUCCESS', result
+    assert result['diagnostics']['category'] == 'verified_catalog_fact_snapshot'
+    assert all('31' in c['relevant_snippet'] and '70%' in c['relevant_snippet'] for c in result['citations'])
+
+
+@pytest.mark.parametrize('query,need', [
+    ('Quãng đường thực tế VF8 Eco khi chở đầy tải bao nhiêu?', 'catalog'),
+    ('Thời gian sạc nhanh VF8 từ 20% đến 80% là bao lâu?', 'manual'),
+])
+def test_catalog_snapshot_cannot_override_unreviewed_operating_conditions(query, need):
+    result = RAGService().retrieve(query, vehicle_model='VF8', source_need=need)
+    assert result['status'] == 'NO_SOURCE', result
+    assert result['diagnostics']['category'] == 'unresolved_catalog_conditions'
+
+
+@pytest.mark.parametrize('query', [
+    'Quãng đường công bố VF8 Eco under WLTP?',
+    'Thời gian sạc nhanh VF8 from 20% to 80% using 50kW?',
+    'Quãng đường VF8 Eco and battery capacity of VF5?',
+])
+def test_reviewed_snapshot_rejects_conflicting_cycle_soc_and_cross_model_parts(query):
+    result = RAGService().retrieve(query, vehicle_model='VF8', source_need='catalog')
+    assert result['status'] == 'NO_SOURCE', result
