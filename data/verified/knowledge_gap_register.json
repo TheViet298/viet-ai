@@ -10,12 +10,13 @@
       "year": null,
       "topic": "maintenance_schedule",
       "required_scope": "model/year/operation/km/months/whichever first/severe-use footnotes",
-      "status": "pending_review",
+      "status": "partial",
       "source_id": "SRC-004",
       "evidence_location": "data/acquired/remediation-2026-10-19/maintenance-web-excerpt.json",
-      "blocker": "HTML table read for VF3; independent source review pending",
-      "reviewer": null,
-      "reviewed_at": null
+      "blocker": "Remaining requested year/variant/usage or availability scope is not supplied by this source.",
+      "reviewer": "Codex/root (source reading)",
+      "reviewed_at": "2026-10-19",
+      "resolution": "Verified model-only VF3 scheduled maintenance: 15000 km/12 months, whichever first; model year/trim/severe use unknown."
     },
     {
       "id": "GAP-002",
@@ -122,12 +123,13 @@
       "year": null,
       "topic": "colors",
       "required_scope": "model/trim/year, model-level colors cannot assert stock",
-      "status": "pending_review",
+      "status": "partial",
       "source_id": "SRC-009",
       "evidence_location": "data/acquired/remediation-2026-10-19/VF5-product.html",
-      "blocker": "Current model-level colors acquired; year/trim/stock not established",
-      "reviewer": null,
-      "reviewed_at": null
+      "blocker": "Remaining requested year/variant/usage or availability scope is not supplied by this source.",
+      "reviewer": "Codex/root (source reading)",
+      "reviewed_at": "2026-10-19",
+      "resolution": "Verified six model-only VF5 exterior colors; trim/year/stock unknown."
     },
     {
       "id": "GAP-010",
@@ -206,12 +208,13 @@
       "year": null,
       "topic": "battery_capacity",
       "required_scope": "VN market / current product configuration / usable kWh",
-      "status": "pending_review",
+      "status": "verified",
       "source_id": "SRC-009",
       "evidence_location": "data/acquired/remediation-2026-10-19/VF5-product.html",
-      "blocker": "37.23kWh acquired; independent review pending; model year not identified",
-      "reviewer": null,
-      "reviewed_at": null
+      "blocker": null,
+      "reviewer": "Codex/root (source reading)",
+      "reviewed_at": "2026-10-19",
+      "resolution": "Verified VF5 model-only usable battery capacity37.23kWh; year/trim unknown."
     },
     {
       "id": "GAP-016",

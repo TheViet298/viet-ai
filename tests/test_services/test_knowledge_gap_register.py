@@ -12,12 +12,12 @@ def test_gap_register_keeps_scope_and_honest_acquisition_state():
     for gap in gaps:
         assert {'model', 'variant', 'year', 'topic', 'required_scope', 'status',
                 'source_id', 'evidence_location', 'blocker', 'reviewer', 'reviewed_at'} <= gap.keys()
-        assert gap['status'] in {'missing', 'acquired', 'pending_review', 'verified', 'blocked'}
+        assert gap['status'] in {'missing', 'acquired', 'pending_review', 'verified', 'partial', 'blocked'}
         if gap['source_id']:
             assert gap['source_id'] in source_registry()
-        if gap['status'] == 'verified':
+        if gap['status'] in {'verified', 'partial'}:
             assert gap['reviewer'] and gap['reviewed_at'] and gap['evidence_location']
-        if gap['status'] == 'blocked':
+        if gap['status'] in {'blocked', 'partial'}:
             assert gap['blocker']
     vf3_capacity = next(gap for gap in gaps if gap['model'] == 'VF3' and gap['topic'] == 'battery_capacity')
     assert vf3_capacity['status'] == 'blocked'

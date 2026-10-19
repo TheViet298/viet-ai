@@ -1,0 +1,132 @@
+{
+  "version": 1,
+  "date": "2026-10-19",
+  "active_index_changed": false,
+  "candidate_manifest": {
+    "chunking_version": "rag-foundations-v1",
+    "build_kind": "reviewed-knowledge-remediation-v1",
+    "source_path": "D:\\142.AI20K\\P-142\\.test-tmp-memory-audit\\.test-runs\\answer-gap-index",
+    "source_content_sha256": "4e3d1ffa13c2735fc10aac2f92b8247de63c7027a18f5e36cd2164e0c171506d",
+    "parent_count": 2194,
+    "child_count": 2200,
+    "children_sha256": "0ff79885d402b49af2f84f249d0196a557a644d392fb60698bd37b904f06c5de",
+    "parent_map_sha256": "a835c2016a99fa79232255391afd3067ba35641747bdec3360b5b4d161bf2a6e",
+    "max_child_tokens": 256,
+    "model": "vinfast-multilingual-e5-onnx",
+    "dimension": 384,
+    "metric": "squared L2 over normalized vectors",
+    "tokenizer_sha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39",
+    "model_sha256": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193",
+    "reviewed_additions": [
+      {
+        "id": "reviewed-VF3-schedule-2026-10-19",
+        "sha256": "69c3396836dae4b1246fcc95c1054cd2ce2c674803820ba3667a750702f1acbc",
+        "metadata": {
+          "title": "Dịch vụ và quy trình bảo dưỡng ô tô VinFast",
+          "source_type": "official_service",
+          "source_id": "SRC-004",
+          "url": "https://vinfastauto.com/vn_vi/dich-vu-bao-duong-oto",
+          "verified_at": "2026-09-30",
+          "applicable_models": "VF3",
+          "source_section": "Lịch trình & Hạng mục bảo dưỡng / Bảo dưỡng xe VF3 / cột Km và Năm",
+          "content_reviewed_at": "2026-10-19",
+          "reviewed_scope_json": "{\"model\": \"VF3\", \"model_year\": null, \"usage\": null, \"variant\": null}"
+        }
+      },
+      {
+        "id": "reviewed-VF5-colors-2026-10-19",
+        "sha256": "af4d53dfed6f7d2ba51eef0748a6d08352b2a8881b7e18e83b2eff14dd894e01",
+        "metadata": {
+          "title": "Danh mục thông số kỹ thuật & phiên bản thương mại",
+          "source_type": "official_catalog",
+          "source_id": "SRC-009",
+          "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf5",
+          "verified_at": "2026-10-16",
+          "applicable_models": "VF5",
+          "source_section": "6 màu xe đa dạng - Dẫn lối chất riêng",
+          "content_reviewed_at": "2026-10-19",
+          "reviewed_scope_json": "{\"model\": \"VF5\", \"model_year\": null, \"usage\": null, \"variant\": null}",
+          "catalog_scope": "model_colors"
+        }
+      },
+      {
+        "id": "reviewed-VF5-capacity-2026-10-19",
+        "sha256": "78e32f5b6484377745f36afb707bd3925cae5cef4fc259c6dc3fd7532090c92a",
+        "metadata": {
+          "source_id": "SRC-009",
+          "source_type": "official_catalog",
+          "title": "Danh mục thông số kỹ thuật & phiên bản thương mại",
+          "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf5",
+          "verified_at": "2026-10-16",
+          "applicable_models": "VF5",
+          "source_section": "Thông số kỹ thuật / Pin & Sạc / Dung lượng pin khả dụng",
+          "content_reviewed_at": "2026-10-19",
+          "reviewed_scope_json": "{\"model\": \"VF5\", \"model_year\": null, \"usage\": null, \"variant\": null}"
+        }
+      }
+    ],
+    "unresolved_gaps": [
+      "GAP-001",
+      "GAP-002",
+      "GAP-003",
+      "GAP-004",
+      "GAP-005",
+      "GAP-006",
+      "GAP-007",
+      "GAP-008",
+      "GAP-009",
+      "GAP-010",
+      "GAP-011",
+      "GAP-012",
+      "GAP-013",
+      "GAP-014",
+      "GAP-015",
+      "GAP-016",
+      "GAP-017",
+      "GAP-018",
+      "GAP-019",
+      "GAP-020"
+    ],
+    "acceptance": "PENDING independent holdout, provider and regression gates; active configuration unchanged"
+  },
+  "runs": {
+    "post_p0": {
+      "turns": 63,
+      "internal_status_counts": {
+        "answered": 45,
+        "needs_data": 17,
+        "external_action_required": 1
+      },
+      "parsed_events": 22,
+      "provider_error_events": 0,
+      "factual_certification": "NOT_REVIEWED",
+      "index_identity": {
+        "chroma.sqlite3": "9d8fc189587284f86ea2ffacd36ed3241a7ae647b0f236847b40bacee3500cd9",
+        "build-manifest.json": "99488f478bdde82e1848c5093e178b5fa4ba11fc437f190b98c6aabab738a0d0",
+        "parent-map.json": "e1dcf5b76ee8ffa5a9087b9281d3b3db0dd89df084e142ceb4a6211372d372d1"
+      }
+    },
+    "candidate": {
+      "turns": 63,
+      "internal_status_counts": {
+        "answered": 46,
+        "needs_data": 16,
+        "external_action_required": 1
+      },
+      "parsed_events": 23,
+      "provider_error_events": 0,
+      "factual_certification": "NOT_REVIEWED",
+      "index_identity": {
+        "chroma.sqlite3": "02e9d7545f7f5f7f70c33ae91702401044ccd1336918c23ed85e5950c0e59650",
+        "build-manifest.json": "081ef4aca801c30ea0bc8efb2bda2c0fa179abf5a17ca02249cfb92505335ce3",
+        "parent-map.json": "a835c2016a99fa79232255391afd3067ba35641747bdec3360b5b4d161bf2a6e"
+      }
+    }
+  },
+  "limits": [
+    "Provider outputs vary; internal answered count is not factual accuracy or evidence of causal improvement.",
+    "Original build completed before CLI Unicode printing failed; ASCII CLI fixed. Existing manifest and token bound revalidated without rebuilding a nonempty directory.",
+    "Candidate remains inactive pending independent holdout and release gates. Unresolved gap IDs reflect build-time register, not newly inferred data."
+  ],
+  "rollback": "Keep current CHROMA_PERSIST_DIR unchanged. If a later approved switch occurs, restore previous CHROMA_PERSIST_DIR and restart; never overwrite the original index."
+}
