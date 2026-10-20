@@ -4,6 +4,12 @@
 
 Feature mặc định `USER_MEMORY_ENABLED=false`. SQLite đã kiểm thử bằng DB tổng hợp. PostgreSQL **BLOCKED**: người dùng xác nhận chưa có database riêng; không chạy lên DB thật thay thế. Candidate Chroma độc lập, chưa đổi active index.
 
+## Hotfix đăng nhập database cũ (2026-10-20)
+
+`User.memory_revision` được ORM đọc trong truy vấn đăng nhập ngay cả khi feature tắt. Trước hotfix, `ensure_schema()` tạo bảng memory nhưng không thêm cột này vào bảng `users` có sẵn, nên deployment chưa chạy migration có thể trả HTTP 500 khi đăng nhập. Startup nay bổ sung cột với default 0 và giữ nguyên tài khoản/mật khẩu. Migration `4e01_user_memory` kiểm tra các thành phần đã được startup tạo trước khi bổ sung, để vẫn chạy `alembic upgrade head` theo quy trình dưới đây mà không gặp lỗi trùng cột/bảng. Deployment đã chạy migration không cần chạy lại revision đó.
+
+Regression SQLite kiểm tra startup hai lần trên schema cũ, đăng nhập hai vai trò demo, xác minh JWT và chạy tiếp Alembic; không backfill user memory. PostgreSQL vẫn bị chặn do thiếu `TEST_POSTGRES_URL`. Hai API demo production trước hotfix trả HTTP 500; chưa có log/database production để xác nhận cùng stack trace hoặc xác nhận sau deploy.
+
 ## Trình tự triển khai khi các gate đủ
 
 1. Sao lưu database theo quy trình môi trường. Đối chiếu migration head đang chạy.

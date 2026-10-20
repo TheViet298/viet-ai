@@ -13,7 +13,12 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column('users', sa.Column('memory_revision', sa.Integer(), nullable=False, server_default=sa.text('0')))
+    # Legacy deployments may have run ensure_schema before Alembic is invoked.
+    inspector = sa.inspect(op.get_bind())
+    if 'memory_revision' not in {column['name'] for column in inspector.get_columns('users')}:
+        op.add_column('users', sa.Column('memory_revision', sa.Integer(), nullable=False, server_default=sa.text('0')))
+    if inspector.has_table('user_memory_facts'):
+        return
     op.create_table('user_memory_facts',
         sa.Column('user_id', sa.String(36), sa.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
         sa.Column('key', sa.String(64), primary_key=True),

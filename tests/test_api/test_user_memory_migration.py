@@ -86,3 +86,41 @@ def test_orm_memory_schema_and_feature_default_off():
     assert Settings(_env_file=None).user_memory_enabled is False
     assert User.memory_revision.property.columns[0].server_default is not None
     assert {column.name for column in UserMemoryFact.__table__.primary_key} == {'user_id', 'key'}
+
+
+def test_legacy_startup_preserves_demo_login_and_followup_migration(memory_migration_url, monkeypatch):
+    from starlette.requests import Request
+    from sqlalchemy.orm import Session
+    from src import db as database
+    from src.api.auth import login
+    from src.models.schemas import LoginRequest
+    from src.models.db_models import User
+    from src.services.auth import hash_password, verify_token
+
+    config = Config('alembic.ini')
+    command.upgrade(config, '3d01_service_points')
+    engine = sa.create_engine(memory_migration_url)
+    monkeypatch.setattr(database, 'engine', engine)
+    monkeypatch.setattr(database, 'is_sqlite', engine.dialect.name == 'sqlite')
+    password = 'Synthetic-test-only-2026!'
+    with engine.begin() as connection:
+        for role in ['STAFF', 'CUSTOMER']:
+            connection.execute(sa.text("INSERT INTO users(id,username,password_hash,role,is_demo,created_at) VALUES (:id,:username,:hash,:role,:demo,CURRENT_TIMESTAMP)"),
+                {'id': role, 'username': f'demo.{role.lower()}@example.test', 'hash': hash_password(password), 'role': role, 'demo': True})
+    try:
+        database.ensure_schema()
+        database.ensure_schema()
+        with Session(engine) as session:
+            for role in ['STAFF', 'CUSTOMER']:
+                request = Request({'type': 'http', 'headers': [], 'client': ('synthetic-test', 1)})
+                result = login(LoginRequest(username=f'demo.{role.lower()}@example.test', password=password), request, session)
+                assert result.data.user.role == role
+                assert result.data.user.is_demo is True
+                assert verify_token(result.data.token)['sub'] == role
+                assert session.get(User, role).memory_revision == 0
+        command.upgrade(config, 'head')
+        with engine.connect() as connection:
+            assert connection.execute(sa.text('SELECT count(*) FROM users')).scalar_one() == 2
+            assert connection.execute(sa.text('SELECT count(*) FROM user_memory_facts')).scalar_one() == 0
+    finally:
+        engine.dispose()

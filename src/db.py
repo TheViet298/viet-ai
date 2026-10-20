@@ -69,6 +69,8 @@ def ensure_schema() -> None:
         # 1. users
         if "users" in tables:
             users_cols = {col["name"] for col in insp.get_columns("users")}
+            if "memory_revision" not in users_cols:
+                conn.exec_driver_sql("ALTER TABLE users ADD COLUMN memory_revision INTEGER NOT NULL DEFAULT 0")
             if "full_name" not in users_cols:
                 conn.exec_driver_sql("ALTER TABLE users ADD COLUMN full_name VARCHAR(100)")
             if "phone" not in users_cols:
