@@ -33,6 +33,7 @@ export function ProjectProblemSection() {
       [t("Thiếu cách làm rõ nhất quán", "Inconsistent clarification"), t("Dễ hỏi lặp nhưng vẫn bỏ sót dữ kiện cần cho nhân viên.", "Repeated questions can still miss the facts staff need.")],
       [t("Thiếu điểm bàn giao rõ ràng", "An unclear handover"), t("Chủ xe cần biết ai đang tiếp nhận và bước tiếp theo là gì.", "Owners need to know who is reviewing the request and what comes next.")],
     ].map(([title, detail]) => <div key={title}><h4>{title}</h4><p>{detail}</p></div>)}</div>
+    <p className={s.surveyNote}>{t("Khảo sát thăm dò (n=4): 3/4 chủ xe cần hỗ trợ kỹ thuật; 3/3 người trả lời câu hỏi về bàn giao cho biết từng phải lặp lại thông tin. Đây là tín hiệu ban đầu, chưa đại diện cho toàn bộ khách hàng.", "Exploratory survey (n=4): 3/4 owners needed technical support; all 3 respondents to the handover question said they had repeated information. This is an initial signal, not representative of all customers.")}</p>
   </div></section>;
 }
 
@@ -49,7 +50,7 @@ export function ProjectSolutionSection() {
     <div className={s.branchLines} aria-hidden="true"><svg viewBox="0 0 1000 75" preserveAspectRatio="none"><path d="M500 0V25M165 75V50Q165 25 190 25H810Q835 25 835 50V75M500 25V75" /></svg></div>
     <div className={s.solutionCards}>{roles.map(role => <article className={s.roleCard} key={role.label}><div className={s.roleTitle}><span className={s.iconTile}><role.icon size={24} aria-hidden="true" /></span><div><p>{role.label}</p><h3>{role.title}</h3></div></div><p className={s.roleIntro}>{role.intro}</p><ul>{role.items.map(item => <li key={item}><Check size={17} aria-hidden="true" />{item}</li>)}</ul><div className={s.roleFoot}>{role.foot}</div></article>)}</div>
     <div className={s.workflowBlock}><div className={s.workflowIntro}><Layers3 size={28} aria-hidden="true" /><h3>{t("Một luồng Agent.", "One agent workflow.")}<br />{t("Bảy nhóm nghiệp vụ kết nối.", "Seven connected capabilities.")}</h3><p>{t("Các nhánh được sử dụng theo ngữ cảnh của từng yêu cầu.", "Each request follows the branches its context requires.")}</p></div><ol className={s.workflowList}>{[
-      t("Tiếp nhận văn bản và hình ảnh", "Text and image intake"), t("Kiểm tra dấu hiệu an toàn", "Safety-signal checks"), t("Phân loại nhu cầu hỗ trợ", "Support-intent triage"), t("Làm rõ dữ kiện còn thiếu", "Missing-fact clarification"), t("Tra cứu tài liệu có nguồn", "Source-linked retrieval"), t("Tổng hợp hồ sơ tiếp nhận", "Structured case preparation"), t("Bàn giao để nhân viên rà soát", "Handover for staff review"),
+      t("Tiếp nhận văn bản và hình ảnh", "Text and image intake"), t("Kiểm tra dấu hiệu an toàn", "Safety-signal checks"), t("Phân loại 5 nhóm: sạc/pin, sự cố, sản phẩm, khiếu nại, ngoài phạm vi", "Classify 5 intents: charging/battery, incidents, product info, complaints, and out of scope"), t("Làm rõ dữ kiện còn thiếu", "Missing-fact clarification"), t("Tra cứu tài liệu có nguồn", "Source-linked retrieval"), t("Tổng hợp hồ sơ tiếp nhận", "Structured case preparation"), t("Bàn giao để nhân viên rà soát", "Handover for staff review"),
     ].map((item, i) => <li key={item}><span>{String(i + 1).padStart(2, "0")}</span>{item}</li>)}</ol></div>
     <div className={s.principles}>{[t("Văn bản & hình ảnh", "Text & images"), t("Ngữ cảnh hội thoại", "Conversation context"), t("Tra cứu có nguồn", "Source-linked retrieval"), t("Hồ sơ dịch vụ", "Service briefs"), "Human-in-the-loop"].map(item => <span key={item}>{item}</span>)}</div>
   </div></section>;
@@ -93,45 +94,51 @@ export function ProjectJourneyDetails() {
 export function ProjectProofSection() {
   const t = useCopy();
   const qualityRows = [
-    [t("Critical Safety Recall", "Critical Safety Recall"), "100%", "100%", "100% PASS"],
-    [t("Intent Accuracy", "Intent Accuracy"), "76.67%", "96.67%", "100% PASS"],
-    [t("Routing Accuracy", "Routing Accuracy"), "60.00%", "96.67%", "93.33% PASS"],
-    [t("RAG Grounding / No-Source", "RAG Grounding / No-Source"), "20% / 100%", "20% / 100%", "85% / 100%"],
-    [t("Staff Review (HITL)", "Staff Review (HITL)"), "70.00%", "83.33%", "93.33% PASS"],
+    [t("Critical Safety Recall", "Critical Safety Recall"), "100%", "100%", "100%"],
+    [t("Intent Accuracy", "Intent Accuracy"), "76.67%", "96.67%", "100%"],
+    [t("Routing Accuracy", "Routing Accuracy"), "60.00%", "96.67%", "93.33%"],
+    [t("RAG Grounded Citation", "RAG Grounded Citation"), "20%", "20%", "85%"],
+    [t("No-Source Compliance", "No-Source Compliance"), "100%", "100%", "100%"],
+    [t("Staff Review (HITL)", "Staff Review (HITL)"), "70.00%", "83.33%", "93.33%"],
   ];
   return <section id="flow-proof" className={`${s.section} ${s.proof}`} aria-labelledby="proof-title"><div className={s.container}>
     <div className={s.proofHeader}>
-      <div className={s.proofEyebrow}><p className={s.sectionLabel}>{t("04 / TÍNH KHẢ THI", "04 / FEASIBILITY")}</p><span>{t("45 ca Benchmark V1 · 90 ca Quality V2 · 60 ca Golden", "45 Benchmark V1 · 90 Quality V2 · 60 Golden cases")}</span></div>
-      <h2 id="proof-title">{t("Đo theo điểm gãy nghiệp vụ.", "Measure the failure points.")}<br /><em>{t("Có số liệu, có phạm vi.", "Show the evidence and its scope.")}</em></h2>
-      <p>{t("Kết quả được tách theo từng bộ dữ liệu và môi trường chạy để nhìn rõ tiến bộ, giới hạn và chi phí vận hành.", "Results are separated by dataset and run environment to show progress, limits, and operating cost.")}</p>
+      <div className={s.proofEyebrow}><p className={s.sectionLabel}>{t("04 / TÍNH KHẢ THI", "04 / FEASIBILITY")}</p><span>{t("45 ca Benchmark V1 · 90 ca Quality V2 · Golden V1 60 ca · V2 120 ca", "45 Benchmark V1 · 90 Quality V2 · Golden V1 60 cases · V2 120 cases")}</span></div>
+      <h2 id="proof-title">{t("Kết quả kiểm thử, theo từng bộ.", "Test results, kept with their scope.")}<br /><em>{t("Có pass, fail và giới hạn.", "Passes, failures, and limits.")}</em></h2>
+      <p>{t("Các chỉ số đến từ những lần chạy và tập dữ liệu khác nhau. Tỷ lệ đạt của một bộ không đồng nghĩa nghiệm thu toàn hệ thống.", "Metrics come from separate runs and datasets. Passing one suite does not mean the whole system is accepted.")}</p>
     </div>
     <div className={s.proofDashboard}>
       <article className={`${s.proofPanel} ${s.regressionPanel}`}>
-        <div className={s.proofPanelHeading}><span>01</span><div><small>{t("BỘ KIỂM THỬ HỒI QUY", "REGRESSION SUITE")}</small><h3>{t("Chất lượng qua từng lần chạy", "Quality across runs")}</h3></div></div>
+        <div className={s.proofPanelHeading}><span>01</span><div><small>{t("QUALITY V2 · 90 CA", "QUALITY V2 · 90 CASES")}</small><h3>{t("Chất lượng qua từng lần chạy", "Quality across runs")}</h3></div></div>
         <div className={s.proofTableScroll}><table className={s.proofTable}>
-          <thead><tr><th>{t("Chỉ số", "Metric")}</th><th>Baseline V1</th><th>{t("Sau cải thiện V1", "Improved V1")}</th><th>Quality V2</th></tr></thead>
+          <thead><tr><th>{t("Chỉ số", "Metric")}</th><th>Baseline V1</th><th>{t("Cải thiện V1", "Improved V1")}</th><th>Quality V2</th></tr></thead>
           <tbody>{qualityRows.map(([metric, baseline, improved, v2]) => <tr key={metric}><th scope="row">{metric}</th><td>{baseline}</td><td>{improved}</td><td>{v2}</td></tr>)}</tbody>
         </table></div>
-        <div className={s.proofPanelFoot}>{t("90 ca Quality V2 · 561 unit/integration tests + 6 subtests PASS", "90 Quality V2 cases · 561 unit/integration tests + 6 subtests PASS")}</div>
+        <p className={s.proofPanelCaption}>{t("Quality V2 chạy ở ba chế độ: offline, lỗi provider và online. Theo báo cáo, mẫu số gồm 10 ca an toàn, 20 ca RAG có nguồn, 10 ca thiếu nguồn và 60 lượt kiểm tra HITL; các nhóm có thể chồng lấp.", "Quality V2 ran in offline, provider-failure, and online modes. The report lists 10 safety cases, 20 sourced RAG cases, 10 no-source cases, and 60 HITL checks; groups may overlap.")}</p>
+        <div className={s.proofPanelFoot}>{t("Bộ kiểm thử riêng · 561 unit/integration tests + 6 subtests PASS", "Separate test run · 561 unit/integration tests + 6 subtests PASS")}</div>
       </article>
       <article className={s.proofPanel}>
-        <div className={s.proofPanelHeading}><span>02</span><div><small>{t("GOLDEN EVAL & E2E", "GOLDEN EVAL & E2E")}</small><h3>{t("Độ phủ kiểm chứng", "Validation coverage")}</h3></div></div>
-        <div className={s.proofMetricLine}><strong>52/60</strong><span>{t("Offline · 86.7%", "Offline · 86.7%")}</span></div>
-        <div className={s.proofMetricLine}><strong>50/60</strong><span>{t("Online · 83.3%", "Online · 83.3%")}</span></div>
-        <div className={s.proofMetricLine}><strong>10/10</strong><span>{t("Validation Matrix PASS · 7,971 tokens", "Validation Matrix PASS · 7,971 tokens")}</span></div>
-        <div className={s.proofCaveat}><b>9/10 E2E</b><span>{t("Gate 2 MVP đạt; TC08 còn cần tinh chỉnh ngữ cảnh hướng dẫn khi xe đang sạc.", "Gate 2 MVP passed; TC08 still needs clearer guidance context while the vehicle is charging.")}</span></div>
+        <div className={s.proofPanelHeading}><span>02</span><div><small>{t("GOLDEN EVAL & GATE 2", "GOLDEN EVAL & GATE 2")}</small><h3>{t("Hai phiên bản, hai phạm vi", "Two versions, separate scopes")}</h3></div></div>
+        <div className={s.proofRunGroup}><h4>{t("Golden V1 · 60 ca · 14/10/2026", "Golden V1 · 60 cases · 2026-10-14")}</h4>
+          <div className={s.proofMetricLine}><strong>52/60</strong><span>{t("Offline · 86.7%", "Offline · 86.7%")}</span></div>
+          <div className={s.proofMetricLine}><strong>50/60</strong><span>{t("Online · 83.3%", "Online · 83.3%")}</span></div>
+        </div>
+        <div className={s.proofRunGroup}><h4>{t("Golden V2 · 17/10/2026", "Golden V2 · 2026-10-17")}</h4>
+          <p className={s.proofRunResult}><b>{t("Offline · 120 ca", "Offline · 120 cases")}</b><span>{t("95 PASS · 9 FAIL · 16 BLOCKED", "95 PASS · 9 FAIL · 16 BLOCKED")}</span></p>
+          <p className={s.proofRunResult}><b>{t("Live · 40 ca", "Live · 40 cases")}</b><span>{t("30 PASS · 10 FAIL", "30 PASS · 10 FAIL")}</span></p>
+        </div>
       </article>
       <article className={s.proofPanel}>
-        <div className={s.proofPanelHeading}><span>03</span><div><small>{t("LANGFUSE CLOUD", "LANGFUSE CLOUD")}</small><h3>{t("Theo dõi chi phí & độ trễ", "Cost & latency telemetry")}</h3></div></div>
-        <div className={s.proofTelemetry}><div><strong>210</strong><span>{t("root traces", "root traces")}</span></div><div><strong>2,248</strong><span>{t("observations · 6 môi trường", "observations · 6 environments")}</span></div></div>
-        <div className={s.proofCost}><span>{t("Tổng chi phí ghi nhận", "Recorded total cost")}</span><strong>$0.052185</strong><small>~$0.00025 / trace</small></div>
+        <div className={s.proofPanelHeading}><span>03</span><div><small>{t("LANGFUSE CLOUD · 6 MÔI TRƯỜNG", "LANGFUSE CLOUD · 6 ENVIRONMENTS")}</small><h3>{t("Theo dõi chi phí & độ trễ", "Cost & latency telemetry")}</h3></div></div>
+        <div className={s.proofTelemetry}><div><strong>210</strong><span>{t("root traces", "root traces")}</span></div><div><strong>2,248</strong><span>{t("observations", "observations")}</span></div></div>
+        <div className={s.proofCost}><span>{t("Tổng chi phí ghi nhận", "Recorded total cost")}</span><strong>$0.052185</strong></div>
         <p className={s.proofLatency}>{t("P95 theo use case: 2.8–6.8s · Max trace: 4.94–8.25s · Rule/Offline: 0.094s", "P95 by use case: 2.8–6.8s · Max trace: 4.94–8.25s · Rule/Offline: 0.094s")}</p>
+        <p className={s.proofPanelCaption}>{t("Số tổng hợp từ nhiều môi trường eval, demo và phát triển; không dùng để suy ra chi phí mỗi ca thực tế.", "Aggregate across evaluation, demo, and development environments; not a per-customer-case cost estimate.")}</p>
       </article>
     </div>
-    <details className={s.evidenceSource}><summary>{t("Phạm vi và cách đọc số liệu", "Evidence scope and interpretation")}<ChevronDown size={18} aria-hidden="true" /></summary><p>{t("Baseline V1, sau cải thiện V1, bộ Quality V2 90 ca, Golden 60 ca, E2E 10 ca và Langfuse Cloud là các phép đo riêng. Các tỷ lệ không gộp thành một điểm tổng hợp. Golden V2: offline 52/60, online 50/60; 10 ca Vision bị chặn trong chế độ offline do không đánh giá nhận diện hình ảnh.", "Baseline V1, improved V1, the 90-case Quality V2 set, 60 Golden cases, 10 E2E cases, and Langfuse Cloud are separate measurements. Their rates are not combined into one score. Golden V2: 52/60 offline and 50/60 online; 10 Vision cases are blocked offline because image recognition is not evaluated in that mode.")}</p></details>
+    <details className={s.evidenceSource}><summary>{t("Phạm vi và giới hạn bằng chứng", "Evidence scope and limits")}<ChevronDown size={18} aria-hidden="true" /></summary><p>{t("Golden V1 và V2 có nhãn draft_policy_review, chưa phải holdout độc lập. Báo cáo V2 ghi nhận RAG dùng fixture và ảnh tổng hợp; 16 ca Vision offline bị BLOCKED, không tính là đạt. Chỉ số Quality V2 được chấm theo assertion và mẫu số riêng, chưa chứng minh đúng ngữ nghĩa trên mọi câu hỏi. Gate 2 là kiểm thử API; TC08 vẫn FAIL. Số Langfuse 210 trace / 2.248 observations / $0.052185 là snapshot tổng hợp 6 môi trường, không phải SLA production. Báo cáo Cloud cũ 10/10 (7.971 tokens) là một lượt riêng, không gộp với số tổng hợp này.", "Golden V1 and V2 labels remain draft_policy_review; neither is an independent holdout. The V2 report uses RAG fixtures and synthetic images; 16 offline Vision cases are BLOCKED, not passes. Quality V2 metrics are assertion-based with separate denominators and do not establish semantic correctness for every question. Gate 2 tested the API; TC08 still FAILS. Langfuse's 210 traces / 2,248 observations / $0.052185 are an aggregate snapshot across six environments, not a production SLA. The older Cloud report with 10/10 (7,971 tokens) is a separate run and is not combined here.")}</p></details>
   </div></section>;
 }
-
 export function ProjectDevelopmentSection() {
   const t = useCopy();
   return <section className={`${s.section} ${s.development}`} aria-labelledby="development-title"><div className={`${s.container} ${s.developmentLayout}`}>

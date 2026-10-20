@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Search,
   BookOpen,
+  LayoutDashboard,
   LogOut,
   User,
   ShieldAlert,
@@ -41,11 +42,13 @@ export function Navbar() {
           { name: t("Trợ lý Chat"), href: "/chat", icon: MessageSquare },
           { name: t("Trung tâm hỗ trợ"), href: "/track-case", icon: Search },
           { name: t("Cẩm nang"), href: "/#knowledge-hub", icon: BookOpen },
+          { name: t("Tổng quan"), href: "/project-overview", icon: LayoutDashboard },
         ]
       : [
           { name: t("Trang chủ"), href: "/", exact: true },
           { name: t("Trợ lý Chat"), href: "/chat", icon: MessageSquare },
           { name: t("Cẩm nang"), href: "/#knowledge-hub", icon: BookOpen },
+          { name: t("Tổng quan"), href: "/project-overview", icon: LayoutDashboard },
         ];
 
   const isAuthPage = pathname === "/login" || pathname === "/register";

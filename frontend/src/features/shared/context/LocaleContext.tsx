@@ -205,6 +205,7 @@ export const ENGLISH: Record<string, string> = {
   "Liên hệ quản trị viên nội bộ VinFast nếu bạn chưa được cấp quyền truy cập.": "Contact your VinFast administrator if you need access.",
   "Đang xác thực cổng nghiệp vụ...": "Checking staff access...",
   "Cẩm nang": "Knowledge Hub",
+  "Tổng quan": "Overview",
   "Chuyển sang giao diện tối": "Switch to dark mode",
   "Chuyển sang giao diện sáng": "Switch to light mode",
   "Cẩm nang kỹ thuật": "Technical guide",
