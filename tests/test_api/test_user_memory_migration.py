@@ -92,8 +92,8 @@ def test_legacy_startup_preserves_demo_login_and_followup_migration(memory_migra
     from starlette.requests import Request
     from sqlalchemy.orm import Session
     from src import db as database
-    from src.api.auth import login
-    from src.models.schemas import LoginRequest
+    from src.api.auth import login, register
+    from src.models.schemas import LoginRequest, RegisterRequest
     from src.models.db_models import User
     from src.services.auth import hash_password, verify_token
 
@@ -118,9 +118,16 @@ def test_legacy_startup_preserves_demo_login_and_followup_migration(memory_migra
                 assert result.data.user.is_demo is True
                 assert verify_token(result.data.token)['sub'] == role
                 assert session.get(User, role).memory_revision == 0
+            registration = register(RegisterRequest(username='memory-register@example.test', password=password), request, session)
+            assert registration.data.user.role == 'CUSTOMER'
+            assert registration.data.user.is_demo is False
+            assert session.get(User, registration.data.user.id).memory_revision == 0
+            signed_in = login(LoginRequest(username='memory-register@example.test', password=password), request, session)
+            assert signed_in.data.user.id == registration.data.user.id
+            assert verify_token(signed_in.data.token)['sub'] == registration.data.user.id
         command.upgrade(config, 'head')
         with engine.connect() as connection:
-            assert connection.execute(sa.text('SELECT count(*) FROM users')).scalar_one() == 2
+            assert connection.execute(sa.text('SELECT count(*) FROM users')).scalar_one() == 3
             assert connection.execute(sa.text('SELECT count(*) FROM user_memory_facts')).scalar_one() == 0
     finally:
         engine.dispose()
