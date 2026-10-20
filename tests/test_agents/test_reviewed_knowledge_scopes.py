@@ -40,11 +40,11 @@ def test_schedule_does_not_cross_unknown_scope(query, model):
     assert not reviewed_maintenance_schedules(query, model)
 
 
-def test_vf5_model_colors_are_not_trim_year_or_stock_assertions():
+def test_vf5_model_colors_are_not_trim_or_year_assertions():
     from src.services.reviewed_knowledge import reviewed_model_colors
     rows = reviewed_model_colors('VF5 có những màu gì?', 'VF5')
     assert rows and 'Urban Mint' in rows[0]['relevant_snippet']
-    assert 'tồn kho' in rows[0]['relevant_snippet']
+    assert 'tồn kho' not in rows[0]['relevant_snippet']
     for query in ['VF5 Plus màu nào?', 'VF5 đời 2025 có màu gì?', 'VF5 màu nào còn hàng hôm nay?']:
         assert not reviewed_model_colors(query, 'VF5')
 
@@ -62,7 +62,7 @@ def test_pending_review_schedule_is_not_runtime_authority(monkeypatch, tmp_path)
 @pytest.mark.parametrize('question,model,required', [
     ('Lịch bảo dưỡng định kỳ VF3 là gì?', 'VF3', ['15.000', '12 tháng', 'đến trước']),
     ('Dung lượng pin VF5 là bao nhiêu?', 'VF5', ['37,23', 'kWh']),
-    ('VF5 có những màu gì?', 'VF5', ['Urban Mint', 'tồn kho']),
+    ('VF5 có những màu gì?', 'VF5', ['Urban Mint']),
 ])
 async def test_reviewed_data_can_be_delivered_with_claim_validation(monkeypatch, question, model, required):
     from src.agents.nodes import rag_node as module
@@ -73,6 +73,8 @@ async def test_reviewed_data_can_be_delivered_with_claim_validation(monkeypatch,
     assert not result['is_no_source'], result['retrieval_diagnostics']
     assert result['answer_status'] == 'answered'
     assert all(term in result['response'] for term in required)
+    if question.endswith('màu gì?'):
+        assert 'tồn kho' not in result['response'].casefold()
     assert result['rag_citations']
 
 

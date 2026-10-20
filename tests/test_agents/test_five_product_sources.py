@@ -39,9 +39,9 @@ def test_new_palette_evidence_is_retrievable_and_translatable(model, colors):
     assert result['status'] == 'SUCCESS', result
     text = '\n'.join(c['relevant_snippet'] for c in result['citations'])
     assert all(color in text for color in colors), text
-    assert 'tồn kho' in text and 'đời xe' in text
+    assert 'tồn kho' not in text and 'đời xe' in text
     english = english_help_answer('Theo tài liệu VinFast:\n\n' + text)
-    assert english and 'stock' in english and all(color in english for color in colors)
+    assert english and 'stock' not in english and all(color in english for color in colors)
     assert all(c['source_id'] == 'SRC-009' for c in result['citations'])
 
 

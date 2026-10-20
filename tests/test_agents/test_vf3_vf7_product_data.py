@@ -25,9 +25,9 @@ def test_vf7_fast_charging_is_variant_specific(variant,minutes):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('question,model,terms', [
-    ('VF3 có màu gì?', 'VF3', ['Rose Pink','Summer Yellow','Urban Mint','tồn kho']),
+    ('VF3 có màu gì?', 'VF3', ['Rose Pink','Summer Yellow','Urban Mint']),
     ('VF3 Plus có màu gì?', 'VF3', ['Rose Pink','chưa','phiên bản']),
-    ('VF7 Plus có màu gì?', 'VF7', ['tiêu chuẩn','nâng cao','Urban Mint','tồn kho']),
+    ('VF7 Plus có màu gì?', 'VF7', ['tiêu chuẩn','nâng cao','Urban Mint']),
 ])
 async def test_new_color_evidence_reaches_answers(question,model,terms,monkeypatch):
     from src.agents.nodes import rag_node as module
@@ -36,6 +36,7 @@ async def test_new_color_evidence_reaches_answers(question,model,terms,monkeypat
     result=await module.rag_node({'latest_user_message':question,'vehicle_model':model,'confidence_score':.9})
     assert result['rag_citations'],result
     assert all(term.casefold() in result['response'].casefold()for term in terms),result
+    assert 'tồn kho' not in result['response'].casefold(),result
     if 'Plus' in question:assert result['answer_status']=='partial'
 
 
@@ -57,5 +58,5 @@ def test_new_color_sections_have_reviewed_english_without_rewriting_values():
     for row in rows:
         if row['key'] not in {'vf3_model_colors','vf7_model_colors'}:continue
         translated=english_help_answer('Theo tài liệu VinFast:\n\n'+row['relevant_snippet'])
-        assert translated and 'stock' in translated
+        assert translated and 'stock' not in translated.casefold()
         assert 'Urban Mint' in translated

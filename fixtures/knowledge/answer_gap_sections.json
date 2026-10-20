@@ -110,8 +110,8 @@
     "model": "VF7",
     "source_id": "SRC-009",
     "source_section": "Trang VF7 / bảng màu; brochure10/04/2026 trang12 / Eco, Plus tiêu chuẩn và nâng cao",
-    "relevant_snippet": "Màu ngoại thất công bố cho dòng VF7: Infinity Blanc; Zenith Grey; Jet Black; Solar Ruby; Urban Mint. Theo brochure 10/04/2026, Eco và Plus tiêu chuẩn có Jet Black, Solar Ruby, Infinity Blanc, Zenith Grey; Eco và Plus nâng cao có Urban Mint. Nguồn chưa xác nhận phối màu riêng cho Plus AWD, đời xe cụ thể hoặc tồn kho tại đại lý. Cần đối chiếu gói trang bị và nơi mua trước khi đặt xe.",
-    "relevant_snippet_en": "The VF7 model page lists Infinity Blanc, Zenith Grey, Jet Black, Solar Ruby and Urban Mint. The 10/04/2026 brochure assigns Jet Black, Solar Ruby, Infinity Blanc and Zenith Grey to standard Eco and Plus packages; upgraded Eco and Plus packages list Urban Mint. It does not establish separate Plus AWD color mapping, a specific model year or dealer stock. Confirm the equipment package and sales location before ordering.",
+    "relevant_snippet": "Màu ngoại thất công bố cho dòng VF7: Infinity Blanc; Zenith Grey; Jet Black; Solar Ruby; Urban Mint. Theo brochure 10/04/2026, Eco và Plus tiêu chuẩn có Jet Black, Solar Ruby, Infinity Blanc, Zenith Grey; Eco và Plus nâng cao có Urban Mint. Nguồn chưa xác nhận phối màu riêng cho Plus AWD hoặc đời xe cụ thể. Cần đối chiếu gói trang bị trước khi đặt xe.",
+    "relevant_snippet_en": "The VF7 model page lists Infinity Blanc, Zenith Grey, Jet Black, Solar Ruby and Urban Mint. The 10/04/2026 brochure assigns Jet Black, Solar Ruby, Infinity Blanc and Zenith Grey to standard Eco and Plus packages; upgraded Eco and Plus packages list Urban Mint. It does not establish separate Plus AWD color mapping or a specific model year. Confirm the equipment package before ordering.",
     "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf7",
     "catalog_scope": "model_colors",
     "answer_status": "partial",
@@ -148,8 +148,8 @@
     "catalog_scope": "model_colors",
     "answer_status": "partial",
     "evidence_location": "fixtures/knowledge/source_reviews/vf3-vf7-product-2026-10-19.json",
-    "relevant_snippet": "Màu ngoại thất công bố cho dòng VF3: Infinity Blanc; Zenith Grey; Solar Ruby; Summer Yellow Body - Infinity Blanc Roof; Sky Blue - Infinity Blanc Roof; Rose Pink - Infinity Blanc Roof; Urban Mint. Danh sách ở mức dòng xe; nguồn chưa tách màu theo phiên bản Eco/Plus hoặc đời xe và chưa xác nhận tồn kho tại đại lý. Cần đối chiếu phiên bản và nơi mua trước khi đặt xe.",
-    "relevant_snippet_en": "The VF3 model page lists Infinity Blanc; Zenith Grey; Solar Ruby; Summer Yellow Body - Infinity Blanc Roof; Sky Blue - Infinity Blanc Roof; Rose Pink - Infinity Blanc Roof; Urban Mint. This is a model-level palette; the source does not allocate colors to Eco/Plus or model years or confirm dealer stock. Confirm the trim and sales location before ordering."
+    "relevant_snippet": "Màu ngoại thất công bố cho dòng VF3: Infinity Blanc; Zenith Grey; Solar Ruby; Summer Yellow Body - Infinity Blanc Roof; Sky Blue - Infinity Blanc Roof; Rose Pink - Infinity Blanc Roof; Urban Mint. Danh sách ở mức dòng xe; nguồn chưa tách màu theo phiên bản Eco/Plus hoặc đời xe. Cần đối chiếu phiên bản trước khi đặt xe.",
+    "relevant_snippet_en": "The VF3 model page lists Infinity Blanc; Zenith Grey; Solar Ruby; Summer Yellow Body - Infinity Blanc Roof; Sky Blue - Infinity Blanc Roof; Rose Pink - Infinity Blanc Roof; Urban Mint. This is a model-level palette; the source does not allocate colors to Eco/Plus or model years. Confirm the trim before ordering."
   },
   {
     "market": "VN",
@@ -166,8 +166,8 @@
     "catalog_scope": "model_colors",
     "answer_status": "partial",
     "evidence_location": "fixtures/knowledge/source_reviews/vf5-vf6-vf8-vf9-product-2026-10-19.json",
-    "relevant_snippet": "Màu ngoại thất công bố cho dòng VF6: Infinity Blanc; Zenith Grey; Jet Black; Urban Mint; Solar Ruby. Danh sách ở mức dòng xe; nguồn chưa xác nhận phân bổ theo phiên bản, đời xe hoặc tồn kho tại đại lý. Cần đối chiếu phiên bản và nơi mua trước khi đặt xe.",
-    "relevant_snippet_en": "The VF6 product page lists these exterior colors: Infinity Blanc; Zenith Grey; Jet Black; Urban Mint; Solar Ruby. This is a model-level palette; trim allocation, model year and dealer stock are not established. Confirm the trim and sales location before ordering."
+    "relevant_snippet": "Màu ngoại thất công bố cho dòng VF6: Infinity Blanc; Zenith Grey; Jet Black; Urban Mint; Solar Ruby. Danh sách ở mức dòng xe; nguồn chưa xác nhận phân bổ theo phiên bản hoặc đời xe. Cần đối chiếu phiên bản trước khi đặt xe.",
+    "relevant_snippet_en": "The VF6 product page lists these exterior colors: Infinity Blanc; Zenith Grey; Jet Black; Urban Mint; Solar Ruby. This is a model-level palette; trim allocation and model year are not established. Confirm the trim before ordering."
   },
   {
     "market": "VN",
@@ -184,8 +184,8 @@
     "catalog_scope": "model_colors",
     "answer_status": "partial",
     "evidence_location": "fixtures/knowledge/source_reviews/vf5-vf6-vf8-vf9-product-2026-10-19.json",
-    "relevant_snippet": "Màu ngoại thất công bố cho dòng VF8: Infinity Blanc; Jet Black; Crimson Red; Ivy Green. Danh sách ở mức dòng xe; nguồn chưa xác nhận phân bổ theo phiên bản, đời xe hoặc tồn kho tại đại lý. Cần đối chiếu phiên bản và nơi mua trước khi đặt xe.",
-    "relevant_snippet_en": "The VF8 product page lists these exterior colors: Infinity Blanc; Jet Black; Crimson Red; Ivy Green. This is a model-level palette; trim allocation, model year and dealer stock are not established. Confirm the trim and sales location before ordering."
+    "relevant_snippet": "Màu ngoại thất công bố cho dòng VF8: Infinity Blanc; Jet Black; Crimson Red; Ivy Green. Danh sách ở mức dòng xe; nguồn chưa xác nhận phân bổ theo phiên bản hoặc đời xe. Cần đối chiếu phiên bản trước khi đặt xe.",
+    "relevant_snippet_en": "The VF8 product page lists these exterior colors: Infinity Blanc; Jet Black; Crimson Red; Ivy Green. This is a model-level palette; trim allocation and model year are not established. Confirm the trim before ordering."
   },
   {
     "market": "VN",
@@ -202,7 +202,7 @@
     "catalog_scope": "model_colors",
     "answer_status": "partial",
     "evidence_location": "fixtures/knowledge/source_reviews/vf5-vf6-vf8-vf9-product-2026-10-19.json",
-    "relevant_snippet": "Màu ngoại thất công bố cho dòng VF9: Infinity Blanc; Zenith Grey; Jet Black; Urban Mint; Crimson Red; Ivy Green; Desat Silver. Danh sách ở mức dòng xe; nguồn chưa xác nhận phân bổ theo phiên bản, đời xe hoặc tồn kho tại đại lý. Cần đối chiếu phiên bản và nơi mua trước khi đặt xe.",
-    "relevant_snippet_en": "The VF9 product page lists these exterior colors: Infinity Blanc; Zenith Grey; Jet Black; Urban Mint; Crimson Red; Ivy Green; Desat Silver. This is a model-level palette; trim allocation, model year and dealer stock are not established. Confirm the trim and sales location before ordering."
+    "relevant_snippet": "Màu ngoại thất công bố cho dòng VF9: Infinity Blanc; Zenith Grey; Jet Black; Urban Mint; Crimson Red; Ivy Green; Desat Silver. Danh sách ở mức dòng xe; nguồn chưa xác nhận phân bổ theo phiên bản hoặc đời xe. Cần đối chiếu phiên bản trước khi đặt xe.",
+    "relevant_snippet_en": "The VF9 product page lists these exterior colors: Infinity Blanc; Zenith Grey; Jet Black; Urban Mint; Crimson Red; Ivy Green; Desat Silver. This is a model-level palette; trim allocation and model year are not established. Confirm the trim before ordering."
   }
 ]

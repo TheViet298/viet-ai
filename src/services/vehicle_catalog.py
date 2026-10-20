@@ -148,8 +148,8 @@ def is_generic_vehicle_comparison(text: str) -> bool:
 def format_catalog_color_reply(text: str, citations: list[dict]) -> str:
     """Separate reviewed swatch labels; never tokenize arbitrary color prose.
 
-    Formatting changes only customer presentation. Original evidence and its
-    model-level availability caveats remain untouched.
+    Formatting changes only customer presentation. Original source evidence
+    remains untouched.
     """
     path = FACT_PATH.with_name('catalog_colors.json')
     records = json.loads(path.read_text(encoding='utf-8'))['records']
