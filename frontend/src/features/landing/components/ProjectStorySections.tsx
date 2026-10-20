@@ -92,20 +92,43 @@ export function ProjectJourneyDetails() {
 
 export function ProjectProofSection() {
   const t = useCopy();
+  const qualityRows = [
+    [t("Critical Safety Recall", "Critical Safety Recall"), "100%", "100%", "100% PASS"],
+    [t("Intent Accuracy", "Intent Accuracy"), "76.67%", "96.67%", "100% PASS"],
+    [t("Routing Accuracy", "Routing Accuracy"), "60.00%", "96.67%", "93.33% PASS"],
+    [t("RAG Grounding / No-Source", "RAG Grounding / No-Source"), "20% / 100%", "20% / 100%", "85% / 100%"],
+    [t("Staff Review (HITL)", "Staff Review (HITL)"), "70.00%", "83.33%", "93.33% PASS"],
+  ];
   return <section id="flow-proof" className={`${s.section} ${s.proof}`} aria-labelledby="proof-title"><div className={s.container}>
-    <p className={s.sectionLabel}>{t("04 / TÍNH KHẢ THI", "04 / FEASIBILITY")}</p><div className={s.splitHeading}><h2 id="proof-title">{t("Đã có luồng chạy.", "A working flow.")}<br /><em>{t("Đang kiểm chứng chất lượng.", "Quality under validation.")}</em></h2><p>{t("Báo cáo Gate 2 ghi lại năm tình huống chạy qua API backend local. Kết quả cho thấy phần đã hoạt động và các lỗi cần sửa trước khi xác nhận toàn bộ trải nghiệm web.", "The Gate 2 report records five scenarios against a local backend API. It identifies working parts and issues to fix before validating the complete web experience.")}</p></div>
-    <div className={s.proofStats}>{[
-      ["5", t("TÌNH HUỐNG API GATE 2", "GATE 2 API SCENARIOS"), t("Sạc, thiếu dữ kiện, khẩn cấp, khiếu nại, tra cứu", "Charging, missing facts, emergencies, complaints, retrieval")],
-      ["2", t("CA ĐẠT TRONG PHẠM VI BÁO CÁO", "PASSES WITH QUALIFICATIONS"), t("Khiếu nại; tra cứu sau khi thử lại", "Complaint intake; retrieval after a retry")],
-      ["3", t("CA GHI NHẬN VẤN ĐỀ", "SCENARIOS WITH ISSUES"), t("Dữ kiện và nội dung phản hồi cần hoàn thiện", "Fact extraction and response content need refinement")],
-      ["Web", t("PHẠM VI MVP HIỆN TẠI", "CURRENT MVP SCOPE"), t("Chủ xe · Serv · Nhân viên dịch vụ", "Owner · Serv · Service staff")],
-    ].map(([value, label, note]) => <div key={label}><strong>{value}</strong><span>{label}</span><p>{note}</p></div>)}</div>
-    <div className={s.proofColumns}>{[
-      [t("ĐÃ GHI NHẬN", "RECORDED"), t("Luồng tiếp nhận và tra cứu", "Intake and retrieval flows"), t("Hồ sơ khiếu nại được tạo để nhân viên tiếp nhận. Tra cứu trả lời kèm nguồn sau khi thử lại.", "A complaint brief was created for staff intake. Retrieval returned a sourced answer after a retry.")],
-      [t("ĐANG HOÀN THIỆN", "BEING REFINED"), t("Dữ kiện và độ ổn định", "Facts and reliability"), t("Ba ca còn lại ghi nhận lỗi dữ kiện hoặc nội dung cần sửa. Cần kiểm thử lại sau mỗi lần khắc phục.", "The other three scenarios recorded fact-extraction or content issues. Fixes need to be retested.")],
-      [t("CẦN ĐO THỰC TẾ", "NEEDS REAL-WORLD MEASUREMENT"), t("Chất lượng bàn giao", "Handover quality"), t("Cần xác nhận hành trình web, thời gian tiếp nhận và hiệu quả của nhân viên trên quy trình thực tế.", "The web journey, intake time, and staff outcomes require validation in actual workflows.")],
-    ].map(([status, title, detail]) => <div key={status}><small>{status}</small><h3>{title}</h3><p>{detail}</p></div>)}</div>
-    <details className={s.evidenceSource}><summary>{t("Phạm vi của bằng chứng kiểm thử", "Scope of the test evidence")}<ChevronDown size={18} aria-hidden="true" /></summary><p>{t("Nguồn: docs/reviews/project-overview-gate2.md, báo cáo kiểm thử MVP Gate 2. Các ca chạy với tài khoản và cơ sở dữ liệu kiểm thử; báo cáo chưa kiểm thử trực tiếp giao diện web. Đây là kết quả của đợt chạy được ghi nhận, không phải trạng thái dịch vụ trực tiếp hay cam kết hiệu quả vận hành.", "Source: docs/reviews/project-overview-gate2.md, the MVP Gate 2 test report. Scenarios used test accounts and a test database; the web UI was not exercised. These are recorded-run results, not live service status or an operational performance guarantee.")}</p></details>
+    <div className={s.proofHeader}>
+      <div className={s.proofEyebrow}><p className={s.sectionLabel}>{t("04 / TÍNH KHẢ THI", "04 / FEASIBILITY")}</p><span>{t("45 ca Benchmark V1 · 90 ca Quality V2 · 60 ca Golden", "45 Benchmark V1 · 90 Quality V2 · 60 Golden cases")}</span></div>
+      <h2 id="proof-title">{t("Đo theo điểm gãy nghiệp vụ.", "Measure the failure points.")}<br /><em>{t("Có số liệu, có phạm vi.", "Show the evidence and its scope.")}</em></h2>
+      <p>{t("Kết quả được tách theo từng bộ dữ liệu và môi trường chạy để nhìn rõ tiến bộ, giới hạn và chi phí vận hành.", "Results are separated by dataset and run environment to show progress, limits, and operating cost.")}</p>
+    </div>
+    <div className={s.proofDashboard}>
+      <article className={`${s.proofPanel} ${s.regressionPanel}`}>
+        <div className={s.proofPanelHeading}><span>01</span><div><small>{t("BỘ KIỂM THỬ HỒI QUY", "REGRESSION SUITE")}</small><h3>{t("Chất lượng qua từng lần chạy", "Quality across runs")}</h3></div></div>
+        <div className={s.proofTableScroll}><table className={s.proofTable}>
+          <thead><tr><th>{t("Chỉ số", "Metric")}</th><th>Baseline V1</th><th>{t("Sau cải thiện V1", "Improved V1")}</th><th>Quality V2</th></tr></thead>
+          <tbody>{qualityRows.map(([metric, baseline, improved, v2]) => <tr key={metric}><th scope="row">{metric}</th><td>{baseline}</td><td>{improved}</td><td>{v2}</td></tr>)}</tbody>
+        </table></div>
+        <div className={s.proofPanelFoot}>{t("90 ca Quality V2 · 561 unit/integration tests + 6 subtests PASS", "90 Quality V2 cases · 561 unit/integration tests + 6 subtests PASS")}</div>
+      </article>
+      <article className={s.proofPanel}>
+        <div className={s.proofPanelHeading}><span>02</span><div><small>{t("GOLDEN EVAL & E2E", "GOLDEN EVAL & E2E")}</small><h3>{t("Độ phủ kiểm chứng", "Validation coverage")}</h3></div></div>
+        <div className={s.proofMetricLine}><strong>52/60</strong><span>{t("Offline · 86.7%", "Offline · 86.7%")}</span></div>
+        <div className={s.proofMetricLine}><strong>50/60</strong><span>{t("Online · 83.3%", "Online · 83.3%")}</span></div>
+        <div className={s.proofMetricLine}><strong>10/10</strong><span>{t("Validation Matrix PASS · 7,971 tokens", "Validation Matrix PASS · 7,971 tokens")}</span></div>
+        <div className={s.proofCaveat}><b>9/10 E2E</b><span>{t("Gate 2 MVP đạt; TC08 còn cần tinh chỉnh ngữ cảnh hướng dẫn khi xe đang sạc.", "Gate 2 MVP passed; TC08 still needs clearer guidance context while the vehicle is charging.")}</span></div>
+      </article>
+      <article className={s.proofPanel}>
+        <div className={s.proofPanelHeading}><span>03</span><div><small>{t("LANGFUSE CLOUD", "LANGFUSE CLOUD")}</small><h3>{t("Theo dõi chi phí & độ trễ", "Cost & latency telemetry")}</h3></div></div>
+        <div className={s.proofTelemetry}><div><strong>210</strong><span>{t("root traces", "root traces")}</span></div><div><strong>2,248</strong><span>{t("observations · 6 môi trường", "observations · 6 environments")}</span></div></div>
+        <div className={s.proofCost}><span>{t("Tổng chi phí ghi nhận", "Recorded total cost")}</span><strong>$0.052185</strong><small>~$0.00025 / trace</small></div>
+        <p className={s.proofLatency}>{t("P95 theo use case: 2.8–6.8s · Max trace: 4.94–8.25s · Rule/Offline: 0.094s", "P95 by use case: 2.8–6.8s · Max trace: 4.94–8.25s · Rule/Offline: 0.094s")}</p>
+      </article>
+    </div>
+    <details className={s.evidenceSource}><summary>{t("Phạm vi và cách đọc số liệu", "Evidence scope and interpretation")}<ChevronDown size={18} aria-hidden="true" /></summary><p>{t("Baseline V1, sau cải thiện V1, bộ Quality V2 90 ca, Golden 60 ca, E2E 10 ca và Langfuse Cloud là các phép đo riêng. Các tỷ lệ không gộp thành một điểm tổng hợp. Golden V2: offline 52/60, online 50/60; 10 ca Vision bị chặn trong chế độ offline do không đánh giá nhận diện hình ảnh.", "Baseline V1, improved V1, the 90-case Quality V2 set, 60 Golden cases, 10 E2E cases, and Langfuse Cloud are separate measurements. Their rates are not combined into one score. Golden V2: 52/60 offline and 50/60 online; 10 Vision cases are blocked offline because image recognition is not evaluated in that mode.")}</p></details>
   </div></section>;
 }
 
