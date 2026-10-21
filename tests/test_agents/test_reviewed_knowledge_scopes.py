@@ -49,6 +49,25 @@ def test_vf5_model_colors_are_not_trim_or_year_assertions():
         assert not reviewed_model_colors(query, 'VF5')
 
 
+@pytest.mark.parametrize('query,model,color', [
+    ('VF2 có những màu gì?', 'VF2', 'Rose Pink'),
+    ('VF MPV 7 có những màu gì?', 'VFMPV7', 'Introspective Brown'),
+])
+def test_new_model_color_snapshots_are_scoped_and_resolvable(query, model, color):
+    from src.services.reviewed_knowledge import reviewed_model_colors
+    from src.services.vehicle_context import resolve_vehicle_context
+
+    rows = reviewed_model_colors(query, model)
+    assert rows and color in rows[0]['relevant_snippet']
+    assert rows[0]['applicable_models'] == [model]
+    assert 'chưa xác nhận' in rows[0]['relevant_snippet']
+    assert resolve_vehicle_context(query)['target_model'] == model
+    for out_of_scope in [query.replace('có những màu gì?', 'Plus có màu gì?'),
+                         query.replace('có những màu gì?', 'đời 2025 có màu gì?'),
+                         query.replace('có những màu gì?', 'màu nào còn hàng hôm nay?')]:
+        assert not reviewed_model_colors(out_of_scope, model)
+
+
 def test_pending_review_schedule_is_not_runtime_authority(monkeypatch, tmp_path):
     from src.services import reviewed_knowledge
     path = tmp_path / 'maintenance_schedules.json'

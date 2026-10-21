@@ -1,6 +1,29 @@
 {
   "records": [
     {
+      "model": "VF2",
+      "source_id": "SRC-009",
+      "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf2",
+      "source_section": "Đa sắc màu - Đậm cá tính",
+      "review_status": "verified",
+      "reviewed_at": "2026-10-20",
+      "reviewer": "Codex/root, official product-page content review",
+      "market": "VN",
+      "model_year": null,
+      "swatches": [
+        { "name": "Infinity Blanc" },
+        { "name": "Desat Silver" },
+        { "name": "Solar Ruby" },
+        { "name": "Yellow" },
+        { "name": "Sky Blue" },
+        { "name": "Urban Mint" },
+        { "name": "Rose Pink" },
+        { "name": "Be Pebble" }
+      ],
+      "color_scope": "Published model-level exterior palette; trim, model year and dealer stock are not established.",
+      "relevant_snippet": "Màu sắc ngoại thất VF2: Infinity Blanc Desat Silver Solar Ruby Yellow Sky Blue Urban Mint Rose Pink Be Pebble. Danh sách màu cấp mẫu xe; chưa xác nhận theo phiên bản, đời xe hoặc tồn kho."
+    },
+    {
       "model": "VF8",
       "source_id": "SRC-009",
       "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf8",
@@ -18,6 +41,27 @@
           "name": "Ivy Green"
         }
       ]
+    },
+    {
+      "model": "VFMPV7",
+      "source_id": "SRC-009",
+      "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf-mpv7",
+      "source_section": "Một lựa chọn cho mọi gia đình",
+      "review_status": "verified",
+      "reviewed_at": "2026-10-20",
+      "reviewer": "Codex/root, official product-page content review",
+      "market": "VN",
+      "model_year": null,
+      "swatches": [
+        { "name": "Infinity Blanc" },
+        { "name": "Zenith Grey" },
+        { "name": "Jet Black" },
+        { "name": "Solar Ruby" },
+        { "name": "Moonlit Ocean" },
+        { "name": "Introspective Brown" }
+      ],
+      "color_scope": "Published model-level exterior palette; trim, model year and dealer stock are not established.",
+      "relevant_snippet": "Màu sắc ngoại thất VF MPV 7: Infinity Blanc Zenith Grey Jet Black Solar Ruby Moonlit Ocean Introspective Brown. Danh sách màu cấp mẫu xe; chưa xác nhận theo phiên bản, đời xe hoặc tồn kho."
     },
     {
       "model": "VF5",
@@ -41,10 +85,14 @@
           "name": "Solar Ruby"
         },
         {
-          "name": "Summer Yellow Body - Jet Black Roof"
+          "name": "Summer Yellow Body - Jet Black Roof",
+          "body_color": "Summer Yellow",
+          "roof_color": "Jet Black"
         },
         {
-          "name": "Sky Blue - Infinity Blanc Roof"
+          "name": "Sky Blue - Infinity Blanc Roof",
+          "body_color": "Sky Blue",
+          "roof_color": "Infinity Blanc"
         },
         {
           "name": "Urban Mint"

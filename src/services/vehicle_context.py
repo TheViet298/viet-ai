@@ -6,7 +6,7 @@ from src.agents.nodes.triage_node import classify_request_kind, extract_fields
 from src.services.chat_classification import denied_reports, temporal_context
 from src.services.vehicle_knowledge import is_vehicle_comparison
 
-MODEL = re.compile(r"\b(?:vf\s*(?:e34|[356789])|e34)\b", re.I)
+MODEL = re.compile(r"\b(?:vf\s*(?:e34|mpv\s*7|[2356789])|e34)\b", re.I)
 
 
 def resolve_vehicle_context(text: str, previous: dict | None = None) -> dict:

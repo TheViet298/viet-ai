@@ -18,7 +18,7 @@ def _model_only(query: str, model: str | None) -> bool:
     if not model:
         return False
     body = normalized(query)
-    models = {match.upper().replace(' ', '') for match in re.findall(r'\bvf\s*(?:e34|[356789])\b', body)}
+    models = {match.upper().replace(' ', '') for match in re.findall(r'\bvf\s*(?:e34|mpv\s*7|[2356789])\b', body)}
     return (not models or models == {model}) and not re.search(r'\b20\d{2}\b|\b(?:eco|plus|awd|fwd)\b', body)
 
 

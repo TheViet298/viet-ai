@@ -32,7 +32,9 @@ Tài liệu này quản lý toàn bộ các nguồn dữ liệu chính thức ph
 | **SRC-006** | Dịch vụ pin, trạm sạc & quy chuẩn sạc xe điện | `https://vinfastauto.com/vn_vi/dich-vu-pin-oto-dien` | `official_service` | **Đã xác minh (200 OK)** | 2026-09-30 | Toàn bộ dòng xe ô tô điện |
 | **SRC-007** | Sổ tay hướng dẫn sử dụng VinFast VF 8 (Owner's Manual) | `https://om.vinfastauto.com/vi_vn/detail?car=VF8&year=2026` | `official_manual` | **Đã xác minh (200 OK)** | 2026-09-30 | VF 8 |
 | **SRC-008** | Sổ tay hướng dẫn sử dụng VinFast VF 5 (Owner's Manual) | `https://om.vinfastauto.com/vi_vn/detail?car=VF5&year=2026` | `official_manual` | **Đã xác minh (200 OK)** | 2026-09-30 | VF 5 |
-| **SRC-009** | Danh mục thông số kỹ thuật & phiên bản thương mại | `https://vinfastauto.com/vn_vi/` (Crawl từ catalog chính thức) | `official_catalog` | **Đã xác minh (200 OK)** | 2026-09-30 | Toàn bộ dòng xe (VF 3 - VF 9) |
+| **SRC-009** | Danh mục thông số kỹ thuật & phiên bản thương mại | `https://vinfastauto.com/vn_vi/` và các trang sản phẩm | `official_catalog` | **Đã xác minh (200 OK)** | 2026-09-30 | VF 2, VF 3, VF 5, VF 6, VF 7, VF 8, VF 9, VF MPV 7 và VF Wild; phạm vi URL theo `docs/data-source-url-verification.json` |
+
+Ngày 20/10, nội dung các trang VF 2, VF Wild, VF MPV 7 và VF 5 được đọc lại riêng qua web reader; lần đọc này không ghi nhận HTTP status hoặc raw HTML. Phạm vi trích xuất và giới hạn từng bản ghi nằm trong `docs/testing/vf2-wild-mpv7-vf5-product-data-2026-10-20.md` và `fixtures/knowledge/source_reviews/vf2-wild-mpv7-vf5-product-2026-10-20.json`. Ngày `verified_at` trong citation vẫn thể hiện lần xác minh URL ở registry; ngày `reviewed_at` thể hiện lần rà nội dung riêng.
 
 ---
 

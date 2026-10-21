@@ -1,0 +1,231 @@
+{
+  "market": "VN",
+  "reviewed_at": "2026-10-20",
+  "reviewer": "Codex/root, official product-page content review",
+  "review_status": "reviewed_page_content_only",
+  "html_method": "Official VinFast product pages read through the web reader. Direct HTTP status, raw HTML, and file hashes were not captured in this review.",
+  "acquisition": [
+    {
+      "name": "VF2 product page",
+      "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf2",
+      "method": "Official page content read through web reader",
+      "http_status": null,
+      "sha256": null
+    },
+    {
+      "name": "VF Wild product page",
+      "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf-wild",
+      "method": "Official page content read through web reader",
+      "http_status": null,
+      "sha256": null
+    },
+    {
+      "name": "VF MPV 7 product page",
+      "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf-mpv7",
+      "method": "Official page content read through web reader",
+      "http_status": null,
+      "sha256": null
+    },
+    {
+      "name": "VF 5 product page",
+      "url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf5",
+      "method": "Official page content read through web reader",
+      "http_status": null,
+      "sha256": null
+    }
+  ],
+  "models": {
+    "VF2": {
+      "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf2",
+      "model_year": null,
+      "runtime_status": "reviewed_model_colors_active; vehicle specs not ingested",
+      "colors": [
+        "Infinity Blanc",
+        "Desat Silver",
+        "Solar Ruby",
+        "Yellow",
+        "Sky Blue",
+        "Urban Mint",
+        "Rose Pink",
+        "Be Pebble"
+      ],
+      "color_details": {
+        "source_section": "Đa sắc màu - Đậm cá tính",
+        "published_as": "Eight named exterior colors; the page does not provide per-color finish or shade descriptions.",
+        "color_scope": "Model-level palette only; trim, model year and dealer stock are not established."
+      },
+      "model_specs": {
+        "dimensions_mm": [3090, 1496, 1663.2],
+        "wheelbase_mm": 2065,
+        "seats": 4,
+        "torque_nm": 65,
+        "power_kw": 30,
+        "range_km": 210,
+        "range_standard": "NEDC",
+        "usable_capacity_kwh": 18.3,
+        "fast_charge": {"minutes": 34, "soc_from_percent": 10, "soc_to_percent": 70},
+        "dc_max_kw": {"value": 24, "approximate": true},
+        "airbags": 1,
+        "instrument_screen_inches": 7,
+        "vehicle_warranty_page": {"years": 7, "km": 160000, "whichever_first": true}
+      },
+      "price": {
+        "amount_vnd": 188000000,
+        "type": "list",
+        "source_section": "Giá niêm yết / VF 2",
+        "conditions": "Trang ghi giá niêm yết; chưa xác định giá lăn bánh, ưu đãi, đời xe hoặc phương án pin riêng."
+      },
+      "source_sections": [
+        "Thông số kỹ thuật / Kích thước",
+        "Thông số kỹ thuật / Pin & Sạc",
+        "Thông số kỹ thuật / Công nghệ trang bị",
+        "Bảng màu",
+        "Giá niêm yết"
+      ],
+      "scope_notes": [
+        "Trang không nêu model year hoặc cấu hình/phiên bản riêng cho các thông số ghi nhận.",
+        "NEDC là chuẩn công bố; quãng đường thực tế phụ thuộc điều kiện sử dụng."
+      ]
+    },
+    "VFWILD": {
+      "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf-wild",
+      "model_year": null,
+      "runtime_status": "source_review_only_not_in_ev_catalog",
+      "product_page_classification": "REEV / range-extended electric pickup",
+      "source_observations": {
+        "battery_chemistry": "LFP",
+        "battery_capacity_kwh": 46.4,
+        "pure_electric_range_km": {"operator": ">", "value": 250},
+        "combined_range_km": {"operator": "up to", "value": 1000, "type": "combined fuel and electric; page does not state a standardized test cycle"},
+        "power_kw": 160,
+        "torque_nm": 280,
+        "bed_payload_kg": 750,
+        "dimensions_mm": [5376, 2069, 1873],
+        "wheelbase_mm": 3258,
+        "bed_dimensions_mm": [1574, 1512, 509],
+        "tire_size": "255/70 R18",
+        "list_price_from_vnd": 860000000,
+        "screen_inches": 10,
+        "seat_count": 5
+      },
+      "source_sections": [
+        "Mô tả sản phẩm đầu trang",
+        "Thông số sản phẩm / Kích thước",
+        "Thông tin quãng đường REEV",
+        "Giá chỉ từ"
+      ],
+      "limitations": [
+        "Trang mô tả mẫu REEV và hiển thị giá khởi điểm, nhưng không cung cấp bảng cấu hình/phiên bản và phạm vi giá chi tiết trong nội dung đã đọc.",
+        "Trang ghi hình ảnh minh họa thuộc giai đoạn tiền thương mại và thông tin sản phẩm có thể thay đổi.",
+        "Không thấy thời hạn bảo hành, chuẩn thử quãng đường thuần điện, thời gian sạc, công suất sạc AC/DC hoặc danh sách màu trong phần nội dung đọc được.",
+        "Không diễn giải 1.000 km là quãng đường thuần điện hoặc một chuẩn NEDC/WLTP."
+      ]
+    },
+    "VFMPV7": {
+      "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-vf-mpv7",
+      "model_year": null,
+      "runtime_status": "reviewed_model_colors_active; vehicle specs not ingested",
+      "colors": [
+        "Infinity Blanc",
+        "Zenith Grey",
+        "Jet Black",
+        "Solar Ruby",
+        "Moonlit Ocean",
+        "Introspective Brown"
+      ],
+      "color_details": {
+        "source_section": "Một lựa chọn cho mọi gia đình",
+        "published_as": "Six named exterior colors; the page does not provide per-color finish or shade descriptions.",
+        "color_scope": "Model-level palette only; trim, model year and dealer stock are not established."
+      },
+      "model_specs": {
+        "dimensions_mm": [4740, 1872, 1734],
+        "wheelbase_mm": 2840,
+        "seats": 7,
+        "torque_nm": 280,
+        "power_kw": 150,
+        "range_km": 450,
+        "range_standard": "NEDC",
+        "usable_capacity_kwh": 60.13,
+        "fast_charge": {"minutes": 30, "soc_from_percent": 10, "soc_to_percent": 70},
+        "ac_max_kw": 6.9,
+        "dc_max_kw": 80,
+        "automatic_air_conditioning_zones": 1,
+        "cabin_filter": "PM 2.5",
+        "infotainment_screen_inches": 10.1,
+        "airbags": 4,
+        "vehicle_warranty_page": {"years": 7, "km": 160000, "whichever_first": true}
+      },
+      "price": {
+        "amount_vnd": 750000000,
+        "type": "list",
+        "source_section": "Giá niêm yết / VF MPV 7",
+        "conditions": "Trang ghi giá niêm yết; chưa xác định giá lăn bánh, ưu đãi, đời xe hoặc phương án pin riêng."
+      },
+      "source_sections": [
+        "Thông số sản phẩm / Kích thước",
+        "Thông số sản phẩm / Pin & Sạc",
+        "Thông số sản phẩm / Công nghệ trang bị",
+        "Bảng màu",
+        "Giá niêm yết"
+      ],
+      "scope_notes": [
+        "Trang không nêu model year hoặc cấu hình/phiên bản riêng cho các thông số ghi nhận.",
+        "NEDC là chuẩn công bố; quãng đường thực tế phụ thuộc điều kiện sử dụng."
+      ]
+    },
+    "VF5": {
+      "source_url": "https://vinfastauto.com/vn_vi/dat-coc-xe-dien-vf5",
+      "model_year": null,
+      "runtime_status": "already_present_in_canonical_vehicle_catalog",
+      "confirmed_page_facts": {
+        "dimensions_mm": [3967, 1723, 1579],
+        "wheelbase_mm": 2514,
+        "seats": 5,
+        "torque_nm": 135,
+        "power_kw": 100,
+        "range_km": 326,
+        "range_standard": "NEDC",
+        "usable_capacity_kwh": 37.23,
+        "fast_charge": {"minutes": 33, "soc_from_percent": 10, "soc_to_percent": 70},
+        "ac_max_kw": 6.6,
+        "dc_max_kw": {"value": 50, "approximate": true},
+        "air_conditioning": "Manual, single zone",
+        "cabin_filter": "PM 2.5",
+        "airbags": 6,
+        "infotainment_screen_inches": 8,
+        "vehicle_warranty_page": {"years": 7, "km": 160000, "whichever_first": true},
+        "list_price_vnd": 496000000
+      },
+      "colors": [
+        "Infinity Blanc",
+        "Zenith Grey",
+        "Solar Ruby",
+        "Summer Yellow Body - Jet Black Roof",
+        "Sky Blue - Infinity Blanc Roof",
+        "Urban Mint"
+      ],
+      "color_details": {
+        "source_section": "6 màu xe đa dạng - Dẫn lối chất riêng",
+        "two_tone_combinations": [
+          {
+            "published_name": "Summer Yellow Body - Jet Black Roof",
+            "body_color": "Summer Yellow",
+            "roof_color": "Jet Black"
+          },
+          {
+            "published_name": "Sky Blue - Infinity Blanc Roof",
+            "body_color": "Sky Blue",
+            "roof_color": "Infinity Blanc"
+          }
+        ],
+        "published_as": "Four single-name colors and two explicitly named body/roof combinations.",
+        "color_scope": "Model-level palette only; trim, model year and dealer stock are not established."
+      },
+      "scope_notes": [
+        "These page facts match the existing reviewed VF5 record; this review does not change runtime catalog values.",
+        "The page does not identify a model year or per-trim applicability."
+      ]
+    }
+  }
+}

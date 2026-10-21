@@ -154,7 +154,7 @@ def extract_fields(text: str, *, asserted_only: bool = True) -> dict[str, str]:
         text = without_denied_reports(current_clause(text))
     fields = {}
     patterns = {
-        "vehicle_model": r"\b(?:VF\s*(?:[356789]|e34)|e34)\b",
+        "vehicle_model": r"\b(?:VF\s*(?:[2356789]|mpv\s*7|e34)|e34)\b",
         "charger_id": r"\b(?:VN-CS-[A-Z0-9]+-[A-Z0-9]+|P\d{2})\b",
         "error_code": r"\b(?!(?:VF\d|VFE34)\b)(?:[A-Z]{2,4}\d{2,4}|[A-Z]{1,4}[_\-]\d{2,4}|CC\d{2}|E\d{3}|P\d{4}|BMS_\d{3}|0x[0-9a-f]+)\b",
         "warning_symbol": r"(?:rùa vàng|con rùa|đèn đỏ|nháy đỏ|nhấp nháy đỏ|đèn cổng sạc[^,.!?]{0,30})",

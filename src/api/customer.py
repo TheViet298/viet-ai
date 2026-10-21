@@ -514,7 +514,7 @@ async def _process_customer_chat(payload: CustomerChatRequest, current_user: Use
         active_case = resolve_authorized_active_case(db, current_user, payload.session_id, bound_case_id, payload.guest_session_id) if bound_case_id else None
         active_case_id = active_case.id if active_case else None
         payload = payload.model_copy(update={'case_id': active_case_id})
-    explicit_model_match = re.search(r"\b(vf\s*e34|vf\s*[356789]|e34)\b", text, re.I)
+    explicit_model_match = re.search(r"\b(vf\s*(?:e34|mpv\s*7|[2356789])|e34)\b", text, re.I)
     explicit_model = (
         "e34" if explicit_model_match and "e34" in explicit_model_match.group(0).lower()
         else (re.sub(r"\s+", "", explicit_model_match.group(0)).upper() if explicit_model_match else None)
